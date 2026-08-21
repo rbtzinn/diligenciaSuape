@@ -1,0 +1,239 @@
+/* ==========================================================
+   DILIGÊNCIA 360 — Estilos Conversacionais Estilo Claude.ai
+   ========================================================== */
+.chat-workspace {
+  max-width: 820px;
+  width: 100%;
+  margin: 0 auto;
+  min-height: calc(100vh - 4rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.5rem 1rem 2rem;
+  gap: 1.5rem;
+}
+.chat-workspace.has-conversation {
+  justify-content: flex-start;
+}
+
+/* Saudação Claude Style */
+.claude-welcome-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin: auto 0 2rem;
+  padding: 1rem 0;
+}
+
+.claude-welcome-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.claude-welcome-star {
+  font-size: 1.75rem;
+  color: #D97706; /* Golden warm asterisk */
+  line-height: 1;
+}
+
+.claude-welcome-title {
+  font-size: clamp(1.5rem, 3.5vw, 2.15rem);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  font-family: inherit;
+}
+
+.claude-welcome-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  max-width: 520px;
+  line-height: 1.5;
+}
+
+/* Claude Prompt Box */
+.claude-prompt-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  padding: 1rem 1.15rem 0.85rem;
+  box-shadow: 0 4px 20px -2px rgba(15, 41, 66, 0.07);
+  transition: all var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.claude-prompt-card:focus-within {
+  border-color: var(--brand-blue);
+  box-shadow: 0 6px 24px -2px rgba(30, 64, 175, 0.12);
+}
+
+.claude-prompt-input {
+  width: 100%;
+  min-height: 54px;
+  max-height: 180px;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  resize: none;
+  line-height: 1.45;
+  font-family: inherit;
+}
+
+.claude-prompt-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.claude-prompt-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 0.65rem;
+}
+
+.claude-prompt-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.claude-chip {
+  padding: 0.3rem 0.65rem;
+  background-color: var(--bg-surface-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all var(--transition-fast);
+}
+
+.claude-chip:hover {
+  background-color: var(--brand-blue-subtle);
+  color: var(--brand-blue);
+  border-color: var(--brand-blue-border);
+}
+
+.claude-send-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background-color: var(--brand-blue);
+  color: #ffffff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.claude-send-btn:hover:not(:disabled) {
+  background-color: var(--brand-blue-hover);
+  transform: scale(1.04);
+}
+
+.claude-send-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Stream de Mensagens da Conversa */
+.chat-conversation-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.chat-user-row {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.chat-user-bubble {
+  max-width: 80%;
+  background-color: var(--bg-surface-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: 18px 18px 4px 18px;
+  padding: 0.85rem 1.15rem;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+
+.chat-assistant-row {
+  display: flex;
+  gap: 0.85rem;
+  width: 100%;
+}
+
+.chat-assistant-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background-color: var(--brand-blue-subtle);
+  color: var(--brand-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid var(--brand-blue-border);
+}
+
+.chat-assistant-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Card de Progresso em Tempo Real */
+.chat-progress-box {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.chat-progress-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.chat-progress-item.completed {
+  color: var(--text-primary);
+}
+
+.chat-progress-item.in-progress {
+  color: var(--brand-blue);
+  font-weight: var(--font-semibold);
+}
+
+.spin-icon {
+  animation: spin 0.75s linear infinite;
+}

@@ -1,0 +1,27 @@
+{
+  "name": "diligencia360-server",
+  "version": "1.0.0",
+  "description": "Backend proxy — Diligência 360 Compliance SUAPE",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "test": "node --test test/foundation.test.js test/egos.integration.test.js",
+    "internal:suape:import": "node scripts/import-internal-suape.js"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.0",
+    "express-rate-limit": "^8.6.2",
+    "firebase-admin": "^13.1.0",
+    "pdfkit": "^0.19.1",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "prisma": "^7.9.1"
+  }
+}
