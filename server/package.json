@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node index.js",
+    "build": "node --check index.js",
     "test": "node --test test/foundation.test.js test/google-sheets.integration.test.js"
   },
   "engines": {
