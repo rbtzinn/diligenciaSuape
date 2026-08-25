@@ -1,6 +1,6 @@
 // ==========================================================
 // DILIGÊNCIA 360 — Aplicação Express (app.js)
-// Modular, desacoplada e com autenticação RBAC
+// Modular, desacoplada e autenticada pelo Firebase
 // ==========================================================
 
 const express = require('express');
@@ -9,7 +9,6 @@ const { rateLimit } = require('express-rate-limit');
 const path = require('path');
 
 const authRoutes = require('./routes/auth.routes');
-const userRoutes = require('./routes/user.routes');
 const workflowRoutes = require('./routes/workflow.routes');
 const companyRoutes = require('./routes/company.routes');
 const cguRoutes = require('./routes/cgu.routes');
@@ -42,7 +41,9 @@ app.use(cors({
     return callback(new Error('Origem não autorizada pelo Diligência 360.'));
   },
 }));
-app.use(express.json({ limit: '1mb' }));
+// Mantém margem abaixo do limite de 4,5 MB das Vercel Functions sem truncar
+// dossiês ricos em evidências e relações.
+app.use(express.json({ limit: '4mb' }));
 
 const providerRateLimit = rateLimit({
   windowMs: 5 * 60 * 1000,
@@ -67,7 +68,6 @@ app.use(express.static(path.join(__dirname, '..', '..', 'dist')));
 
 // Rotas de API
 app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
 app.use('/api/workflow', workflowRoutes);
 app.use('/api/empresa', companyRoutes);
 app.use('/api/cgu', cguRoutes);
@@ -81,6 +81,12 @@ app.use('/api/status', statusRoutes);
 
 app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
+  if (err?.type === 'entity.too.large' || err?.status === 413) {
+    return res.status(413).json({
+      ok: false,
+      erro: 'O dossiê excede o limite de 4 MB para envio. Reduza anexos ou evidências muito extensas antes de salvar.',
+    });
+  }
   if (err?.message === 'Origem não autorizada pelo Diligência 360.') {
     return res.status(403).json({ ok: false, erro: err.message });
   }

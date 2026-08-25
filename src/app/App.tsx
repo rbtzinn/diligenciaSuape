@@ -12,12 +12,11 @@ import { ChatDiligenceView } from '../features/chat/components/ChatDiligenceView
 import { DiligenceDashboard, type DashboardTab } from '../features/diligence/components/DiligenceDashboard';
 import { HistoryView } from '../features/history/components/HistoryView';
 import { DataSourcesView } from '../features/sources/components/DataSourcesView';
-import { UserManagementView } from '../features/users/components/UserManagementView';
 import { useDiligence } from '../features/diligence/hooks/useDiligence';
 import { HistoryStorage } from '../features/history/services/history.storage';
 
 export const App: React.FC = () => {
-  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [currentView, setCurrentView] = useState<ViewType>('chat');
   const [activeDashboardTab, setActiveDashboardTab] = useState<DashboardTab>('overview');
   const [selectedDiligence, setSelectedDiligence] = useState<DiligenceItem | null>(null);
@@ -105,34 +104,11 @@ export const App: React.FC = () => {
           />
         );
 
-      case 'users':
-        return <UserManagementView />;
-
       case 'sources':
         return <DataSourcesView />;
 
       case 'chat':
       default:
-        if (user?.role === 'viewer') {
-          return (
-            <div
-              style={{
-                maxWidth: '640px',
-                margin: '3rem auto',
-                padding: '1.5rem',
-                backgroundColor: 'var(--bg-surface)',
-                border: '1px solid var(--border-default)',
-                borderRadius: 'var(--radius-lg)',
-                textAlign: 'center',
-                color: 'var(--text-secondary)',
-                fontSize: 'var(--text-sm)',
-              }}
-            >
-              Perfil Consulta: Você possui acesso de visualização ao histórico e evidências. Para executar novas diligências, solicite o perfil Analista ao administrador.
-            </div>
-          );
-        }
-
         return (
           <ChatDiligenceView
             onSearch={runDiligence}

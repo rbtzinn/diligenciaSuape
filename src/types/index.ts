@@ -8,7 +8,7 @@ export type StatusVariant = 'low' | 'medium' | 'high' | 'critical' | 'info' | 'n
 
 export type StepStatus = 'pending' | 'loading' | 'done' | 'error';
 
-export type ViewType = 'chat' | 'history' | 'sources' | 'dashboard' | 'users';
+export type ViewType = 'chat' | 'history' | 'sources' | 'dashboard';
 
 export interface BaseApiResponse<T = unknown> {
   ok: boolean;

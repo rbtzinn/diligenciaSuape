@@ -4,14 +4,14 @@
 
 const express = require('express');
 const { WorkflowService } = require('../services/workflow.service');
-const { authenticate, authorize } = require('../middlewares/auth.middleware');
+const { authenticate } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
 router.use(authenticate);
 
-// 1. Enviar para Revisão (Analista ou Admin)
-router.post('/:id/submit', authorize(['admin', 'analyst']), async (req, res) => {
+// 1. Enviar para revisão — qualquer usuário autenticado pode executar.
+router.post('/:id/submit', async (req, res) => {
   try {
     const result = await WorkflowService.submitForReview(req.params.id, req.user);
     return res.json(result);
@@ -20,8 +20,8 @@ router.post('/:id/submit', authorize(['admin', 'analyst']), async (req, res) => 
   }
 });
 
-// 2. Iniciar Revisão (Revisor ou Admin)
-router.post('/:id/start-review', authorize(['admin', 'reviewer']), async (req, res) => {
+// 2. Iniciar revisão — qualquer usuário autenticado pode executar.
+router.post('/:id/start-review', async (req, res) => {
   try {
     const result = await WorkflowService.startReview(req.params.id, req.user);
     return res.json(result);
@@ -30,8 +30,8 @@ router.post('/:id/start-review', authorize(['admin', 'reviewer']), async (req, r
   }
 });
 
-// 3. Devolver para Ajustes (Revisor ou Admin)
-router.post('/:id/return', authorize(['admin', 'reviewer']), async (req, res) => {
+// 3. Devolver para ajustes — qualquer usuário autenticado pode executar.
+router.post('/:id/return', async (req, res) => {
   try {
     const { justification } = req.body || {};
     const result = await WorkflowService.returnForAdjustments(req.params.id, req.user, justification);
@@ -41,8 +41,8 @@ router.post('/:id/return', authorize(['admin', 'reviewer']), async (req, res) =>
   }
 });
 
-// 4. Aprovar e Concluir Diligência (Revisor ou Admin)
-router.post('/:id/approve', authorize(['admin', 'reviewer']), async (req, res) => {
+// 4. Aprovar e concluir — qualquer usuário autenticado pode executar.
+router.post('/:id/approve', async (req, res) => {
   try {
     const result = await WorkflowService.approveAndComplete(req.params.id, req.user);
     return res.json(result);

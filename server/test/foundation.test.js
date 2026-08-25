@@ -9,7 +9,6 @@ const { adaptReceita } = require('../src/egos/adapters/receita.adapter');
 const { adaptCgu } = require('../src/egos/adapters/cgu.adapter');
 const { adaptExternalResults } = require('../src/egos/adapters/external-results.adapter');
 const { aggregateGovernanceRecords } = require('../src/services/cvm-governance.service');
-const { DiligenceMappers } = require('../src/repositories/diligence-mappers');
 const {
   applyEgosOverlay,
   classifyRisk,
@@ -50,16 +49,6 @@ test('hipótese interna SUAPE aumenta a exposição sem declarar irregularidade'
   assert.equal(adjusted.nivel, 'Atenção Elevada');
   assert.equal(adjusted.detalhes[0].natureza, 'uncertainty');
   assert.match(adjusted.detalhes[0].info, /hipótese/);
-});
-
-test('gera IDs próprios para a mesma publicação em diligências diferentes', () => {
-  const media = { results: [{ id: 'provider-result-1', title: 'Publicação', url: 'https://example.test/item' }] };
-  const first = DiligenceMappers.mapAdverseMedia('diligence-one', media)[0];
-  const second = DiligenceMappers.mapAdverseMedia('diligence-two', media)[0];
-
-  assert.notEqual(first.id, second.id);
-  assert.equal(first.rawData.id, 'provider-result-1');
-  assert.equal(second.rawData.id, 'provider-result-1');
 });
 
 test('consolida diretores e acionistas por exercício sem inventar continuidade', () => {
@@ -448,7 +437,6 @@ test('EGOS preserva publicação pessoal neutra como evidência sem criar alerta
 });
 
 test('rotas de consulta recusam acesso sem token', async (t) => {
-  delete process.env.INITIAL_ADMIN_EMAIL;
   delete process.env.VITE_FIREBASE_API_KEY;
   delete process.env.FIREBASE_WEB_API_KEY;
 

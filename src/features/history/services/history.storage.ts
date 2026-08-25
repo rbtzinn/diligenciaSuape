@@ -1,6 +1,6 @@
 // ==========================================================
 // DILIGÊNCIA 360 — Storage Adapter de Histórico Permanente
-// Persistência no PostgreSQL com fallback resiliente
+// Persistência no Google Sheets com rascunho local de emergência
 // ==========================================================
 
 import { DiligenceItem } from '../../diligence/types';
@@ -51,7 +51,7 @@ export const HistoryStorage = {
   },
 
   /**
-   * Salva a diligência completa no banco permanente com verificação explícita
+   * Salva a diligência completa no histórico permanente com verificação explícita
    */
   async save(item: DiligenceItem): Promise<DiligenceItem> {
     let isPersisted = false;
@@ -69,10 +69,10 @@ export const HistoryStorage = {
         egosResult = res.egos || item.egos;
         riskResult = res.risco || item.risco;
       } else {
-        persistenceNotice = res.aviso || 'Banco de dados PostgreSQL indisponível. Dossiê salvo em rascunho local.';
+        persistenceNotice = res.aviso || 'Google Sheets indisponível. Dossiê salvo apenas como rascunho local.';
       }
     } catch {
-      persistenceNotice = 'Servidor de banco de dados offline. Dossiê em rascunho local — não sincronizado.';
+      persistenceNotice = 'Histórico do Google Sheets indisponível. Dossiê em rascunho local — não sincronizado.';
     }
 
     const itemWithStatus: DiligenceItem = {
@@ -134,11 +134,7 @@ export const HistoryStorage = {
    * Exclui uma diligência do backend e do armazenamento local
    */
   async delete(id: string): Promise<boolean> {
-    try {
-      await request(`/api/diligences/${id}`, { method: 'DELETE' });
-    } catch {
-      // Continua para remover do localStorage
-    }
+    await request(`/api/diligences/${id}`, { method: 'DELETE' });
 
     try {
       const raw = localStorage.getItem(STORAGE_KEY);

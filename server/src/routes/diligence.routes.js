@@ -4,19 +4,25 @@
 
 const express = require('express');
 const { DiligenceHistoryService } = require('../services/diligence-history.service');
-const { authenticate, authorize } = require('../middlewares/auth.middleware');
+const { authenticate } = require('../middlewares/auth.middleware');
 const { isScoreWithinLevel } = require('../services/risk-assessment.service');
 
 const router = express.Router();
 
 router.use(authenticate);
 
-router.post('/', authorize(['admin', 'analyst']), async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const payload = req.body || {};
     if (req.user) {
       payload.createdById = req.user.id;
-      payload.createdBy = { id: req.user.id, name: req.user.name };
+      payload.createdBy = {
+        id: req.user.id,
+        firebaseUid: req.user.firebaseUid,
+        name: req.user.name,
+        email: req.user.email,
+      };
+      payload.createdByEmail = req.user.email;
       if (Array.isArray(payload.timeline)) {
         payload.timeline.unshift({
           time: new Date().toISOString(),
@@ -34,7 +40,7 @@ router.post('/', authorize(['admin', 'analyst']), async (req, res) => {
         ok: false,
         persisted: false,
         id: result.id,
-        erro: result.aviso || 'Banco de dados PostgreSQL indisponível. Dossiê não persistido permanentemente.',
+        erro: result.aviso || 'Google Sheets indisponível. Dossiê não persistido permanentemente.',
       });
     }
 
@@ -79,7 +85,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/:id/reviews', authorize(['admin', 'analyst', 'reviewer']), async (req, res) => {
+router.post('/:id/reviews', async (req, res) => {
   try {
     const { id } = req.params;
     if (req.body?.entityType === 'egos_finding' && String(req.body?.justification || '').trim().length < 5) {
@@ -88,7 +94,8 @@ router.post('/:id/reviews', authorize(['admin', 'analyst', 'reviewer']), async (
     const reviewData = {
       ...req.body,
       diligenceId: id,
-      userId: req.user ? req.user.id : undefined,
+      user: req.user,
+      userId: req.user.id,
       reviewedBy: req.user ? req.user.name : (req.body.reviewedBy || 'Auditor Compliance'),
     };
     const review = await DiligenceHistoryService.recordReview(reviewData);
@@ -99,7 +106,7 @@ router.post('/:id/reviews', authorize(['admin', 'analyst', 'reviewer']), async (
   }
 });
 
-router.patch('/:id/risk', authorize(['admin', 'analyst', 'reviewer']), async (req, res) => {
+router.patch('/:id/risk', async (req, res) => {
   try {
     const score = Number(req.body?.score);
     const level = String(req.body?.level || '').trim();
@@ -121,7 +128,8 @@ router.patch('/:id/risk', authorize(['admin', 'analyst', 'reviewer']), async (re
 
     const risk = await DiligenceHistoryService.overrideRisk({
       diligenceId: req.params.id,
-      userId: req.user?.id,
+      user: req.user,
+      userId: req.user.id,
       score,
       level,
       justification,
@@ -134,11 +142,11 @@ router.patch('/:id/risk', authorize(['admin', 'analyst', 'reviewer']), async (re
   }
 });
 
-router.delete('/:id', authorize(['admin', 'analyst']), async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await DiligenceHistoryService.deleteDiligence(id);
-    return res.json({ ok: true, message: 'Dossiê excluído com sucesso.' });
+    await DiligenceHistoryService.deleteDiligence(id, req.user);
+    return res.json({ ok: true, message: 'Dossiê removido da visualização; histórico preservado.' });
   } catch (err) {
     console.error('[DiligenceRoutes] Erro ao excluir dossiê:', err.message);
     return res.status(500).json({ ok: false, erro: err.message });

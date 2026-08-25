@@ -1,125 +1,63 @@
 # Diligência 360 — Compliance SUAPE
 
-Plataforma unificada de due diligence e conformidade corporativa para o Porto de Suape. Realiza consultas cadastrais, análise societária (QSA), checagem de Pessoas Expostas Politicamente (PEP), sanções oficiais (CEIS / CNEP), pesquisa de mídia adversa na web e enriquecimento processual pelo DataJud (CNJ), com persistência permanente e imutabilidade histórica em PostgreSQL.
+Aplicação React/Express de due diligence corporativa. O acesso é controlado exclusivamente pelo Firebase Authentication: toda conta ativa cadastrada no Firebase pode usar todas as funções do sistema. O histórico permanente fica em Google Sheets, com payload completo comprimido, versões, hash SHA-256, auditoria e exclusão lógica.
 
----
+## Arquitetura
 
-## 1. Pré-Requisitos
+- Frontend: React 18, TypeScript e Vite.
+- Backend: Node.js 24 e Express.
+- Autenticação: Firebase Authentication por e-mail/senha.
+- Persistência: Google Sheets API.
+- Relatórios: PDF versionado com hash SHA-256.
 
-* **Docker** (versão 24.0 ou superior)
-* **Docker Compose** (versão 2.20 ou superior)
+O PostgreSQL, Prisma, cadastro local de usuários e RBAC não fazem mais parte da aplicação.
 
-> *(Opcional para desenvolvimento local sem contêineres: Node.js 20+ e PostgreSQL 16+).*
+## Configuração local
 
----
+1. Copie `.env.example` para `.env`.
+2. Preencha as variáveis do Firebase e das integrações usadas.
+3. Crie uma conta de serviço exclusiva para o Google Sheets, gere uma chave JSON e preencha `GOOGLE_SHEETS_CLIENT_EMAIL` e `GOOGLE_SHEETS_PRIVATE_KEY`.
+4. Informe `GOOGLE_SHEETS_SPREADSHEET_ID`.
+5. Compartilhe a planilha como **Editor** com o e-mail de `GOOGLE_SHEETS_CLIENT_EMAIL`.
+6. Ative a Google Sheets API no projeto Google Cloud correspondente.
 
-## 2. Configuração de Variáveis de Ambiente
-
-Copie o arquivo de exemplo para criar seu `.env` local:
-
-```bash
-cp .env.example .env
-```
-
-Preencha as chaves opcionais de API no arquivo `.env`:
-* `CGU_API_KEY`: Chave da API do Portal da Transparência (para consultas completas de CEIS/CNEP/PEP).
-* `BRAVE_SEARCH_API_KEY`: Chave da Brave Search API (para pesquisa de mídia adversa).
-
-### Desenvolvimento local
-
-Para iniciar o frontend e o backend juntos, use:
+Também é possível reutilizar `FIREBASE_CLIENT_EMAIL` e `FIREBASE_PRIVATE_KEY` se você já tiver uma conta Firebase Admin. Nesse caso, deixe as duas variáveis `GOOGLE_SHEETS_*` opcionais vazias. O roteiro completo está no guia de publicação.
 
 ```bash
+npm install
+npm --prefix server install
 npm run dev:full
 ```
 
-O frontend fica em `http://localhost:5173` e a API em `http://localhost:3000`. Executar apenas `npm run dev` inicia somente o frontend; nesse caso, as chamadas para `/api` falham porque o backend não está disponível.
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:3000`
+- Diagnóstico: `http://localhost:3000/api/status`
 
-### Primeiro acesso
+## Verificação
 
-O e-mail definido em `INITIAL_ADMIN_EMAIL` autoriza o administrador no Diligência 360, mas a identidade também precisa existir no **Firebase Authentication**, com o provedor **E-mail/senha**. A senha não é armazenada neste projeto. Crie a conta no Firebase ou use **Esqueci minha senha** na tela de entrada para definir uma nova senha de forma segura.
+```bash
+npm test
+npm run typecheck
+npm run lint
+npm run build
+```
 
----
-
-## 3. Inicialização Rápida com Docker Compose
-
-Para construir as imagens e iniciar todos os serviços (PostgreSQL, Backend Express e Frontend Nginx):
+## Docker
 
 ```bash
 docker compose up --build
 ```
 
-O Docker Compose inicializa automaticamente os serviços na seguinte ordem:
-1. Sobe o container `postgres` e executa o **healthcheck** de prontidão.
-2. Sobe o container `backend`, gera o Prisma Client, aplica as **migrations pendentes** (`prisma migrate deploy`) e inicia o servidor Express.
-3. Sobe o container `frontend` com Nginx e proxy reverso para `/api/`.
+O Compose inicia somente backend e frontend. Não existe mais contêiner ou volume PostgreSQL.
 
----
+## Implantação
 
-## 4. Acesso às Aplicações
+O tutorial completo e as variáveis separadas por projeto estão em [VERCEL_DEPLOY.md](./VERCEL_DEPLOY.md). A planilha criada para o histórico é [Diligência 360 — Histórico](https://docs.google.com/spreadsheets/d/1J9FwZv1lDDrRWDP-gWkpRj2rNimwh0gMlHitYCD4bSc/edit).
 
-* **Interface Web (Frontend):** [http://localhost:8080](http://localhost:8080)
-* **API REST (Backend):** [http://localhost:3000](http://localhost:3000)
-* **Diagnóstico de Saúde:** [http://localhost:3000/api/status](http://localhost:3000/api/status)
+## Fontes integradas
 
----
-
-## 5. Comandos Operacionais
-
-### Execução em Segundo Plano
-```bash
-docker compose up -d
-```
-
-### Visualizar Logs em Tempo Real
-```bash
-docker compose logs -f
-```
-
-### Checar Status dos Contêineres
-```bash
-docker compose ps
-```
-
-### Parar os Serviços (Preserva os Dados)
-```bash
-docker compose down
-```
-> *Os dados históricos de diligências ficam preservados com segurança no volume nomeado `postgres_data`.*
-
-### Reconstruir as Imagens do Zero
-```bash
-docker compose build --no-cache
-```
-
----
-
-## 6. Arquitetura da Stack
-
-```text
-┌────────────────────────────────────────────────────────┐
-│                   DILIGÊNCIA 360                       │
-├────────────────────────────────────────────────────────┤
-│  Frontend (Porta 8080)                                 │
-│  React 18 • TypeScript • Vite • Nginx Alpine           │
-│  Proxy reverso transparente para /api/*                │
-├────────────────────────────────────────────────────────┤
-│  Backend (Porta 3000)                                  │
-│  Node.js 20 • Express • Prisma ORM                     │
-│  Transações Atômicas • Dossiês Históricos              │
-├────────────────────────────────────────────────────────┤
-│  Banco de Dados (Interno / 5432)                       │
-│  PostgreSQL 16 Alpine • Volume persistente             │
-└────────────────────────────────────────────────────────┘
-```
-
----
-
-## 7. Módulos e Fontes Oficiais Integradas
-
-* **Receita Federal / QSA:** Dados cadastrais, endereço e quadro societário (via BrasilAPI / ReceitaWS).
-* **CGU / CEIS:** Cadastro de Empresas Inidôneas e Suspensas.
-* **CGU / CNEP:** Cadastro Nacional de Empresas Punidas (Lei Anticorrupção).
-* **CGU / PEP:** Pessoas Expostas Politicamente com prevenção de homonímia nominal.
-* **Mídia Adversa:** Varredura web com Brave Search API, deduplicação e categorização de risco.
-* **CNJ / DataJud:** Enriquecimento de metadados de processos judiciais (TJPE, TRF5, TRT6).
+- Receita Federal/QSA via provedores públicos configurados.
+- CGU: CEIS, CNEP e PEP.
+- CNJ/DataJud.
+- Brave Search para mídia adversa, quando configurada.
+- Diários oficiais e ICIJ Offshore Leaks.

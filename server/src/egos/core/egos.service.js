@@ -1,12 +1,70 @@
+const crypto = require('crypto');
 const { EgosGraphBuilder } = require('./egos-graph-builder');
 const { adaptReceita } = require('../adapters/receita.adapter');
 const { adaptCgu } = require('../adapters/cgu.adapter');
 const { adaptExternalResults } = require('../adapters/external-results.adapter');
 const { adaptInternalSuape } = require('../adapters/internal-suape/internal-suape.adapter');
-const { persistSnapshot } = require('./egos-persistence.service');
+
+function materializeSnapshot(snapshot) {
+  const runId = crypto.randomUUID();
+  const generatedAt = new Date().toISOString();
+  const entityIdByKey = new Map(
+    snapshot.entities.map((entity) => [entity.key, crypto.randomUUID()])
+  );
+  const relationshipIdByKey = new Map(
+    snapshot.relationships.map((relationship) => [relationship.key, crypto.randomUUID()])
+  );
+
+  return {
+    runId,
+    version: 'egos-2.0-snapshot',
+    generatedAt,
+    metrics: snapshot.metrics,
+    insights: snapshot.insights,
+    entities: snapshot.entities.map((entity) => ({
+      ...entity,
+      id: entityIdByKey.get(entity.key),
+    })),
+    relationships: snapshot.relationships.map((relationship) => ({
+      ...relationship,
+      id: relationshipIdByKey.get(relationship.key),
+      sourceEntityId: entityIdByKey.get(relationship.sourceKey),
+      targetEntityId: entityIdByKey.get(relationship.targetKey),
+      sourceName: snapshot.entities.find((entity) => entity.key === relationship.sourceKey)?.name,
+      targetName: snapshot.entities.find((entity) => entity.key === relationship.targetKey)?.name,
+    })),
+    evidences: snapshot.evidences.map((evidence) => ({
+      ...evidence,
+      id: crypto.randomUUID(),
+      entityId: evidence.entityKey ? entityIdByKey.get(evidence.entityKey) : undefined,
+      relationshipId: evidence.relationshipKey ? relationshipIdByKey.get(evidence.relationshipKey) : undefined,
+      retrievedAt: evidence.retrievedAt?.toISOString?.() || String(evidence.retrievedAt || generatedAt),
+    })),
+    coverage: snapshot.coverage.map((entry) => ({
+      ...entry,
+      id: crypto.randomUUID(),
+      consultedAt: entry.consultedAt?.toISOString?.() || entry.consultedAt || undefined,
+      validUntil: entry.validUntil?.toISOString?.() || entry.validUntil || undefined,
+    })),
+    findings: snapshot.findings.map((finding) => ({
+      ...finding,
+      id: crypto.randomUUID(),
+      entityId: finding.entityKey ? entityIdByKey.get(finding.entityKey) : undefined,
+      relationshipId: finding.relationshipKey ? relationshipIdByKey.get(finding.relationshipKey) : undefined,
+    })),
+    resolutions: snapshot.resolutions.map((resolution) => ({
+      ...resolution,
+      id: crypto.randomUUID(),
+      sourceEntityId: entityIdByKey.get(resolution.sourceEntityKey),
+      candidateEntityId: entityIdByKey.get(resolution.candidateEntityKey),
+      sourceName: snapshot.entities.find((entity) => entity.key === resolution.sourceEntityKey)?.name,
+      candidateName: snapshot.entities.find((entity) => entity.key === resolution.candidateEntityKey)?.name,
+    })),
+  };
+}
 
 const EgosService = {
-  async buildAndPersist(tx, diligenceId, payload) {
+  async build(diligenceId, payload) {
     const builder = new EgosGraphBuilder({
       diligenceId,
       rootCnpj: payload.cnpj,
@@ -19,7 +77,7 @@ const EgosService = {
     await adaptInternalSuape(
       builder,
       context,
-      tx,
+      null,
       process.env.INTERNAL_SUAPE_ORGANIZATION || 'SUAPE'
     );
 
@@ -45,8 +103,11 @@ const EgosService = {
     });
     builder.addInsight(`${builder.relationships.size} relação(ões) possuem evidência rastreável nesta diligência.`);
 
-    const snapshot = builder.toSnapshot();
-    return await persistSnapshot(tx, diligenceId, payload.cnpj, snapshot);
+    return materializeSnapshot(builder.toSnapshot());
+  },
+
+  async buildAndPersist(_tx, diligenceId, payload) {
+    return await this.build(diligenceId, payload);
   },
 };
 

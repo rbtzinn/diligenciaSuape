@@ -1,5 +1,5 @@
 // ==========================================================
-// DILIGÊNCIA 360 — Serviço de Autenticação Firebase & Perfil Local
+// DILIGÊNCIA 360 — Serviço de autenticação Firebase
 // ==========================================================
 
 import { signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
@@ -11,7 +11,7 @@ export const AuthService = {
     // 1. Autenticação de identidade no Firebase
     await signInWithEmailAndPassword(auth, credentials.email, credentials.password);
 
-    // 2. Retorna usuário direto do Firebase com permissão de admin
+    // 2. Toda identidade cadastrada no Firebase recebe acesso completo.
     const profile = await this.getMe();
     if (!profile) {
       await signOut(auth);
@@ -45,7 +45,7 @@ export const AuthService = {
       firebaseUid: fbUser.uid,
       name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Usuário',
       email: fbUser.email || '',
-      role: 'admin',
+      role: 'authenticated',
       active: true,
     };
   },

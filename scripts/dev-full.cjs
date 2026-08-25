@@ -1,20 +1,8 @@
-const { spawn, spawnSync } = require('child_process');
+const { spawn } = require('child_process');
 const path = require('path');
 
 const projectRoot = path.resolve(__dirname, '..');
 const viteCli = path.join(projectRoot, 'node_modules', 'vite', 'bin', 'vite.js');
-const postgresStarter = path.join(projectRoot, 'scripts', 'postgres-local.cjs');
-
-const database = spawnSync(process.execPath, [postgresStarter, 'start'], {
-  cwd: projectRoot,
-  stdio: 'inherit',
-});
-
-if (database.status !== 0) {
-  console.error('[Diligência 360] Não foi possível iniciar o banco local.');
-  process.exit(database.status || 1);
-}
-
 const processes = [
   spawn(process.execPath, [path.join(projectRoot, 'server', 'index.js')], {
     cwd: projectRoot,

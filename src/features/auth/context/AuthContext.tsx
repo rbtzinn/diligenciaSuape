@@ -1,5 +1,5 @@
 // ==========================================================
-// DILIGÊNCIA 360 — Contexto de Autenticação com Firebase e RBAC
+// DILIGÊNCIA 360 — Contexto de autenticação com Firebase
 // ==========================================================
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';

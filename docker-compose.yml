@@ -1,36 +1,8 @@
 # ==========================================================
-# DILIGÊNCIA 360 — Docker Compose (Fase 5B)
-# Compliance SUAPE • Ambiente Completo e Reproduzível
+# DILIGÊNCIA 360 — Firebase Auth + Google Sheets
 # ==========================================================
 
 services:
-  # --------------------------------------------------------
-  # 1. Banco de Dados Relacional PostgreSQL
-  # --------------------------------------------------------
-  postgres:
-    image: postgres:16-alpine
-    container_name: diligencia360_postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-diligencia360}
-      POSTGRES_USER: ${POSTGRES_USER:-diligencia}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina a variável obrigatória POSTGRES_PASSWORD no arquivo .env}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-diligencia} -d $${POSTGRES_DB:-diligencia360}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
-    ports:
-      - "5432:5432" # Mapeamento opcional para inspeção local de desenvolvimento
-    networks:
-      - diligencia_net
-
-  # --------------------------------------------------------
-  # 2. Servidor Backend Modular (Node.js Express + Prisma)
-  # --------------------------------------------------------
   backend:
     build:
       context: ./server
@@ -40,21 +12,18 @@ services:
     environment:
       PORT: 3000
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-diligencia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-diligencia360}?schema=public
-      CGU_API_KEY: ${CGU_API_KEY:-}
-      BRAVE_SEARCH_API_KEY: ${BRAVE_SEARCH_API_KEY:-}
-      DATAJUD_API_KEY: ${DATAJUD_API_KEY:-}
       FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
       FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL:-}
       FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY:-}
       VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY:-}
-      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-}
-      INITIAL_ADMIN_NAME: ${INITIAL_ADMIN_NAME:-Administrador SUAPE}
+      GOOGLE_SHEETS_SPREADSHEET_ID: ${GOOGLE_SHEETS_SPREADSHEET_ID:-}
+      GOOGLE_SHEETS_CLIENT_EMAIL: ${GOOGLE_SHEETS_CLIENT_EMAIL:-}
+      GOOGLE_SHEETS_PRIVATE_KEY: ${GOOGLE_SHEETS_PRIVATE_KEY:-}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080}
+      CGU_API_KEY: ${CGU_API_KEY:-}
+      BRAVE_SEARCH_API_KEY: ${BRAVE_SEARCH_API_KEY:-}
+      DATAJUD_API_KEY: ${DATAJUD_API_KEY:-}
       ADVERSE_MEDIA_MAX_QUERIES: ${ADVERSE_MEDIA_MAX_QUERIES:-4}
-    depends_on:
-      postgres:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/status"]
       interval: 10s
@@ -66,14 +35,12 @@ services:
     networks:
       - diligencia_net
 
-  # --------------------------------------------------------
-  # 3. Frontend SPA (React + TypeScript + Vite + Nginx)
-  # --------------------------------------------------------
   frontend:
     build:
       context: .
       dockerfile: Dockerfile
       args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
         VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY:-}
         VITE_FIREBASE_AUTH_DOMAIN: ${VITE_FIREBASE_AUTH_DOMAIN:-}
         VITE_FIREBASE_PROJECT_ID: ${VITE_FIREBASE_PROJECT_ID:-}
@@ -91,13 +58,6 @@ services:
     networks:
       - diligencia_net
 
-# ----------------------------------------------------------
-# Redes e Volumes Persistentes
-# ----------------------------------------------------------
 networks:
   diligencia_net:
     driver: bridge
-
-volumes:
-  postgres_data:
-    driver: local

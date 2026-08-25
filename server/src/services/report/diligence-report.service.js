@@ -47,6 +47,7 @@ const DiligenceReportService = {
       mimeType: 'application/pdf',
       hashAlgorithm: 'SHA-256',
       hashValue,
+      generatedBy: user || null,
       generatedById: user ? user.id : null,
       generatedAt: new Date(),
     });
@@ -54,6 +55,7 @@ const DiligenceReportService = {
     // 5. Registra evento de auditoria
     await ReviewRepository.recordAction({
       diligenceId: diligence.id,
+      user,
       userId: user ? user.id : null,
       entityType: 'report',
       entityId: reportRecord.id,

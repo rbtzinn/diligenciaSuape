@@ -4,7 +4,7 @@
 
 const express = require('express');
 const { DiligenceReportService } = require('../services/report/diligence-report.service');
-const { authenticate, authorize } = require('../middlewares/auth.middleware');
+const { authenticate } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
@@ -13,7 +13,6 @@ router.use(authenticate);
 // 1. Download do Dossiê Executivo em PDF
 router.get(
   '/:id/report',
-  authorize(['admin', 'analyst', 'reviewer', 'viewer']),
   async (req, res) => {
     try {
       const { id } = req.params;
@@ -40,7 +39,6 @@ router.get(
 // 2. Histórico de Versões do Relatório
 router.get(
   '/:id/reports',
-  authorize(['admin', 'analyst', 'reviewer', 'viewer']),
   async (req, res) => {
     try {
       const { id } = req.params;

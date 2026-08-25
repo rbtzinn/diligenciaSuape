@@ -76,7 +76,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
             Dossiês & Fila de Diligências
           </h1>
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginTop: '0.2rem' }}>
-            {totalCount} dossiê(s) com autoria e workflow registrados no PostgreSQL
+            {totalCount} dossiê(s) com autoria, versões e workflow no Google Sheets
           </p>
         </div>
 
@@ -186,13 +186,13 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
             }}
           >
             <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>
-              Excluir Dossiê do Histórico
+              Remover Dossiê da Visualização
             </h2>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '0.5rem', lineHeight: 1.5 }}>
-              Tem certeza que deseja excluir o dossiê da empresa <strong>{itemToDelete.razaoSocial}</strong> (CNPJ: {itemToDelete.cnpjFmt || itemToDelete.cnpj || 'Não informado'})?
+              Tem certeza que deseja remover o dossiê da empresa <strong>{itemToDelete.razaoSocial}</strong> (CNPJ: {itemToDelete.cnpjFmt || itemToDelete.cnpj || 'Não informado'}) da lista ativa?
             </p>
             <p style={{ fontSize: 'var(--text-2xs)', color: 'var(--status-critical-text)', marginTop: '0.35rem' }}>
-              Esta ação removerá permanentemente o histórico e relatórios associados.
+              O conteúdo, as versões, os relatórios e a auditoria continuarão preservados na planilha.
             </p>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.25rem' }}>
@@ -211,7 +211,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                 isLoading={isDeleting}
                 style={{ backgroundColor: 'var(--status-critical)', borderColor: 'var(--status-critical)' }}
               >
-                Excluir Dossiê
+                Remover Dossiê
               </Button>
             </div>
           </div>

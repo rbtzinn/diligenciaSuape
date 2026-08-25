@@ -4,7 +4,6 @@
 
 import React, { useState } from 'react';
 import { DiligenceItem } from '../../diligence/types';
-import { useAuth } from '../../auth/context/AuthContext';
 import { WorkflowService } from '../services/workflow.service';
 import { ReportService } from '../../report/services/report.service';
 import { ReturnJustificationModal } from './ReturnJustificationModal';
@@ -21,14 +20,12 @@ export const WorkflowControlBar: React.FC<WorkflowControlBarProps> = ({
   diligence,
   onStatusChange,
 }) => {
-  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [lastGeneratedHash, setLastGeneratedHash] = useState<string | null>(null);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
 
   const status = diligence.status || 'completed';
-  const role = user?.role || 'viewer';
 
   const statusMap: Record<string, { label: string; variant: 'info' | 'primary' | 'medium' | 'success' | 'critical' }> = {
     in_progress: { label: 'EM EXECUÇÃO', variant: 'info' },
@@ -74,9 +71,6 @@ export const WorkflowControlBar: React.FC<WorkflowControlBarProps> = ({
     });
   };
 
-  const isAnalystOrAdmin = role === 'analyst' || role === 'admin';
-  const isReviewerOrAdmin = role === 'reviewer' || role === 'admin';
-
   return (
     <div
       style={{
@@ -115,7 +109,7 @@ export const WorkflowControlBar: React.FC<WorkflowControlBarProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {isAnalystOrAdmin && (status === 'in_progress' || status === 'returned_for_adjustments') && (
+          {(status === 'in_progress' || status === 'returned_for_adjustments') ? (
             <Button
               variant="primary"
               size="sm"
@@ -129,9 +123,9 @@ export const WorkflowControlBar: React.FC<WorkflowControlBarProps> = ({
             >
               Enviar para Revisão ➜
             </Button>
-          )}
+          ) : null}
 
-          {isReviewerOrAdmin && status === 'pending_review' && (
+          {status === 'pending_review' ? (
             <Button
               variant="secondary"
               size="sm"
@@ -145,9 +139,9 @@ export const WorkflowControlBar: React.FC<WorkflowControlBarProps> = ({
             >
               Iniciar Revisão
             </Button>
-          )}
+          ) : null}
 
-          {isReviewerOrAdmin && (status === 'in_review' || status === 'pending_review') && (
+          {(status === 'in_review' || status === 'pending_review') ? (
             <>
               <Button
                 variant="secondary"
@@ -174,7 +168,7 @@ export const WorkflowControlBar: React.FC<WorkflowControlBarProps> = ({
                 Aprovar e Concluir
               </Button>
             </>
-          )}
+          ) : null}
 
           {status === 'completed' ? (
             <Button

@@ -1,115 +1,92 @@
 // ==========================================================
-// DILIGÊNCIA 360 — Serviço de Workflow e Transições de Estado
+// DILIGÊNCIA 360 — Workflow sem restrições de perfil
 // ==========================================================
 
 const { DiligenceRepository } = require('../repositories/diligence.repository');
-const { ReviewRepository } = require('../repositories/review.repository');
+
+function publicUser(user) {
+  return {
+    id: user.id,
+    firebaseUid: user.firebaseUid || user.id,
+    name: user.name,
+    email: user.email,
+  };
+}
+
+async function transition(diligenceId, user, options) {
+  const current = await DiligenceRepository.findById(diligenceId);
+  if (!current) throw new Error('Diligência não encontrada.');
+  const previousStatus = current.status || 'in_progress';
+  if (options.validate) options.validate(current);
+
+  await DiligenceRepository.mutate(diligenceId, (snapshot) => {
+    Object.assign(snapshot, options.patch(snapshot));
+  }, {
+    user,
+    action: options.action,
+    entityType: 'workflow',
+    entityId: diligenceId,
+    previousStatus,
+    newStatus: options.status,
+    justification: options.justification,
+  });
+  return { ok: true, status: options.status, ...(options.response || {}) };
+}
 
 const WorkflowService = {
   async submitForReview(diligenceId, user) {
-    const diligence = await DiligenceRepository.findById(diligenceId);
-    if (!diligence) throw new Error('Diligência não encontrada.');
-
-    if (diligence.status === 'completed') {
-      throw new Error('Esta diligência já foi concluída e não pode ser reencaminhada.');
-    }
-
-    await DiligenceRepository.updateDiligence(diligenceId, {
-      status: 'pending_review',
-      returnJustification: null,
-    });
-
-    await ReviewRepository.recordAction({
-      diligenceId,
-      userId: user.id,
-      entityType: 'workflow',
-      entityId: diligenceId,
+    return await transition(diligenceId, user, {
       action: 'submit',
-      previousStatus: diligence.status,
-      newStatus: 'pending_review',
-      justification: 'Diligência finalizada pelo analista e encaminhada para revisão formal.',
-      reviewedBy: user.name,
+      status: 'pending_review',
+      validate(snapshot) {
+        if (snapshot.status === 'completed') {
+          throw new Error('Esta diligência já foi concluída e não pode ser reencaminhada.');
+        }
+      },
+      patch: () => ({ status: 'pending_review', returnJustification: null }),
+      justification: `Diligência encaminhada para revisão por ${user.name}.`,
     });
-
-    return { ok: true, status: 'pending_review' };
   },
 
   async startReview(diligenceId, user) {
-    const diligence = await DiligenceRepository.findById(diligenceId);
-    if (!diligence) throw new Error('Diligência não encontrada.');
-
-    await DiligenceRepository.updateDiligence(diligenceId, {
-      status: 'in_review',
-      reviewedById: user.id,
-    });
-
-    await ReviewRepository.recordAction({
-      diligenceId,
-      userId: user.id,
-      entityType: 'workflow',
-      entityId: diligenceId,
+    return await transition(diligenceId, user, {
       action: 'start_review',
-      previousStatus: diligence.status,
-      newStatus: 'in_review',
+      status: 'in_review',
+      patch: () => ({ status: 'in_review', reviewedBy: publicUser(user) }),
       justification: `Revisão assumida por ${user.name}.`,
-      reviewedBy: user.name,
+      response: { reviewer: user.name },
     });
-
-    return { ok: true, status: 'in_review', reviewer: user.name };
   },
 
   async returnForAdjustments(diligenceId, user, justification) {
-    if (!justification || !justification.trim()) {
+    const cleanJustification = String(justification || '').trim();
+    if (!cleanJustification) {
       throw new Error('A justificativa de devolução para ajustes é obrigatória.');
     }
-
-    const diligence = await DiligenceRepository.findById(diligenceId);
-    if (!diligence) throw new Error('Diligência não encontrada.');
-
-    await DiligenceRepository.updateDiligence(diligenceId, {
-      status: 'returned_for_adjustments',
-      returnJustification: justification.trim(),
-      reviewedById: user.id,
-    });
-
-    await ReviewRepository.recordAction({
-      diligenceId,
-      userId: user.id,
-      entityType: 'workflow',
-      entityId: diligenceId,
+    return await transition(diligenceId, user, {
       action: 'return',
-      previousStatus: diligence.status,
-      newStatus: 'returned_for_adjustments',
-      justification: justification.trim(),
-      reviewedBy: user.name,
+      status: 'returned_for_adjustments',
+      patch: () => ({
+        status: 'returned_for_adjustments',
+        returnJustification: cleanJustification,
+        reviewedBy: publicUser(user),
+      }),
+      justification: cleanJustification,
+      response: { justification: cleanJustification },
     });
-
-    return { ok: true, status: 'returned_for_adjustments', justification: justification.trim() };
   },
 
   async approveAndComplete(diligenceId, user) {
-    const diligence = await DiligenceRepository.findById(diligenceId);
-    if (!diligence) throw new Error('Diligência não encontrada.');
-
-    await DiligenceRepository.updateDiligence(diligenceId, {
-      status: 'completed',
-      completedAt: new Date(),
-      reviewedById: user.id,
-    });
-
-    await ReviewRepository.recordAction({
-      diligenceId,
-      userId: user.id,
-      entityType: 'workflow',
-      entityId: diligenceId,
+    return await transition(diligenceId, user, {
       action: 'approve',
-      previousStatus: diligence.status,
-      newStatus: 'completed',
-      justification: `Diligência aprovada e formalmente concluída pelo revisor ${user.name}.`,
-      reviewedBy: user.name,
+      status: 'completed',
+      patch: () => ({
+        status: 'completed',
+        completedAt: new Date().toISOString(),
+        reviewedBy: publicUser(user),
+      }),
+      justification: `Diligência aprovada e formalmente concluída por ${user.name}.`,
     });
-
-    return { ok: true, status: 'completed' };
   },
 };
 

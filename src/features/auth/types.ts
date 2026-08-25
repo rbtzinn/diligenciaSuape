@@ -1,8 +1,8 @@
 // ==========================================================
-// DILIGÊNCIA 360 — Tipos de Autenticação e Usuários (Firebase + PostgreSQL)
+// DILIGÊNCIA 360 — Tipos de identidade autenticada pelo Firebase
 // ==========================================================
 
-export type UserRole = 'admin' | 'analyst' | 'reviewer' | 'viewer';
+export type UserRole = 'authenticated';
 
 export interface User {
   id: string;

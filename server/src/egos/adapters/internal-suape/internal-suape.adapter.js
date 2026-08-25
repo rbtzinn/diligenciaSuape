@@ -2,14 +2,14 @@ const { comparePerson } = require('../../entity-resolution/entity-resolution.ser
 const { stableHash } = require('../../domain/normalization');
 const { InternalSuapeProvider } = require('./internal-suape.provider');
 
-async function adaptInternalSuape(builder, context, prisma, organization = 'SUAPE') {
-  const source = await InternalSuapeProvider.load(prisma, organization);
+async function adaptInternalSuape(builder, context, _provider, organization = 'SUAPE') {
+  const source = await InternalSuapeProvider.load(organization);
   if (!source.available) {
     builder.addCoverage({
       axis: 'INTERNAL_SUAPE',
       provider: 'INTERNAL_SUAPE',
       status: 'UNAVAILABLE',
-      message: 'Nenhuma base interna autorizada está importada no PostgreSQL.',
+      message: 'Nenhuma base interna autorizada está configurada nesta implantação.',
       resultCount: 0,
     });
     return;

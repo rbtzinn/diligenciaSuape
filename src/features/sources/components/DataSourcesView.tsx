@@ -124,12 +124,12 @@ export const DataSourcesView: React.FC = () => {
     },
     {
       name: 'Base Funcional SUAPE',
-      provider: 'PostgreSQL local / InternalSUAPEProvider',
+      provider: 'Integração institucional opcional',
       type: 'Vínculo Institucional Interno',
       status: internalSuape?.available ? 'online' : 'limited',
       statusLabel: internalSuape?.available ? `${internalSuape.people} pessoas minimizadas` : 'Base não importada',
       description: 'Compara a rede empresarial com identidades funcionais minimizadas. Remuneração e eventos de folha não são importados nem exibidos.',
-      endpoint: 'Banco local autorizado',
+      endpoint: 'Não configurada nesta implantação',
     },
   ];
 

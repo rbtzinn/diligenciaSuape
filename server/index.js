@@ -11,23 +11,21 @@ const dotenv = require('dotenv');
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 dotenv.config({ path: path.join(__dirname, '.env'), override: true });
 const app = require('./src/app');
-const { checkDatabaseHealth } = require('./src/config/database');
-const { AuthService } = require('./src/services/auth.service');
+const { checkGoogleSheetsHealth } = require('./src/config/google-sheets');
 
 const PORT = process.env.PORT || 3000;
 const CGU_API_KEY = process.env.CGU_API_KEY || '';
 
 async function startServer() {
-  const database = await checkDatabaseHealth();
-  if (!database.connected) {
-    console.warn('[Database] O servidor iniciará em modo degradado até o PostgreSQL ficar disponível.');
+  const storage = await checkGoogleSheetsHealth();
+  if (!storage.connected) {
+    console.warn(`[GoogleSheets] O servidor iniciará em modo degradado: ${storage.message}`);
   }
-
-  await AuthService.bootstrapAdmin();
 
   return app.listen(PORT, () => {
     console.log(`\n  Diligência 360 Backend — http://localhost:${PORT}`);
     console.log(`  CGU API: ${CGU_API_KEY ? '✓ Configurada' : '✗ Sem chave'}\n`);
+    console.log(`  Histórico: ${storage.connected ? '✓ Google Sheets' : '✗ Não configurado'}\n`);
   });
 }
 

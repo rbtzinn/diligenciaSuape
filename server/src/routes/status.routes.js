@@ -1,36 +1,39 @@
 // ==========================================================
-// DILIGÊNCIA 360 — Rota de Status e Diagnóstico de Saúde
+// DILIGÊNCIA 360 — Status dos provedores e da persistência
 // ==========================================================
 
 const express = require('express');
 const CguService = require('../services/cgu.service');
 const DatajudService = require('../services/datajud.service');
-const { checkDatabaseHealth, getPrismaClient } = require('../config/database');
+const { checkGoogleSheetsHealth } = require('../config/google-sheets');
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
-  const dbHealth = await checkDatabaseHealth();
-  let internalSuape = { available: false, people: 0, referencePeriod: null };
-  if (dbHealth.connected) {
-    const prisma = await getPrismaClient();
-    const dataset = prisma ? await prisma.internalDataset.findFirst({ where: { status: 'active' }, orderBy: { importedAt: 'desc' } }) : null;
-    if (dataset) internalSuape = { available: true, people: dataset.uniquePersonCount, referencePeriod: dataset.referencePeriod };
-  }
+router.get('/', async (_req, res) => {
+  const storage = await checkGoogleSheetsHealth();
 
   res.json({
-    status: dbHealth.connected ? 'online' : 'degraded',
+    status: storage.connected ? 'online' : 'degraded',
     backend: 'online',
     database: {
-      connected: dbHealth.connected,
-      provider: 'PostgreSQL',
-      ...(!dbHealth.connected ? { message: 'Persistência permanente indisponível.' } : {}),
+      connected: storage.connected,
+      provider: 'Google Sheets',
+      ...(!storage.connected ? { message: storage.message || 'Persistência permanente indisponível.' } : {}),
+    },
+    storage: {
+      connected: storage.connected,
+      provider: 'Google Sheets',
     },
     cguConfigurada: CguService.isConfigured(),
     buscaWebConfigurada: true,
     datajudConfigurada: DatajudService.isConfigured(),
-    internalSuape,
-    versao: '2.0.0-modular',
+    internalSuape: {
+      available: false,
+      people: 0,
+      referencePeriod: null,
+      message: 'Base interna opcional não configurada nesta implantação.',
+    },
+    versao: '3.0.0-firebase-sheets',
     timestamp: new Date().toISOString(),
   });
 });

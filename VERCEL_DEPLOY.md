@@ -1,63 +1,116 @@
-# Publicar o frontend na Vercel
+# Publicação na Vercel — Firebase + Google Sheets
 
-Este projeto publica somente o frontend React/Vite na Vercel. O backend Express e o PostgreSQL precisam estar publicados separadamente e acessiveis por HTTPS.
+Este arquivo é o roteiro da próxima publicação. As alterações estão somente no computador local; este procedimento não foi executado e nenhum código foi enviado ao GitHub.
 
-## Antes de importar
+## 1. Preparar o Google Sheets
 
-1. Confirme que o codigo esta no GitHub, na branch `main`.
-2. O backend ja esta publicado em `https://diligencia360-api.vercel.app`.
-3. No backend, configure `CORS_ALLOWED_ORIGINS` com o dominio final da Vercel, por exemplo `https://diligencia-suape.vercel.app`.
-4. No Firebase Authentication, adicione o dominio da Vercel em **Settings > Authorized domains**.
+A planilha já criada e preenchida com o legado é:
 
-## Importar o projeto
+`https://docs.google.com/spreadsheets/d/1J9FwZv1lDDrRWDP-gWkpRj2rNimwh0gMlHitYCD4bSc/edit`
 
-1. Acesse https://vercel.com/new e conecte a conta do GitHub.
-2. Importe o repositorio `rbtzinn/diligenciaSuape`.
-3. Mantenha **Root Directory** como `./`.
-4. Confirme estas configuracoes (o arquivo `vercel.json` ja as define):
-   - Framework Preset: `Vite`
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-   - Install Command: `npm install` (automatico)
+Antes do deploy do backend, crie uma conta de serviço exclusiva para a planilha. É o caminho recomendado porque o projeto não precisa de uma conta Firebase Admin já existente:
 
-## Variaveis de ambiente
+1. Abra o [Google Cloud Console](https://console.cloud.google.com/apis/library/sheets.googleapis.com) no projeto `diligencia-8e779` e ative **Google Sheets API**.
+2. Abra **IAM e administrador > Contas de serviço > Criar conta de serviço**. Use, por exemplo, o nome `diligencia360-sheets`.
+3. Não é necessário conceder uma função ampla do projeto: conclua a criação e, na conta nova, abra **Chaves > Adicionar chave > Criar nova chave > JSON**.
+4. Guarde o arquivo JSON em local seguro. Você usará apenas `client_email` e `private_key`; nunca envie esse arquivo ao GitHub.
+5. Abra a planilha, clique em **Compartilhar**, informe o `client_email` da conta criada e escolha **Editor**.
+6. Mantenha o acesso geral como **Restrito**. Não publique a planilha na Web e não use “qualquer pessoa com o link”.
 
-Em **Project > Settings > Environment Variables**, use a opcao de colar varias variaveis e cole o conteudo de `.env.vercel.example`, trocando os valores.
+O backend usa essa conta de serviço para escrever na planilha; os usuários do site não precisam receber acesso direto ao arquivo.
 
-Marque pelo menos **Production**. Se quiser testar deployments de branches, marque tambem **Preview**.
+## 2. Projeto do backend na Vercel
 
-Variaveis exigidas:
+Abra o projeto `diligencia360-api` e acesse **Settings > Environment Variables**. Cadastre em **Production**:
+
+```dotenv
+FIREBASE_PROJECT_ID=diligencia-8e779
+FIREBASE_WEB_API_KEY=CHAVE_WEB_DO_FIREBASE
+
+GOOGLE_SHEETS_SPREADSHEET_ID=1J9FwZv1lDDrRWDP-gWkpRj2rNimwh0gMlHitYCD4bSc
+GOOGLE_SHEETS_CLIENT_EMAIL=CLIENT_EMAIL_DO_JSON
+GOOGLE_SHEETS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nCHAVE_PRIVADA_DO_JSON\n-----END PRIVATE KEY-----\n"
+
+CORS_ALLOWED_ORIGINS=https://diligencia-suape.vercel.app
+CGU_API_KEY=SUA_CHAVE
+DATAJUD_API_KEY=SUA_CHAVE
+BRAVE_SEARCH_API_KEY=SUA_CHAVE_SE_USAR
+ADVERSE_MEDIA_MAX_QUERIES=4
+```
+
+Se já existir uma conta Firebase Admin funcional, você pode reutilizá-la: configure `FIREBASE_CLIENT_EMAIL` e `FIREBASE_PRIVATE_KEY`, compartilhe a planilha com esse e-mail e deixe as duas variáveis `GOOGLE_SHEETS_*` opcionais vazias. A conta exclusiva do Sheets acima é mais simples e reduz o alcance da credencial.
+
+Em **Settings > Build and Deployment**:
+
+- Root Directory: `server`
+- Node.js Version: `24.x`
+- Install Command: padrão (`npm install`/`npm ci`)
+- Não existe mais `prisma generate`, `prisma migrate` nem etapa de banco.
+
+O `package.json` do backend já fixa Node `24.x`.
+
+## 3. Projeto do frontend na Vercel
+
+No projeto `diligencia-suape`, configure em **Settings > Environment Variables > Production**:
 
 ```dotenv
 VITE_API_BASE_URL=https://diligencia360-api.vercel.app
-VITE_FIREBASE_API_KEY=...
-VITE_FIREBASE_AUTH_DOMAIN=...
-VITE_FIREBASE_PROJECT_ID=...
-VITE_FIREBASE_STORAGE_BUCKET=...
-VITE_FIREBASE_MESSAGING_SENDER_ID=...
-VITE_FIREBASE_APP_ID=...
-VITE_FIREBASE_MEASUREMENT_ID=...
+VITE_FIREBASE_API_KEY=CHAVE_WEB_DO_FIREBASE
+VITE_FIREBASE_AUTH_DOMAIN=diligencia-8e779.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=diligencia-8e779
+VITE_FIREBASE_STORAGE_BUCKET=VALOR_DO_FIREBASE
+VITE_FIREBASE_MESSAGING_SENDER_ID=VALOR_DO_FIREBASE
+VITE_FIREBASE_APP_ID=VALOR_DO_FIREBASE
+VITE_FIREBASE_MEASUREMENT_ID=VALOR_DO_FIREBASE
 ```
 
-Use a URL do backend sem barra no final. Nao coloque `DATABASE_URL`, `FIREBASE_PRIVATE_KEY`, `CGU_API_KEY`, `DATAJUD_API_KEY` ou `BRAVE_SEARCH_API_KEY` no projeto do frontend: essas variaveis pertencem ao backend.
+Não coloque `FIREBASE_PRIVATE_KEY`, `GOOGLE_SHEETS_PRIVATE_KEY`, chaves da CGU/DataJud/Brave ou qualquer segredo no projeto do frontend. Variáveis `VITE_*` são incorporadas ao JavaScript entregue ao navegador.
 
-## Primeiro deploy
+## 4. Firebase Authentication
 
-1. Clique em **Deploy**.
-2. Ao finalizar, abra a URL `*.vercel.app`.
-3. Atualize `CORS_ALLOWED_ORIGINS` no backend com essa URL exata e reinicie/republique o backend.
-4. Adicione o mesmo dominio em **Firebase Authentication > Settings > Authorized domains**.
-5. Teste login, consulta, historico e download de PDF.
+No Firebase Console:
 
-Se alterar uma variavel na Vercel, abra **Deployments**, use o menu do ultimo deployment e clique em **Redeploy**. Variaveis alteradas nao modificam deployments antigos.
+1. Abra **Authentication > Settings > Authorized domains**.
+2. Confirme `diligencia-suape.vercel.app` — ele já aparece autorizado na configuração atual.
+3. Se adicionar domínio próprio ou URL de Preview, autorize também esse hostname.
+4. Em **Authentication > Users**, crie somente as contas que podem entrar no sistema.
 
-## Dominio proprio (opcional)
+Não existe perfil Admin/Analista/Revisor/Consulta. Toda conta Firebase autenticada recebe acesso completo.
 
-Em **Project > Settings > Domains**, adicione o dominio desejado e siga os registros DNS mostrados pela Vercel. Depois, inclua esse novo dominio tanto em `CORS_ALLOWED_ORIGINS` no backend quanto nos dominios autorizados do Firebase.
+## 5. Publicar e validar
 
-## Diagnostico rapido
+Quando você decidir enviar o código:
 
-- Tela branca com erro de Firebase: faltou alguma variavel `VITE_FIREBASE_*` ou o deployment nao foi refeito.
-- Login bloqueado: confira o dominio autorizado no Firebase.
-- Erro de rede/CORS: confira `VITE_API_BASE_URL`, HTTPS e `CORS_ALLOWED_ORIGINS` do backend.
-- Recarregar uma rota gera 404: confirme que `vercel.json` esta na raiz do repositorio.
+1. Faça o deploy/redeploy do backend.
+2. Abra `https://diligencia360-api.vercel.app/api/status`.
+3. Confirme `status: "online"`, `database.provider: "Google Sheets"` e `database.connected: true`.
+4. Faça o deploy/redeploy do frontend.
+5. Entre com uma conta criada no Firebase.
+6. Crie uma diligência curta, atualize a página e abra-a pelo histórico.
+7. Execute uma transição do workflow, ajuste o risco e gere um PDF.
+8. Confira as novas linhas nas abas `Diligencias`, `Payloads`, `Auditoria` e `Relatorios`.
+
+Alterações em variáveis de ambiente só entram em novos deployments. Depois de salvar uma variável, use **Deployments > menu do último deployment > Redeploy**.
+
+## 6. Quando remover o Neon da Vercel
+
+O código novo não lê `DATABASE_URL`. Mesmo assim, não exclua o projeto Neon imediatamente:
+
+1. Antes do primeiro deploy novo, evite criar diligências no site antigo; a cópia realizada cobre os dados existentes até 25/08/2026.
+2. Valide na planilha os 4 dossiês, 6 relatórios e 72 eventos migrados.
+3. Depois do backend novo aprovado, remova `DATABASE_URL` e qualquer integração Neon do projeto backend na Vercel.
+4. Guarde o Neon como backup somente leitura por um período definido por você.
+5. Exclua o banco apenas em uma ação separada e consciente; isso não é necessário para o site funcionar.
+
+## 7. Diagnóstico rápido
+
+- `Google Sheets API has not been used`: ative a API no Google Cloud e refaça o deploy.
+- `The caller does not have permission`: compartilhe a planilha como Editor com o `GOOGLE_SHEETS_CLIENT_EMAIL` (ou `FIREBASE_CLIENT_EMAIL`) exato.
+- `invalid_grant` ou erro PEM: recoloque a chave privada correspondente preservando `\n` e os marcadores BEGIN/END.
+- `Credencial de serviço do Google ausente`: preencha `GOOGLE_SHEETS_CLIENT_EMAIL` e `GOOGLE_SHEETS_PRIVATE_KEY` no projeto de backend.
+- Status online, mas login falha: confira o usuário no Firebase e o domínio autorizado.
+- Erro de CORS: confira `VITE_API_BASE_URL` e `CORS_ALLOWED_ORIGINS` sem barra final.
+- Variável alterada sem efeito: faça Redeploy; deployments antigos não recebem valores novos.
+- Dossiê muito grande: a Vercel aceita até 4,5 MB por request/response; o backend recusa acima de 4 MB para deixar uma margem segura. Reduza evidências muito extensas antes de salvar.
+
+Referências oficiais: [variáveis de ambiente da Vercel](https://vercel.com/docs/environment-variables/managing-environment-variables), [Node.js na Vercel](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions), [ativação da Sheets API](https://developers.google.com/workspace/sheets/api/quickstart/nodejs), [compartilhamento no Drive](https://support.google.com/drive/answer/2494822) e [domínios autorizados do Firebase](https://firebase.google.com/docs/auth/web/email-link-auth).

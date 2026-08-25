@@ -329,7 +329,7 @@ export const DecisionOverview: React.FC<DecisionOverviewProps> = ({
               size="sm"
               onClick={onEditRisk}
               disabled={diligence.persisted === false}
-              title={diligence.persisted === false ? 'A diligência precisa estar salva no PostgreSQL.' : undefined}
+              title={diligence.persisted === false ? 'A diligência precisa estar sincronizada com o Google Sheets.' : undefined}
             >
               Ajustar classificação
             </Button>

@@ -58,13 +58,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
-  const getRoleLabel = (role?: string) => {
-    if (role === 'admin') return 'Administrador';
-    if (role === 'reviewer') return 'Revisor';
-    if (role === 'viewer') return 'Consulta';
-    return 'Analista';
-  };
-
   const handleLogoToggle = () => {
     if (isMobileOpen && onCloseMobile) {
       onCloseMobile();
@@ -189,19 +182,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {historyCount > 0 && <span className="sidebar-badge">{historyCount}</span>}
               </button>
 
-              {user?.role === 'admin' && (
-                <button
-                  type="button"
-                  className={`sidebar-nav-item ${currentView === 'users' ? 'active' : ''}`}
-                  onClick={() => handleNav('users')}
-                  aria-current={currentView === 'users' ? 'page' : undefined}
-                  aria-label="Gestão de Usuários"
-                >
-                  <Icons.Users size={15} aria-hidden="true" />
-                  <span>Gestão de Usuários</span>
-                </button>
-              )}
-
               <button
                 type="button"
                 className={`sidebar-nav-item ${currentView === 'sources' ? 'active' : ''}`}
@@ -226,7 +206,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     {user.name || 'Usuário'}
                   </span>
                   <span className="sidebar-user-role">
-                    {getRoleLabel(user.role)}
+                    Acesso completo
                   </span>
                 </div>
               </div>

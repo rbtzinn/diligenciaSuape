@@ -8,15 +8,15 @@
     "dev:frontend": "vite",
     "dev:backend": "node server/index.js",
     "dev:full": "node scripts/dev-full.cjs",
-    "db:start": "node scripts/postgres-local.cjs start",
-    "db:stop": "node scripts/postgres-local.cjs stop",
-    "db:status": "node scripts/postgres-local.cjs status",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "npm --prefix server test",
     "server": "node server/index.js"
+  },
+  "engines": {
+    "node": "24.x"
   },
   "dependencies": {
     "cytoscape": "^3.34.1",
