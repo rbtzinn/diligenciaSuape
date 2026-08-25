@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node index.js",
+    "vercel-build": "prisma generate --schema prisma/schema.prisma --config prisma.config.js && prisma migrate deploy --schema prisma/schema.prisma --config prisma.config.js",
     "test": "node --test test/foundation.test.js test/egos.integration.test.js",
     "internal:suape:import": "node scripts/import-internal-suape.js"
   },

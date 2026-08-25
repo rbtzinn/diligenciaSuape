@@ -4,6 +4,7 @@
 
 const { firebaseAuth } = require('../config/firebase-admin');
 const { UserRepository } = require('../repositories/user.repository');
+const { AuthService } = require('../services/auth.service');
 const { safeFetch } = require('../utils/safeFetch');
 
 function extractBearerToken(req) {
@@ -64,20 +65,15 @@ async function resolveLocalUser(decoded) {
         lastLoginAt: new Date(),
       });
     } else {
-      try {
-        user = await UserRepository.create({
+      // Apenas o administrador inicial configurado pode ser provisionado
+      // automaticamente. Os demais usuários precisam existir previamente no
+      // cadastro interno, ainda que possuam uma conta válida no Firebase.
+      user = await AuthService.ensureInitialAdmin(email);
+      if (user) {
+        user = await UserRepository.update(user.id, {
           firebaseUid: uid,
-          name: email.split('@')[0] || 'Usuário Firebase',
-          email,
-          role: 'admin',
-          active: true,
+          lastLoginAt: new Date(),
         });
-      } catch (error) {
-        // Requisições paralelas no primeiro acesso podem disputar o mesmo
-        // cadastro. Reconsulta por identificador em vez de falhar a sessão.
-        user = await UserRepository.findByFirebaseUid(uid)
-          || await UserRepository.findByEmail(email);
-        if (!user) throw error;
       }
     }
   } else {
