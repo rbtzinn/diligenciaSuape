@@ -5,6 +5,13 @@
 import { getFirebaseIdToken } from './firebase';
 
 const TIMEOUT_MS = 15000;
+const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+
+export function resolveApiUrl(endpoint: string): string {
+  if (/^https?:\/\//i.test(endpoint)) return endpoint;
+  if (!API_BASE_URL) return endpoint;
+  return `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+}
 
 export class ApiError extends Error {
   constructor(message: string, public status?: number) {
@@ -55,7 +62,7 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
       headers['Authorization'] = `Bearer ${idToken}`;
     }
 
-    const response = await fetch(endpoint, {
+    const response = await fetch(resolveApiUrl(endpoint), {
       ...fetchOptions,
       signal: controller.signal,
       headers,

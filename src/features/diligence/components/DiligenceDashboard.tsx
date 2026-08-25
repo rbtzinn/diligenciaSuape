@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import type { AdverseMediaStatus, AdverseMediaSummary, DiligenceItem, ProcessDiscovery } from '../types';
+import React, { useMemo, useState } from 'react';
+import type { AdverseMediaStatus, AdverseMediaSummary, DiligenceItem, ProcessDiscovery, RiskAssessment } from '../types';
 import { DiligenceService } from '../services/diligence.service';
 import { DiscoveryEngine } from '../utils/discoveryEngine';
 import { DiligenceHeader } from './DiligenceHeader';
@@ -9,6 +9,7 @@ import { ImmersiveNetworkTab } from './ImmersiveNetworkTab';
 import { ShareholdersDrawer } from './ShareholdersDrawer';
 import { AdverseMediaDrawer } from './AdverseMediaDrawer';
 import { JudicialDiscoveryDrawer } from './JudicialDiscoveryDrawer';
+import { RiskOverrideModal } from './RiskOverrideModal';
 import { Icons } from '../../../components/ui/Icons';
 import { Button } from '../../../components/ui/Button';
 import { ReportService } from '../../report/services/report.service';
@@ -37,6 +38,14 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const [enrichingId, setEnrichingId] = useState<string | null>(null);
   const [workflowStatus, setWorkflowStatus] = useState(diligence.status);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [riskModalOpen, setRiskModalOpen] = useState(false);
+  const [riskSaving, setRiskSaving] = useState(false);
+  const [localRisk, setLocalRisk] = useState<{ diligenceId: string; risk: RiskAssessment } | null>(null);
+  const effectiveRisk = localRisk?.diligenceId === diligence.id ? localRisk.risk : diligence.risco;
+  const displayDiligence = useMemo(
+    () => ({ ...diligence, risco: effectiveRisk }),
+    [diligence, effectiveRisk],
+  );
 
   const setActiveTab = (tab: DashboardTab) => {
     setInternalTab(tab);
@@ -97,20 +106,33 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
     }
   };
 
+  const handleRiskOverride = async (payload: { score: number; level: string; justification: string }) => {
+    setRiskSaving(true);
+    try {
+      const risk = await DiligenceService.overrideRisk(diligence.id, payload);
+      setLocalRisk({ diligenceId: diligence.id, risk });
+      setRiskModalOpen(false);
+    } finally {
+      setRiskSaving(false);
+    }
+  };
+
   const safeFindings = Array.isArray(diligence.egos?.findings) ? diligence.egos.findings : [];
   const safeRelationships = Array.isArray(diligence.egos?.relationships) ? diligence.egos.relationships : [];
   const safeEvidences = Array.isArray(diligence.egos?.evidences) ? diligence.egos.evidences : [];
   const safeShareholders = Array.isArray(diligence.socios) ? diligence.socios : [];
   const safePepResults = Array.isArray(diligence.pepResults) ? diligence.pepResults : [];
-  const reviewCount = safeFindings.filter((finding) =>
+  const findingReviewCount = safeFindings.filter((finding) =>
     finding.status === 'REVIEW' || finding.status === 'INCONCLUSIVE'
   ).length;
+  const riskReviewCount = (effectiveRisk?.detalhes || []).filter((detail) => detail.requerRevisao).length;
+  const reviewCount = Math.max(findingReviewCount, riskReviewCount);
   const networkCount = safeRelationships.length;
   const evidenceCount = safeEvidences.length;
 
   return (
     <main className={`dossier-v3 ${activeTab === 'network' ? 'dossier-v3-network' : ''}`}>
-      {activeTab !== 'network' ? <DiligenceHeader diligence={diligence} onBack={onBack} /> : null}
+      {activeTab !== 'network' ? <DiligenceHeader diligence={displayDiligence} onBack={onBack} /> : null}
 
       <nav className="dossier-mode-nav" aria-label="Modos do dossiê">
         <div className="dossier-mode-group" role="tablist" aria-label="Visualização do dossiê">
@@ -174,13 +196,14 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
       <div className="dossier-mode-stage" role="tabpanel">
         {activeTab === 'overview' ? (
           <DecisionOverview
-            diligence={diligence}
+            diligence={displayDiligence}
             adverseMedia={adverseMedia}
             discoveries={discoveries}
             workflowStatus={workflowStatus}
             onWorkflowStatusChange={setWorkflowStatus}
             onOpenNetwork={() => setActiveTab('network')}
             onOpenEvidence={() => setActiveTab('evidence')}
+            onEditRisk={() => setRiskModalOpen(true)}
           />
         ) : null}
 
@@ -193,7 +216,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
 
         {activeTab === 'evidence' ? (
           <EvidenceWorkspace
-            diligence={diligence}
+            diligence={displayDiligence}
             discoveries={discoveries}
             adverseMedia={adverseMedia}
             onOpenShareholders={() => setActiveDrawer('shareholders')}
@@ -230,6 +253,13 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         onStatusChange={(number, status) => setDiscoveries((current) => DiscoveryEngine.updateStatus(current, number, status))}
         onEnrich={handleEnrichDiscovery}
         isEnriching={enrichingId === selectedDiscovery?.processNumber}
+      />
+      <RiskOverrideModal
+        isOpen={riskModalOpen}
+        risk={effectiveRisk}
+        isSaving={riskSaving}
+        onClose={() => setRiskModalOpen(false)}
+        onSubmit={handleRiskOverride}
       />
     </main>
   );

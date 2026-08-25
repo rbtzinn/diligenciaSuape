@@ -182,6 +182,40 @@ export interface RiskDetail {
   criterio: string;
   pontos: number;
   info: string;
+  categoria?:
+    | 'CADASTRAL'
+    | 'INTEGRIDADE'
+    | 'PESSOAS_RELACIONADAS'
+    | 'ESTRUTURA_SOCIETARIA'
+    | 'REDE_EMPRESARIAL'
+    | 'SOBREPOSICAO_OPERACIONAL'
+    | 'TRANSPARENCIA'
+    | 'MIDIA_REPUTACIONAL'
+    | 'JUDICIAL'
+    | 'OFFSHORE'
+    | 'CONTRATOS_PUBLICOS'
+    | 'GOVERNANCA'
+    | 'COBERTURA'
+    | 'DECISAO_HUMANA';
+  natureza?: 'confirmed' | 'indicator' | 'uncertainty' | 'coverage' | 'manual_override';
+  confianca?: 'alta' | 'media' | 'baixa';
+  requerRevisao?: boolean;
+  automaticScore?: number;
+  automaticLevel?: string;
+  finalScore?: number;
+  finalLevel?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+}
+
+export interface ManualRiskOverride {
+  score: number;
+  level: string;
+  reason: string;
+  automaticScore: number;
+  automaticLevel: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
 }
 
 export interface RiskClassification {
@@ -207,6 +241,9 @@ export interface RiskAssessment {
   decisaoDesc: string;
   classificacao?: RiskClassification;
   detalhes: RiskDetail[];
+  automaticScore?: number;
+  methodologyVersion?: string;
+  manualOverride?: ManualRiskOverride;
 }
 
 export interface AnalysisAlert {

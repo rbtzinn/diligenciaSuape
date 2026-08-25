@@ -300,7 +300,19 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
 
         // 7. Risco e Análise
         updateStep('risk', 'loading');
-        const risco = calculateRisk({ empresa, ceis: ceisRes, cnep: cnepRes, pepResults });
+        const risco = calculateRisk({
+          empresa,
+          ceis: ceisRes,
+          cnep: cnepRes,
+          pepResults,
+          adverseMedia: mediaRes,
+          corporateNetwork,
+          fundNetwork,
+          offshore,
+          officialGazettes,
+          discoveries: discoveredProcesses,
+          governanceHistory,
+        });
         const analise = generateAutomatedAnalysis({ empresa, ceis: ceisRes, cnep: cnepRes, pepResults, adverseMedia: mediaRes, risco });
         updateStep('risk', 'done', `${risco.score}/100 — ${risco.nivel}`);
         log(`Indicador de atenção calculado: ${risco.score}/100 — ${risco.nivel}.`);

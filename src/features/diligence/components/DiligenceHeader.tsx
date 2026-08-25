@@ -23,7 +23,13 @@ export const DiligenceHeader: React.FC<DiligenceHeaderProps> = ({ diligence, onB
   };
   const situacao = (empresa?.descricao_situacao_cadastral || 'NÃO INFORMADA').toUpperCase();
   const isActive = situacao === 'ATIVA';
-  const scoreTone = (risco.score ?? 0) > 45 ? 'high' : (risco.score ?? 0) > 15 ? 'medium' : 'low';
+  const scoreTone = (risco.score ?? 0) >= 60
+    ? 'critical'
+    : (risco.score ?? 0) >= 35
+      ? 'high'
+      : (risco.score ?? 0) >= 15
+        ? 'medium'
+        : 'low';
 
   return (
     <header className="dossier-masthead">

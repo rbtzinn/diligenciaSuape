@@ -17,6 +17,7 @@ import {
   Shareholder,
   GovernanceHistoryResult,
   FundNetworkSummary,
+  RiskAssessment,
 } from '../types';
 
 interface CompanyApiResponse {
@@ -251,6 +252,25 @@ export const DiligenceService = {
       const message = err instanceof Error ? err.message : 'Falha na reconciliação offshore';
       return { ok: false, totalQueries: 0, candidates: [], erro: message, consultadoEm: new Date().toISOString() };
     }
+  },
+
+  /**
+   * Registra a classificação final definida pelo Compliance sem apagar
+   * o cálculo automático nem as evidências que o originaram.
+   */
+  async overrideRisk(
+    diligenceId: string,
+    payload: { score: number; level: string; justification: string },
+  ): Promise<RiskAssessment> {
+    const response = await request<{ ok: boolean; data: RiskAssessment }>(
+      `/api/diligences/${encodeURIComponent(diligenceId)}/risk`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+    );
+    return response.data;
   },
 
   /**

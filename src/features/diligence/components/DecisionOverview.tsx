@@ -13,6 +13,7 @@ interface DecisionOverviewProps {
   onWorkflowStatusChange: (status: string) => void;
   onOpenNetwork: () => void;
   onOpenEvidence: () => void;
+  onEditRisk: () => void;
 }
 
 type Tone = 'positive' | 'attention' | 'critical' | 'neutral';
@@ -29,6 +30,7 @@ export const DecisionOverview: React.FC<DecisionOverviewProps> = ({
   onWorkflowStatusChange,
   onOpenNetwork,
   onOpenEvidence,
+  onEditRisk,
 }) => {
   const { empresa, ceis, cnep, pepResults, risco, egos } = diligence;
   const safePepResults = Array.isArray(pepResults) ? pepResults : [];
@@ -59,7 +61,15 @@ export const DecisionOverview: React.FC<DecisionOverviewProps> = ({
     return categories.length > 0;
   });
   const legacyPepReviews = safePepResults.filter((item) => item.encontrado).length;
-  const reviewCount = reviewFindings.length || legacyPepReviews;
+  const riskDetails = Array.isArray(risco?.detalhes) ? risco.detalhes : [];
+  const riskReviewDetails = riskDetails.filter((detail) =>
+    detail.natureza !== 'manual_override' && detail.requerRevisao
+  );
+  const reviewCount = Math.max(reviewFindings.length || legacyPepReviews, riskReviewDetails.length);
+  const riskScore = risco?.score ?? 0;
+  const automaticScore = risco?.manualOverride?.automaticScore ?? risco?.automaticScore ?? riskScore;
+  const isCriticalRisk = riskScore >= 60 || risco?.nivel === 'Atenção Crítica';
+  const isElevatedRisk = riskScore >= 35 || risco?.nivel === 'Atenção Elevada';
   const coverage = safeCoverage;
   const applicableCoverage = coverage.filter((item) => item.status !== 'NOT_APPLICABLE');
   const consultedCoverage = applicableCoverage.filter((item) =>
@@ -90,6 +100,24 @@ export const DecisionOverview: React.FC<DecisionOverviewProps> = ({
         action: 'Examinar impedimentos',
       };
     }
+    if (isCriticalRisk) {
+      return {
+        tone: 'critical' as Tone,
+        eyebrow: 'Exposição crítica',
+        title: 'Submeta a decisão ao comitê de riscos',
+        copy: 'A soma de sinais, vínculos, hipóteses e lacunas atingiu nível crítico. Isso não prova irregularidade, mas exige mitigação formal antes de avançar.',
+        action: 'Examinar sinais de risco',
+      };
+    }
+    if (isElevatedRisk) {
+      return {
+        tone: 'attention' as Tone,
+        eyebrow: 'Exposição elevada',
+        title: 'Aprofunde a diligência antes de decidir',
+        copy: 'A combinação dos sinais encontrados representa exposição relevante para o Compliance, ainda que parte deles dependa de confirmação humana.',
+        action: 'Revisar fatores de risco',
+      };
+    }
     if (reviewCount > 0) {
       const reviewCopy = reviewCount === 1
         ? '1 hipótese precisa ser confirmada ou descartada.'
@@ -118,10 +146,9 @@ export const DecisionOverview: React.FC<DecisionOverviewProps> = ({
       copy: 'Não foram encontrados impedimentos nas bases consultadas. Preserve as evidências e siga o fluxo de aprovação.',
       action: 'Abrir evidências',
     };
-  }, [activeSanctions, isActive, reviewCount, situacao, unavailableCoverage.length]);
+  }, [activeSanctions, isActive, isCriticalRisk, isElevatedRisk, reviewCount, situacao, unavailableCoverage.length]);
 
-  const attentionItems = reviewFindings.length > 0
-    ? reviewFindings.slice(0, 3).map((finding) => {
+  const egosAttentionItems = reviewFindings.map((finding) => {
         const relationship = finding.relationshipId
           ? safeRelationships.find((item) => item.id === finding.relationshipId)
           : undefined;
@@ -138,18 +165,40 @@ export const DecisionOverview: React.FC<DecisionOverviewProps> = ({
           copy: finding.explanation,
           confidence: finding.confidence,
           candidateName: candidate?.name || resolution?.candidateName,
+          tag: finding.status === 'INCONCLUSIVE' ? 'Hipótese inconclusiva' : 'Revisão necessária',
           matchBasis: matchedSignals.length > 0
             ? matchedSignals.map((signal) => `${signal.label}${signal.weight > 0 ? ` (+${signal.weight})` : ''}`).join(' · ')
             : undefined,
         };
-      })
-    : (diligence.analise?.alertas || []).slice(0, 3).map((alert) => ({
+      });
+  const riskAttentionItems = riskDetails
+    .filter((detail) => detail.natureza !== 'manual_override' && (detail.pontos > 0 || detail.requerRevisao))
+    .sort((a, b) => Math.abs(b.pontos) - Math.abs(a.pontos))
+    .map((detail) => ({
+      title: detail.criterio,
+      copy: detail.info,
+      confidence: undefined,
+      candidateName: undefined,
+      tag: detail.natureza === 'confirmed'
+        ? 'Registro confirmado'
+        : detail.natureza === 'coverage'
+          ? 'Lacuna de cobertura'
+          : detail.natureza === 'uncertainty'
+            ? 'Hipótese de risco'
+            : 'Indicador de exposição',
+      matchBasis: undefined,
+    }));
+  const fallbackAttentionItems = (diligence.analise?.alertas || []).map((alert) => ({
         title: alert.titulo,
         copy: alert.texto,
         confidence: undefined,
         candidateName: undefined,
+        tag: 'Alerta da análise',
         matchBasis: undefined,
       }));
+  const attentionItems = [...riskAttentionItems, ...egosAttentionItems, ...fallbackAttentionItems]
+    .filter((item, index, all) => all.findIndex((candidate) => candidate.title === item.title) === index)
+    .slice(0, 4);
 
   const statusItems: Array<{ label: string; value: string; detail: string; tone: Tone }> = [
     {
@@ -165,10 +214,12 @@ export const DecisionOverview: React.FC<DecisionOverviewProps> = ({
       tone: activeSanctions > 0 ? 'critical' : 'positive',
     },
     {
-      label: 'Revisão humana',
-      value: reviewCount > 0 ? plural(reviewCount, 'hipótese', 'hipóteses') : 'Sem pendência',
-      detail: 'Identidade, PEP e vínculos',
-      tone: reviewCount > 0 ? 'attention' : 'positive',
+      label: 'Exposição de risco',
+      value: risco?.nivel?.replace('Atenção ', '') || 'Baixa',
+      detail: reviewCount > 0
+        ? plural(reviewCount, 'sinal para revisar', 'sinais para revisar')
+        : `${riskScore}/100 no índice de atenção`,
+      tone: isCriticalRisk ? 'critical' : (isElevatedRisk || riskScore >= 15) ? 'attention' : 'positive',
     },
     {
       label: 'Cobertura técnica',
@@ -230,6 +281,7 @@ export const DecisionOverview: React.FC<DecisionOverviewProps> = ({
                 <article className="decision-attention-row" key={`${item.title}-${index}`}>
                   <span className="decision-attention-index">{String(index + 1).padStart(2, '0')}</span>
                   <div>
+                    {item.tag ? <span className="decision-attention-tag">{item.tag}</span> : null}
                     <h4>{item.title}</h4>
                     <p>{item.copy}</p>
                     {item.candidateName ? (
@@ -261,9 +313,35 @@ export const DecisionOverview: React.FC<DecisionOverviewProps> = ({
           )}
 
           <div className="decision-risk-note">
-            <span>Índice de atenção</span>
-            <strong>{risco?.score ?? 0}<small>/100</small></strong>
-            <p>{risco?.decisaoDesc || 'Quanto maior o índice, maior a necessidade de análise humana.'}</p>
+            <div className="decision-risk-layer">
+              <span>Radar automático</span>
+              <strong>{automaticScore}<small>/100</small></strong>
+              <p>{risco?.manualOverride?.automaticLevel || 'Exposição calculada pelas fontes'}</p>
+            </div>
+            <Icons.ArrowRight className="decision-risk-arrow" size={18} aria-hidden="true" />
+            <div className={`decision-risk-layer decision-risk-final decision-risk-final-${risco?.cor || 'low'}`}>
+              <span>Classificação final</span>
+              <strong>{riskScore}<small>/100</small></strong>
+              <p>{risco?.nivel || 'Atenção Baixa'}</p>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onEditRisk}
+              disabled={diligence.persisted === false}
+              title={diligence.persisted === false ? 'A diligência precisa estar salva no PostgreSQL.' : undefined}
+            >
+              Ajustar classificação
+            </Button>
+            <p className="decision-risk-explanation">
+              {risco?.decisaoDesc || 'Quanto maior o índice, maior a necessidade de análise humana.'}
+            </p>
+            {risco?.manualOverride ? (
+              <div className="decision-risk-override-note">
+                <Icons.CheckCircle size={15} aria-hidden="true" />
+                <span><strong>Ajuste humano registrado:</strong> {risco.manualOverride.reason}</span>
+              </div>
+            ) : null}
           </div>
         </section>
 

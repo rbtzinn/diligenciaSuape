@@ -3,7 +3,7 @@
 // ==========================================================
 
 import { getFirebaseIdToken } from '../../../lib/firebase';
-import { request } from '../../../lib/api';
+import { request, resolveApiUrl } from '../../../lib/api';
 
 export interface DiligenceReportMetadata {
   id: string;
@@ -18,7 +18,7 @@ export interface DiligenceReportMetadata {
 
 export const ReportService = {
   async downloadReport(diligenceId: string, isPreview = false): Promise<{ fileName: string; hash: string }> {
-    const url = `/api/diligences/${diligenceId}/report${isPreview ? '?preview=true' : ''}`;
+    const url = resolveApiUrl(`/api/diligences/${diligenceId}/report${isPreview ? '?preview=true' : ''}`);
     const idToken = await getFirebaseIdToken();
 
     const headers: Record<string, string> = {

@@ -51,15 +51,26 @@ function asArray(value) {
 }
 
 function getRiskPalette(score, reviewCount) {
-  if (score > 45) return { foreground: COLORS.red, background: COLORS.redSoft, border: '#F0B8B3' };
-  if (score > 15 || reviewCount > 0) return { foreground: COLORS.amber, background: COLORS.amberSoft, border: '#E9CF83' };
+  if (score >= 60) return { foreground: COLORS.red, background: COLORS.redSoft, border: '#F0B8B3' };
+  if (score >= 15 || reviewCount > 0) return { foreground: COLORS.amber, background: COLORS.amberSoft, border: '#E9CF83' };
   return { foreground: COLORS.green, background: COLORS.greenSoft, border: '#A8DDCC' };
 }
 
 function getReviewFindings(diligence) {
-  return asArray(diligence.egos?.findings)
+  const egosFindings = asArray(diligence.egos?.findings)
     .filter((finding) => ['REVIEW', 'INCONCLUSIVE'].includes(String(finding.status || '').toUpperCase()))
     .sort((a, b) => Number(b.confidence || 0) - Number(a.confidence || 0));
+  const riskFindings = asArray(diligence.risco?.detalhes)
+    .filter((detail) => detail?.natureza !== 'manual_override' && (detail?.requerRevisao || Number(detail?.pontos || 0) > 0))
+    .sort((a, b) => Math.abs(Number(b.pontos || 0)) - Math.abs(Number(a.pontos || 0)))
+    .map((detail) => ({
+      title: detail.criterio,
+      explanation: detail.info,
+      status: detail.natureza === 'confirmed' ? 'CONFIRMED' : 'REVIEW',
+      confidence: detail.confianca === 'alta' ? 100 : detail.confianca === 'media' ? 70 : 40,
+    }));
+  return [...riskFindings, ...egosFindings]
+    .filter((finding, index, all) => all.findIndex((item) => item.title === finding.title) === index);
 }
 
 function countGovernanceEntries(value) {
@@ -162,7 +173,7 @@ function drawCover(doc, diligence, reportNumber, isPreview, emittedAt) {
   const riskY = 322;
   doc.roundedRect(PAGE.left, riskY, PAGE.contentWidth, 101, 13).fillAndStroke(COLORS.navySoft, '#31536F');
   doc.fillColor('#AFC5DA').font('Courier-Bold').fontSize(6.5)
-    .text('ÍNDICE PRELIMINAR DE ATENÇÃO', PAGE.left + 18, riskY + 17, { characterSpacing: 0.5 });
+    .text('CLASSIFICAÇÃO FINAL DE RISCO', PAGE.left + 18, riskY + 17, { characterSpacing: 0.5 });
   doc.fillColor(COLORS.white).font('Helvetica-Bold').fontSize(28)
     .text(String(Number(risk.score || 0)), PAGE.left + 18, riskY + 36, { width: 70 });
   doc.fillColor('#91A8BF').font('Helvetica').fontSize(8).text('/ 100', PAGE.left + 55, riskY + 52, { width: 45 });
@@ -170,10 +181,18 @@ function drawCover(doc, diligence, reportNumber, isPreview, emittedAt) {
   doc.strokeColor('#31536F').lineWidth(0.7).moveTo(PAGE.left + 230, riskY + 18).lineTo(PAGE.left + 230, riskY + 82).stroke();
   doc.fillColor('#AFC5DA').font('Courier-Bold').fontSize(6.5)
     .text('LEITURA PARA DECISÃO', PAGE.left + 250, riskY + 18, { characterSpacing: 0.5 });
+  const decisionHeadline = Number(risk.score || 0) >= 60
+    ? 'Submeter ao comitê de riscos'
+    : Number(risk.score || 0) >= 35
+      ? 'Aprofundar antes da decisão'
+      : reviewCount > 0
+        ? 'Avance somente após a revisão humana'
+        : 'Monitoramento ordinário com risco residual';
   doc.fillColor(COLORS.white).font('Helvetica-Bold').fontSize(11)
-    .text(reviewCount > 0 ? 'Avance somente após a revisão humana' : 'Sem impedimento confirmado nas fontes consultadas', PAGE.left + 250, riskY + 37, { width: 217, lineGap: 2 });
+    .text(decisionHeadline, PAGE.left + 250, riskY + 37, { width: 217, lineGap: 2 });
+  const automaticScore = Number(risk.manualOverride?.automaticScore ?? risk.automaticScore ?? risk.score ?? 0);
   doc.fillColor('#AFC5DA').font('Helvetica').fontSize(7.2)
-    .text(`${reviewCount} hipótese(s) ou lacuna(s) exigem decisão registrada.`, PAGE.left + 250, riskY + 69, { width: 217 });
+    .text(`${reviewCount} sinal(is) exigem decisão registrada. Radar automático: ${automaticScore}/100.`, PAGE.left + 250, riskY + 69, { width: 217 });
 
   const metaY = 510;
   doc.fillColor(COLORS.navy).font('Helvetica-Bold').fontSize(13).text('Controle e rastreabilidade', PAGE.left, metaY, { width: PAGE.contentWidth });
@@ -215,8 +234,8 @@ function drawExecutivePage(doc, diligence) {
   y = drawCallout(doc, {
     y,
     palette: riskPalette,
-    title: findings.length > 0 ? 'Prosseguir somente após a revisão humana' : cleanText(risk.decisao, 'Prosseguir para as demais etapas'),
-    body: cleanText(risk.decisaoDesc || risk.decisao, findings.length > 0 ? `${findings.length} hipótese(s) precisam ser confirmadas ou descartadas antes da decisão.` : 'Nenhum impedimento confirmado foi localizado nas fontes consultadas até o momento.'),
+    title: cleanText(risk.decisao, findings.length > 0 ? 'Prosseguir somente após a revisão humana' : 'Prosseguir para as demais etapas'),
+    body: cleanText(risk.decisaoDesc || risk.decisao, findings.length > 0 ? `${findings.length} sinal(is), hipótese(s) ou lacuna(s) precisam de tratamento antes da decisão.` : 'Nenhum impedimento confirmado foi localizado nas fontes consultadas até o momento.'),
     minHeight: 84,
   }) + 14;
 

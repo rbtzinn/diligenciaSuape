@@ -25,6 +25,7 @@ interface SaveDiligenceResponse {
   persisted?: boolean;
   aviso?: string;
   egos?: DiligenceItem['egos'];
+  risco?: DiligenceItem['risco'];
 }
 
 export const HistoryStorage = {
@@ -56,6 +57,7 @@ export const HistoryStorage = {
     let isPersisted = false;
     let persistenceNotice: string | undefined;
     let egosResult = item.egos;
+    let riskResult = item.risco;
 
     try {
       const res = await request<SaveDiligenceResponse>('/api/diligences', {
@@ -65,6 +67,7 @@ export const HistoryStorage = {
       if (res && res.persisted) {
         isPersisted = true;
         egosResult = res.egos || item.egos;
+        riskResult = res.risco || item.risco;
       } else {
         persistenceNotice = res.aviso || 'Banco de dados PostgreSQL indisponível. Dossiê salvo em rascunho local.';
       }
@@ -75,6 +78,7 @@ export const HistoryStorage = {
     const itemWithStatus: DiligenceItem = {
       ...item,
       egos: egosResult,
+      risco: riskResult,
       persisted: isPersisted,
       avisoPersistencia: persistenceNotice,
     };

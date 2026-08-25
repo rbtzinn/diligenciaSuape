@@ -5,6 +5,7 @@
 const { getPrismaClient } = require('../config/database');
 const { DiligenceMappers } = require('./diligence-mappers');
 const { EgosService } = require('../egos/core/egos.service');
+const { applyEgosOverlay } = require('../services/risk-assessment.service');
 const crypto = require('crypto');
 
 const memoryDiligences = new Map();
@@ -50,6 +51,11 @@ const DiligenceRepository = {
                 } : null,
                 governanceHistory: data.governanceHistory || null,
                 fundNetwork: data.fundNetwork || null,
+                corporateNetwork: data.corporateNetwork || null,
+                officialGazettes: data.officialGazettes || null,
+                offshore: data.offshore || null,
+                processDiscoveryExecuted: data.processDiscoveryExecuted === true,
+                processDiscoverySources: Array.isArray(data.processDiscoverySources) ? data.processDiscoverySources : [],
                 questionnaireVersion: 'SUAPE-2026.2',
               },
             },
@@ -129,7 +135,7 @@ const DiligenceRepository = {
               level: data.risco.nivel,
               decision: data.risco.decisao,
               decisionDesc: data.risco.decisaoDesc,
-              methodologyVersion: 'v1.0',
+              methodologyVersion: data.risco.methodologyVersion || 'v2.0-exposure',
               breakdown: data.risco.detalhes || [],
             },
           });
@@ -150,8 +156,39 @@ const DiligenceRepository = {
 
         // 4. EGOS — normalização canônica, relações, evidências e cobertura
         const egos = await EgosService.buildAndPersist(tx, diligenceId, data);
+        const finalRisk = applyEgosOverlay(data.risco, egos);
 
-        return { ...diligence, egos, persisted: true };
+        await tx.diligence.update({
+          where: { id: diligenceId },
+          data: {
+            preliminaryScore: finalRisk.score,
+            preliminaryLevel: finalRisk.nivel,
+            recommendation: finalRisk.decisao,
+            summary: finalRisk.decisaoDesc,
+          },
+        });
+        await tx.riskAssessment.updateMany({
+          where: { diligenceId },
+          data: {
+            score: finalRisk.score,
+            level: finalRisk.nivel,
+            decision: finalRisk.decisao,
+            decisionDesc: finalRisk.decisaoDesc,
+            methodologyVersion: finalRisk.methodologyVersion || 'v2.0-exposure-egos',
+            breakdown: finalRisk.detalhes || [],
+          },
+        });
+
+        return {
+          ...diligence,
+          preliminaryScore: finalRisk.score,
+          preliminaryLevel: finalRisk.nivel,
+          recommendation: finalRisk.decisao,
+          summary: finalRisk.decisaoDesc,
+          risco: finalRisk,
+          egos,
+          persisted: true,
+        };
       });
     }
 

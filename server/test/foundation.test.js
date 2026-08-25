@@ -10,6 +10,47 @@ const { adaptCgu } = require('../src/egos/adapters/cgu.adapter');
 const { adaptExternalResults } = require('../src/egos/adapters/external-results.adapter');
 const { aggregateGovernanceRecords } = require('../src/services/cvm-governance.service');
 const { DiligenceMappers } = require('../src/repositories/diligence-mappers');
+const {
+  applyEgosOverlay,
+  classifyRisk,
+  decisionForManualLevel,
+  isScoreWithinLevel,
+} = require('../src/services/risk-assessment.service');
+
+test('classifica exposição nas novas faixas conservadoras', () => {
+  assert.equal(classifyRisk(14).nivel, 'Atenção Baixa');
+  assert.equal(classifyRisk(15).nivel, 'Atenção Moderada');
+  assert.equal(classifyRisk(35).nivel, 'Atenção Elevada');
+  assert.equal(classifyRisk(60).nivel, 'Atenção Crítica');
+});
+
+test('classificação humana preserva coerência entre faixa e pontuação', () => {
+  assert.equal(isScoreWithinLevel('Atenção Elevada', 47), true);
+  assert.equal(isScoreWithinLevel('Atenção Elevada', 12), false);
+  const adjusted = decisionForManualLevel('Atenção Crítica', 75, 'Convergência de sinais reputacionais e societários.');
+  assert.equal(adjusted.nivel, 'Atenção Crítica');
+  assert.equal(adjusted.score, 75);
+  assert.match(adjusted.decisaoDesc, /Convergência de sinais/);
+});
+
+test('hipótese interna SUAPE aumenta a exposição sem declarar irregularidade', () => {
+  const adjusted = applyEgosOverlay(
+    {
+      ...classifyRisk(28),
+      automaticScore: 28,
+      methodologyVersion: 'v2.0-exposure',
+      detalhes: [],
+    },
+    {
+      findings: [{ axis: 'INTERNAL_SUAPE', status: 'INCONCLUSIVE', severity: 'HIGH' }],
+    },
+  );
+
+  assert.equal(adjusted.score, 43);
+  assert.equal(adjusted.nivel, 'Atenção Elevada');
+  assert.equal(adjusted.detalhes[0].natureza, 'uncertainty');
+  assert.match(adjusted.detalhes[0].info, /hipótese/);
+});
 
 test('gera IDs próprios para a mesma publicação em diligências diferentes', () => {
   const media = { results: [{ id: 'provider-result-1', title: 'Publicação', url: 'https://example.test/item' }] };

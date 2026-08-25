@@ -26,6 +26,7 @@ const DiligenceHistoryService = {
       cnpj: company.cnpj,
       persisted: saved.persisted !== false,
       egos: saved.egos,
+      risco: saved.risco,
       aviso: saved.aviso || undefined,
       savedAt: saved.createdAt || new Date(),
     };
@@ -168,6 +169,15 @@ const DiligenceHistoryService = {
     });
     const companyMediaResults = formattedMediaResults.filter((item) => item.subjectType !== 'person').length;
     const personMediaResults = formattedMediaResults.filter((item) => item.subjectType === 'person').length;
+    const riskBreakdown = Array.isArray(raw.riskAssessment?.breakdown) ? raw.riskAssessment.breakdown : [];
+    const manualRiskDetail = riskBreakdown.find((item) => item?.natureza === 'manual_override');
+    const riskColor = raw.preliminaryLevel === 'Atenção Crítica'
+      ? 'critical'
+      : raw.preliminaryLevel === 'Atenção Elevada'
+        ? 'high'
+        : raw.preliminaryLevel === 'Atenção Moderada'
+          ? 'medium'
+          : 'low';
 
     return {
       id: raw.id,
@@ -186,6 +196,9 @@ const DiligenceHistoryService = {
       socios: formattedSocios,
       governanceHistory: diligenceMeta.governanceHistory || undefined,
       fundNetwork: diligenceMeta.fundNetwork || undefined,
+      corporateNetwork: diligenceMeta.corporateNetwork || undefined,
+      officialGazettes: diligenceMeta.officialGazettes || undefined,
+      offshore: diligenceMeta.offshore || undefined,
       ceis: {
         ok: true,
         fonte: 'CGU / CEIS',
@@ -206,6 +219,10 @@ const DiligenceHistoryService = {
       },
       pepResults: Array.from(pepMap.values()),
       processosDescobertos: formattedDiscoveries,
+      processDiscoveryExecuted: diligenceMeta.processDiscoveryExecuted === true,
+      processDiscoverySources: Array.isArray(diligenceMeta.processDiscoverySources)
+        ? diligenceMeta.processDiscoverySources
+        : [],
       adverseMedia: {
         ok: mediaCoverage ? mediaCoverage.status === 'CONSULTED' || mediaCoverage.status === 'PARTIAL' : true,
         semChave: mediaCoverage?.status === 'UNAVAILABLE' || undefined,
@@ -232,11 +249,22 @@ const DiligenceHistoryService = {
       risco: {
         score: raw.preliminaryScore,
         nivel: raw.preliminaryLevel,
-        cor: raw.preliminaryScore > 45 ? 'critical' : raw.preliminaryScore > 15 ? 'medium' : 'low',
+        cor: riskColor,
         emoji: '',
         decisao: raw.recommendation,
         decisaoDesc: raw.summary || '',
-        detalhes: raw.riskAssessment?.breakdown || [],
+        automaticScore: Number(manualRiskDetail?.automaticScore ?? raw.preliminaryScore),
+        methodologyVersion: raw.riskAssessment?.methodologyVersion || 'v2.0-exposure',
+        detalhes: riskBreakdown,
+        manualOverride: manualRiskDetail ? {
+          score: Number(manualRiskDetail.finalScore ?? raw.preliminaryScore),
+          level: String(manualRiskDetail.finalLevel || raw.preliminaryLevel),
+          reason: String(manualRiskDetail.info || ''),
+          automaticScore: Number(manualRiskDetail.automaticScore ?? raw.preliminaryScore),
+          automaticLevel: String(manualRiskDetail.automaticLevel || raw.preliminaryLevel),
+          reviewedBy: manualRiskDetail.reviewedBy || undefined,
+          reviewedAt: manualRiskDetail.reviewedAt || undefined,
+        } : undefined,
       },
       timeline: (raw.auditEvents || []).map((e) => ({
         time: e.createdAt.toISOString(),
@@ -264,6 +292,10 @@ const DiligenceHistoryService = {
 
   async recordReview(reviewData) {
     return await ReviewRepository.recordReview(reviewData);
+  },
+
+  async overrideRisk(riskData) {
+    return await ReviewRepository.overrideRisk(riskData);
   },
 
   async deleteDiligence(id) {

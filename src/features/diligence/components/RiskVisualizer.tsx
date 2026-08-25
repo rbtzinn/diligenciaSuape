@@ -44,6 +44,14 @@ export const RiskVisualizer: React.FC<RiskVisualizerProps> = ({
     { label: 'Processos na Justiça', status: procsCount > 0 ? `${procsCount} candidato(s)` : 'Não consultado', variant: procsCount > 0 ? 'warning' : 'neutral' },
   ];
   const consultedCount = coverageItems.filter((item) => item.status === 'Concluído' || item.variant === 'warning' || item.variant === 'critical').length;
+  const natureLabels = {
+    confirmed: 'Registro confirmado',
+    indicator: 'Indicador de exposição',
+    uncertainty: 'Hipótese / incerteza',
+    coverage: 'Lacuna de cobertura',
+    manual_override: 'Decisão humana',
+  } as const;
+  const automaticScore = risco.manualOverride?.automaticScore ?? risco.automaticScore ?? risco.score ?? 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
@@ -53,67 +61,59 @@ export const RiskVisualizer: React.FC<RiskVisualizerProps> = ({
         icon={<Icons.BarChart size={16} />}
         action={
           <span className="badge badge-neutral" style={{ fontSize: '11px', fontWeight: 700 }}>
-            Nota: {risco?.score || 0}/100
+            Final: {risco?.score || 0}/100
           </span>
         }
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-          <div className="section-subtitle" style={{ fontSize: '12px', color: '#64748B', marginBottom: '0.2rem' }}>
-            Cada fator abaixo contribuiu para a nota final de risco
+          <div className="risk-visualizer-intro">
+            <div>
+              <span>Cálculo automático</span>
+              <strong>{automaticScore}<small>/100</small></strong>
+            </div>
+            <Icons.ArrowRight size={16} aria-hidden="true" />
+            <div className="risk-visualizer-final">
+              <span>Classificação final</span>
+              <strong>{risco.score}<small>/100</small></strong>
+            </div>
+            <p>Os fatores medem exposição e necessidade de análise. Hipóteses não equivalem a irregularidade confirmada.</p>
           </div>
 
           {!risco?.detalhes || risco.detalhes.length === 0 ? (
             <div className="clean-state-block">
-              <Icons.Check size={16} />
-              <span>Nenhum fator de risco identificado. Nota zero de atenção.</span>
+              <Icons.Info size={16} />
+              <span>Nenhum sinal foi pontuado nesta execução. Ainda existe risco residual conforme a cobertura e a atualidade das fontes.</span>
             </div>
           ) : (
             risco.detalhes.map((dt, idx) => (
               <div
                 key={idx}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.35rem',
-                  padding: '0.65rem 0.85rem',
-                  backgroundColor: '#F8FAFC',
-                  borderRadius: '8px',
-                  border: '1px solid #E2E8F0',
-                }}
+                className={`risk-factor-row risk-factor-${dt.natureza || 'indicator'}`}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
-                  <span style={{ color: '#0F172A', fontWeight: 650, fontSize: '13px', lineHeight: 1.3 }}>
-                    {dt.criterio}
-                  </span>
+                <div className="risk-factor-heading">
+                  <div>
+                    <span className="risk-factor-nature">{natureLabels[dt.natureza || 'indicator']}</span>
+                    <strong>{dt.criterio}</strong>
+                  </div>
                   <span
                     className="font-mono"
-                    style={{
-                      color: dt.pontos > 0 ? '#DC2626' : '#64748B',
-                      fontWeight: 750,
-                      fontSize: '12.5px',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                    }}
                   >
-                    {dt.pontos > 0 ? `+${dt.pontos} pontos` : '0 pontos'}
+                    {dt.pontos > 0 ? `+${dt.pontos}` : dt.pontos < 0 ? `${dt.pontos}` : '0'} pontos
                   </span>
                 </div>
 
-                {dt.pontos > 0 && (
-                  <div style={{ width: '100%', height: '5px', backgroundColor: '#E2E8F0', borderRadius: '9999px', overflow: 'hidden' }}>
+                {dt.pontos !== 0 && (
+                  <div className="risk-factor-track">
                     <div
                       style={{
-                        width: `${Math.min((dt.pontos / 50) * 100, 100)}%`,
-                        height: '100%',
-                        backgroundColor: dt.pontos >= 30 ? '#DC2626' : dt.pontos >= 15 ? '#F59E0B' : '#0066FF',
-                        borderRadius: '9999px',
-                        transition: 'width 0.6s ease',
+                        width: `${Math.min((Math.abs(dt.pontos) / 30) * 100, 100)}%`,
                       }}
                     />
                   </div>
                 )}
 
-                <span style={{ fontSize: '11.5px', color: '#64748B' }}>{dt.info}</span>
+                <p>{dt.info}</p>
+                {dt.requerRevisao ? <span className="risk-factor-review"><Icons.AlertCircle size={13} />Requer validação humana</span> : null}
               </div>
             ))
           )}

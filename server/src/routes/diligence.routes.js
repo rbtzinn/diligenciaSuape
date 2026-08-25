@@ -5,6 +5,7 @@
 const express = require('express');
 const { DiligenceHistoryService } = require('../services/diligence-history.service');
 const { authenticate, authorize } = require('../middlewares/auth.middleware');
+const { isScoreWithinLevel } = require('../services/risk-assessment.service');
 
 const router = express.Router();
 
@@ -94,6 +95,41 @@ router.post('/:id/reviews', authorize(['admin', 'analyst', 'reviewer']), async (
     return res.status(201).json({ ok: true, data: review });
   } catch (err) {
     console.error('[DiligenceRoutes] Erro ao registrar revisão:', err.message);
+    return res.status(500).json({ ok: false, erro: err.message });
+  }
+});
+
+router.patch('/:id/risk', authorize(['admin', 'analyst', 'reviewer']), async (req, res) => {
+  try {
+    const score = Number(req.body?.score);
+    const level = String(req.body?.level || '').trim();
+    const justification = String(req.body?.justification || '').trim();
+    const allowedLevels = new Set(['Atenção Baixa', 'Atenção Moderada', 'Atenção Elevada', 'Atenção Crítica']);
+
+    if (!Number.isFinite(score) || score < 0 || score > 100) {
+      return res.status(400).json({ ok: false, erro: 'Informe uma pontuação entre 0 e 100.' });
+    }
+    if (!allowedLevels.has(level)) {
+      return res.status(400).json({ ok: false, erro: 'Selecione um nível de risco válido.' });
+    }
+    if (!isScoreWithinLevel(level, score)) {
+      return res.status(400).json({ ok: false, erro: 'A pontuação informada não pertence à faixa do nível selecionado.' });
+    }
+    if (justification.length < 10) {
+      return res.status(400).json({ ok: false, erro: 'Registre uma justificativa objetiva com pelo menos 10 caracteres.' });
+    }
+
+    const risk = await DiligenceHistoryService.overrideRisk({
+      diligenceId: req.params.id,
+      userId: req.user?.id,
+      score,
+      level,
+      justification,
+      reviewedBy: req.user?.name || 'Auditor Compliance SUAPE',
+    });
+    return res.json({ ok: true, data: risk });
+  } catch (err) {
+    console.error('[DiligenceRoutes] Erro ao ajustar risco:', err.message);
     return res.status(500).json({ ok: false, erro: err.message });
   }
 });
