@@ -26,7 +26,7 @@ const UserService = {
     let firebaseUid = null;
 
     // Se senha foi informada e Firebase Admin estiver disponível, provisiona no Firebase
-    if (password && password.length >= 6) {
+    if (password && password.length >= 6 && firebaseAuth) {
       try {
         const fbRecord = await firebaseAuth.createUser({
           email: cleanEmail,

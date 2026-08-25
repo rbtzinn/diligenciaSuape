@@ -17,37 +17,41 @@ function extractBearerToken(req) {
 
 async function verifyFirebaseToken(token) {
   try {
-    return await firebaseAuth.verifyIdToken(token);
-  } catch (err) {
-    // Em desenvolvimento sem credencial Admin, valida o ID token no próprio
-    // Firebase Identity Toolkit. Nunca confia em payload JWT apenas decodificado.
-    const apiKey = process.env.FIREBASE_WEB_API_KEY || process.env.VITE_FIREBASE_API_KEY;
-    if (!apiKey) return null;
-
-    try {
-      const response = await safeFetch(
-        `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idToken: token }),
-        }
-      );
-
-      if (!response.ok) return null;
-      const payload = await response.json();
-      const identity = Array.isArray(payload.users) ? payload.users[0] : null;
-      if (!identity?.localId || !identity?.email) return null;
-
-      return {
-        uid: identity.localId,
-        sub: identity.localId,
-        email: identity.email,
-        email_verified: identity.emailVerified === true,
-      };
-    } catch {
-      return null;
+    if (firebaseAuth) {
+      return await firebaseAuth.verifyIdToken(token);
     }
+  } catch (err) {
+    // Continua no fallback abaixo quando a credencial Admin não está disponível.
+  }
+
+  // Em desenvolvimento ou no modo degradado, valida o ID token no próprio
+  // Firebase Identity Toolkit. Nunca confia em payload JWT apenas decodificado.
+  const apiKey = process.env.FIREBASE_WEB_API_KEY || process.env.VITE_FIREBASE_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    const response = await safeFetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: token }),
+      }
+    );
+
+    if (!response.ok) return null;
+    const payload = await response.json();
+    const identity = Array.isArray(payload.users) ? payload.users[0] : null;
+    if (!identity?.localId || !identity?.email) return null;
+
+    return {
+      uid: identity.localId,
+      sub: identity.localId,
+      email: identity.email,
+      email_verified: identity.emailVerified === true,
+    };
+  } catch {
+    return null;
   }
 }
 
