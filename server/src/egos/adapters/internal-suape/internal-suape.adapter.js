@@ -58,6 +58,9 @@ async function adaptInternalSuape(builder, context, prisma, organization = 'SUAP
           organization,
           employmentType: affiliation.employmentType || null,
           referencePeriod: affiliation.referencePeriod || source.dataset.referencePeriod || null,
+          sourceSheet: affiliation.sourceSheet || null,
+          datasetSourceName: source.dataset.sourceName,
+          recordType: 'functional_registry',
           internal: true,
         },
       });
@@ -69,7 +72,12 @@ async function adaptInternalSuape(builder, context, prisma, organization = 'SUAP
         label: 'Possui vínculo institucional registrado',
         status: 'CONFIRMED',
         confidence: 100,
-        properties: { employmentType: affiliation.employmentType || null, referencePeriod: affiliation.referencePeriod || null },
+        properties: {
+          employmentType: affiliation.employmentType || null,
+          referencePeriod: affiliation.referencePeriod || null,
+          provider: 'INTERNAL_SUAPE',
+          datasetSourceName: source.dataset.sourceName,
+        },
       });
       builder.addEvidence({
         entityKey: internalKey,
@@ -91,7 +99,14 @@ async function adaptInternalSuape(builder, context, prisma, organization = 'SUAP
         label: resolution.score >= 70 ? 'Provável correspondência interna' : 'Possível correspondência interna',
         status: resolution.score >= 90 ? 'PROBABLE' : 'CANDIDATE',
         confidence: resolution.score,
-        properties: { requiresHumanReview: true },
+        properties: {
+          requiresHumanReview: true,
+          identityConfirmed: false,
+          provider: 'EGOS_ENTITY_RESOLUTION',
+          searchedName: networkPerson.name,
+          candidateName: internalPerson.name,
+          matchScore: resolution.score,
+        },
       });
       builder.addEvidence({
         relationshipKey: identityRelationshipKey,
@@ -101,7 +116,16 @@ async function adaptInternalSuape(builder, context, prisma, organization = 'SUAP
         identifier: stableHash(networkPerson.name, internalPerson.employeeKey),
         excerpt: `Comparação explicável: ${resolution.signals.map((signal) => signal.label).join('; ')}. A correspondência não significa conflito de interesse.`,
         confidence: resolution.score,
-        rawReference: { signals: resolution.signals.map((signal) => ({ code: signal.code, matched: signal.matched, weight: signal.weight })) },
+        rawReference: {
+          signals: resolution.signals.map((signal) => ({
+            code: signal.code,
+            label: signal.label,
+            matched: signal.matched,
+            weight: signal.weight,
+            detail: signal.detail,
+          })),
+          privacy: 'minimized',
+        },
         retrievedAt: new Date(),
       });
       builder.addResolution({
@@ -118,7 +142,7 @@ async function adaptInternalSuape(builder, context, prisma, organization = 'SUAP
         status: resolution.score >= 70 ? 'REVIEW' : 'INCONCLUSIVE',
         severity: resolution.score >= 90 ? 'MEDIUM' : 'LOW',
         title: 'Possível vínculo institucional relevante',
-        explanation: `A rede empresarial possui uma correspondência interna com ${resolution.score}% de confiança. Isso não caracteriza irregularidade ou conflito e requer revisão humana.`,
+        explanation: `A rede empresarial possui índice de compatibilidade ${resolution.score}/100 com um registro funcional interno (${resolution.signals.map((signal) => `${signal.label}: ${signal.detail}`).join('; ')}). Isso não é probabilidade, não prova identidade, parentesco, irregularidade ou conflito e requer revisão humana.`,
         confidence: resolution.score,
       });
     }

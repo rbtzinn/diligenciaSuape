@@ -15,6 +15,8 @@ import {
   CorporateNetworkSummary,
   OffshoreSummary,
   Shareholder,
+  GovernanceHistoryResult,
+  FundNetworkSummary,
 } from '../types';
 
 interface CompanyApiResponse {
@@ -49,6 +51,57 @@ export const DiligenceService = {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Falha na expansão societária';
       return { ok: false, companies: [], relationships: [], erro: message, consultadoEm: new Date().toISOString() };
+    }
+  },
+
+  async getGovernanceHistory(params: {
+    cnpj: string;
+    legalNature?: string;
+  }): Promise<GovernanceHistoryResult> {
+    const cleaned = CNPJ.clean(params.cnpj);
+    try {
+      return await request<GovernanceHistoryResult>('/api/empresa/governance-history', {
+        method: 'POST',
+        body: JSON.stringify({ cnpj: cleaned, legalNature: params.legalNature }),
+        timeoutMs: 150_000,
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Falha na consulta histórica de governança';
+      const currentYear = new Date().getFullYear();
+      const years = Array.from({ length: 5 }, (_, index) => currentYear - 4 + index);
+      return {
+        ok: false,
+        applicable: true,
+        provider: 'CVM — Formulário de Referência (FRE)',
+        years,
+        members: [],
+        coverage: years.map((year) => ({ year, status: 'unavailable' })),
+        coverageStatus: 'unavailable',
+        erro: message,
+        aviso: 'Não foi possível completar a consulta dos cinco exercícios nesta execução.',
+      };
+    }
+  },
+
+  async getFundNetwork(cnpj: string): Promise<FundNetworkSummary> {
+    const cleaned = CNPJ.clean(cnpj);
+    try {
+      return await request<FundNetworkSummary>('/api/empresa/fund-network', {
+        method: 'POST',
+        body: JSON.stringify({ cnpj: cleaned }),
+        timeoutMs: 150_000,
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Falha no mapeamento regulatório do fundo';
+      return {
+        ok: false,
+        applicable: true,
+        provider: 'CVM — Cadastro de Fundos',
+        entities: [],
+        relationships: [],
+        evidences: [],
+        erro: message,
+      };
     }
   },
 
@@ -137,6 +190,7 @@ export const DiligenceService = {
     cnpj: string;
     razaoSocial: string;
     nomeFantasia?: string;
+    shareholders?: Shareholder[];
   }): Promise<AdverseMediaSummary> {
     try {
       return await request<AdverseMediaSummary>('/api/adverse-media/search', {
@@ -153,7 +207,13 @@ export const DiligenceService = {
         strongMatches: 0,
         mediumMatches: 0,
         weakMatches: 0,
+        companyResultsCount: 0,
+        personResultsCount: 0,
+        peopleSearched: 0,
+        peopleWithCandidates: 0,
+        personSearchCompleted: false,
         results: [],
+        subjects: [],
         aviso: message,
         consultadoEm: new Date().toISOString(),
       };

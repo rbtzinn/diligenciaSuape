@@ -190,24 +190,39 @@ const CguService = {
       return { ok: false, semChave: true, nome, encontrado: false, quantidade: 0, registros: [], aviso: 'Integração CGU não configurada.' };
     }
 
+    let pagina = 1;
+    let registros = [];
+    let consultaParcial = false;
+
     try {
-      const r = await safeFetch(
-        `https://api.portaldatransparencia.gov.br/api-de-dados/peps?nome=${encodeURIComponent(nome)}&pagina=1`,
-        { headers: { 'chave-api-dados': CGU_API_KEY, Accept: 'application/json' } }
-      );
+      while (pagina <= MAX_PAGES_SAFETY) {
+        const r = await safeFetch(
+          `https://api.portaldatransparencia.gov.br/api-de-dados/peps?nome=${encodeURIComponent(nome)}&pagina=${pagina}`,
+          { headers: { 'chave-api-dados': CGU_API_KEY, Accept: 'application/json' } }
+        );
 
-      if (!r.ok) throw new Error(`CGU retornou HTTP ${r.status}`);
+        if (!r.ok) throw new Error(`CGU retornou HTTP ${r.status}`);
 
-      const data = await r.json();
-      const registros = (Array.isArray(data) ? data : []).map((x) => ({
-        nome: (x.nome || '').trim(),
-        cpf: x.cpf || '',
-        funcao: (x.descricao_funcao || x.funcao || '').trim(),
-        orgao: (x.nome_orgao || x.orgaoExercicio || '').trim(),
-        inicio: x.dt_inicio_exercicio || x.dataInicioExercicio || '',
-        fim: x.dt_fim_exercicio || x.dataFimExercicio || '',
-        carencia: x.dt_fim_carencia || x.dataFimCarencia || '',
-      }));
+        const data = await r.json();
+        if (!Array.isArray(data) || data.length === 0) break;
+
+        registros = registros.concat(data.map((x) => ({
+          nome: (x.nome || '').trim(),
+          cpf: x.cpf || '',
+          siglaFuncao: (x.sigla_funcao || x.siglaFuncao || '').trim(),
+          funcao: (x.descricao_funcao || x.descricaoFuncao || x.funcao || '').trim(),
+          nivelFuncao: (x.nivel_funcao || x.nivelFuncao || '').trim(),
+          codigoOrgao: x.cod_orgao || x.codigoOrgao || '',
+          orgao: (x.nome_orgao || x.nomeOrgao || x.orgaoExercicio || '').trim(),
+          inicio: x.dt_inicio_exercicio || x.dataInicioExercicio || '',
+          fim: x.dt_fim_exercicio || x.dataFimExercicio || '',
+          carencia: x.dt_fim_carencia || x.dataFimCarencia || '',
+        })));
+
+        if (data.length < 15) break;
+        if (pagina === MAX_PAGES_SAFETY) consultaParcial = true;
+        pagina += 1;
+      }
 
       return {
         ok: true,
@@ -216,6 +231,8 @@ const CguService = {
         nome,
         encontrado: registros.length > 0,
         quantidade: registros.length,
+        consultaParcial,
+        aviso: consultaParcial ? 'Consulta parcial — existem candidatos adicionais não carregados.' : undefined,
         registros,
       };
     } catch (e) {

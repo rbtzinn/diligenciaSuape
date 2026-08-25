@@ -59,7 +59,11 @@ export const ChatDiligenceView: React.FC<ChatDiligenceViewProps> = ({
   return (
     <div className={`chat-workspace ${hasConversation ? 'has-conversation' : ''}`}>
       {!hasConversation && (
-        <ChatWelcomeHeader onSelectSample={handleSubmit} />
+        <ChatWelcomeHeader
+          onSearch={handleSubmit}
+          onOpenContentExtractor={() => setIsAnalyzerOpen(true)}
+          isLoading={isLoading}
+        />
       )}
 
       {hasConversation && (
@@ -79,7 +83,9 @@ export const ChatDiligenceView: React.FC<ChatDiligenceViewProps> = ({
               <span style={{ fontSize: '14px', fontWeight: 'bold' }}>✳</span>
             </div>
             <div className="chat-assistant-content">
-              {isLoading && <ChatProgressStream steps={steps} />}
+              {(isLoading || (steps && steps.length > 0)) && (
+                <ChatProgressStream steps={steps} />
+              )}
 
               {error && (
                 <div
@@ -108,8 +114,8 @@ export const ChatDiligenceView: React.FC<ChatDiligenceViewProps> = ({
         </div>
       )}
 
-      {/* Caixa de Prompt Fixada na Base ou Centro */}
-      <div style={{ width: '100%', marginTop: hasConversation ? 'auto' : '0' }}>
+      {/* Caixa de Prompt Fixada na Base */}
+      <div style={{ width: '100%', maxWidth: '800px', margin: 'auto auto 0 auto', paddingBottom: '1rem' }}>
         <ChatPromptBox
           value={promptValue}
           onChange={setPromptValue}
@@ -127,6 +133,10 @@ export const ChatDiligenceView: React.FC<ChatDiligenceViewProps> = ({
             onClose={() => setActiveDrawer(null)}
             socios={currentDiligence.socios || []}
             pepResults={currentDiligence.pepResults || []}
+            sourceName={currentDiligence.companySource}
+            consultedAt={currentDiligence.companyConsultedAt || currentDiligence.dataAnalise}
+            legalNature={currentDiligence.empresa.natureza_juridica}
+            governanceHistory={currentDiligence.governanceHistory}
           />
           <SanctionsDrawer
             isOpen={activeDrawer === 'sanctions'}

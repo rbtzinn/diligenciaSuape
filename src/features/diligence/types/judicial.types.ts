@@ -86,6 +86,8 @@ export interface DiscoverySource {
   url?: string;
   consultedAt: string;
   excerpt?: string;
+  subjectType?: 'company' | 'person';
+  subjectName?: string;
 }
 
 export type DiscoveryStatus =

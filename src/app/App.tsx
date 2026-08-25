@@ -9,7 +9,7 @@ import { useAuth } from '../features/auth/context/AuthContext';
 import { LoginView } from '../features/auth/components/LoginView';
 import { AppShell } from '../components/layout/AppShell';
 import { ChatDiligenceView } from '../features/chat/components/ChatDiligenceView';
-import { DiligenceDashboard } from '../features/diligence/components/DiligenceDashboard';
+import { DiligenceDashboard, type DashboardTab } from '../features/diligence/components/DiligenceDashboard';
 import { HistoryView } from '../features/history/components/HistoryView';
 import { DataSourcesView } from '../features/sources/components/DataSourcesView';
 import { UserManagementView } from '../features/users/components/UserManagementView';
@@ -19,6 +19,7 @@ import { HistoryStorage } from '../features/history/services/history.storage';
 export const App: React.FC = () => {
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [currentView, setCurrentView] = useState<ViewType>('chat');
+  const [activeDashboardTab, setActiveDashboardTab] = useState<DashboardTab>('overview');
   const [selectedDiligence, setSelectedDiligence] = useState<DiligenceItem | null>(null);
   const [historyCount, setHistoryCount] = useState<number>(0);
 
@@ -45,21 +46,23 @@ export const App: React.FC = () => {
     setSelectedDiligence(newDiligence);
   });
 
-  const handleOpenDashboard = (diligence: DiligenceItem) => {
+  const handleOpenDashboard = (diligence: DiligenceItem, defaultTab: DashboardTab = 'overview') => {
     setSelectedDiligence(diligence);
+    setActiveDashboardTab(defaultTab);
     setCurrentView('dashboard');
   };
 
   const handleNewSearch = () => {
     resetDiligence();
     setSelectedDiligence(null);
+    setActiveDashboardTab('overview');
     setCurrentView('chat');
   };
 
   if (isAuthLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-app)', color: 'var(--text-tertiary)' }}>
-        Carregando Diligência 360...
+        Carregando Diligência 360…
       </div>
     );
   }
@@ -67,6 +70,8 @@ export const App: React.FC = () => {
   if (!isAuthenticated) {
     return <LoginView />;
   }
+
+  const isDarkMode = currentView === 'dashboard' && activeDashboardTab === 'network';
 
   const renderContent = () => {
     switch (currentView) {
@@ -87,6 +92,8 @@ export const App: React.FC = () => {
           <DiligenceDashboard
             diligence={selectedDiligence}
             onBack={handleNewSearch}
+            activeTab={activeDashboardTab}
+            onTabChange={setActiveDashboardTab}
           />
         );
 
@@ -146,6 +153,8 @@ export const App: React.FC = () => {
         setCurrentView(view);
       }}
       historyCount={historyCount}
+      onSelectRecent={(item) => handleOpenDashboard(item)}
+      isDarkMode={isDarkMode}
     >
       {renderContent()}
     </AppShell>

@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
       ...(!dbHealth.connected ? { message: 'Persistência permanente indisponível.' } : {}),
     },
     cguConfigurada: CguService.isConfigured(),
-    buscaWebConfigurada: !!process.env.BRAVE_SEARCH_API_KEY,
+    buscaWebConfigurada: true,
     datajudConfigurada: DatajudService.isConfigured(),
     internalSuape,
     versao: '2.0.0-modular',

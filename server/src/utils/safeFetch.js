@@ -5,16 +5,17 @@
 const TIMEOUT_MS = 15000;
 
 async function safeFetch(url, opts = {}) {
+  const { timeoutMs = TIMEOUT_MS, ...fetchOptions } = opts;
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
 
   const headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Diligencia360-SUAPE/2.0',
-    ...(opts.headers || {}),
+    ...(fetchOptions.headers || {}),
   };
 
   try {
-    const res = await fetch(url, { ...opts, headers, signal: ctrl.signal });
+    const res = await fetch(url, { ...fetchOptions, headers, signal: ctrl.signal });
     clearTimeout(timer);
     return res;
   } catch (e) {

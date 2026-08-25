@@ -38,4 +38,7 @@ if (require.main === module) {
   });
 }
 
-module.exports = { startServer };
+// A Vercel executa o Express como uma Function e precisa receber a instância
+// da aplicação. A propriedade startServer mantém o uso local e os testes.
+module.exports = app;
+module.exports.startServer = startServer;

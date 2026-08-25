@@ -8,6 +8,10 @@ export type AdverseMediaMatchStrength = 'high' | 'medium' | 'low';
 
 export type AdverseMediaStatus = 'candidate' | 'validated' | 'discarded';
 
+export type AdverseMediaSubjectType = 'company' | 'person';
+
+export type AdverseMediaIdentityStatus = 'documented-entity' | 'supported' | 'contextual' | 'unverified';
+
 export interface AdverseMediaResult {
   id: string;
   title: string;
@@ -24,6 +28,19 @@ export interface AdverseMediaResult {
     tradeName: boolean;
     cnpj: boolean;
   };
+  personMatch?: {
+    fullName: boolean;
+    maskedCpf: boolean;
+    companyContext: boolean;
+    nameTokenCoverage: number;
+  };
+  subjectType?: AdverseMediaSubjectType;
+  subjectName?: string;
+  subjectQualification?: string;
+  subjectDocument?: string;
+  questionnaireRefs?: string[];
+  identityStatus?: AdverseMediaIdentityStatus;
+  requiresHumanReview?: boolean;
   processNumbers?: ExtractedCNJ[];
   status: AdverseMediaStatus;
   searchedAt: string;
@@ -31,9 +48,23 @@ export interface AdverseMediaResult {
 
 export interface AdverseMediaQueryLog {
   query: string;
+  subjectType?: AdverseMediaSubjectType;
+  subjectName?: string;
   ok: boolean;
+  status?: number;
   count: number;
+  provider?: string;
   erro?: string;
+}
+
+export interface AdverseMediaSubjectSummary {
+  name: string;
+  qualification?: string;
+  searched: boolean;
+  queryCount: number;
+  candidatesCount: number;
+  strongMatches: number;
+  exactNameCandidates: number;
 }
 
 export interface AdverseMediaSummary {
@@ -44,9 +75,19 @@ export interface AdverseMediaSummary {
   strongMatches: number;
   mediumMatches: number;
   weakMatches: number;
+  companyResultsCount?: number;
+  personResultsCount?: number;
+  peopleRequested?: number;
+  peopleSearched?: number;
+  peopleWithCandidates?: number;
+  personSearchCompleted?: boolean;
+  personSearchTruncated?: boolean;
+  consultaParcial?: boolean;
+  cached?: boolean;
   semChave?: boolean;
   aviso?: string;
   results: AdverseMediaResult[];
+  subjects?: AdverseMediaSubjectSummary[];
   queriesExecuted?: AdverseMediaQueryLog[];
   consultadoEm: string;
 }

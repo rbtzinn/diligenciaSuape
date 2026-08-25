@@ -1,6 +1,7 @@
 # Diligência 360
 node_modules/
 server/node_modules/
+server/.cache/
 dist/
 server/.env
 server/.env.local
@@ -17,4 +18,6 @@ scratch/
 marcas_temp/
 skillsrbt/
 questionnaire_output.txt
-
+.codex/
+output/
+tmp/

@@ -58,15 +58,28 @@ function comparePerson(source, candidate) {
   let hasStrongIdentifier = false;
   const sourceCpf = normalizeIdentifier(source.maskedCpf);
   const candidateCpf = normalizeIdentifier(candidate.maskedCpf);
-  if (sourceCpf && candidateCpf && sourceCpf.length >= 8 && sourceCpf === candidateCpf) {
-    score += 30;
-    hasStrongIdentifier = true;
+  if (sourceCpf && candidateCpf && sourceCpf.length >= 8 && candidateCpf.length >= 8) {
+    const cpfMatches = sourceCpf === candidateCpf;
+    if (cpfMatches) {
+      score += 30;
+      hasStrongIdentifier = true;
+    }
     signals.push({
       code: 'MASKED_CPF',
-      label: 'CPF mascarado coincidente',
-      matched: true,
-      weight: 30,
-      detail: 'Identificador mascarado compatível nas duas fontes',
+      label: cpfMatches ? 'CPF mascarado coincidente' : 'CPF mascarado divergente',
+      matched: cpfMatches,
+      weight: cpfMatches ? 30 : 0,
+      detail: cpfMatches
+        ? 'Identificador mascarado compatível nas duas fontes'
+        : 'Os identificadores mascarados disponíveis não coincidem',
+    });
+  } else {
+    signals.push({
+      code: 'MASKED_CPF',
+      label: 'CPF não comparável',
+      matched: false,
+      weight: 0,
+      detail: 'O CPF mascarado não estava disponível nas duas fontes',
     });
   }
 
@@ -91,7 +104,9 @@ function comparePerson(source, candidate) {
     score,
     status: classify(score),
     signals,
-    requiresHumanReview: score >= 40 && score < 90,
+    // Mesmo uma combinação nominal + CPF mascarado não substitui a validação
+    // documental da identidade da pessoa.
+    requiresHumanReview: score >= 40,
   };
 }
 

@@ -1,5 +1,6 @@
 // ==========================================================
 // DILIGÊNCIA 360 — Card de Resposta Executiva Integrado ao Chat
+// Design Moderno, Corporativo e Refinado
 // ==========================================================
 
 import React, { useState } from 'react';
@@ -29,6 +30,8 @@ export const ChatDiligenceResultCard: React.FC<ChatDiligenceResultCardProps> = (
 
   const mediaCount = adverseMedia?.results?.length ?? (adverseMedia?.totalFound ?? 0);
   const sanctionsCount = (ceis?.registros?.length || 0) + (cnep?.registros?.length || 0);
+  const sociosCount = socios?.length || 0;
+  const judicialCount = processosDescobertos?.length || 0;
 
   const handleDownloadPdf = async () => {
     setIsDownloading(true);
@@ -43,105 +46,120 @@ export const ChatDiligenceResultCard: React.FC<ChatDiligenceResultCardProps> = (
     }
   };
 
+  const isAtiva = (empresa?.descricao_situacao_cadastral || 'ATIVA').toUpperCase().includes('ATIVA');
+
   return (
-    <div
-      style={{
-        backgroundColor: 'var(--bg-surface)',
-        border: '1px solid var(--border-default)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '1.25rem',
-        boxShadow: '0 4px 16px -2px rgba(0,0,0,0.05)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '1rem',
-      }}
-      className="animate-fade-in-up"
-    >
-      {/* Topo da Resposta */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div>
-          <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>
+    <div className="diligence-result-card animate-fade-in-up">
+      {/* Topo do Card: Nome da Empresa, CNPJ e Scores */}
+      <div className="diligence-card-header">
+        <div className="diligence-company-info">
+          <h2 className="diligence-company-title">
             {diligence.razaoSocial}
           </h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-            <span className="font-mono">{diligence.cnpjFmt}</span>
-            <span>•</span>
-            <span>{empresa?.descricao_situacao_cadastral || 'Ativa'}</span>
-            <span>•</span>
-            <span>{empresa?.municipio || 'Recife'}/{empresa?.uf || 'PE'}</span>
-          </div>
-        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.35rem 0.75rem',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'var(--bg-surface-subtle)',
-              border: '1px solid var(--border-default)',
-            }}
-          >
-            <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-muted)' }}>Score:</span>
-            <span className="font-mono" style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-bold)' }}>
-              {safeScore}/100
+          <div className="diligence-meta-row">
+            <span className="diligence-cnpj-badge font-mono">{diligence.cnpjFmt}</span>
+            <span className="diligence-meta-dot">•</span>
+            <span className={`diligence-status-pill ${isAtiva ? 'active' : 'inactive'}`}>
+              <span className="diligence-status-dot" />
+              {empresa?.descricao_situacao_cadastral || 'ATIVA'}
+            </span>
+            <span className="diligence-meta-dot">•</span>
+            <span className="diligence-location">
+              {empresa?.municipio || 'Recife'}/{empresa?.uf || 'PE'}
             </span>
           </div>
-          <Badge variant={safeCor}>{safeLevel}</Badge>
+        </div>
+
+        {/* Badges de Score e Nível de Risco */}
+        <div className="diligence-score-box">
+          <div className="diligence-score-pill">
+            <span className="diligence-score-label">Score:</span>
+            <span className="diligence-score-val font-mono">{safeScore}/100</span>
+          </div>
+          <Badge variant={safeCor} className="diligence-level-badge">{safeLevel}</Badge>
         </div>
       </div>
 
-      {/* Parecer Preliminar */}
-      <div
-        style={{
-          padding: '0.75rem 1rem',
-          backgroundColor: 'var(--bg-surface-subtle)',
-          borderRadius: 'var(--radius-md)',
-          fontSize: 'var(--text-xs)',
-          color: 'var(--text-secondary)',
-          lineHeight: 1.45,
-          border: '1px solid var(--border-subtle)',
-        }}
-      >
-        <span style={{ fontWeight: 'var(--font-semibold)', color: 'var(--text-primary)' }}>
-          Recomendação de Integridade:{' '}
-        </span>
-        <span>{risco?.decisao || 'Conforme'} — {risco?.decisaoDesc || 'Nenhum impedimento preliminar vigente.'}</span>
+      {/* Parecer / Recomendação de Integridade */}
+      <div className="diligence-recommendation-box">
+        <div className="diligence-recommendation-icon">
+          {safeScore > 50 ? (
+            <Icons.AlertTriangle size={16} />
+          ) : (
+            <Icons.ShieldCheck size={16} />
+          )}
+        </div>
+        <div className="diligence-recommendation-text">
+          <strong>Recomendação de Integridade:</strong>{' '}
+          <span>{risco?.decisao || 'Prosseguir para as Demais Etapas'} — {risco?.decisaoDesc || 'Nenhum impedimento identificado nas fontes consultadas até o momento. Prosseguir para as demais etapas da diligência.'}</span>
+        </div>
       </div>
 
-      {/* Botões de Gavetas Rápidas */}
-      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-        <button type="button" className="claude-chip" onClick={() => onOpenDrawer('qsa')}>
-          <Icons.Users size={13} />
-          <span>QSA & Sócios ({socios?.length || 0})</span>
+      {/* Chips de Acesso Rápido às Gavetas de Evidências */}
+      <div className="diligence-chips-grid">
+        <button
+          type="button"
+          className="claude-chip chip-qsa"
+          onClick={() => onOpenDrawer('qsa')}
+          title="Ver Quadro Societário e Sócios"
+        >
+          <div className="chip-icon-box">
+            <Icons.Users size={14} />
+          </div>
+          <span className="chip-title">QSA & Sócios</span>
+          <span className="chip-counter">{sociosCount}</span>
         </button>
 
-        <button type="button" className="claude-chip" onClick={() => onOpenDrawer('sanctions')}>
-          <Icons.Shield size={13} />
-          <span>CEIS/CNEP ({sanctionsCount})</span>
+        <button
+          type="button"
+          className="claude-chip chip-sanctions"
+          onClick={() => onOpenDrawer('sanctions')}
+          title="Ver Sanções Administrativas CEIS/CNEP"
+        >
+          <div className="chip-icon-box">
+            <Icons.ShieldAlert size={14} />
+          </div>
+          <span className="chip-title">CEIS/CNEP</span>
+          <span className="chip-counter">{sanctionsCount}</span>
         </button>
 
-        <button type="button" className="claude-chip" onClick={() => onOpenDrawer('media')}>
-          <Icons.Search size={13} />
-          <span>Mídia Adversa ({mediaCount})</span>
+        <button
+          type="button"
+          className="claude-chip chip-media"
+          onClick={() => onOpenDrawer('media')}
+          title="Ver ocorrências públicas da empresa e das pessoas"
+        >
+          <div className="chip-icon-box">
+            <Icons.Search size={14} />
+          </div>
+          <span className="chip-title">Ocorrências Públicas</span>
+          <span className="chip-counter">{mediaCount}</span>
         </button>
 
-        <button type="button" className="claude-chip" onClick={() => onOpenDrawer('judicial')}>
-          <Icons.Scale size={13} />
-          <span>Processos DataJud ({processosDescobertos?.length || 0})</span>
+        <button
+          type="button"
+          className="claude-chip chip-judicial"
+          onClick={() => onOpenDrawer('judicial')}
+          title="Ver Processos Judiciais no DataJud"
+        >
+          <div className="chip-icon-box">
+            <Icons.Scale size={14} />
+          </div>
+          <span className="chip-title">Processos DataJud</span>
+          <span className="chip-counter">{judicialCount}</span>
         </button>
       </div>
 
-      {/* Barra de Ações */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', flexWrap: 'wrap', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.75rem' }}>
+      {/* Barra de Ações Inferior */}
+      <div className="diligence-card-footer">
         <Button
           variant="secondary"
           size="sm"
           onClick={handleDownloadPdf}
           isLoading={isDownloading}
           icon={<Icons.FileText size={14} />}
+          className="diligence-btn-secondary"
         >
           {diligence.status === 'completed' ? 'Baixar Dossiê PDF' : 'Prévia em PDF'}
         </Button>
@@ -151,6 +169,7 @@ export const ChatDiligenceResultCard: React.FC<ChatDiligenceResultCardProps> = (
           size="sm"
           onClick={() => onOpenDashboard(diligence)}
           icon={<Icons.ArrowRight size={14} />}
+          className="diligence-btn-primary"
         >
           Abrir Ficha Completa
         </Button>

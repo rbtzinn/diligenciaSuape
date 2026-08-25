@@ -70,7 +70,9 @@ export const ExecutiveKpiBar: React.FC<ExecutiveKpiBarProps> = ({
   const cnepVigentes = cnep?.vigentes ?? (cnep?.encontrado ? cnep.quantidade : 0);
   const cnepTotal = cnep?.encontrado ? cnep.quantidade : 0;
   const mediaTotal = adverseMedia?.totalFound || 0;
-  const mediaStrong = adverseMedia?.strongMatches || 0;
+  const mediaReviewCount = adverseMedia?.results.filter((item) => (
+    item.status !== 'discarded' && (item.matchStrength === 'high' || item.matchStrength === 'medium')
+  )).length || 0;
   const procsTotal = discoveries.length;
   const pepUnavailable = pepResults.length > 0 && pepResults.some((item) => item.semChave || !item.ok);
   const ceisUnavailable = !ceis || ceis.semChave || !ceis.ok;
@@ -85,7 +87,7 @@ export const ExecutiveKpiBar: React.FC<ExecutiveKpiBarProps> = ({
       <KpiCard label="Impedimentos" explanation="Cadastro de empresas impedidas (CEIS)" value={ceisUnavailable ? 'Indisponível' : ceisVigentes > 0 ? `${ceisVigentes} ativos` : ceisTotal > 0 ? `${ceisTotal} expirados` : 'Nenhum ativo'} tone={ceisUnavailable ? 'neutral' : ceisVigentes > 0 ? 'critical' : ceisTotal > 0 ? 'warning' : 'success'} icon={<Icons.ShieldAlert size={21} />} onClick={onOpenCeis} />
       <KpiCard label="Punições oficiais" explanation="Cadastro de empresas punidas (CNEP)" value={cnepUnavailable ? 'Indisponível' : cnepVigentes > 0 ? `${cnepVigentes} ativas` : cnepTotal > 0 ? `${cnepTotal} expiradas` : 'Nenhuma ativa'} tone={cnepUnavailable ? 'neutral' : cnepVigentes > 0 ? 'critical' : cnepTotal > 0 ? 'warning' : 'success'} icon={<Icons.Scale size={21} />} onClick={onOpenCnep} />
       <KpiCard label="Processos judiciais" explanation="Descoberta de números processuais associados" value={procsTotal > 0 ? `${procsTotal} candidatos` : 'Não pesquisado'} tone={procsTotal > 0 ? 'warning' : 'neutral'} icon={<Icons.FileText size={21} />} onClick={onOpenJudicial} />
-      <KpiCard label="Notícias na internet" explanation="Resultados que podem exigir conferência" value={mediaUnavailable ? 'Indisponível' : mediaStrong > 0 ? `${mediaStrong} relevantes` : mediaTotal > 0 ? `${mediaTotal} para analisar` : 'Nada encontrado'} tone={mediaUnavailable ? 'neutral' : mediaStrong > 0 ? 'critical' : mediaTotal > 0 ? 'warning' : 'success'} icon={<Icons.Globe size={21} />} onClick={onOpenMedia} />
+      <KpiCard label="Ocorrências públicas" explanation="Empresa e pessoas pesquisadas separadamente" value={mediaUnavailable ? 'Indisponível' : mediaReviewCount > 0 ? `${mediaReviewCount} para revisar` : mediaTotal > 0 ? `${mediaTotal} para analisar` : 'Nada encontrado'} tone={mediaUnavailable ? 'neutral' : mediaReviewCount > 0 || mediaTotal > 0 ? 'warning' : 'success'} icon={<Icons.Globe size={21} />} onClick={onOpenMedia} />
     </div>
   );
 };

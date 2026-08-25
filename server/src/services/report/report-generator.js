@@ -5,7 +5,6 @@
 const PDFDocument = require('pdfkit');
 const crypto = require('crypto');
 const { ReportSections } = require('./report-sections');
-const { formatDateTime } = require('./report-formatter');
 
 const ReportGenerator = {
   async generateBuffer(diligence, reportNumber, isPreview = false) {
@@ -13,12 +12,14 @@ const ReportGenerator = {
       try {
         const doc = new PDFDocument({
           size: 'A4',
-          margins: { top: 40, bottom: 45, left: 40, right: 40 },
+          margins: { top: 0, bottom: 0, left: 0, right: 0 },
           bufferPages: true,
+          autoFirstPage: true,
           info: {
             Title: `Dossiê Executivo - ${reportNumber}`,
             Author: 'Complexo Portuário de Suape • Diligência 360',
             Subject: `Diligência de Integridade - ${diligence.razaoSocial}`,
+            Keywords: 'SUAPE, compliance, diligência, integridade, terceiros',
           },
         });
 
@@ -31,39 +32,14 @@ const ReportGenerator = {
         });
         doc.on('error', (err) => reject(err));
 
-        // 1. Capa e Cabeçalho Institucional
-        ReportSections.renderCoverAndHeader(doc, diligence, reportNumber, isPreview);
+        const emittedAt = new Date().toISOString();
+        ReportSections.renderReport(doc, diligence, reportNumber, { isPreview, emittedAt });
 
-        // 2. Identificação da Empresa
-        ReportSections.renderCompanyInfo(doc, diligence);
-
-        // 3. Resumo Executivo & Conclusão
-        ReportSections.renderExecutiveSummary(doc, diligence);
-
-        // 4. Cobertura da Diligência
-        ReportSections.renderCoverageTable(doc, diligence);
-
-        // 5. Responsáveis Registrados no Sistema
-        ReportSections.renderResponsibilities(doc, diligence);
-
-        // 6. Numeração de Páginas e Rodapés Dinâmicos
+        // Numeração, registro e data de emissão em todas as páginas.
         const range = doc.bufferedPageRange();
         for (let i = range.start; i < range.start + range.count; i++) {
           doc.switchToPage(i);
-          const pageNum = i + 1;
-          const totalPages = range.count;
-
-          doc.strokeColor('#E2E8F0').lineWidth(0.5).moveTo(40, 795).lineTo(555, 795).stroke();
-
-          doc.fillColor('#64748B').fontSize(7.5).font('Helvetica')
-            .text(
-              `Diligência 360 • Reg: ${reportNumber} • Emitido em: ${formatDateTime(new Date().toISOString())}`,
-              40,
-              802,
-              { width: 400 }
-            );
-
-          doc.text(`Página ${pageNum} de ${totalPages}`, 455, 802, { width: 100, align: 'right' });
+          ReportSections.renderPageFooter(doc, i + 1, range.count, reportNumber, emittedAt);
         }
 
         doc.end();

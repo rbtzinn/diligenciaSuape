@@ -5,7 +5,8 @@
 
 const { safeFetch } = require('../utils/safeFetch');
 
-const DATAJUD_API_KEY = process.env.DATAJUD_API_KEY || '';
+const DEFAULT_DATAJUD_KEY = 'cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw==';
+const getDatajudKey = () => process.env.DATAJUD_API_KEY || DEFAULT_DATAJUD_KEY;
 
 const BASE_URL = 'https://api-publica.datajud.cnj.jus.br';
 
@@ -100,7 +101,7 @@ const DatajudService = {
   formatCNJNumber,
   validateCNJNumber,
   isConfigured() {
-    return !!DATAJUD_API_KEY;
+    return !!getDatajudKey();
   },
 
   async consultarProcesso(rawNumero) {
@@ -114,7 +115,8 @@ const DatajudService = {
       };
     }
 
-    if (!DATAJUD_API_KEY) {
+    const key = getDatajudKey();
+    if (!key) {
       return {
         ok: false,
         status: 503,
@@ -138,7 +140,7 @@ const DatajudService = {
       const response = await safeFetch(`${BASE_URL}/${tribunalInfo.alias}/_search`, {
         method: 'POST',
         headers: {
-          Authorization: `APIKey ${DATAJUD_API_KEY}`,
+          Authorization: `APIKey ${key}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

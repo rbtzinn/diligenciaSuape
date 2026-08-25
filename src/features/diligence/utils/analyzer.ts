@@ -75,13 +75,29 @@ export function generateAutomatedAnalysis({ empresa, ceis, cnep, pepResults, adv
     });
   });
 
-  // Alertas Mídia Adversa (Correspondência Forte)
-  if (adverseMedia && adverseMedia.strongMatches > 0) {
+  // Ocorrências públicas: empresa e pessoas são avaliadas separadamente.
+  const companyMediaCandidates = adverseMedia?.results.filter((item) => (
+    item.subjectType !== 'person' && (item.matchStrength === 'high' || item.matchStrength === 'medium')
+  )).length || 0;
+  const personMediaCandidates = adverseMedia?.results.filter((item) => (
+    item.subjectType === 'person'
+    && item.personMatch?.fullName
+    && (item.matchStrength === 'high' || item.matchStrength === 'medium')
+  )).length || 0;
+  if (companyMediaCandidates > 0) {
     alertas.push({
       tipo: 'medium',
-      titulo: 'Ocorrência Pública Potencialmente Relevante na Web',
-      texto: `Foram identificadas ${adverseMedia.strongMatches} notícia(s) ou publicação(ões) com correspondência forte da empresa nos termos pesquisados.`,
-      acao: 'Realizar análise qualitativa do teor das matérias no painel de Mídia Adversa.',
+      titulo: 'Conteúdo público associado à empresa',
+      texto: `Foram identificadas ${companyMediaCandidates} publicação(ões) com razão social, nome fantasia ou CNPJ correlacionado(s).`,
+      acao: 'Ler o conteúdo, confirmar a fonte e qualificar o fato antes de registrar qualquer conclusão.',
+    });
+  }
+  if (personMediaCandidates > 0) {
+    alertas.push({
+      tipo: 'medium',
+      titulo: 'Conteúdo público associado ao nome de integrante',
+      texto: `${personMediaCandidates} publicação(ões) mencionam o nome completo de pessoa(s) do QSA em buscas com termos criminais ou de integridade.`,
+      acao: 'Validar identidade, CPF, processo e teor. A coincidência nominal não confirma crime, investigação ou condenação.',
     });
   }
 
@@ -103,11 +119,11 @@ export function generateAutomatedAnalysis({ empresa, ceis, cnep, pepResults, adv
   resumo.push(`Quadro Societário: ${socios.length} integrante(s)`);
   resumo.push(`CEIS: ${formatSanctionsSummary(ceis)}`);
   resumo.push(`CNEP: ${formatSanctionsSummary(cnep)}`);
-  resumo.push(`Mídia Adversa: ${
+  resumo.push(`Ocorrências públicas: ${
     !adverseMedia || adverseMedia.semChave || !adverseMedia.ok
       ? 'Indisponível — integração não configurada ou fonte indisponível'
       : adverseMedia.results.length
-        ? `${adverseMedia.results.length} ocorrência(s)`
+        ? `${adverseMedia.companyResultsCount ?? 0} da empresa; ${adverseMedia.personResultsCount ?? 0} nominal(is) de pessoas`
         : 'Sem ocorrências nas fontes consultadas'
   }`);
   resumo.push(`Indicador de Atenção Preliminar: ${risco.score}/100 (${risco.nivel})`);

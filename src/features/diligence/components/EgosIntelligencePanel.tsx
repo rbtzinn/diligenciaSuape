@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { Icons } from '../../../components/ui/Icons';
-import { EgosCoverageItem, EgosFinding, EgosSnapshot } from '../types';
+import type { EgosCoverageItem, EgosEntity, EgosFinding, EgosResolution, EgosSnapshot } from '../types';
 import { EgosGraphExplorer } from './EgosGraphExplorer';
 import { EgosReviewService } from '../services/egos-review.service';
 
 interface EgosIntelligencePanelProps {
   egos?: EgosSnapshot;
   diligenceId: string;
+  showGraph?: boolean;
 }
 
 const AXIS_LABELS: Record<string, string> = {
   CADASTRO: 'Cadastro empresarial',
   QSA: 'Quadro societário',
+  QSA_HISTORY: 'Histórico de diretores e sócios',
   CEIS: 'Sanções CEIS',
   CNEP: 'Sanções CNEP',
   PEP: 'Pessoas expostas politicamente',
@@ -22,6 +24,7 @@ const AXIS_LABELS: Record<string, string> = {
   OFFSHORE: 'Relações offshore',
   INTERNAL_SUAPE: 'Vínculo institucional SUAPE',
   CORPORATE_EXPANSION: 'Expansão societária',
+  FUND_RELATIONSHIPS: 'Gestor, administrador e prestadores do fundo',
   ENTITY_RESOLUTION: 'Resolução de identidade',
   RELATIONSHIPS: 'Rede de relacionamentos',
 };
@@ -42,13 +45,133 @@ const FINDING_LABELS: Record<EgosFinding['status'], string> = {
 };
 
 function findEvidence(egos: EgosSnapshot, finding: EgosFinding) {
-  return egos.evidences.find((item) => (
+  return (egos.evidences || []).find((item) => (
     (finding.relationshipId && item.relationshipId === finding.relationshipId)
     || (finding.entityId && item.entityId === finding.entityId)
   ));
 }
 
-export const EgosIntelligencePanel: React.FC<EgosIntelligencePanelProps> = ({ egos, diligenceId }) => {
+function textProperty(entity: EgosEntity | undefined, key: string) {
+  const value = entity?.properties?.[key];
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function maskedCpf(entity: EgosEntity | undefined) {
+  const property = textProperty(entity, 'maskedCpf');
+  if (property) return property;
+  const identifier = entity?.identifiers?.find((item) => (
+    (item.identifierType || item.type || '').toUpperCase() === 'MASKED_CPF'
+  ));
+  return identifier?.value || null;
+}
+
+function employmentLabel(value: string | null) {
+  const labels: Record<string, string> = {
+    employee: 'Empregado(a)',
+    commissioned: 'Comissionado(a)',
+    seconded: 'Cedido(a)',
+    board_administration: 'Conselho de Administração',
+    board_fiscal: 'Conselho Fiscal',
+    audit_committee: 'Comitê de Auditoria',
+    institutional_member: 'Vínculo institucional',
+  };
+  return value ? labels[value] || value.replace(/_/g, ' ') : null;
+}
+
+interface FindingMatchContext {
+  resolution: EgosResolution;
+  source?: EgosEntity;
+  candidate?: EgosEntity;
+  office?: EgosEntity;
+  isPep: boolean;
+}
+
+function matchContextForFinding(egos: EgosSnapshot, finding: EgosFinding): FindingMatchContext | null {
+  if (!finding.relationshipId) return null;
+  const relationships = Array.isArray(egos.relationships) ? egos.relationships : [];
+  const resolutions = Array.isArray(egos.resolutions) ? egos.resolutions : [];
+  const entities = Array.isArray(egos.entities) ? egos.entities : [];
+  const relationship = relationships.find((item) => item.id === finding.relationshipId);
+  if (!relationship || relationship.type !== 'POSSIBLE_IDENTITY_MATCH') return null;
+  const resolution = resolutions.find((item) => (
+    (item.sourceEntityId === relationship.sourceEntityId && item.candidateEntityId === relationship.targetEntityId)
+    || (item.sourceEntityId === relationship.targetEntityId && item.candidateEntityId === relationship.sourceEntityId)
+  ));
+  if (!resolution) return null;
+
+  const source = entities.find((item) => item.id === resolution.sourceEntityId);
+  const candidate = entities.find((item) => item.id === resolution.candidateEntityId);
+  const officeRelationship = relationships.find((item) => (
+    item.type === 'HOLDS_PUBLIC_OFFICE'
+    && (item.sourceEntityId === candidate?.id || item.targetEntityId === candidate?.id)
+  ));
+  const officeId = officeRelationship
+    ? (officeRelationship.sourceEntityId === candidate?.id ? officeRelationship.targetEntityId : officeRelationship.sourceEntityId)
+    : null;
+  const office = officeId ? entities.find((item) => item.id === officeId) : undefined;
+  const isPep = candidate?.role === 'pep_candidate'
+    || textProperty(candidate, 'source') === 'CGU_PEP'
+    || Boolean(office);
+
+  return { resolution, source, candidate, office, isPep };
+}
+
+const IdentityMatchDetail: React.FC<{ context: FindingMatchContext }> = ({ context }) => {
+  const { resolution, source, candidate, office, isPep } = context;
+  const role = textProperty(candidate, 'publicRole') || textProperty(office, 'role');
+  const organization = textProperty(candidate, 'publicOrganization') || textProperty(office, 'organization');
+  const startsAt = textProperty(candidate, 'publicServiceStart') || textProperty(office, 'startsAt');
+  const endsAt = textProperty(candidate, 'publicServiceEnd') || textProperty(office, 'endsAt');
+  const employmentType = employmentLabel(textProperty(candidate, 'employmentType'));
+  const referencePeriod = textProperty(candidate, 'referencePeriod');
+  const sourceSheet = textProperty(candidate, 'sourceSheet');
+  const signals = Array.isArray(resolution.signals) ? resolution.signals : [];
+
+  return (
+    <div className="egos-match-detail">
+      <div className="egos-match-detail-head">
+        <div>
+          <span>{isPep ? 'Candidato exato retornado pela CGU' : 'Registro funcional comparado'}</span>
+          <strong>{candidate?.name || resolution.candidateName || 'Candidato sem nome informado'}</strong>
+        </div>
+        <b>{resolution.score}<small>/100</small></b>
+      </div>
+
+      <div className="egos-match-identity-pair">
+        <div><small>Nome pesquisado</small><strong>{source?.name || resolution.sourceName || 'Não informado'}</strong></div>
+        <Icons.ArrowRight size={14} aria-hidden="true" />
+        <div><small>Registro encontrado</small><strong>{candidate?.name || resolution.candidateName || 'Não informado'}</strong></div>
+      </div>
+
+      <dl className="egos-match-facts">
+        {maskedCpf(candidate) ? <div><dt>CPF mascarado</dt><dd>{maskedCpf(candidate)}</dd></div> : null}
+        {role ? <div><dt>Função pública</dt><dd>{role}</dd></div> : null}
+        {organization ? <div><dt>Órgão</dt><dd>{organization}</dd></div> : null}
+        {startsAt || endsAt ? <div><dt>Período</dt><dd>{startsAt || 'não informado'} a {endsAt || 'não informado'}</dd></div> : null}
+        {employmentType ? <div><dt>Tipo de vínculo</dt><dd>{employmentType}</dd></div> : null}
+        {referencePeriod ? <div><dt>Competência</dt><dd>{referencePeriod}</dd></div> : null}
+        {sourceSheet ? <div><dt>Origem interna</dt><dd>{sourceSheet}</dd></div> : null}
+      </dl>
+
+      <div className="egos-match-signals" aria-label="Campos usados na comparação">
+        <span>Como o índice foi calculado</span>
+        {signals.map((signal) => (
+          <div className={signal.matched ? 'matched' : 'not-matched'} key={`${signal.code}-${signal.detail}`}>
+            {signal.matched ? <Icons.CheckCircle size={14} aria-hidden="true" /> : <Icons.Info size={14} aria-hidden="true" />}
+            <p><strong>{signal.label}</strong><small>{signal.detail}{signal.weight > 0 ? ` · +${signal.weight} pontos` : ''}</small></p>
+          </div>
+        ))}
+      </div>
+
+      <p className="egos-match-disclaimer">
+        <Icons.AlertTriangle size={14} aria-hidden="true" />
+        O índice mede compatibilidade entre campos; não é probabilidade e não confirma que as duas pessoas são a mesma.
+      </p>
+    </div>
+  );
+};
+
+export const EgosIntelligencePanel: React.FC<EgosIntelligencePanelProps> = ({ egos, diligenceId, showGraph = true }) => {
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [justification, setJustification] = useState('');
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -66,13 +189,39 @@ export const EgosIntelligencePanel: React.FC<EgosIntelligencePanelProps> = ({ eg
     );
   }
 
-  const allReviewFindings = egos.findings.filter((item) => item.status === 'REVIEW' || item.status === 'INCONCLUSIVE');
+  const findings = Array.isArray(egos.findings) ? egos.findings : [];
+  const coverage = Array.isArray(egos.coverage) ? egos.coverage : [];
+  const insights = Array.isArray(egos.insights) ? egos.insights : [];
+  const relationships = Array.isArray(egos.relationships) ? egos.relationships : [];
+  const metrics = egos.metrics || {
+    entities: Array.isArray(egos.entities) ? egos.entities.length : 0,
+    relationships: relationships.length,
+    evidences: Array.isArray(egos.evidences) ? egos.evidences.length : 0,
+    findings: findings.length,
+    resolutions: Array.isArray(egos.resolutions) ? egos.resolutions.length : 0,
+    coverage: {},
+    statuses: {},
+  };
+  const normalizedEgos: EgosSnapshot = {
+    ...egos,
+    metrics,
+    insights,
+    coverage,
+    entities: Array.isArray(egos.entities) ? egos.entities : [],
+    relationships,
+    evidences: Array.isArray(egos.evidences) ? egos.evidences : [],
+    findings,
+    resolutions: Array.isArray(egos.resolutions) ? egos.resolutions : [],
+  };
+  const allReviewFindings = findings.filter((item) => item.status === 'REVIEW' || item.status === 'INCONCLUSIVE');
   const statusFor = (finding: EgosFinding) => localStatuses[finding.id] || finding.reviewStatus || 'pending';
   const reviewFindings = allReviewFindings.filter((item) => statusFor(item) === 'pending');
   const decidedFindings = allReviewFindings.filter((item) => statusFor(item) !== 'pending');
-  const okFindings = egos.findings.filter((item) => item.status === 'OK');
-  const consulted = egos.coverage.filter((item) => item.status === 'CONSULTED').length;
-  const partialOrUnavailable = egos.coverage.filter((item) => (
+  const okFindings = findings.filter((item) => item.status === 'OK');
+  const consulted = coverage.filter((item) => (
+    item.status === 'CONSULTED' || item.status === 'PARTIAL'
+  )).length;
+  const partialOrUnavailable = coverage.filter((item) => (
     item.status === 'PARTIAL' || item.status === 'UNAVAILABLE' || item.status === 'NOT_CONSULTED'
   )).length;
   const reviewFinding = async (finding: EgosFinding, newStatus: 'confirmed' | 'discarded') => {
@@ -113,18 +262,18 @@ export const EgosIntelligencePanel: React.FC<EgosIntelligencePanelProps> = ({ eg
 
       <div className="egos-metrics" aria-label="Resumo do EGOS">
         <div><strong>{consulted}</strong><span>fontes consultadas</span></div>
-        <div><strong>{egos.metrics.entities}</strong><span>entidades estruturadas</span></div>
-        <div><strong>{egos.metrics.relationships}</strong><span>relações comprováveis</span></div>
+        <div><strong>{metrics.entities || normalizedEgos.entities.length}</strong><span>entidades estruturadas</span></div>
+        <div><strong>{metrics.relationships || relationships.length}</strong><span>relações comprováveis</span></div>
         <div className={reviewFindings.length > 0 ? 'egos-metric-attention' : ''}>
           <strong>{reviewFindings.length}</strong><span>{reviewFindings.length === 1 ? 'item para revisar' : 'itens para revisar'}</span>
         </div>
         <div><strong>{partialOrUnavailable}</strong><span>lacunas de cobertura</span></div>
       </div>
 
-      {egos.insights.length > 0 ? (
+      {insights.length > 0 ? (
         <div className="egos-insight-strip">
           <Icons.Info size={17} />
-          <div>{egos.insights.slice(0, 3).map((item) => <p key={item}>{item}</p>)}</div>
+          <div>{insights.slice(0, 3).map((item) => <p key={item}>{item}</p>)}</div>
         </div>
       ) : null}
 
@@ -132,10 +281,10 @@ export const EgosIntelligencePanel: React.FC<EgosIntelligencePanelProps> = ({ eg
         <div className="egos-column">
           <div className="egos-section-title">
             <div><span>Cobertura real</span><h3>O que conseguimos pesquisar</h3></div>
-            <span className="egos-count">{egos.coverage.length} eixos</span>
+            <span className="egos-count">{coverage.length} eixos</span>
           </div>
           <div className="egos-coverage-list">
-            {egos.coverage.map((item) => (
+            {coverage.map((item) => (
               <details className={`egos-coverage-item egos-coverage-${item.status.toLowerCase().replace('_', '-')}`} key={`${item.axis}-${item.provider}`}>
                 <summary>
                   <span className="egos-status-symbol" aria-hidden="true">
@@ -161,15 +310,17 @@ export const EgosIntelligencePanel: React.FC<EgosIntelligencePanelProps> = ({ eg
           {reviewFindings.length > 0 ? (
             <div className="egos-findings-list">
               {reviewFindings.slice(0, 5).map((finding) => {
-                const evidence = findEvidence(egos, finding);
+                const evidence = findEvidence(normalizedEgos, finding);
+                const matchContext = matchContextForFinding(normalizedEgos, finding);
                 return (
                   <article className={`egos-finding egos-finding-${finding.status.toLowerCase()}`} key={finding.id}>
                     <div className="egos-finding-topline">
                       <span>{FINDING_LABELS[finding.status]}</span>
-                      {finding.confidence != null ? <strong>{finding.confidence}% confiança</strong> : null}
+                      {finding.confidence != null ? <strong>Índice {finding.confidence}/100</strong> : null}
                     </div>
                     <h4>{finding.title}</h4>
                     <p>{finding.explanation}</p>
+                    {matchContext ? <IdentityMatchDetail context={matchContext} /> : null}
                     {evidence ? (
                       <details className="egos-evidence-inline">
                         <summary><Icons.FileText size={14} /> Ver evidência</summary>
@@ -218,15 +369,15 @@ export const EgosIntelligencePanel: React.FC<EgosIntelligencePanelProps> = ({ eg
         </div>
       </div>
 
-      <EgosGraphExplorer egos={egos} />
+      {showGraph ? <EgosGraphExplorer egos={normalizedEgos} /> : null}
 
       <details className="egos-relations-preview">
         <summary>
           <span><Icons.Users size={17} /> Ver relações estruturadas</span>
-          <span>{egos.relationships.length} vínculos</span>
+          <span>{relationships.length} vínculos</span>
         </summary>
         <div className="egos-relation-list">
-          {egos.relationships.slice(0, 12).map((relationship) => (
+          {relationships.slice(0, 12).map((relationship) => (
             <div key={relationship.id}>
               <strong>{relationship.sourceName || 'Entidade'}</strong>
               <span>{relationship.label}</span>

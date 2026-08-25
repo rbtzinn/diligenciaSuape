@@ -1,51 +1,47 @@
-// ==========================================================
-// DILIGÊNCIA 360 — Dashboard Executivo de Diligência (Fase 4C)
-// Resumo Primeiro. Evidência Depois. Ficha Executiva de Análise
-// ==========================================================
-
 import React, { useState } from 'react';
-import { DiligenceItem, ProcessDiscovery, AdverseMediaSummary, AdverseMediaStatus } from '../types';
+import type { AdverseMediaStatus, AdverseMediaSummary, DiligenceItem, ProcessDiscovery } from '../types';
 import { DiligenceService } from '../services/diligence.service';
 import { DiscoveryEngine } from '../utils/discoveryEngine';
 import { DiligenceHeader } from './DiligenceHeader';
-import { ExecutiveKpiBar } from './ExecutiveKpiBar';
-import { ExecutiveSummaryBanner } from './ExecutiveSummaryBanner';
-import { WorkflowControlBar } from '../../workflow/components/WorkflowControlBar';
-import { AttentionPanel } from './AttentionPanel';
-import { RiskVisualizer } from './RiskVisualizer';
-import { CompanyProfile } from './CompanyProfile';
-import { ShareholdersSection } from './ShareholdersSection';
+import { DecisionOverview } from './DecisionOverview';
+import { EvidenceWorkspace } from './EvidenceWorkspace';
+import { ImmersiveNetworkTab } from './ImmersiveNetworkTab';
 import { ShareholdersDrawer } from './ShareholdersDrawer';
-import { SanctionsSection } from './SanctionsSection';
-import { SanctionsDrawer } from './SanctionsDrawer';
-import { PepSection } from './PepSection';
-import { AdverseMediaSection } from './AdverseMediaSection';
 import { AdverseMediaDrawer } from './AdverseMediaDrawer';
-import { JudicialDiscoverySection } from './JudicialDiscoverySection';
 import { JudicialDiscoveryDrawer } from './JudicialDiscoveryDrawer';
-import { EvidenceSection } from './EvidenceSection';
-import { ConclusionPanel } from './ConclusionPanel';
-import { AuditTimeline } from './AuditTimeline';
-import { DashboardSectionHeader } from './DashboardSectionHeader';
-import { EgosIntelligencePanel } from './EgosIntelligencePanel';
+import { Icons } from '../../../components/ui/Icons';
+import { Button } from '../../../components/ui/Button';
+import { ReportService } from '../../report/services/report.service';
+
+export type DashboardTab = 'overview' | 'network' | 'evidence';
 
 interface DiligenceDashboardProps {
   diligence: DiligenceItem;
   onBack: () => void;
+  activeTab?: DashboardTab;
+  onTabChange?: (tab: DashboardTab) => void;
 }
 
 export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   diligence,
   onBack,
+  activeTab: controlledTab,
+  onTabChange,
 }) => {
-  const [activeDrawer, setActiveDrawer] = useState<'socios' | 'ceis' | 'cnep' | 'media' | null>(null);
+  const [internalTab, setInternalTab] = useState<DashboardTab>('overview');
+  const activeTab = controlledTab || internalTab;
+  const [activeDrawer, setActiveDrawer] = useState<'shareholders' | 'media' | null>(null);
   const [discoveries, setDiscoveries] = useState<ProcessDiscovery[]>(diligence.processosDescobertos || []);
   const [adverseMedia, setAdverseMedia] = useState<AdverseMediaSummary | undefined>(diligence.adverseMedia);
   const [selectedDiscovery, setSelectedDiscovery] = useState<ProcessDiscovery | null>(null);
   const [enrichingId, setEnrichingId] = useState<string | null>(null);
   const [workflowStatus, setWorkflowStatus] = useState(diligence.status);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
-  const { empresa, socios, ceis, cnep, pepResults, risco, analise, timeline } = diligence;
+  const setActiveTab = (tab: DashboardTab) => {
+    setInternalTab(tab);
+    onTabChange?.(tab);
+  };
 
   const handleEnrichDiscovery = async (discovery: ProcessDiscovery) => {
     setEnrichingId(discovery.processNumber);
@@ -73,10 +69,10 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           consultadoEm: res.consultadoEm || new Date().toISOString(),
         };
 
-        setDiscoveries((prev) => DiscoveryEngine.updateStatus(prev, discovery.processNumber, 'enriched', dataJudItem));
-        if (selectedDiscovery && selectedDiscovery.processNumber === discovery.processNumber) {
-          setSelectedDiscovery((prev) => (prev ? { ...prev, status: 'enriched', dataJud: dataJudItem } : null));
-        }
+        setDiscoveries((current) => DiscoveryEngine.updateStatus(current, discovery.processNumber, 'enriched', dataJudItem));
+        setSelectedDiscovery((current) => current?.processNumber === discovery.processNumber
+          ? { ...current, status: 'enriched', dataJud: dataJudItem }
+          : current);
       }
     } finally {
       setEnrichingId(null);
@@ -84,147 +80,154 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   };
 
   const handleMediaStatusChange = (id: string, newStatus: AdverseMediaStatus) => {
-    if (!adverseMedia) return;
-    setAdverseMedia((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        results: prev.results.map((r) => (r.id === id ? { ...r, status: newStatus } : r)),
-      };
-    });
+    setAdverseMedia((current) => current ? {
+      ...current,
+      results: current.results.map((item) => item.id === id ? { ...item, status: newStatus } : item),
+    } : current);
   };
 
-  const enrichedProcesses = discoveries.filter((d) => d.dataJud).map((d) => d.dataJud!);
+  const handleExportPdf = async () => {
+    setIsExportingPdf(true);
+    try {
+      await ReportService.downloadReport(diligence.id, diligence.status !== 'completed');
+    } catch (error) {
+      console.error('Erro ao gerar relatório:', error);
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
+  const safeFindings = Array.isArray(diligence.egos?.findings) ? diligence.egos.findings : [];
+  const safeRelationships = Array.isArray(diligence.egos?.relationships) ? diligence.egos.relationships : [];
+  const safeEvidences = Array.isArray(diligence.egos?.evidences) ? diligence.egos.evidences : [];
+  const safeShareholders = Array.isArray(diligence.socios) ? diligence.socios : [];
+  const safePepResults = Array.isArray(diligence.pepResults) ? diligence.pepResults : [];
+  const reviewCount = safeFindings.filter((finding) =>
+    finding.status === 'REVIEW' || finding.status === 'INCONCLUSIVE'
+  ).length;
+  const networkCount = safeRelationships.length;
+  const evidenceCount = safeEvidences.length;
 
   return (
-    <main className="dash-shell animate-fade-in">
-      <DiligenceHeader diligence={diligence} onBack={onBack} />
+    <main className={`dossier-v3 ${activeTab === 'network' ? 'dossier-v3-network' : ''}`}>
+      {activeTab !== 'network' ? <DiligenceHeader diligence={diligence} onBack={onBack} /> : null}
 
-      <ExecutiveSummaryBanner
-        empresa={empresa}
-        ceis={ceis}
-        cnep={cnep}
-        pepResults={pepResults}
-        adverseMedia={adverseMedia}
-        discoveries={discoveries}
-        onReviewPendencies={() => setActiveDrawer('socios')}
-      />
+      <nav className="dossier-mode-nav" aria-label="Modos do dossiê">
+        <div className="dossier-mode-group" role="tablist" aria-label="Visualização do dossiê">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'overview'}
+            className={activeTab === 'overview' ? 'active' : ''}
+            onClick={() => setActiveTab('overview')}
+          >
+            <Icons.Compass size={17} aria-hidden="true" />
+            <span><strong>Resumo Executivo</strong><small>Decisão e próximo passo</small></span>
+            {reviewCount > 0 ? <i>{reviewCount}</i> : null}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'network'}
+            className={activeTab === 'network' ? 'active' : ''}
+            onClick={() => setActiveTab('network')}
+          >
+            <Icons.Network size={17} aria-hidden="true" />
+            <span><strong>Rede de Vínculos</strong><small>Exploração imersiva</small></span>
+            {networkCount > 0 ? <i>{networkCount}</i> : null}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'evidence'}
+            className={activeTab === 'evidence' ? 'active' : ''}
+            onClick={() => setActiveTab('evidence')}
+          >
+            <Icons.Database size={17} aria-hidden="true" />
+            <span><strong>Evidências</strong><small>Fontes e auditoria</small></span>
+            {evidenceCount > 0 ? <i>{evidenceCount}</i> : null}
+          </button>
+        </div>
 
-      <EgosIntelligencePanel egos={diligence.egos} diligenceId={diligence.id} />
+        <div className="dossier-mode-actions">
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={isExportingPdf ? <Icons.Loader size={14} aria-hidden="true" /> : <Icons.Download size={14} aria-hidden="true" />}
+            onClick={handleExportPdf}
+            disabled={isExportingPdf}
+          >
+            {isExportingPdf
+              ? 'Gerando PDF…'
+              : diligence.status === 'completed'
+                ? 'Baixar Dossiê PDF'
+                : 'Baixar Prévia PDF'}
+          </Button>
+          {activeTab === 'network' ? (
+            <Button variant="ghost" size="sm" onClick={onBack} icon={<Icons.ArrowLeft size={14} aria-hidden="true" />}>
+              Nova Consulta
+            </Button>
+          ) : null}
+        </div>
+      </nav>
 
-      <section className="dashboard-chapter" aria-labelledby="verification-title">
-        <DashboardSectionHeader
-          id="verification-title"
-          eyebrow="Leitura rápida"
-          title="O que foi verificado"
-          description="Um panorama das consultas realizadas. Selecione um cartão para abrir os detalhes disponíveis."
-        />
-        <ExecutiveKpiBar
-          empresa={empresa}
-          sociosCount={socios.length}
-          pepResults={pepResults}
-          ceis={ceis}
-          cnep={cnep}
-          adverseMedia={adverseMedia}
-          discoveries={discoveries}
-          onOpenSocios={() => setActiveDrawer('socios')}
-          onOpenCeis={() => setActiveDrawer('ceis')}
-          onOpenCnep={() => setActiveDrawer('cnep')}
-          onOpenPep={() => setActiveDrawer('socios')}
-          onOpenMedia={() => setActiveDrawer('media')}
-        />
-      </section>
-
-      <section className="dashboard-chapter" aria-labelledby="action-title">
-        <DashboardSectionHeader
-          id="action-title"
-          eyebrow="Próximo passo"
-          title="O que fazer agora"
-          description="Pendências e decisões aparecem primeiro; os controles administrativos vêm logo em seguida."
-        />
-        <AttentionPanel
-          analise={analise}
-          onOpenCeis={() => setActiveDrawer('ceis')}
-          onOpenCnep={() => setActiveDrawer('cnep')}
-          onOpenSocios={() => setActiveDrawer('socios')}
-          onOpenMedia={() => setActiveDrawer('media')}
-        />
-        <WorkflowControlBar
-          diligence={{ ...diligence, status: workflowStatus }}
-          onStatusChange={setWorkflowStatus}
-        />
-      </section>
-
-      <section className="dashboard-chapter" aria-labelledby="analysis-title">
-        <DashboardSectionHeader
-          id="analysis-title"
-          eyebrow="Como chegamos ao resultado"
-          title="Entenda a análise"
-          description="Veja o que influenciou a nota e quais bases públicas participaram da verificação."
-        />
-        <RiskVisualizer
-          risco={risco}
-          ceis={ceis}
-          cnep={cnep}
-          pepResults={pepResults}
-          adverseMedia={adverseMedia}
-          discoveries={discoveries}
-        />
-      </section>
-
-      <section className="dashboard-chapter dashboard-chapter-details" aria-labelledby="details-title">
-        <DashboardSectionHeader
-          id="details-title"
-          eyebrow="Consulta completa"
-          title="Dados e evidências"
-          description="Informações cadastrais, pessoas relacionadas e registros encontrados, organizados por assunto."
-        />
-        <div className="dash-grid">
-          <CompanyProfile empresa={empresa} cnpjFmt={diligence.cnpjFmt} />
-          <ShareholdersSection
-            socios={socios}
-            pepResults={pepResults}
-            onOpenDrawer={() => setActiveDrawer('socios')}
+      <div className="dossier-mode-stage" role="tabpanel">
+        {activeTab === 'overview' ? (
+          <DecisionOverview
+            diligence={diligence}
+            adverseMedia={adverseMedia}
+            discoveries={discoveries}
+            workflowStatus={workflowStatus}
+            onWorkflowStatusChange={setWorkflowStatus}
+            onOpenNetwork={() => setActiveTab('network')}
+            onOpenEvidence={() => setActiveTab('evidence')}
           />
-        </div>
-        <div className="dash-grid">
-          <SanctionsSection ceis={ceis} cnep={cnep} />
-          <PepSection pepResults={pepResults} onOpenDrawer={() => setActiveDrawer('socios')} />
-        </div>
-        <AdverseMediaSection
-          adverseMedia={adverseMedia}
-          onOpenDrawer={() => setActiveDrawer('media')}
-          onStatusChange={handleMediaStatusChange}
-        />
-        <JudicialDiscoverySection
-          discoveries={discoveries}
-          onUpdateDiscoveries={setDiscoveries}
-          onOpenDrawer={(d) => setSelectedDiscovery(d)}
-          onEnrich={handleEnrichDiscovery}
-          enrichingId={enrichingId}
-        />
-        <ConclusionPanel risco={risco} />
-        <EvidenceSection
-          ceis={ceis}
-          cnep={cnep}
-          pepResults={pepResults}
-          processosJudiciais={enrichedProcesses}
-          adverseMedia={adverseMedia}
-          consultadoEm={diligence.dataAnalise}
-        />
-        <AuditTimeline timeline={timeline} />
-      </section>
+        ) : null}
 
-      {/* Drawers Globais de Detalhe Progressivo */}
-      <ShareholdersDrawer isOpen={activeDrawer === 'socios'} onClose={() => setActiveDrawer(null)} socios={socios} pepResults={pepResults} />
-      <SanctionsDrawer isOpen={activeDrawer === 'ceis'} onClose={() => setActiveDrawer(null)} tipo="CEIS" registros={ceis?.registros || []} />
-      <SanctionsDrawer isOpen={activeDrawer === 'cnep'} onClose={() => setActiveDrawer(null)} tipo="CNEP" registros={cnep?.registros || []} />
-      <AdverseMediaDrawer isOpen={activeDrawer === 'media'} onClose={() => setActiveDrawer(null)} adverseMedia={adverseMedia} onStatusChange={handleMediaStatusChange} />
+        {activeTab === 'network' ? (
+          <ImmersiveNetworkTab
+            egos={diligence.egos}
+            targetCompanyName={diligence.razaoSocial}
+          />
+        ) : null}
+
+        {activeTab === 'evidence' ? (
+          <EvidenceWorkspace
+            diligence={diligence}
+            discoveries={discoveries}
+            adverseMedia={adverseMedia}
+            onOpenShareholders={() => setActiveDrawer('shareholders')}
+            onOpenMedia={() => setActiveDrawer('media')}
+            onUpdateDiscoveries={setDiscoveries}
+            onOpenDiscovery={setSelectedDiscovery}
+            onEnrichDiscovery={handleEnrichDiscovery}
+            enrichingId={enrichingId}
+            onMediaStatusChange={handleMediaStatusChange}
+          />
+        ) : null}
+      </div>
+
+      <ShareholdersDrawer
+        isOpen={activeDrawer === 'shareholders'}
+        onClose={() => setActiveDrawer(null)}
+        socios={safeShareholders}
+        pepResults={safePepResults}
+        sourceName={diligence.companySource}
+        consultedAt={diligence.companyConsultedAt || diligence.dataAnalise}
+        legalNature={diligence.empresa.natureza_juridica}
+        governanceHistory={diligence.governanceHistory}
+      />
+      <AdverseMediaDrawer
+        isOpen={activeDrawer === 'media'}
+        onClose={() => setActiveDrawer(null)}
+        adverseMedia={adverseMedia}
+        onStatusChange={handleMediaStatusChange}
+      />
       <JudicialDiscoveryDrawer
         isOpen={!!selectedDiscovery}
         onClose={() => setSelectedDiscovery(null)}
         discovery={selectedDiscovery}
-        onStatusChange={(num, st) => setDiscoveries((prev) => DiscoveryEngine.updateStatus(prev, num, st))}
+        onStatusChange={(number, status) => setDiscoveries((current) => DiscoveryEngine.updateStatus(current, number, status))}
         onEnrich={handleEnrichDiscovery}
         isEnriching={enrichingId === selectedDiscovery?.processNumber}
       />

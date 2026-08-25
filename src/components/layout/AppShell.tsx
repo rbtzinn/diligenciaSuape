@@ -1,5 +1,5 @@
 // ==========================================================
-// DILIGÊNCIA 360 — AppShell (Layout Principal)
+// DILIGÊNCIA 360 — AppShell (Layout Principal com Suporte a Dark Mode)
 // ==========================================================
 
 import React, { useState } from 'react';
@@ -8,11 +8,14 @@ import { Sidebar } from './Sidebar';
 import { DisclaimerBar } from './DisclaimerBar';
 import { Icons } from '../ui/Icons';
 import { Button } from '../ui/Button';
+import { DiligenceItem } from '../../features/diligence/types';
 
 interface AppShellProps {
   currentView: ViewType;
   onNavigate: (view: ViewType) => void;
   historyCount: number;
+  onSelectRecent?: (item: DiligenceItem) => void;
+  isDarkMode?: boolean;
   children: React.ReactNode;
 }
 
@@ -20,18 +23,25 @@ export const AppShell: React.FC<AppShellProps> = ({
   currentView,
   onNavigate,
   historyCount,
+  onSelectRecent,
+  isDarkMode = false,
   children,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${isDarkMode ? 'app-dark-mode' : ''}`}>
       <Sidebar
         currentView={currentView}
         onNavigate={onNavigate}
         historyCount={historyCount}
         isMobileOpen={mobileMenuOpen}
         onCloseMobile={() => setMobileMenuOpen(false)}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+        onSelectRecent={onSelectRecent}
+        isDarkMode={isDarkMode}
       />
 
       <div className="app-main">

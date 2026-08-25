@@ -22,7 +22,9 @@ import {
 const INITIAL_STEPS: DiligenceStepConfig[] = [
   { id: 'emp', label: 'Consultando cadastro empresarial (Receita Federal)', status: 'pending' },
   { id: 'soc', label: 'Identificando quadro societário e administradores (QSA)', status: 'pending' },
+  { id: 'governance', label: 'Levantando diretores e acionistas dos últimos 5 exercícios', status: 'pending' },
   { id: 'network', label: 'Expandindo empresas relacionadas até o segundo nível', status: 'pending' },
+  { id: 'fund', label: 'Mapeando gestor, administrador e prestadores regulados (CVM)', status: 'pending' },
   { id: 'ceis', label: 'Consultando CEIS (Empresas Inidôneas e Suspensas)', status: 'pending' },
   { id: 'cnep', label: 'Consultando CNEP (Cadastro Nacional de Empresas Punidas)', status: 'pending' },
   { id: 'pep', label: 'Verificando Pessoas Expostas Politicamente (PEP dos sócios)', status: 'pending' },
@@ -89,9 +91,31 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
         updateStep('soc', 'done', `${socios.length} integrante(s)`);
         log(`${socios.length} sócio(s) e administrador(es) identificado(s).`);
 
-        // 2B. Expansão societária controlada, somente quando há CNPJ no QSA
+        // 2A–2C. Fontes independentes: histórico, QSA expandido e rede regulatória de fundos
+        updateStep('governance', 'loading');
         updateStep('network', 'loading');
-        const corporateNetwork = await DiligenceService.expandCorporateNetwork(empresa);
+        updateStep('fund', 'loading');
+        const [governanceHistory, corporateNetwork, fundNetwork] = await Promise.all([
+          DiligenceService.getGovernanceHistory({
+            cnpj: clean,
+            legalNature: empresa.natureza_juridica,
+          }),
+          DiligenceService.expandCorporateNetwork(empresa),
+          DiligenceService.getFundNetwork(clean),
+        ]);
+
+        if (!governanceHistory.applicable) {
+          updateStep('governance', 'done', 'CVM não aplicável; requer Junta Comercial');
+          log('Histórico societário: a companhia não está no escopo do FRE/CVM; a linha do tempo conclusiva depende da Junta Comercial.');
+        } else if (governanceHistory.ok) {
+          const consulted = governanceHistory.consultedYears || 0;
+          updateStep('governance', governanceHistory.coverageStatus === 'complete_public' ? 'done' : 'error', `${consulted}/5 exercício(s)`);
+          log(`Histórico CVM: ${consulted} exercício(s) consultado(s), ${governanceHistory.directors || 0} integrante(s) da administração e ${governanceHistory.shareholders || 0} acionista(s) identificados.`, governanceHistory.coverageStatus === 'complete_public' ? 'info' : 'warning');
+        } else {
+          updateStep('governance', 'error', 'Histórico oficial indisponível');
+          log(`Histórico CVM: ${governanceHistory.erro || governanceHistory.aviso || 'fonte indisponível'}.`, 'warning');
+        }
+
         if (corporateNetwork.ok) {
           updateStep('network', 'done', corporateNetwork.companies.length > 0 ? `${corporateNetwork.companies.length} empresa(s) relacionada(s)` : 'Não aplicável ao QSA disponível');
           log(corporateNetwork.companies.length > 0
@@ -100,6 +124,17 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
         } else {
           updateStep('network', 'error', 'Expansão indisponível');
           log(`Rede societária: ${corporateNetwork.erro || 'fonte indisponível'}.`, 'warning');
+        }
+
+        if (!fundNetwork.applicable) {
+          updateStep('fund', 'done', 'Não se aplica a este CNPJ');
+          log('Rede regulatória de fundos: CNPJ não consta como fundo ou classe no cadastro atual da CVM.');
+        } else if (fundNetwork.ok) {
+          updateStep('fund', fundNetwork.consultaParcial ? 'error' : 'done', `${fundNetwork.directParties || 0} vínculo(s) direto(s)`);
+          log(`Rede regulatória de fundos: ${fundNetwork.directParties || 0} prestador(es) ou responsável(is) direto(s), ${fundNetwork.expandedCompanies || 0} QSA(s) relacionado(s) expandido(s).`, fundNetwork.consultaParcial ? 'warning' : 'info');
+        } else {
+          updateStep('fund', 'error', 'Cadastro CVM indisponível');
+          log(`Rede regulatória de fundos: ${fundNetwork.erro || 'fonte indisponível'}.`, 'warning');
         }
 
         // 3. CEIS
@@ -165,13 +200,16 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           cnpj: clean,
           razaoSocial: empresa.razao_social || '',
           nomeFantasia: empresa.nome_fantasia || '',
+          shareholders: socios,
         });
 
         let discoveredProcesses: ProcessDiscovery[] = [];
 
         if (mediaRes.ok && mediaRes.results.length > 0) {
-          updateStep('media', 'done', `${mediaRes.totalFound} resultado(s) analisado(s)`);
-          log(`Mídia Adversa: ${mediaRes.totalFound} resultado(s) encontrado(s) na web.`);
+          const companyCount = mediaRes.companyResultsCount ?? mediaRes.results.filter((item) => item.subjectType !== 'person').length;
+          const personCount = mediaRes.personResultsCount ?? mediaRes.results.filter((item) => item.subjectType === 'person').length;
+          updateStep('media', 'done', `${companyCount} empresa · ${personCount} pessoas`);
+          log(`Ocorrências públicas: ${companyCount} resultado(s) sobre a empresa e ${personCount} associado(s) aos nomes de ${mediaRes.peopleSearched || 0} integrante(s) pesquisado(s).`);
 
           // Extração automática de números de processos CNJ encontrados em matérias
           for (const item of mediaRes.results) {
@@ -185,10 +223,14 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
                 extracted,
                 {
                   type: 'adverse_media',
-                  name: `Notícia: ${item.domain}`,
+                  name: item.subjectType === 'person'
+                    ? `Publicação associada ao nome ${item.subjectName || 'de integrante'} — ${item.domain}`
+                    : `Publicação sobre a empresa — ${item.domain}`,
                   url: item.url,
                   consultedAt: item.searchedAt,
                   excerpt: item.snippet.substring(0, 250),
+                  subjectType: item.subjectType || 'company',
+                  subjectName: item.subjectName,
                 }
               );
               discoveredProcesses = mergeOutcome.updatedList;
@@ -203,7 +245,7 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
               : 'Nenhuma ocorrência';
           updateStep('media', unavailable ? 'error' : 'done', detail);
           log(
-            `Mídia Adversa: ${mediaRes.aviso || (unavailable ? detail : 'Nenhuma ocorrência identificada nas fontes consultadas.')}`,
+            `Ocorrências públicas: ${mediaRes.aviso || (unavailable ? detail : `Nenhum conteúdo candidato localizado para a empresa e para ${mediaRes.peopleSearched || 0} integrante(s) pesquisado(s).`)}`,
             unavailable ? 'warning' : 'info'
           );
         }
@@ -275,6 +317,7 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           companyConsultedAt: empRes.consultadoEm,
           empresa,
           socios,
+          governanceHistory,
           ceis: ceisRes,
           cnep: cnepRes,
           pepResults,
@@ -284,6 +327,7 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           adverseMedia: mediaRes,
           officialGazettes,
           corporateNetwork,
+          fundNetwork,
           offshore,
           risco,
           analise,

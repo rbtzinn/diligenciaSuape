@@ -21,13 +21,17 @@ export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
   adverseMedia,
   onStatusChange,
 }) => {
-  const [filter, setFilter] = useState<'all' | 'high' | 'validated' | 'discarded'>('all');
+  const [filter, setFilter] = useState<'all' | 'person' | 'company' | 'high' | 'validated' | 'discarded'>('all');
   const [showQueries, setShowQueries] = useState(false);
 
   if (!adverseMedia) return null;
 
   const results = adverseMedia.results || [];
+  const companyCount = adverseMedia.companyResultsCount ?? results.filter((item) => item.subjectType !== 'person').length;
+  const personCount = adverseMedia.personResultsCount ?? results.filter((item) => item.subjectType === 'person').length;
   const filtered = results.filter((r) => {
+    if (filter === 'person') return r.subjectType === 'person';
+    if (filter === 'company') return r.subjectType !== 'person';
     if (filter === 'high') return r.matchStrength === 'high';
     if (filter === 'validated') return r.status === 'validated';
     if (filter === 'discarded') return r.status === 'discarded';
@@ -38,8 +42,8 @@ export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
     <Drawer
       isOpen={isOpen}
       onClose={onClose}
-      title="Mídia e Ocorrências Públicas na Web"
-      subtitle={`${results.length} resultado(s) analisado(s) • Consultado em ${Formatters.dateTime(adverseMedia.consultadoEm)}`}
+      title="Ocorrências Públicas: Empresa e Pessoas"
+      subtitle={`${companyCount} da empresa • ${personCount} de pessoas • ${adverseMedia.peopleSearched || 0} integrante(s) pesquisado(s) • ${Formatters.dateTime(adverseMedia.consultadoEm)}`}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         {/* Painel de Consultas Executadas */}
@@ -70,8 +74,13 @@ export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
             {showQueries && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.25rem' }}>
                 {adverseMedia.queriesExecuted.map((q, idx) => (
-                  <div key={idx} style={{ fontSize: 'var(--text-2xs)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-                    <code className="font-mono" style={{ color: 'var(--text-secondary)' }}>{q.query}</code>
+                  <div key={idx} style={{ fontSize: 'var(--text-2xs)', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <span style={{ display: 'block', marginBottom: '0.15rem', color: q.subjectType === 'person' ? 'var(--status-medium-text)' : 'var(--brand-primary)', fontWeight: 'var(--font-bold)' }}>
+                        {q.subjectType === 'person' ? 'PESSOA' : 'EMPRESA'} · {q.subjectName || 'Entidade pesquisada'}
+                      </span>
+                      <code className="font-mono" style={{ display: 'block', overflow: 'hidden', color: 'var(--text-secondary)', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.query}</code>
+                    </div>
                     <span style={{ color: 'var(--text-tertiary)', flexShrink: 0 }}>{q.count} itens</span>
                   </div>
                 ))}
@@ -81,7 +90,7 @@ export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
         )}
 
         {/* Abas de Filtro */}
-        <div style={{ display: 'flex', gap: '0.35rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.35rem' }}>
+        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.35rem' }}>
           <button
             type="button"
             className={`btn btn-sm ${filter === 'all' ? 'btn-secondary' : 'btn-ghost'}`}
@@ -91,10 +100,24 @@ export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
           </button>
           <button
             type="button"
+            className={`btn btn-sm ${filter === 'person' ? 'btn-secondary' : 'btn-ghost'}`}
+            onClick={() => setFilter('person')}
+          >
+            Pessoas ({personCount})
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm ${filter === 'company' ? 'btn-secondary' : 'btn-ghost'}`}
+            onClick={() => setFilter('company')}
+          >
+            Empresa ({companyCount})
+          </button>
+          <button
+            type="button"
             className={`btn btn-sm ${filter === 'high' ? 'btn-secondary' : 'btn-ghost'}`}
             onClick={() => setFilter('high')}
           >
-            Forte ({adverseMedia.strongMatches})
+            Maior correlação ({adverseMedia.strongMatches})
           </button>
           <button
             type="button"
@@ -130,7 +153,7 @@ export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
         )}
 
         <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-surface-subtle)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-2xs)', color: 'var(--text-muted)' }}>
-          * Os resultados da busca pública têm caráter investigativo preliminar. A correspondência e gravidade dos fatos requerem validação humana.
+          * A busca pública apenas localiza conteúdo para leitura. Correspondência de nome não confirma identidade, fato, investigação, processo, crime ou condenação.
         </div>
       </div>
     </Drawer>

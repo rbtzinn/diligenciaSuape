@@ -1,157 +1,366 @@
 /* ==========================================================
-   DILIGÊNCIA 360 — Sidebar Institucional SUAPE (Estilo Claude)
+   DILIGÊNCIA 360 — Sidebar Institucional SUAPE (Design Moderno & Refinado)
    ========================================================== */
 
 .sidebar {
-  width: var(--sidebar-w);
+  width: var(--sidebar-w, 260px);
   height: 100vh;
-  background-color: #FAFBFD;
-  border-right: 1px solid var(--border-subtle);
+  background-color: #FFFFFF;
+  border-right: 1px solid #D7E1EE;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   z-index: 100;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 1px 0 3px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
 }
 
+.sidebar button {
+  touch-action: manipulation;
+}
+
+.sidebar button:focus-visible {
+  outline: 3px solid #2D60AD;
+  outline-offset: 2px;
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  padding: 0;
+  background: rgba(7, 22, 41, 0.48);
+  border: 0;
+  cursor: default;
+}
+
+.sidebar-backdrop:focus-visible {
+  outline: 3px solid #2D60AD;
+  outline-offset: -6px;
+}
+
+/* ==========================================================
+   SIDEBAR RECOLHIDA (MODO COMPACTO)
+   ========================================================== */
+.sidebar.collapsed {
+  width: 68px;
+}
+
+.sidebar.collapsed .sidebar-brand-info,
+.sidebar.collapsed .sidebar-new-text,
+.sidebar.collapsed .sidebar-label,
+.sidebar.collapsed .sidebar-recent-name,
+.sidebar.collapsed .sidebar-nav-item span,
+.sidebar.collapsed .sidebar-badge,
+.sidebar.collapsed .sidebar-user-name,
+.sidebar.collapsed .sidebar-user-role,
+.sidebar.collapsed .sidebar-logout-btn,
+.sidebar.collapsed .sidebar-brand-logos {
+  display: none !important;
+}
+
+.sidebar.collapsed .sidebar-header {
+  padding: 1.1rem 0.5rem 0.85rem;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.sidebar.collapsed .sidebar-logo {
+  width: 44px;
+  height: 44px;
+}
+
+.sidebar.collapsed .sidebar-top-action {
+  padding: 0.25rem 0.5rem 0.65rem;
+}
+
+.sidebar.collapsed .sidebar-new-btn {
+  padding: 0.5rem;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.sidebar.collapsed .sidebar-new-icon-box {
+  width: 22px;
+  height: 22px;
+}
+
+.sidebar.collapsed .sidebar-nav {
+  padding: 0.4rem 0.5rem;
+  align-items: center;
+}
+
+.sidebar.collapsed .sidebar-nav-item {
+  padding: 0.65rem;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+
+.sidebar.collapsed .sidebar-recent-item {
+  padding: 0.5rem;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  padding: 0.75rem 0.5rem 1rem;
+  align-items: center;
+}
+
+.sidebar.collapsed .sidebar-user-pill {
+  padding: 0.25rem;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  justify-content: center;
+}
+
+/* ==========================================================
+   HEADER DA SIDEBAR
+   ========================================================== */
 .sidebar-header {
-  padding: 1.15rem 1rem 0.75rem 1rem;
+  padding: 1.2rem 1rem 0.85rem 1rem;
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.75rem;
 }
 
 .sidebar-logo {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
-  background-color: var(--brand-blue-subtle);
-  border: 1px solid var(--brand-blue-border);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #FFFFFF 0%, #EFF4FB 100%);
+  border: 1px solid #B7C9E4;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(45, 96, 173, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  padding: 0;
+  cursor: pointer;
+}
+
+.sidebar-logo:hover {
+  transform: scale(1.04);
+  border-color: #2D60AD;
+  box-shadow: 0 5px 14px rgba(45, 96, 173, 0.2);
+}
+
+.sidebar-logo:focus-visible {
+  outline: 3px solid #2D60AD;
+  outline-offset: 3px;
 }
 
 .sidebar-logo img {
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
+  pointer-events: none;
+  user-select: none;
 }
 
 .sidebar-brand-name {
-  font-size: var(--text-sm);
-  font-weight: var(--font-bold);
-  color: var(--text-primary);
+  font-size: 14.5px;
+  font-weight: 750;
+  color: #0F172A;
   line-height: 1.2;
+  letter-spacing: -0.015em;
+  display: block;
 }
 
 .sidebar-brand-sub {
-  font-size: var(--text-2xs);
-  color: var(--text-tertiary);
-  font-weight: var(--font-medium);
+  font-size: 10px;
+  color: #2D60AD;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 1px;
 }
 
+/* ==========================================================
+   BOTÃO "+ NOVA DILIGÊNCIA"
+   ========================================================== */
 .sidebar-top-action {
-  padding: 0 0.85rem 0.65rem;
+  padding: 0.25rem 0.85rem 0.75rem;
 }
 
 .sidebar-new-btn {
   width: 100%;
-  padding: 0.55rem 0.85rem;
-  background-color: #ffffff;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  font-size: var(--text-xs);
-  font-weight: var(--font-semibold);
-  color: var(--text-primary);
+  padding: 0.55rem 0.75rem;
+  background-color: #FFFFFF;
+  border: 1.5px solid #D7E1EE;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0F172A;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-  transition: all var(--transition-fast);
+  box-shadow: 0 1px 3px rgba(45, 96, 173, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease,
+              box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.sidebar-new-icon-box {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background-color: #EFF4FB;
+  color: #2D60AD;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .sidebar-new-btn:hover {
-  background-color: var(--brand-blue-subtle);
-  border-color: var(--brand-blue-border);
-  color: var(--brand-blue);
+  background-color: #F8FAFC;
+  border-color: #2D60AD;
+  color: #234D8E;
+  box-shadow: 0 4px 12px rgba(45, 96, 173, 0.14);
+  transform: translateY(-1px);
 }
 
+.sidebar-new-btn:hover .sidebar-new-icon-box {
+  background-color: #2D60AD;
+  color: #FFFFFF;
+  transform: rotate(90deg);
+}
+
+.sidebar-new-btn:active {
+  transform: translateY(0);
+}
+
+/* ==========================================================
+   CORPO DE NAVEGAÇÃO
+   ========================================================== */
 .sidebar-nav {
   flex: 1;
-  padding: 0.5rem 0.75rem;
+  padding: 0.4rem 0.75rem;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.25rem;
   overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Scrollbar fina e elegante */
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: #E2E8F0;
+  border-radius: 4px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: #CBD5E1;
 }
 
 .sidebar-label {
-  font-size: var(--text-2xs);
-  font-weight: var(--font-semibold);
-  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 750;
+  color: #94A3B8;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  padding: 0.65rem 0.5rem 0.25rem;
+  padding: 0.75rem 0.5rem 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
+/* ==========================================================
+   ITENS DE NAVEGAÇÃO PRINCIPAIS
+   ========================================================== */
 .sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  color: #475569;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid transparent;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease,
+              transform 0.18s ease, box-shadow 0.18s ease;
+  position: relative;
+}
+
+.sidebar-nav-item:hover {
+  background-color: #F1F5F9;
+  color: #0F172A;
+  transform: translateX(2px);
+}
+
+.sidebar-nav-item:hover svg {
+  color: #2D60AD;
+}
+
+.sidebar-nav-item.active {
+  background: linear-gradient(135deg, #EFF4FB 0%, #E5EDF8 100%);
+  border-color: #B7C9E4;
+  color: #234D8E;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(45, 96, 173, 0.1);
+}
+
+.sidebar-nav-item.active svg {
+  color: #2D60AD;
+}
+
+/* ==========================================================
+   DILIGÊNCIAS RECENTES
+   ========================================================== */
+.sidebar-recent-item {
   display: flex;
   align-items: center;
   gap: 0.55rem;
   padding: 0.45rem 0.6rem;
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  font-size: var(--text-xs);
-  font-weight: var(--font-medium);
-  background: transparent;
-  border: none;
-  width: 100%;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
   cursor: pointer;
-  text-align: left;
-  transition: all var(--transition-fast);
-}
-
-.sidebar-nav-item:hover {
-  background-color: var(--bg-surface-hover);
-  color: var(--text-primary);
-}
-
-.sidebar-nav-item.active {
-  background-color: var(--brand-blue-subtle);
-  color: var(--brand-blue);
-  font-weight: var(--font-semibold);
-}
-
-.sidebar-recent-item {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.4rem 0.5rem;
-  border-radius: var(--radius-md);
-  font-size: var(--text-xs);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
   background: transparent;
   border: none;
   width: 100%;
   text-align: left;
+}
+
+.sidebar-recent-icon {
+  color: #64748B;
+  flex-shrink: 0;
+  transition: color 0.15s ease, transform 0.15s ease;
 }
 
 .sidebar-recent-item:hover {
-  background-color: var(--bg-surface-hover);
-  color: var(--text-primary);
+  background-color: #F8FAFC;
+  color: #234D8E;
+  transform: translateX(2px);
 }
 
-.sidebar-recent-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: var(--color-success-600);
-  flex-shrink: 0;
+.sidebar-recent-item:hover .sidebar-recent-icon {
+  color: #2D60AD;
+  transform: scale(1.08);
 }
 
 .sidebar-recent-name {
@@ -159,55 +368,555 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.3;
 }
 
+/* ==========================================================
+   BADGE DE HISTÓRICO
+   ========================================================== */
+.sidebar-badge {
+  background: #EFF4FB;
+  color: #234D8E;
+  font-size: 11px;
+  font-weight: 750;
+  padding: 2px 7px;
+  border-radius: 10px;
+  border: 1px solid #B7C9E4;
+  box-shadow: 0 1px 2px rgba(45, 96, 173, 0.06);
+}
+
+/* ==========================================================
+   RODAPÉ E PERFIL DO USUÁRIO
+   ========================================================== */
 .sidebar-footer {
-  padding: 0.75rem 0.85rem 0.85rem;
-  border-top: 1px solid var(--border-subtle);
+  padding: 0.85rem 0.85rem 1rem;
+  border-top: 1px solid #E2E8F0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  background-color: #ffffff;
+  gap: 0.75rem;
+  background-color: #FFFFFF;
 }
 
 .sidebar-user-pill {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.45rem 0.55rem;
-  border-radius: var(--radius-md);
-  background-color: var(--bg-surface-subtle);
-  border: 1px solid var(--border-subtle);
+  padding: 0.5rem 0.65rem;
+  border-radius: 12px;
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sidebar-user-pill:hover {
+  background-color: #F1F5F9;
+  border-color: #CBD5E1;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04);
 }
 
 .sidebar-user-avatar {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background-color: var(--brand-blue);
-  color: #ffffff;
-  font-size: var(--text-2xs);
-  font-weight: var(--font-bold);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: linear-gradient(135deg, #163768 0%, #2D60AD 100%);
+  color: #FFFFFF;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(45, 96, 173, 0.25);
+}
+
+.sidebar-user-name {
+  font-size: 12px;
+  font-weight: 750;
+  color: #0F172A;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-user-role {
+  font-size: 10.5px;
+  color: #2D60AD;
+  font-weight: 650;
 }
 
 .sidebar-logout-btn {
-  background: none;
+  background: transparent;
   border: none;
-  color: var(--text-tertiary);
+  color: #94A3B8;
   cursor: pointer;
-  font-size: var(--text-2xs);
-  display: flex;
-  align-items: center;
-  gap: 0.2rem;
-  padding: 0.2rem 0.35rem;
-  border-radius: var(--radius-sm);
+  padding: 4px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .sidebar-logout-btn:hover {
-  color: var(--color-critical-600);
-  background-color: var(--status-critical-bg);
+  background-color: #E2E8F0;
+  color: #0F172A;
+}
+
+/* ==========================================================
+   CONFIRMAÇÃO DE SAÍDA — diálogo institucional SUAPE
+   ========================================================== */
+.logout-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(45, 96, 173, 0.18), transparent 36%),
+    rgba(2, 13, 27, 0.82);
+  backdrop-filter: blur(12px) saturate(110%);
+  -webkit-backdrop-filter: blur(12px) saturate(110%);
+  animation: logoutBackdropIn 180ms ease-out both;
+}
+
+.logout-dialog {
+  position: relative;
+  width: min(100%, 472px);
+  overflow: hidden;
+  padding: 34px;
+  color: #F8FBFF;
+  background:
+    linear-gradient(145deg, rgba(16, 53, 86, 0.98) 0%, rgba(7, 29, 52, 0.99) 72%),
+    #071D34;
+  border: 1px solid rgba(118, 164, 219, 0.3);
+  border-radius: 24px;
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.52),
+    0 0 0 1px rgba(255, 255, 255, 0.025) inset;
+  animation: logoutDialogIn 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.logout-dialog-accent {
+  position: absolute;
+  top: 0;
+  left: 34px;
+  width: 76px;
+  height: 3px;
+  border-radius: 0 0 999px 999px;
+  background: #FCB315;
+  box-shadow: 0 0 20px rgba(252, 179, 21, 0.58);
+}
+
+.logout-dialog-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: #9DB3CA;
+  background: rgba(5, 21, 39, 0.38);
+  border: 1px solid rgba(136, 174, 217, 0.2);
+  border-radius: 11px;
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+
+.logout-dialog-close:hover:not(:disabled) {
+  color: #FFFFFF;
+  background: rgba(45, 96, 173, 0.3);
+  border-color: rgba(139, 181, 228, 0.42);
+}
+
+.logout-dialog-icon {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 24px;
+  color: #071D34;
+  background: #FCB315;
+  border: 1px solid #FFD36E;
+  border-radius: 18px;
+  box-shadow: 0 12px 34px rgba(252, 179, 21, 0.22);
+}
+
+.logout-dialog-copy {
+  max-width: 365px;
+}
+
+.logout-dialog-eyebrow {
+  display: block;
+  margin-bottom: 7px;
+  color: #75B9FF;
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.logout-dialog h2 {
+  margin: 0;
+  color: #FFFFFF;
+  font-size: clamp(1.55rem, 4vw, 1.9rem);
+  font-weight: 780;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+}
+
+.logout-dialog-copy p {
+  margin: 12px 0 0;
+  color: #B8C9D9;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.logout-dialog-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+  padding: 12px 14px;
+  color: #BFD6EA;
+  background: rgba(45, 96, 173, 0.16);
+  border: 1px solid rgba(113, 162, 216, 0.2);
+  border-radius: 12px;
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.logout-dialog-note svg {
+  flex: 0 0 auto;
+  color: #6FD6B4;
+}
+
+.logout-dialog-error {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  color: #FFD4D7;
+  background: rgba(178, 48, 59, 0.18);
+  border: 1px solid rgba(239, 101, 111, 0.35);
+  border-radius: 10px;
+  font-size: 0.76rem;
+}
+
+.logout-dialog-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.logout-dialog-action {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.logout-dialog-action:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.logout-dialog-action:focus-visible,
+.logout-dialog-close:focus-visible {
+  outline: 3px solid rgba(252, 179, 21, 0.46);
+  outline-offset: 3px;
+}
+
+.logout-dialog-action:disabled,
+.logout-dialog-close:disabled {
+  opacity: 0.58;
+  cursor: wait;
+}
+
+.logout-dialog-action--stay {
+  color: #E9F2FB;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(157, 187, 219, 0.28);
+}
+
+.logout-dialog-action--stay:hover:not(:disabled) {
+  color: #FFFFFF;
+  background: rgba(45, 96, 173, 0.3);
+  border-color: rgba(127, 171, 221, 0.5);
+}
+
+.logout-dialog-action--exit {
+  color: #FFFFFF;
+  background: #B73743;
+  border: 1px solid #D85A65;
+  box-shadow: 0 9px 24px rgba(183, 55, 67, 0.22);
+}
+
+.logout-dialog-action--exit:hover:not(:disabled) {
+  background: #CA424E;
+  border-color: #ED7881;
+  box-shadow: 0 12px 30px rgba(183, 55, 67, 0.3);
+}
+
+@keyframes logoutBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes logoutDialogIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 520px) {
+  .logout-dialog-backdrop {
+    align-items: end;
+    padding: 12px;
+  }
+
+  .logout-dialog {
+    padding: 30px 22px 22px;
+    border-radius: 22px;
+  }
+
+  .logout-dialog-accent {
+    left: 22px;
+  }
+
+  .logout-dialog-icon {
+    width: 52px;
+    height: 52px;
+    margin-bottom: 20px;
+    border-radius: 16px;
+  }
+
+  .logout-dialog-actions {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logout-dialog-backdrop,
+  .logout-dialog {
+    animation: none;
+  }
+
+  .logout-dialog-action {
+    transition: none;
+  }
+
+  .logout-dialog-action:hover:not(:disabled) {
+    transform: none;
+  }
+}
+
+.sidebar-brand-logos {
+  position: relative;
+  width: 164px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  overflow: hidden;
+}
+
+.sidebar-compliance-logo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 280px;
+  height: auto;
+  max-width: none;
+  opacity: 0.9;
+  pointer-events: none;
+  user-select: none;
+  transform: translate(-50%, -50%);
+}
+
+/* ==========================================================
+   SIDEBAR MODO ESCURO INVESTIGATIVO
+   ========================================================== */
+.sidebar.dark-mode {
+  background-color: #071629;
+  border-right: 1px solid #163A60;
+  color: #F1F5F9;
+  box-shadow: 1px 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar.dark-mode .sidebar-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.sidebar.dark-mode .sidebar-logo {
+  background: #FFFFFF;
+  border-color: #FCB315;
+  box-shadow: 0 3px 12px rgba(252, 179, 21, 0.18);
+}
+
+.sidebar.dark-mode button:focus-visible,
+.sidebar.dark-mode .sidebar-logo:focus-visible {
+  outline-color: #FCB315;
+}
+
+.sidebar.dark-mode .sidebar-brand-name {
+  color: #FFFFFF;
+}
+
+.sidebar.dark-mode .sidebar-brand-sub {
+  color: #FCB315;
+}
+
+.sidebar.dark-mode .sidebar-new-btn {
+  background-color: #08213B;
+  border-color: #1E3A5F;
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar.dark-mode .sidebar-new-icon-box {
+  background-color: rgba(45, 96, 173, 0.3);
+  color: #D8E5F7;
+}
+
+.sidebar.dark-mode .sidebar-new-btn:hover {
+  background-color: #0D3252;
+  border-color: #6B94CF;
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(45, 96, 173, 0.3);
+}
+
+.sidebar.dark-mode .sidebar-new-btn:hover .sidebar-new-icon-box {
+  background-color: #2D60AD;
+  color: #FFFFFF;
+}
+
+.sidebar.dark-mode .sidebar-nav::-webkit-scrollbar-thumb {
+  background: #1E3A5F;
+}
+
+.sidebar.dark-mode .sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: #255380;
+}
+
+.sidebar.dark-mode .sidebar-label {
+  color: #A7B8CA;
+}
+
+.sidebar.dark-mode .sidebar-nav-item {
+  color: #B9C7D7;
+}
+
+.sidebar.dark-mode .sidebar-nav-item:hover {
+  background-color: rgba(45, 96, 173, 0.22);
+  color: #FFFFFF;
+}
+
+.sidebar.dark-mode .sidebar-nav-item:hover svg {
+  color: #FCB315;
+}
+
+.sidebar.dark-mode .sidebar-nav-item.active {
+  background: linear-gradient(135deg, #2D60AD 0%, #234D8E 100%);
+  border-color: #6B94CF;
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(45, 96, 173, 0.42);
+}
+
+.sidebar.dark-mode .sidebar-nav-item.active svg {
+  color: #FFFFFF;
+}
+
+.sidebar.dark-mode .sidebar-recent-item {
+  color: #B9C7D7;
+}
+
+.sidebar.dark-mode .sidebar-recent-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #FFFFFF;
+}
+
+.sidebar.dark-mode .sidebar-recent-item:hover svg {
+  color: #FCB315 !important;
+}
+
+.sidebar.dark-mode .sidebar-badge {
+  background: #08213B;
+  color: #D8E5F7;
+  border-color: #3D679B;
+}
+
+.sidebar.dark-mode .sidebar-footer {
+  background-color: #071629;
+  border-top: 1px solid #163A60;
+}
+
+.sidebar.dark-mode .sidebar-user-pill {
+  background-color: #08213B;
+  border-color: #1E3A5F;
+}
+
+.sidebar.dark-mode .sidebar-user-pill:hover {
+  background-color: #0D2D4F;
+  border-color: #255380;
+}
+
+.sidebar.dark-mode .sidebar-user-name {
+  color: #FFFFFF;
+}
+
+.sidebar.dark-mode .sidebar-user-role {
+  color: #FCB315;
+}
+
+.sidebar.dark-mode .sidebar-logout-btn {
+  color: #A7B8CA;
+}
+
+.sidebar.dark-mode .sidebar-logout-btn:hover {
+  background-color: #1E3A5F;
+  color: #FFFFFF;
+}
+
+.sidebar.dark-mode .sidebar-compliance-logo {
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .sidebar-logo,
+  .sidebar-new-btn,
+  .sidebar-new-icon-box,
+  .sidebar-nav-item,
+  .sidebar-recent-item,
+  .sidebar-recent-icon,
+  .sidebar-user-pill,
+  .sidebar-logout-btn {
+    transition: none;
+  }
+
+  .sidebar-logo:hover,
+  .sidebar-new-btn:hover,
+  .sidebar-new-btn:hover .sidebar-new-icon-box,
+  .sidebar-nav-item:hover,
+  .sidebar-recent-item:hover,
+  .sidebar-recent-item:hover .sidebar-recent-icon {
+    transform: none;
+  }
 }

@@ -35,9 +35,12 @@ function getErrorMessageForStatus(status: number, serverError?: string): string 
   }
 }
 
-export async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+type RequestOptions = RequestInit & { timeoutMs?: number };
+
+export async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+  const { timeoutMs = TIMEOUT_MS, ...fetchOptions } = options;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const idToken = await getFirebaseIdToken();
@@ -45,7 +48,7 @@ export async function request<T>(endpoint: string, options: RequestInit = {}): P
     const headers: Record<string, string> = {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-      ...((options.headers as Record<string, string>) || {}),
+      ...((fetchOptions.headers as Record<string, string>) || {}),
     };
 
     if (idToken) {
@@ -53,7 +56,7 @@ export async function request<T>(endpoint: string, options: RequestInit = {}): P
     }
 
     const response = await fetch(endpoint, {
-      ...options,
+      ...fetchOptions,
       signal: controller.signal,
       headers,
     });

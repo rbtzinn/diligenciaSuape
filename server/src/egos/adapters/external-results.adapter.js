@@ -1,8 +1,11 @@
 const { normalizeName, stableHash, safeDate } = require('../domain/normalization');
 
-function adaptMedia(builder, companyKey, payload) {
+function adaptMedia(builder, context, payload) {
+  const companyKey = context.companyKey;
   const media = payload.adverseMedia;
   const results = Array.isArray(media?.results) ? media.results : [];
+  const companyResults = results.filter((item) => item.subjectType !== 'person').length;
+  const personResults = results.filter((item) => item.subjectType === 'person').length;
   const unavailable = !media || media.semChave || media.ok === false;
   builder.addCoverage({
     axis: 'MEDIA',
@@ -11,8 +14,8 @@ function adaptMedia(builder, companyKey, payload) {
     message: unavailable
       ? (media?.aviso || 'A busca de mídia não está configurada ou não respondeu.')
       : results.length > 0
-        ? `${results.length} resultado(s) público(s) foram correlacionados e deduplicados.`
-        : 'Nenhuma ocorrência localizada nas consultas de mídia executadas.',
+        ? `${companyResults} resultado(s) sobre a empresa e ${personResults} resultado(s) nominal(is) sobre integrantes foram correlacionados e deduplicados.`
+        : `Nenhuma ocorrência candidata localizada para a empresa e para ${media?.peopleSearched || 0} integrante(s) pesquisado(s).`,
     resultCount: results.length,
     consultedAt: media?.consultadoEm ? safeDate(media.consultadoEm) : null,
   });
@@ -32,13 +35,24 @@ function adaptMedia(builder, companyKey, payload) {
   }
 
   for (const item of results) {
+    const isPersonResult = item.subjectType === 'person';
+    const personRiskRelevant = isPersonResult
+      && item.personMatch?.fullName === true
+      && Array.isArray(item.matchedTerms)
+      && item.matchedTerms.length > 0
+      && Array.isArray(item.categories)
+      && item.categories.some((category) => category === 'criminal' || category === 'integrity');
+    const sourceKey = isPersonResult
+      ? context.shareholderKeys.get(normalizeName(item.subjectName))
+      : companyKey;
+    if (!sourceKey) continue;
     const documentKey = `document:web:${stableHash(item.url || item.title)}`;
     builder.addEntity({
       key: documentKey,
       type: 'Document',
       name: item.title || 'Publicação na web',
       normalizedName: normalizeName(item.title),
-      role: 'media_mention',
+      role: isPersonResult ? 'person_occurrence_candidate' : 'media_mention',
       depth: 1,
       confidence: item.matchStrength === 'high' ? 85 : item.matchStrength === 'medium' ? 65 : 40,
       properties: {
@@ -46,17 +60,30 @@ function adaptMedia(builder, companyKey, payload) {
         domain: item.domain || null,
         publishedAt: item.publishedAt || null,
         categories: item.categories || [],
+        matchedTerms: item.matchedTerms || [],
+        questionnaireCandidate: personRiskRelevant,
         matchStrength: item.matchStrength || 'low',
+        subjectType: item.subjectType || 'company',
+        subjectName: item.subjectName || payload.razaoSocial,
+        identityStatus: item.identityStatus || null,
+        questionnaireRefs: item.questionnaireRefs || [],
       },
     });
     const relationshipKey = builder.addRelationship({
-      sourceKey: companyKey,
+      sourceKey,
       targetKey: documentKey,
-      type: 'MENTIONED_IN',
-      label: 'Mencionada em publicação',
+      type: isPersonResult ? 'POSSIBLE_PERSON_OCCURRENCE' : 'MENTIONED_IN',
+      label: isPersonResult ? 'Possível menção pública associada ao nome' : 'Mencionada em publicação',
       status: 'CANDIDATE',
       confidence: item.matchStrength === 'high' ? 85 : item.matchStrength === 'medium' ? 65 : 40,
-      properties: { queriesMatched: item.queriesMatched || [], provider: 'MEDIA_SEARCH' },
+      properties: {
+        queriesMatched: item.queriesMatched || [],
+        provider: 'MEDIA_SEARCH',
+        subjectType: item.subjectType || 'company',
+        subjectName: item.subjectName || payload.razaoSocial,
+        requiresHumanReview: true,
+        identityConfirmed: false,
+      },
     });
     builder.addEvidence({
       entityKey: documentKey,
@@ -64,28 +91,31 @@ function adaptMedia(builder, companyKey, payload) {
       provider: 'MEDIA_SEARCH',
       sourceName: item.domain || 'Publicação na web',
       sourceUrl: item.url || null,
-      query: (item.queriesMatched || []).join(' | ') || payload.razaoSocial,
+      query: (item.queriesMatched || []).join(' | ') || item.subjectName || payload.razaoSocial,
       identifier: item.url || item.title,
       excerpt: item.snippet || null,
       confidence: item.matchStrength === 'high' ? 85 : item.matchStrength === 'medium' ? 65 : 40,
       retrievedAt: item.searchedAt ? safeDate(item.searchedAt) : new Date(),
     });
-    if (item.matchStrength === 'high' || item.matchStrength === 'medium') {
+    if ((item.matchStrength === 'high' || item.matchStrength === 'medium') && (!isPersonResult || personRiskRelevant)) {
       builder.addFinding({
-        entityKey: companyKey,
+        entityKey: sourceKey,
         relationshipKey,
         axis: 'MEDIA',
         status: item.matchStrength === 'high' ? 'REVIEW' : 'INCONCLUSIVE',
         severity: item.matchStrength === 'high' ? 'MEDIUM' : 'LOW',
-        title: 'Publicação potencialmente relevante',
-        explanation: 'A correlação indica que o conteúdo merece leitura humana. A menção não comprova irregularidade.',
+        title: isPersonResult ? 'Conteúdo público associado ao nome — validar pessoa e teor' : 'Publicação potencialmente relevante sobre a empresa',
+        explanation: isPersonResult
+          ? `A pesquisa encontrou conteúdo associado ao nome “${item.subjectName}”. Isso não confirma identidade, autoria, investigação, processo, condenação ou irregularidade.`
+          : 'A correlação indica que o conteúdo merece leitura humana. A menção não comprova irregularidade.',
         confidence: item.matchStrength === 'high' ? 85 : 65,
       });
     }
   }
 }
 
-function adaptProcesses(builder, companyKey, payload) {
+function adaptProcesses(builder, context, payload) {
+  const companyKey = context.companyKey;
   const discoveries = Array.isArray(payload.processosDescobertos) ? payload.processosDescobertos : [];
   const enriched = discoveries.filter((item) => item.dataJud);
   const discoveryExecuted = payload.processDiscoveryExecuted === true;
@@ -119,6 +149,9 @@ function adaptProcesses(builder, companyKey, payload) {
 
   for (const discovery of discoveries) {
     const primarySource = discovery.primarySource || discovery.sources?.[0];
+    const sourceKey = primarySource?.subjectType === 'person'
+      ? context.shareholderKeys.get(normalizeName(primarySource.subjectName)) || companyKey
+      : companyKey;
     const processNumber = discovery.processNumber || discovery.formattedProcessNumber;
     if (!processNumber) continue;
     const caseKey = `court-case:cnj:${String(processNumber).replace(/\D/g, '')}`;
@@ -139,7 +172,7 @@ function adaptProcesses(builder, companyKey, payload) {
       identifiers: [{ type: 'CNJ', value: String(processNumber).replace(/\D/g, ''), provider: primarySource?.name || 'PROCESS_DISCOVERY', confidence: 100 }],
     });
     const relationshipKey = builder.addRelationship({
-      sourceKey: companyKey,
+      sourceKey,
       targetKey: caseKey,
       type: 'POTENTIALLY_RELATED_TO_CASE',
       label: 'Possível relação processual',
@@ -153,14 +186,14 @@ function adaptProcesses(builder, companyKey, payload) {
       provider: primarySource?.type || 'PROCESS_DISCOVERY',
       sourceName: primarySource?.name || 'Origem da descoberta',
       sourceUrl: primarySource?.url || null,
-      query: payload.cnpj,
+      query: primarySource?.subjectName || payload.cnpj,
       identifier: processNumber,
       excerpt: primarySource?.excerpt || 'Número CNJ identificado em fonte auxiliar.',
       confidence: discovery.status === 'validated' || discovery.status === 'enriched' ? 85 : 55,
       retrievedAt: primarySource?.consultedAt ? safeDate(primarySource.consultedAt) : new Date(),
     });
     builder.addFinding({
-      entityKey: companyKey,
+      entityKey: sourceKey,
       relationshipKey,
       axis: 'PROCESS_DISCOVERY',
       status: 'INCONCLUSIVE',
@@ -293,6 +326,105 @@ function adaptCorporateNetwork(builder, companyKey, payload) {
   builder.addInsight(`${companies.length} empresa(s) adicional(is) foram alcançadas pela expansão societária controlada.`);
 }
 
+function adaptFundNetwork(builder, context, payload) {
+  const network = payload.fundNetwork;
+  if (!network) {
+    builder.addCoverage({
+      axis: 'FUND_RELATIONSHIPS',
+      provider: 'CVM_FUND_REGISTRY',
+      status: 'NOT_CONSULTED',
+      message: 'O cadastro regulatório de fundos da CVM não foi consultado nesta diligência.',
+      resultCount: 0,
+      consultedAt: null,
+    });
+    return;
+  }
+
+  if (!network.applicable) {
+    builder.addCoverage({
+      axis: 'FUND_RELATIONSHIPS',
+      provider: 'CVM_FUND_REGISTRY',
+      status: 'NOT_APPLICABLE',
+      message: network.aviso || 'O CNPJ não consta como fundo ou classe no cadastro público atual da CVM.',
+      resultCount: 0,
+      consultedAt: network.consultadoEm ? safeDate(network.consultadoEm) : null,
+    });
+    return;
+  }
+
+  const available = network.ok === true;
+  const entities = Array.isArray(network.entities) ? network.entities : [];
+  const relationships = Array.isArray(network.relationships) ? network.relationships : [];
+  const evidences = Array.isArray(network.evidences) ? network.evidences : [];
+  builder.addCoverage({
+    axis: 'FUND_RELATIONSHIPS',
+    provider: 'CVM_FUND_REGISTRY',
+    status: !available ? 'UNAVAILABLE' : network.consultaParcial ? 'PARTIAL' : 'CONSULTED',
+    message: !available
+      ? (network.erro || 'O cadastro regulatório de fundos da CVM não pôde ser consultado.')
+      : `${network.directParties || 0} vínculo(s) regulatório(s) direto(s) e ${network.expandedCompanies || 0} QSA(s) de prestadores foram estruturados sem confundir prestação de serviço com participação societária.`,
+    resultCount: relationships.length,
+    consultedAt: network.consultadoEm ? safeDate(network.consultadoEm) : null,
+  });
+  if (!available) return;
+
+  for (const entity of entities) {
+    if (!entity?.key || !entity?.name) continue;
+    builder.addEntity({
+      key: entity.key === `company:cnpj:${String(payload.cnpj || '').replace(/\D/g, '')}`
+        ? context.companyKey
+        : entity.key,
+      type: entity.type || 'Company',
+      name: entity.name,
+      normalizedName: normalizeName(entity.name),
+      role: entity.role || 'fund_related_entity',
+      depth: entity.depth ?? 1,
+      confidence: entity.confidence ?? 100,
+      properties: entity.properties || {},
+      identifiers: Array.isArray(entity.identifiers) ? entity.identifiers : [],
+    });
+  }
+
+  const rootKey = `company:cnpj:${String(payload.cnpj || '').replace(/\D/g, '')}`;
+  const canonicalKey = (key) => key === rootKey ? context.companyKey : key;
+  for (const relationship of relationships) {
+    const sourceKey = canonicalKey(relationship.sourceKey);
+    const targetKey = canonicalKey(relationship.targetKey);
+    if (!builder.entities.has(sourceKey) || !builder.entities.has(targetKey)) continue;
+    builder.addRelationship({
+      key: relationship.key,
+      sourceKey,
+      targetKey,
+      type: relationship.type,
+      label: relationship.label,
+      status: relationship.status || 'CONFIRMED',
+      confidence: relationship.confidence ?? 100,
+      properties: relationship.properties || {},
+    });
+  }
+
+  for (const evidence of evidences) {
+    const entityKey = evidence.entityKey ? canonicalKey(evidence.entityKey) : undefined;
+    const relationshipKey = evidence.relationshipKey;
+    if (entityKey && !builder.entities.has(entityKey)) continue;
+    if (relationshipKey && !builder.relationships.has(relationshipKey)) continue;
+    builder.addEvidence({
+      entityKey,
+      relationshipKey,
+      provider: evidence.provider || 'CVM_FUND_REGISTRY',
+      sourceName: evidence.sourceName || network.provider || 'CVM — Cadastro de Fundos',
+      sourceUrl: evidence.sourceUrl || network.sourceUrl || null,
+      query: evidence.query || payload.cnpj,
+      identifier: evidence.identifier || null,
+      excerpt: evidence.excerpt || null,
+      confidence: evidence.confidence ?? 100,
+      retrievedAt: evidence.retrievedAt ? safeDate(evidence.retrievedAt) : new Date(),
+    });
+  }
+
+  builder.addInsight(`${network.directParties || 0} vínculo(s) regulatório(s) direto(s) do fundo foram conectados a ${network.expandedCompanies || 0} quadro(s) societário(s) relacionado(s).`);
+}
+
 function adaptOffshore(builder, context, payload) {
   const offshore = payload.offshore;
   const candidates = Array.isArray(offshore?.candidates) ? offshore.candidates : [];
@@ -365,10 +497,11 @@ function adaptOffshore(builder, context, payload) {
 }
 
 function adaptExternalResults(builder, context, payload) {
-  adaptMedia(builder, context.companyKey, payload);
-  adaptProcesses(builder, context.companyKey, payload);
+  adaptMedia(builder, context, payload);
+  adaptProcesses(builder, context, payload);
   adaptOfficialGazettes(builder, context.companyKey, payload);
   adaptCorporateNetwork(builder, context.companyKey, payload);
+  adaptFundNetwork(builder, context, payload);
   adaptOffshore(builder, context, payload);
 }
 

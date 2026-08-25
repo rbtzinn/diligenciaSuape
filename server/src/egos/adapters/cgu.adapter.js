@@ -116,10 +116,11 @@ function adaptPep(builder, shareholderKeys, pepResults) {
   }
 
   const unavailable = results.filter((item) => item.semChave || item.ok === false).length;
+  const partial = results.filter((item) => item.consultaParcial).length;
   const recordsCount = results.reduce((total, item) => total + (item.registros?.length || 0), 0);
   const status = results.length === 0 || unavailable === results.length
     ? 'UNAVAILABLE'
-    : unavailable > 0 ? 'PARTIAL' : 'CONSULTED';
+    : unavailable > 0 || partial > 0 ? 'PARTIAL' : 'CONSULTED';
   builder.addCoverage({
     axis: 'PEP',
     provider: 'CGU_PEP',
@@ -127,7 +128,9 @@ function adaptPep(builder, shareholderKeys, pepResults) {
     message: status === 'UNAVAILABLE'
       ? 'A verificação nominal de PEP não pôde ser concluída.'
       : status === 'PARTIAL'
-        ? `${results.length - unavailable} de ${results.length} integrante(s) foram consultados.`
+        ? partial > 0
+          ? `${results.length - unavailable} de ${results.length} integrante(s) foram consultados, mas ao menos uma busca atingiu o limite técnico de paginação.`
+          : `${results.length - unavailable} de ${results.length} integrante(s) foram consultados.`
         : recordsCount > 0
           ? `${recordsCount} candidato(s) nominal(is) exigem resolução de identidade.`
           : 'Nenhuma correspondência nominal retornada para os integrantes consultados.',
@@ -165,7 +168,20 @@ function adaptPep(builder, shareholderKeys, pepResults) {
         role: 'pep_candidate',
         depth: 2,
         confidence: 100,
-        properties: { source: 'CGU_PEP' },
+        properties: {
+          source: 'CGU_PEP',
+          searchedName: result.nome || null,
+          maskedCpf: record.cpf || null,
+          publicRole: record.funcao || null,
+          roleAbbreviation: record.siglaFuncao || null,
+          roleLevel: record.nivelFuncao || null,
+          publicOrganization: record.orgao || null,
+          publicOrganizationCode: record.codigoOrgao || null,
+          publicServiceStart: record.inicio || null,
+          publicServiceEnd: record.fim || null,
+          pepCoolingOffEnd: record.carencia || null,
+          identityConfirmed: false,
+        },
         identifiers: record.cpf ? [{ type: 'MASKED_CPF', value: normalizeIdentifier(record.cpf), provider: 'CGU_PEP', confidence: 70 }] : [],
       });
 
@@ -187,17 +203,42 @@ function adaptPep(builder, shareholderKeys, pepResults) {
         label: resolution.score >= 90 ? 'Correspondência PEP muito forte' : 'Possível correspondência PEP',
         status: resolution.score >= 90 ? 'PROBABLE' : 'CANDIDATE',
         confidence: resolution.score,
-        properties: { requiresHumanReview: true, provider: 'EGOS_ENTITY_RESOLUTION' },
+        properties: {
+          requiresHumanReview: true,
+          identityConfirmed: false,
+          provider: 'EGOS_ENTITY_RESOLUTION',
+          searchedName: sourceEntity.name,
+          candidateName,
+          matchScore: resolution.score,
+        },
       });
       builder.addEvidence({
         relationshipKey: identityRelationshipKey,
         provider: 'EGOS_ENTITY_RESOLUTION',
         sourceName: 'Cruzamento QSA × Pessoas Expostas Politicamente',
+        sourceUrl: 'https://portaldatransparencia.gov.br/download-de-dados/pep',
         query: result.nome,
         identifier: stableHash(sourceKey, candidateKey),
-        excerpt: `Comparação explicável: ${resolution.signals.map((signal) => signal.label).join('; ')}. O resultado não confirma identidade automaticamente.`,
+        excerpt: `Candidato exato retornado: ${candidateName}; CPF: ${record.cpf || 'não informado'}; função: ${record.funcao || 'não informada'}; órgão: ${record.orgao || 'não informado'}; período: ${record.inicio || 'não informado'} a ${record.fim || 'não informado'}. Índice de compatibilidade ${resolution.score}/100 (${resolution.signals.map((signal) => signal.label).join('; ')}). A identidade ainda não está confirmada.`,
         confidence: resolution.score,
-        rawReference: { signals: resolution.signals.map((signal) => ({ code: signal.code, matched: signal.matched, weight: signal.weight })) },
+        rawReference: {
+          candidate: {
+            name: candidateName,
+            maskedCpf: record.cpf || null,
+            role: record.funcao || null,
+            organization: record.orgao || null,
+            startsAt: record.inicio || null,
+            endsAt: record.fim || null,
+            coolingOffEndsAt: record.carencia || null,
+          },
+          signals: resolution.signals.map((signal) => ({
+            code: signal.code,
+            label: signal.label,
+            matched: signal.matched,
+            weight: signal.weight,
+            detail: signal.detail,
+          })),
+        },
         retrievedAt: result.consultadoEm ? safeDate(result.consultadoEm) : new Date(),
       });
 
@@ -226,6 +267,7 @@ function adaptPep(builder, shareholderKeys, pepResults) {
           relationshipKey: officeRelationshipKey,
           provider: 'CGU_PEP',
           sourceName: result.fonte || 'Portal da Transparência (CGU / PEP)',
+          sourceUrl: 'https://portaldatransparencia.gov.br/download-de-dados/pep',
           query: result.nome,
           identifier: normalizeIdentifier(record.cpf) || candidateName,
           excerpt: `${candidateName} — ${record.funcao || 'função não informada'} em ${record.orgao || 'órgão não informado'}.`,
@@ -242,7 +284,7 @@ function adaptPep(builder, shareholderKeys, pepResults) {
           status: resolution.score >= 90 ? 'REVIEW' : 'INCONCLUSIVE',
           severity: resolution.score >= 90 ? 'MEDIUM' : 'LOW',
           title: resolution.score >= 90 ? 'Correspondência PEP muito forte' : 'Possível correspondência PEP',
-          explanation: `A busca por nome retornou candidato com ${resolution.score}% de confiança. Isso não confirma identidade e requer validação humana.`,
+          explanation: `A CGU retornou o candidato ${candidateName}. O índice ${resolution.score}/100 resulta dos campos comparados (${resolution.signals.map((signal) => `${signal.label}: ${signal.detail}`).join('; ')}). O índice não é uma probabilidade e não confirma identidade; valide os documentos antes de decidir.`,
           confidence: resolution.score,
         });
       }

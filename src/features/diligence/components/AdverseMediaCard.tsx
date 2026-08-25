@@ -17,10 +17,15 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
   item,
   onStatusChange,
 }) => {
-  const matchConfig: Record<string, { label: string; variant: 'critical' | 'medium' | 'neutral' }> = {
-    high: { label: 'Correspondência Forte', variant: 'critical' },
-    medium: { label: 'Correspondência Média', variant: 'medium' },
-    low: { label: 'Possível Homônimo', variant: 'neutral' },
+  const isPerson = item.subjectType === 'person';
+  const matchConfig: Record<string, { label: string; variant: 'critical' | 'medium' | 'neutral' }> = isPerson ? {
+    high: { label: 'Nome + contexto', variant: 'medium' },
+    medium: { label: 'Nome completo', variant: 'medium' },
+    low: { label: 'Associação fraca', variant: 'neutral' },
+  } : {
+    high: { label: 'Empresa identificada', variant: 'critical' },
+    medium: { label: 'Nome compatível', variant: 'medium' },
+    low: { label: 'Correlação baixa', variant: 'neutral' },
   };
 
   const currentMatch = matchConfig[item.matchStrength] || matchConfig.low;
@@ -40,6 +45,17 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '240px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--font-bold)', color: isPerson ? 'var(--status-medium-text)' : 'var(--brand-primary)' }}>
+              {isPerson ? 'PESSOA PESQUISADA' : 'EMPRESA PESQUISADA'}
+            </span>
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', fontWeight: 'var(--font-semibold)' }}>
+              {item.subjectName || 'Entidade da diligência'}
+            </span>
+            {item.subjectQualification ? (
+              <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-muted)' }}>· {item.subjectQualification}</span>
+            ) : null}
+          </div>
           <a
             href={item.url}
             target="_blank"
@@ -65,7 +81,7 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
           <Badge variant={currentMatch.variant}>{currentMatch.label}</Badge>
-          {item.status === 'validated' && <Badge variant="high">Validado</Badge>}
+          {item.status === 'validated' && <Badge variant="high">Associação revisada</Badge>}
           {item.status === 'discarded' && <Badge variant="neutral">Descartado</Badge>}
         </div>
       </div>
@@ -75,6 +91,13 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
           {item.snippet}
         </p>
       )}
+
+      {isPerson ? (
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem', padding: '0.55rem 0.65rem', color: 'var(--text-secondary)', background: 'var(--bg-surface-subtle)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-2xs)', lineHeight: '1.45' }}>
+          <Icons.Info size={13} style={{ flexShrink: 0, marginTop: '1px' }} />
+          <span>O nome aparece no conteúdo, mas a identidade e o teor ainda precisam ser confirmados. Isto não é registro de crime nem de condenação.</span>
+        </div>
+      ) : null}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
@@ -89,6 +112,11 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
               {item.processNumbers.length} Processo(s) CNJ
             </span>
           )}
+          {item.questionnaireRefs?.map((reference) => (
+            <span key={reference} className="badge badge-info" style={{ fontSize: 'var(--text-2xs)' }}>
+              Questão {reference}
+            </span>
+          ))}
         </div>
 
         {onStatusChange && (
@@ -99,7 +127,7 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
                 size="sm"
                 onClick={() => onStatusChange(item.id, 'validated')}
               >
-                Validar
+                Confirmar associação
               </Button>
             )}
             {item.status !== 'discarded' && (

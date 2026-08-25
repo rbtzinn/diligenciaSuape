@@ -21,7 +21,7 @@ export const RiskVisualizer: React.FC<RiskVisualizerProps> = ({
   risco,
   ceis,
   cnep,
-  pepResults,
+  pepResults = [],
   adverseMedia,
   discoveries = [],
 }) => {
@@ -46,49 +46,74 @@ export const RiskVisualizer: React.FC<RiskVisualizerProps> = ({
   const consultedCount = coverageItems.filter((item) => item.status === 'Concluído' || item.variant === 'warning' || item.variant === 'critical').length;
 
   return (
-    <div className="risk-visualizer-grid dash-full-width">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
       {/* 1. O que influenciou a nota */}
       <Card
         title="O que influenciou a nota de risco"
         icon={<Icons.BarChart size={16} />}
         action={
-          <span className="badge badge-neutral" style={{ fontSize: 'var(--text-2xs)' }}>
-            Nota: {risco.score}/100
+          <span className="badge badge-neutral" style={{ fontSize: '11px', fontWeight: 700 }}>
+            Nota: {risco?.score || 0}/100
           </span>
         }
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <div className="section-subtitle">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+          <div className="section-subtitle" style={{ fontSize: '12px', color: '#64748B', marginBottom: '0.2rem' }}>
             Cada fator abaixo contribuiu para a nota final de risco
           </div>
-          {risco.detalhes.length === 0 ? (
+
+          {!risco?.detalhes || risco.detalhes.length === 0 ? (
             <div className="clean-state-block">
               <Icons.Check size={16} />
               <span>Nenhum fator de risco identificado. Nota zero de atenção.</span>
             </div>
           ) : (
             risco.detalhes.map((dt, idx) => (
-              <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 'var(--text-sm)' }}>
-                  <span style={{ color: 'var(--text-primary)', fontWeight: 'var(--font-medium)' }}>{dt.criterio}</span>
-                  <span className="font-mono" style={{ color: dt.pontos > 0 ? 'var(--status-high-text)' : 'var(--text-tertiary)', fontWeight: 'var(--font-bold)' }}>
+              <div
+                key={idx}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.35rem',
+                  padding: '0.65rem 0.85rem',
+                  backgroundColor: '#F8FAFC',
+                  borderRadius: '8px',
+                  border: '1px solid #E2E8F0',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
+                  <span style={{ color: '#0F172A', fontWeight: 650, fontSize: '13px', lineHeight: 1.3 }}>
+                    {dt.criterio}
+                  </span>
+                  <span
+                    className="font-mono"
+                    style={{
+                      color: dt.pontos > 0 ? '#DC2626' : '#64748B',
+                      fontWeight: 750,
+                      fontSize: '12.5px',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                    }}
+                  >
                     {dt.pontos > 0 ? `+${dt.pontos} pontos` : '0 pontos'}
                   </span>
                 </div>
+
                 {dt.pontos > 0 && (
-                  <div style={{ width: '100%', height: '6px', backgroundColor: 'var(--border-subtle)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+                  <div style={{ width: '100%', height: '5px', backgroundColor: '#E2E8F0', borderRadius: '9999px', overflow: 'hidden' }}>
                     <div
                       style={{
                         width: `${Math.min((dt.pontos / 50) * 100, 100)}%`,
                         height: '100%',
-                        backgroundColor: dt.pontos >= 30 ? 'var(--status-high)' : dt.pontos >= 15 ? 'var(--status-medium)' : 'var(--brand-blue)',
-                        borderRadius: 'var(--radius-full)',
+                        backgroundColor: dt.pontos >= 30 ? '#DC2626' : dt.pontos >= 15 ? '#F59E0B' : '#0066FF',
+                        borderRadius: '9999px',
                         transition: 'width 0.6s ease',
                       }}
                     />
                   </div>
                 )}
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>{dt.info}</span>
+
+                <span style={{ fontSize: '11.5px', color: '#64748B' }}>{dt.info}</span>
               </div>
             ))
           )}
@@ -100,16 +125,17 @@ export const RiskVisualizer: React.FC<RiskVisualizerProps> = ({
         title="Fontes consultadas e status"
         icon={<Icons.ShieldCheck size={16} />}
         action={
-          <span className="badge badge-neutral" style={{ fontSize: 'var(--text-2xs)' }}>
+          <span className="badge badge-neutral" style={{ fontSize: '11px', fontWeight: 700 }}>
             {consultedCount}/7 consultadas
           </span>
         }
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <div className="section-subtitle">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+          <div className="section-subtitle" style={{ fontSize: '12px', color: '#64748B' }}>
             Todas as bases de dados que foram verificadas nesta análise
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.45rem' }}>
             {coverageItems.map((item, idx) => {
               const badgeClass =
                 item.variant === 'critical'
@@ -127,14 +153,17 @@ export const RiskVisualizer: React.FC<RiskVisualizerProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '0.5rem 0.75rem',
-                    backgroundColor: 'var(--bg-surface-subtle)',
-                    borderRadius: 'var(--radius-xs)',
-                    border: '1px solid var(--border-default)',
+                    gap: '0.5rem',
+                    padding: '0.5rem 0.65rem',
+                    backgroundColor: '#F8FAFC',
+                    borderRadius: '8px',
+                    border: '1px solid #E2E8F0',
                   }}
                 >
-                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>{item.label}</span>
-                  <span className={`badge ${badgeClass}`} style={{ fontSize: 'var(--text-2xs)' }}>
+                  <span style={{ fontSize: '12px', color: '#334155', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {item.label}
+                  </span>
+                  <span className={`badge ${badgeClass}`} style={{ fontSize: '10.5px', fontWeight: 700, flexShrink: 0, padding: '2px 6px' }}>
                     {item.status}
                   </span>
                 </div>

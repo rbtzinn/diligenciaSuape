@@ -95,8 +95,8 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
               padding: '0.5rem 1rem',
               borderRadius: 'var(--radius-md)',
               border: 'none',
-              backgroundColor: activeTab === t.id ? 'var(--color-primary-50)' : 'transparent',
-              color: activeTab === t.id ? 'var(--color-primary-700)' : 'var(--text-secondary)',
+              backgroundColor: activeTab === t.id ? 'var(--brand-blue-subtle)' : 'transparent',
+              color: activeTab === t.id ? 'var(--brand-blue-text)' : 'var(--text-secondary)',
               fontWeight: activeTab === t.id ? 'var(--font-bold)' : 'var(--font-normal)',
               fontSize: 'var(--text-xs)',
               cursor: 'pointer',
@@ -111,7 +111,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                 fontSize: 'var(--text-2xs)',
                 padding: '0.1rem 0.4rem',
                 borderRadius: '999px',
-                backgroundColor: activeTab === t.id ? 'var(--color-primary-600)' : 'var(--bg-surface-subtle)',
+                backgroundColor: activeTab === t.id ? 'var(--brand-blue)' : 'var(--bg-surface-subtle)',
                 color: activeTab === t.id ? '#fff' : 'var(--text-tertiary)',
               }}
             >
@@ -209,7 +209,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                 size="sm"
                 onClick={handleConfirmDelete}
                 isLoading={isDeleting}
-                style={{ backgroundColor: 'var(--color-critical-600)', borderColor: 'var(--color-critical-600)' }}
+                style={{ backgroundColor: 'var(--status-critical)', borderColor: 'var(--status-critical)' }}
               >
                 Excluir Dossiê
               </Button>

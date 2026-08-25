@@ -27,14 +27,16 @@ export const ExecutiveSummaryBanner: React.FC<ExecutiveSummaryBannerProps> = ({
   discoveries = [],
   onReviewPendencies,
 }) => {
-  const situacao = (empresa.descricao_situacao_cadastral || 'NÃO INFORMADA').toUpperCase();
+  const situacao = (empresa?.descricao_situacao_cadastral || 'NÃO INFORMADA').toUpperCase();
   const isAtiva = situacao === 'ATIVA';
   const ceisVigentes = ceis?.vigentes ?? (ceis?.encontrado ? ceis.quantidade : 0);
   const cnepVigentes = cnep?.vigentes ?? (cnep?.encontrado ? cnep.quantidade : 0);
   const hasActiveSanction = ceisVigentes > 0 || cnepVigentes > 0;
 
   const pepHits = pepResults.filter((p) => p.encontrado).length;
-  const strongMedia = adverseMedia?.strongMatches || 0;
+  const mediaReviewCount = adverseMedia?.results.filter((item) => (
+    item.status !== 'discarded' && (item.matchStrength === 'high' || item.matchStrength === 'medium')
+  )).length || 0;
   const pendingProcesses = discoveries.filter((d) => d.status === 'candidate').length;
   const unavailableAxes = [
     ceis?.semChave || ceis?.ok === false,
@@ -43,7 +45,7 @@ export const ExecutiveSummaryBanner: React.FC<ExecutiveSummaryBannerProps> = ({
     !adverseMedia || adverseMedia.semChave || !adverseMedia.ok,
   ].filter(Boolean).length;
 
-  const totalPendencies = pepHits + (strongMedia > 0 ? 1 : 0) + pendingProcesses;
+  const totalPendencies = pepHits + (mediaReviewCount > 0 ? 1 : 0) + pendingProcesses;
 
   let message: string;
   let title: string;
@@ -66,7 +68,7 @@ export const ExecutiveSummaryBanner: React.FC<ExecutiveSummaryBannerProps> = ({
     title = 'Revise antes de decidir';
     const partes = [];
     if (pepHits > 0) partes.push(`${pepHits} sócio${pepHits > 1 ? 's' : ''} pode${pepHits > 1 ? 'm' : ''} ter cargo político`);
-    if (strongMedia > 0) partes.push(`${strongMedia} notícia${strongMedia > 1 ? 's' : ''} negativa${strongMedia > 1 ? 's' : ''} na internet`);
+    if (mediaReviewCount > 0) partes.push(`${mediaReviewCount} conteúdo${mediaReviewCount > 1 ? 's' : ''} público${mediaReviewCount > 1 ? 's' : ''} para leitura`);
     if (pendingProcesses > 0) partes.push(`${pendingProcesses} processo${pendingProcesses > 1 ? 's' : ''} judicial${pendingProcesses > 1 ? 'is' : ''} para revisar`);
 
     message = `${unavailableAxes > 0 ? 'A análise também possui fontes indisponíveis. ' : ''}Não foi localizado impedimento confirmado, mas existem itens que precisam ser verificados: ${partes.join(', ')}.`;

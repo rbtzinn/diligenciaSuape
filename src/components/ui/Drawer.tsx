@@ -13,6 +13,7 @@ interface DrawerProps {
   subtitle?: React.ReactNode;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  panelClassName?: string;
 }
 
 export const Drawer: React.FC<DrawerProps> = ({
@@ -22,6 +23,7 @@ export const Drawer: React.FC<DrawerProps> = ({
   subtitle,
   children,
   footer,
+  panelClassName = '',
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -40,7 +42,7 @@ export const Drawer: React.FC<DrawerProps> = ({
         onClick={onClose}
         aria-hidden="true"
       />
-      <div className={`drawer-panel ${isOpen ? 'active' : ''}`} role="dialog" aria-modal="true">
+      <div className={`drawer-panel ${panelClassName} ${isOpen ? 'active' : ''}`} role="dialog" aria-modal="true">
         <div className="drawer-header">
           <div>
             <h3 className="drawer-title">{title}</h3>

@@ -29,7 +29,30 @@ const DiligenceRepository = {
             preliminaryLevel: data.risco?.nivel ?? 'Atenção Baixa',
             recommendation: data.risco?.decisao || 'Nenhum impedimento identificado',
             summary: data.risco?.decisaoDesc || '',
-            companySnapshot: data.empresa || {},
+            companySnapshot: {
+              ...(data.empresa || {}),
+              _diligenceMeta: {
+                companySource: data.companySource || null,
+                companyConsultedAt: data.companyConsultedAt || null,
+                adverseMedia: data.adverseMedia ? {
+                  provider: data.adverseMedia.provider || null,
+                  peopleRequested: data.adverseMedia.peopleRequested || 0,
+                  peopleSearched: data.adverseMedia.peopleSearched || 0,
+                  peopleWithCandidates: data.adverseMedia.peopleWithCandidates || 0,
+                  companyResultsCount: data.adverseMedia.companyResultsCount || 0,
+                  personResultsCount: data.adverseMedia.personResultsCount || 0,
+                  personSearchCompleted: data.adverseMedia.personSearchCompleted === true,
+                  personSearchTruncated: data.adverseMedia.personSearchTruncated === true,
+                  consultaParcial: data.adverseMedia.consultaParcial === true,
+                  subjects: Array.isArray(data.adverseMedia.subjects) ? data.adverseMedia.subjects : [],
+                  queriesExecuted: Array.isArray(data.adverseMedia.queriesExecuted) ? data.adverseMedia.queriesExecuted : [],
+                  consultadoEm: data.adverseMedia.consultadoEm || null,
+                } : null,
+                governanceHistory: data.governanceHistory || null,
+                fundNetwork: data.fundNetwork || null,
+                questionnaireVersion: 'SUAPE-2026.2',
+              },
+            },
           },
         });
 

@@ -89,7 +89,9 @@ const DiligenceMappers = {
   mapAdverseMedia(diligenceId, adverseMedia) {
     if (!adverseMedia?.results || adverseMedia.results.length === 0) return [];
     return adverseMedia.results.map((m) => ({
-      id: m.id || crypto.randomUUID(),
+      // O identificador do provedor pode reaparecer em diligências diferentes.
+      // A chave relacional precisa ser exclusiva por registro persistido.
+      id: crypto.randomUUID(),
       diligenceId,
       title: m.title || '',
       url: m.url || '',

@@ -22,7 +22,7 @@ class EgosGraphBuilder {
       type: entity.type,
       name: entity.name || 'Não informado',
       normalizedName: entity.normalizedName || '',
-      properties: entity.properties || {},
+      properties: { ...(current?.properties || {}), ...(entity.properties || {}) },
       depth: Math.min(current?.depth ?? entity.depth ?? 0, entity.depth ?? 0),
       role: current?.role === 'root' ? 'root' : (entity.role || current?.role || 'related'),
       confidence: Math.max(current?.confidence || 0, entity.confidence ?? 100),

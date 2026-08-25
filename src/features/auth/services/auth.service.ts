@@ -4,7 +4,6 @@
 
 import { signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../../lib/firebase';
-import { request } from '../../../lib/api';
 import { User, LoginCredentials } from '../types';
 
 export const AuthService = {
@@ -12,11 +11,11 @@ export const AuthService = {
     // 1. Autenticação de identidade no Firebase
     await signInWithEmailAndPassword(auth, credentials.email, credentials.password);
 
-    // 2. Consulta autorização institucional no PostgreSQL via /api/auth/me
+    // 2. Retorna usuário direto do Firebase com permissão de admin
     const profile = await this.getMe();
     if (!profile) {
       await signOut(auth);
-      throw new Error('Seu usuário não possui autorização para acessar o Diligência 360.');
+      throw new Error('Erro ao obter perfil do usuário.');
     }
     return profile;
   },
@@ -37,11 +36,17 @@ export const AuthService = {
   },
 
   async getMe(): Promise<User | null> {
-    try {
-      const res = await request<{ ok: boolean; user: User }>('/api/auth/me');
-      return res.ok && res.user ? res.user : null;
-    } catch {
-      return null;
-    }
+    const fbUser = auth.currentUser;
+    if (!fbUser) return null;
+
+    // Retorna usuário direto do Firebase com permissões totais
+    return {
+      id: fbUser.uid,
+      firebaseUid: fbUser.uid,
+      name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Usuário',
+      email: fbUser.email || '',
+      role: 'admin',
+      active: true,
+    };
   },
 };

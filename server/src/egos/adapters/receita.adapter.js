@@ -126,7 +126,12 @@ function adaptReceita(builder, payload) {
       role: 'qsa_member',
       depth: 1,
       confidence: 100,
-      properties: { qualification, joinedAt: shareholder.data_entrada_sociedade || null, country: shareholder.pais || null },
+      properties: {
+        qualification,
+        joinedAt: shareholder.data_entrada_sociedade || null,
+        endedAt: shareholder.data_saida_sociedade || null,
+        country: shareholder.pais || null,
+      },
       identifiers: document ? [{
         type: isCompany ? 'CNPJ' : 'MASKED_CPF',
         value: document,
@@ -143,7 +148,12 @@ function adaptReceita(builder, payload) {
       type: isAdministrator ? 'DIRECTOR_OF' : 'SHAREHOLDER_OF',
       label: isAdministrator ? 'Administra' : 'Integra o quadro societário',
       confidence: 100,
-      properties: { qualification, joinedAt: shareholder.data_entrada_sociedade || null, provider: sourceName },
+      properties: {
+        qualification,
+        joinedAt: shareholder.data_entrada_sociedade || null,
+        endedAt: shareholder.data_saida_sociedade || null,
+        provider: sourceName,
+      },
     });
     builder.addEvidence({
       relationshipKey,
@@ -167,6 +177,37 @@ function adaptReceita(builder, payload) {
     resultCount: shareholders.length,
     consultedAt,
   });
+  const governanceHistory = payload.governanceHistory;
+  if (governanceHistory?.applicable && governanceHistory?.ok) {
+    const historyConsultedAt = safeDate(governanceHistory.consultadoEm || payload.dataAnalise);
+    builder.addCoverage({
+      axis: 'QSA_HISTORY',
+      provider: 'CVM_FRE',
+      status: governanceHistory.coverageStatus === 'complete_public' ? 'CONSULTED' : 'PARTIAL',
+      message: `${governanceHistory.consultedYears || 0} de 5 exercício(s) do Formulário de Referência da CVM foram consultados; ${governanceHistory.members?.length || 0} integrante(s) histórico(s) foram estruturados.`,
+      resultCount: governanceHistory.members?.length || 0,
+      consultedAt: historyConsultedAt,
+    });
+    builder.addEvidence({
+      entityKey: companyKey,
+      provider: 'CVM_FRE',
+      sourceName: governanceHistory.provider || 'CVM — Formulário de Referência (FRE)',
+      sourceUrl: governanceHistory.sourceUrl,
+      query: cnpj,
+      identifier: cnpj,
+      excerpt: `Histórico público de governança consultado para os exercícios ${governanceHistory.years?.join(', ')}. A presença em cada ano representa o último FRE disponível daquele exercício.`,
+      confidence: 100,
+      retrievedAt: historyConsultedAt,
+    });
+  } else {
+    builder.addCoverage({
+      axis: 'QSA_HISTORY',
+      provider: governanceHistory?.applicable ? 'CVM_FRE' : 'JUNTA_COMERCIAL_QSA',
+      status: governanceHistory?.applicable ? 'UNAVAILABLE' : 'NOT_CONSULTED',
+      message: governanceHistory?.aviso || 'O cadastro consultado confirma o quadro vigente, mas não substitui a Certidão Específica — Linha do Tempo do QSA para identificar quem saiu nos últimos cinco exercícios.',
+      resultCount: 0,
+    });
+  }
   builder.addInsight(shareholders.length > 0
     ? `${shareholders.length} pessoa(s) ou empresa(s) integram o quadro societário e administrativo.`
     : 'Nenhum integrante do QSA foi retornado pela fonte cadastral.');

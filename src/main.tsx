@@ -12,8 +12,10 @@ import './styles/animations.css';
 import './styles/sidebar.css';
 import './styles/chat.css';
 import './styles/dashboard.css';
+import './styles/dossier-v3.css';
 import './styles/kpi.css';
 import './styles/drawer.css';
+import './styles/governance-history.css';
 
 const rootElement = document.getElementById('root');
 

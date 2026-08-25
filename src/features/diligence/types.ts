@@ -8,18 +8,21 @@ import { AdverseMediaSummary } from './types/adverseMedia.types';
 import { OfficialGazetteSummary } from './types/officialGazette.types';
 import { CorporateNetworkSummary } from './types/corporateNetwork.types';
 import { OffshoreSummary } from './types/offshore.types';
+import { FundNetworkSummary } from './types/fundNetwork.types';
 
 export * from './types/judicial.types';
 export * from './types/adverseMedia.types';
 export * from './types/officialGazette.types';
 export * from './types/corporateNetwork.types';
 export * from './types/offshore.types';
+export * from './types/fundNetwork.types';
 
 export interface Shareholder {
   nome_socio: string;
   qualificacao_socio?: string;
   cnpj_cpf_do_socio?: string;
   data_entrada_sociedade?: string;
+  data_saida_sociedade?: string;
   faixa_etaria?: string;
   pais?: string;
 }
@@ -47,6 +50,77 @@ export interface CompanyData {
   ddd_telefone_1?: string;
   capital_social?: number;
   qsa?: Shareholder[];
+}
+
+export type GovernanceHistoryCategory = 'director' | 'board' | 'fiscal_council' | 'shareholder';
+
+export interface GovernanceHistorySnapshot {
+  id: string;
+  name: string;
+  category: GovernanceHistoryCategory;
+  qualification: string;
+  organization?: string;
+  document?: string;
+  year: number;
+  referenceDate?: string;
+  electionDate?: string;
+  possessionDate?: string;
+  firstMandateStart?: string;
+  mandateTerm?: string;
+  compositionDate?: string;
+  lastChangeDate?: string;
+  totalSharePercent?: number | null;
+  ordinarySharePercent?: number | null;
+  preferredSharePercent?: number | null;
+  controller?: boolean;
+  shareholderAgreement?: boolean;
+  sourceDocumentId?: string;
+  sourceVersion?: number;
+}
+
+export interface GovernanceHistoryMember {
+  id: string;
+  name: string;
+  document?: string;
+  categories: GovernanceHistoryCategory[];
+  years: number[];
+  snapshots: GovernanceHistorySnapshot[];
+  qualification: string;
+  organization?: string;
+  firstSeenExercise: number;
+  lastSeenExercise: number;
+  presentInLatestExercise: boolean;
+  latestSnapshot: GovernanceHistorySnapshot;
+}
+
+export interface GovernanceHistoryCoverage {
+  year: number;
+  status: 'consulted' | 'no_record' | 'unavailable' | 'not_applicable';
+  administrators?: number;
+  shareholders?: number;
+  referenceDate?: string;
+  documentId?: string;
+  version?: number;
+  message?: string;
+}
+
+export interface GovernanceHistoryResult {
+  ok: boolean;
+  status?: number;
+  applicable: boolean;
+  provider: string;
+  years: number[];
+  members: GovernanceHistoryMember[];
+  coverage: GovernanceHistoryCoverage[];
+  coverageStatus: 'complete_public' | 'partial' | 'unavailable' | 'not_applicable';
+  directors?: number;
+  shareholders?: number;
+  consultedYears?: number;
+  unavailableYears?: number;
+  aviso?: string;
+  erro?: string;
+  sourceUrl?: string;
+  consultadoEm?: string;
 }
 
 export interface SanctionRecord {
@@ -184,6 +258,13 @@ export interface EgosEntity {
   depth: number;
   role: string;
   confidence: number;
+  identifiers?: Array<{
+    identifierType?: string;
+    type?: string;
+    value: string;
+    provider?: string;
+    confidence?: number;
+  }>;
 }
 
 export interface EgosRelationship {
@@ -280,6 +361,7 @@ export interface DiligenceItem {
   companyConsultedAt?: string;
   empresa: CompanyData;
   socios: Shareholder[];
+  governanceHistory?: GovernanceHistoryResult;
   ceis?: SanctionsResult;
   cnep?: SanctionsResult;
   pepResults: PepPartnerResult[];
@@ -290,6 +372,7 @@ export interface DiligenceItem {
   adverseMedia?: AdverseMediaSummary;
   officialGazettes?: OfficialGazetteSummary;
   corporateNetwork?: CorporateNetworkSummary;
+  fundNetwork?: FundNetworkSummary;
   offshore?: OffshoreSummary;
   risco: RiskAssessment;
   analise?: AutomatedAnalysis;

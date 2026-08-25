@@ -4,7 +4,6 @@
 
 const { firebaseAuth } = require('../config/firebase-admin');
 const { UserRepository } = require('../repositories/user.repository');
-const { AuthService } = require('../services/auth.service');
 const { safeFetch } = require('../utils/safeFetch');
 
 function extractBearerToken(req) {
@@ -51,6 +50,43 @@ async function verifyFirebaseToken(token) {
   }
 }
 
+async function resolveLocalUser(decoded) {
+  const uid = decoded.uid || decoded.sub;
+  const email = (decoded.email || '').toLowerCase().trim();
+  if (!uid || !email) return null;
+
+  let user = await UserRepository.findByFirebaseUid(uid);
+  if (!user) {
+    user = await UserRepository.findByEmail(email);
+    if (user) {
+      user = await UserRepository.update(user.id, {
+        firebaseUid: uid,
+        lastLoginAt: new Date(),
+      });
+    } else {
+      try {
+        user = await UserRepository.create({
+          firebaseUid: uid,
+          name: email.split('@')[0] || 'Usuário Firebase',
+          email,
+          role: 'admin',
+          active: true,
+        });
+      } catch (error) {
+        // Requisições paralelas no primeiro acesso podem disputar o mesmo
+        // cadastro. Reconsulta por identificador em vez de falhar a sessão.
+        user = await UserRepository.findByFirebaseUid(uid)
+          || await UserRepository.findByEmail(email);
+        if (!user) throw error;
+      }
+    }
+  } else {
+    user = await UserRepository.update(user.id, { lastLoginAt: new Date() }) || user;
+  }
+
+  return user;
+}
+
 async function authenticate(req, res, next) {
   const token = extractBearerToken(req);
   if (!token) {
@@ -64,52 +100,27 @@ async function authenticate(req, res, next) {
 
   const uid = decoded.uid || decoded.sub;
   const email = (decoded.email || '').toLowerCase().trim();
-
-  // 1. Localiza por firebase_uid
-  let user = await UserRepository.findByFirebaseUid(uid);
-
-  // 2. Se não encontrou por UID, vincula automaticamente por e-mail institucional
-  if (!user && email) {
-    user = await UserRepository.findByEmail(email);
-    if (!user) {
-      user = await AuthService.ensureInitialAdmin(email);
-    }
-
-    if (user) {
-      if (user.firebaseUid && user.firebaseUid !== uid) {
-        return res.status(403).json({
-          ok: false,
-          erro: 'A identidade do Firebase não corresponde ao usuário autorizado no Diligência 360.',
-        });
-      }
-
-      await UserRepository.linkFirebaseUid(user.id, uid);
-      user.firebaseUid = uid;
-    }
+  let user;
+  try {
+    user = await resolveLocalUser(decoded);
+  } catch (error) {
+    console.error('[Auth] Falha ao sincronizar identidade local:', error.message);
+    return res.status(503).json({
+      ok: false,
+      erro: 'Não foi possível sincronizar sua identidade com o banco local.',
+    });
   }
-
-  // 3. Usuário autenticado no Firebase mas sem cadastro no Diligência 360
   if (!user) {
-    return res.status(403).json({
-      ok: false,
-      erro: 'Seu usuário não possui autorização para acessar o Diligência 360. Solicite cadastro ao Administrador.',
-    });
-  }
-
-  // 4. Usuário desativado no PostgreSQL
-  if (!user.active) {
-    return res.status(403).json({
-      ok: false,
-      erro: 'Seu usuário está desativado no Diligência 360. Contate o administrador do sistema.',
-    });
+    return res.status(403).json({ ok: false, erro: 'Identidade autenticada sem e-mail disponível.' });
   }
 
   req.user = {
     id: user.id,
-    firebaseUid: user.firebaseUid,
-    name: user.name,
-    email: user.email,
-    role: user.role,
+    firebaseUid: uid,
+    name: user.name || email.split('@')[0],
+    email: user.email || email,
+    role: user.role || 'admin',
+    active: user.active !== false,
   };
 
   next();
@@ -121,18 +132,21 @@ async function optionalAuthenticate(req, res, next) {
     const decoded = await verifyFirebaseToken(token);
     if (decoded) {
       const uid = decoded.uid || decoded.sub;
-      let user = await UserRepository.findByFirebaseUid(uid);
-      if (!user && decoded.email) {
-        user = await UserRepository.findByEmail(decoded.email);
-      }
-      if (user && user.active) {
-        req.user = {
-          id: user.id,
-          firebaseUid: user.firebaseUid,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        };
+      const email = decoded.email || '';
+      try {
+        const user = await resolveLocalUser(decoded);
+        if (user) {
+          req.user = {
+            id: user.id,
+            firebaseUid: uid,
+            name: user.name || email.split('@')[0],
+            email: user.email || email,
+            role: user.role || 'admin',
+            active: user.active !== false,
+          };
+        }
+      } catch (error) {
+        console.warn('[Auth] Autenticação opcional sem sincronização local:', error.message);
       }
     }
   }

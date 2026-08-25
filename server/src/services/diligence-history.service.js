@@ -43,6 +43,7 @@ const DiligenceHistoryService = {
       nome_socio: s.name,
       qualificacao_socio: s.qualification || undefined,
       data_entrada_sociedade: s.entryDate || undefined,
+      data_saida_sociedade: s.rawData?.data_saida_sociedade || undefined,
       cnpj_cpf_do_socio: s.cpfCnpj || undefined,
     }));
 
@@ -141,6 +142,32 @@ const DiligenceHistoryService = {
     }));
 
     const mediaCoverage = raw.egosRun?.coverage?.find((item) => item.axis === 'MEDIA');
+    const diligenceMeta = companySnapshot?._diligenceMeta || {};
+    const mediaMeta = diligenceMeta.adverseMedia || {};
+    const { _diligenceMeta: _storedMeta, ...cleanCompanySnapshot } = companySnapshot;
+    const formattedMediaResults = (raw.adverseMedia || []).map((m) => {
+      const stored = m.rawData && typeof m.rawData === 'object' && !Array.isArray(m.rawData)
+        ? m.rawData
+        : {};
+      return {
+        ...stored,
+        id: m.id,
+        title: m.title,
+        url: m.url,
+        domain: m.domain,
+        publishedAt: m.publishedAt || undefined,
+        snippet: m.snippet || '',
+        queriesMatched: Array.isArray(stored.queriesMatched) ? stored.queriesMatched : [],
+        matchedTerms: Array.isArray(m.matchedTerms) ? m.matchedTerms : [],
+        categories: Array.isArray(m.categories) ? m.categories : [],
+        matchStrength: m.matchStrength,
+        companyMatch: stored.companyMatch || { corporateName: false, tradeName: false, cnpj: false },
+        status: m.status,
+        searchedAt: m.searchedAt?.toISOString ? m.searchedAt.toISOString() : String(m.searchedAt || raw.startedAt),
+      };
+    });
+    const companyMediaResults = formattedMediaResults.filter((item) => item.subjectType !== 'person').length;
+    const personMediaResults = formattedMediaResults.filter((item) => item.subjectType === 'person').length;
 
     return {
       id: raw.id,
@@ -153,8 +180,12 @@ const DiligenceHistoryService = {
       razaoSocial: raw.company?.corporateName || companySnapshot.razao_social || '',
       nomeFantasia: raw.company?.tradeName || companySnapshot.nome_fantasia || '',
       dataAnalise: raw.startedAt ? raw.startedAt.toISOString() : new Date().toISOString(),
-      empresa: companySnapshot,
+      companySource: diligenceMeta.companySource || undefined,
+      companyConsultedAt: diligenceMeta.companyConsultedAt || undefined,
+      empresa: cleanCompanySnapshot,
       socios: formattedSocios,
+      governanceHistory: diligenceMeta.governanceHistory || undefined,
+      fundNetwork: diligenceMeta.fundNetwork || undefined,
       ceis: {
         ok: true,
         fonte: 'CGU / CEIS',
@@ -179,27 +210,24 @@ const DiligenceHistoryService = {
         ok: mediaCoverage ? mediaCoverage.status === 'CONSULTED' || mediaCoverage.status === 'PARTIAL' : true,
         semChave: mediaCoverage?.status === 'UNAVAILABLE' || undefined,
         aviso: mediaCoverage?.status === 'UNAVAILABLE' ? mediaCoverage.message : undefined,
-        totalFound: (raw.adverseMedia || []).length,
-        candidatesCount: (raw.adverseMedia || []).filter((m) => m.status === 'candidate').length,
-        strongMatches: (raw.adverseMedia || []).filter((m) => m.matchStrength === 'high').length,
-        mediumMatches: (raw.adverseMedia || []).filter((m) => m.matchStrength === 'medium').length,
-        weakMatches: (raw.adverseMedia || []).filter((m) => m.matchStrength === 'low').length,
-        results: (raw.adverseMedia || []).map((m) => ({
-          id: m.id,
-          title: m.title,
-          url: m.url,
-          domain: m.domain,
-          publishedAt: m.publishedAt || undefined,
-          snippet: m.snippet || '',
-          queriesMatched: [],
-          matchedTerms: Array.isArray(m.matchedTerms) ? m.matchedTerms : [],
-          categories: Array.isArray(m.categories) ? m.categories : [],
-          matchStrength: m.matchStrength,
-          companyMatch: { corporateName: true, tradeName: false, cnpj: false },
-          status: m.status,
-          searchedAt: m.searchedAt.toISOString(),
-        })),
-        consultadoEm: raw.startedAt ? raw.startedAt.toISOString() : new Date().toISOString(),
+        provider: mediaMeta.provider || 'Pesquisa Web & Mídia',
+        totalFound: formattedMediaResults.length,
+        candidatesCount: formattedMediaResults.filter((item) => item.status === 'candidate').length,
+        strongMatches: formattedMediaResults.filter((item) => item.matchStrength === 'high').length,
+        mediumMatches: formattedMediaResults.filter((item) => item.matchStrength === 'medium').length,
+        weakMatches: formattedMediaResults.filter((item) => item.matchStrength === 'low').length,
+        companyResultsCount: Number.isFinite(mediaMeta.companyResultsCount) ? mediaMeta.companyResultsCount : companyMediaResults,
+        personResultsCount: Number.isFinite(mediaMeta.personResultsCount) ? mediaMeta.personResultsCount : personMediaResults,
+        peopleRequested: mediaMeta.peopleRequested || 0,
+        peopleSearched: mediaMeta.peopleSearched || 0,
+        peopleWithCandidates: mediaMeta.peopleWithCandidates || 0,
+        personSearchCompleted: mediaMeta.personSearchCompleted === true,
+        personSearchTruncated: mediaMeta.personSearchTruncated === true,
+        consultaParcial: mediaMeta.consultaParcial === true,
+        subjects: Array.isArray(mediaMeta.subjects) ? mediaMeta.subjects : [],
+        queriesExecuted: Array.isArray(mediaMeta.queriesExecuted) ? mediaMeta.queriesExecuted : [],
+        results: formattedMediaResults,
+        consultadoEm: mediaMeta.consultadoEm || (raw.startedAt ? raw.startedAt.toISOString() : new Date().toISOString()),
       },
       risco: {
         score: raw.preliminaryScore,

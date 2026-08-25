@@ -7,6 +7,7 @@ async function persistSnapshot(tx, diligenceId, rootCnpj, snapshot) {
     const stored = await tx.canonicalEntity.upsert({
       where: { canonicalKey: entity.key },
       update: {
+        entityType: entity.type,
         name: entity.name,
         normalizedName: entity.normalizedName || normalizeName(entity.name),
         properties: entity.properties || {},

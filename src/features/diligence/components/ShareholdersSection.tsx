@@ -3,7 +3,7 @@
 // ==========================================================
 
 import React from 'react';
-import { Shareholder, PepPartnerResult } from '../types';
+import { GovernanceHistoryResult, Shareholder, PepPartnerResult } from '../types';
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
@@ -13,12 +13,14 @@ interface ShareholdersSectionProps {
   socios: Shareholder[];
   pepResults: PepPartnerResult[];
   onOpenDrawer?: () => void;
+  governanceHistory?: GovernanceHistoryResult;
 }
 
 export const ShareholdersSection: React.FC<ShareholdersSectionProps> = ({
   socios,
   pepResults,
   onOpenDrawer,
+  governanceHistory,
 }) => {
   const topSocios = socios.slice(0, 3);
   const remaining = socios.length - topSocios.length;
@@ -29,16 +31,18 @@ export const ShareholdersSection: React.FC<ShareholdersSectionProps> = ({
 
   return (
     <Card
-      title="Sócios e Administradores"
+      title="Diretores e sócios"
       icon={<Icons.Users size={16} />}
       action={
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span className="badge badge-neutral" style={{ fontSize: 'var(--text-2xs)' }}>
-            {socios.length} pessoa(s)
+            {governanceHistory?.ok && governanceHistory.members.length > 0
+              ? `${governanceHistory.members.length} no histórico · ${socios.length} atuais`
+              : `${socios.length} pessoa(s)`}
           </span>
-          {onOpenDrawer && socios.length > 3 && (
+          {onOpenDrawer && (socios.length > 0 || Boolean(governanceHistory?.members.length)) && (
             <Button variant="ghost" size="sm" onClick={onOpenDrawer}>
-              Ver todos ➜
+              Ver 5 exercícios ➜
             </Button>
           )}
         </div>
@@ -51,7 +55,9 @@ export const ShareholdersSection: React.FC<ShareholdersSectionProps> = ({
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <div className="section-subtitle">
-            Pessoas que fazem parte da sociedade e sua situação
+            {governanceHistory?.ok
+              ? `${governanceHistory.consultedYears || 0} exercícios CVM comparados; a tabela abaixo mostra o quadro vigente da Receita`
+              : 'Quadro vigente; abra o histórico para conferir os exercícios disponíveis'}
           </div>
           <div className="table-container">
             <table className="data-table">
