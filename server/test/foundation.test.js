@@ -463,3 +463,18 @@ test('rotas de consulta recusam acesso sem token', async (t) => {
   });
   assert.equal(corsResponse.status, 403);
 });
+
+test('usa a credencial válida do Google Sheets quando a chave Firebase legada está inválida', () => {
+  const { resolveFirebaseServiceAccount } = require('../src/config/firebase-admin');
+  const validKey = '-----BEGIN PRIVATE KEY-----\\nchave-de-teste\\n-----END PRIVATE KEY-----';
+  const resolved = resolveFirebaseServiceAccount({
+    FIREBASE_CLIENT_EMAIL: 'firebase-adminsdk@diligencia-8e779.iam.gserviceaccount.com',
+    FIREBASE_PRIVATE_KEY: 'chave-inválida',
+    GOOGLE_SHEETS_CLIENT_EMAIL: 'diligencia360-sheets@diligencia-8e779.iam.gserviceaccount.com',
+    GOOGLE_SHEETS_PRIVATE_KEY: validKey,
+  });
+
+  assert.equal(resolved.source, 'GOOGLE_SHEETS');
+  assert.equal(resolved.clientEmail, 'diligencia360-sheets@diligencia-8e779.iam.gserviceaccount.com');
+  assert.equal(resolved.privateKey, validKey.replace(/\\n/g, '\n'));
+});
