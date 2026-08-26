@@ -78,8 +78,10 @@ export const DiligenceResultCard: React.FC<DiligenceResultCardProps> = ({
           size="md"
           icon={<Icons.ArrowRight size={16} />}
           onClick={() => onOpenDashboard(diligence)}
+          className="diligence-btn-primary"
+          aria-label={`Abrir dossiê completo de ${diligence.razaoSocial}`}
         >
-          Ver Relatório Completo
+          Abrir dossiê completo
         </Button>
       </div>
     </div>

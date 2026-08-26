@@ -8,7 +8,19 @@ const { ReviewRepository } = require('../repositories/review.repository');
 const { EgosService } = require('../egos/core/egos.service');
 const { applyEgosOverlay } = require('./risk-assessment.service');
 
+const recentDiligenceCache = new Map();
+
 const DiligenceHistoryService = {
+  cacheSnapshot(snapshot) {
+    if (snapshot?.id) {
+      recentDiligenceCache.set(snapshot.id, { snapshot, cachedAt: Date.now() });
+      if (recentDiligenceCache.size > 100) {
+        const oldestKey = recentDiligenceCache.keys().next().value;
+        recentDiligenceCache.delete(oldestKey);
+      }
+    }
+  },
+
   async saveDiligence(payload) {
     if (!payload || !payload.cnpj) {
       throw new Error('CNPJ obrigatório para persistência da diligência.');
@@ -40,6 +52,8 @@ const DiligenceHistoryService = {
       },
     });
 
+    DiligenceHistoryService.cacheSnapshot({ ...snapshot, ...saved });
+
     return {
       ok: true,
       id: saved.id,
@@ -53,7 +67,20 @@ const DiligenceHistoryService = {
   },
 
   async getDiligenceById(id) {
-    return await DiligenceRepository.findById(id);
+    if (recentDiligenceCache.has(id)) {
+      return recentDiligenceCache.get(id).snapshot;
+    }
+    try {
+      const found = await Promise.race([
+        DiligenceRepository.findById(id),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout na consulta do histórico')), 5000))
+      ]);
+      if (found) DiligenceHistoryService.cacheSnapshot(found);
+      return found;
+    } catch (err) {
+      console.warn(`[DiligenceHistoryService] Aviso ao recuperar diligência ${id}:`, err?.message);
+      return null;
+    }
   },
 
   async listDiligences(limit = 50, filters = {}) {

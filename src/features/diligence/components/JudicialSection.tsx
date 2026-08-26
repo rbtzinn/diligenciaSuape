@@ -111,12 +111,13 @@ export const JudicialSection: React.FC<JudicialSectionProps> = ({
             <Button
               variant="primary"
               size="sm"
+              icon={<Icons.Plus size={14} />}
               onClick={() => {
                 setIsAdding(true);
                 setErrorMsg(null);
               }}
             >
-              + Adicionar processo
+              Adicionar processo
             </Button>
           )}
         </div>

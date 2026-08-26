@@ -58,27 +58,73 @@ export const JudicialDiscoverySection: React.FC<JudicialDiscoverySectionProps> =
     onUpdateDiscoveries(updatedList);
   };
 
+  if (discoveries.length === 0) {
+    return (
+      <>
+        <div className="evidence-zero-action">
+          <span className="evidence-zero-action-icon" aria-hidden="true">
+            <Icons.Scale size={19} />
+          </span>
+          <div className="evidence-zero-action-content">
+            <strong>Nenhum processo vinculado</strong>
+            <span>Analise um documento ou informe um número CNJ para iniciar esta verificação.</span>
+          </div>
+          <div className="evidence-zero-action-buttons">
+            <button
+              type="button"
+              className="judicial-cta-btn judicial-cta-secondary"
+              onClick={() => setIsAnalyzerOpen(true)}
+            >
+              <Icons.FileText size={14} aria-hidden="true" />
+              <span>Analisar conteúdo</span>
+            </button>
+            <button
+              type="button"
+              className="judicial-cta-btn judicial-cta-primary"
+              onClick={() => setIsManualAddOpen(true)}
+            >
+              <Icons.Plus size={14} aria-hidden="true" />
+              <span>Adicionar processo</span>
+            </button>
+          </div>
+        </div>
+
+        <ContentAnalyzerModal
+          isOpen={isAnalyzerOpen}
+          onClose={() => setIsAnalyzerOpen(false)}
+          onExtractAndSave={handleMergeExtracted}
+        />
+        <JudicialManualAddModal
+          isOpen={isManualAddOpen}
+          onClose={() => setIsManualAddOpen(false)}
+          onAdd={handleMergeExtracted}
+        />
+      </>
+    );
+  }
+
   return (
     <Card
       title="Processos Judiciais (DataJud / CNJ)"
       icon={<Icons.Scale size={16} />}
       action={
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<Icons.FileText size={14} />}
+        <div className="evidence-zero-action-buttons">
+          <button
+            type="button"
+            className="judicial-cta-btn judicial-cta-secondary"
             onClick={() => setIsAnalyzerOpen(true)}
           >
-            Analisar Conteúdo
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
+            <Icons.FileText size={14} aria-hidden="true" />
+            <span>Analisar conteúdo</span>
+          </button>
+          <button
+            type="button"
+            className="judicial-cta-btn judicial-cta-primary"
             onClick={() => setIsManualAddOpen(true)}
           >
-            + Adicionar Processo
-          </Button>
+            <Icons.Plus size={14} aria-hidden="true" />
+            <span>Adicionar processo</span>
+          </button>
         </div>
       }
       className="dash-full-width"

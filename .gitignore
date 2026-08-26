@@ -22,4 +22,5 @@ skillsrbt/
 questionnaire_output.txt
 .codex/
 output/
+outputs/
 tmp/

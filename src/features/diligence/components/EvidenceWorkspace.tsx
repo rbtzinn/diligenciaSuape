@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Icons } from '../../../components/ui/Icons';
 import type {
   AdverseMediaStatus,
@@ -12,12 +12,9 @@ import { PepSection } from './PepSection';
 import { SanctionsSection } from './SanctionsSection';
 import { AdverseMediaSection } from './AdverseMediaSection';
 import { JudicialDiscoverySection } from './JudicialDiscoverySection';
-import { ConclusionPanel } from './ConclusionPanel';
 import { EvidenceSection } from './EvidenceSection';
 import { AuditTimeline } from './AuditTimeline';
 import { EgosIntelligencePanel } from './EgosIntelligencePanel';
-
-type EvidenceSectionId = 'people' | 'integrity' | 'legal' | 'audit';
 
 interface EvidenceWorkspaceProps {
   diligence: DiligenceItem;
@@ -32,6 +29,8 @@ interface EvidenceWorkspaceProps {
   onMediaStatusChange: (id: string, status: AdverseMediaStatus) => void;
 }
 
+type AxisTab = 'people' | 'integrity' | 'legal' | 'audit';
+
 export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
   diligence,
   discoveries,
@@ -44,50 +43,51 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
   enrichingId,
   onMediaStatusChange,
 }) => {
-  const [activeSection, setActiveSection] = useState<EvidenceSectionId>('people');
-  const { empresa, socios, ceis, cnep, pepResults, risco, timeline } = diligence;
+  const [activeAxisTab, setActiveAxisTab] = React.useState<AxisTab>('people');
+  const { empresa, socios, ceis, cnep, pepResults, timeline } = diligence;
   const safeShareholders = Array.isArray(socios) ? socios : [];
   const safePepResults = Array.isArray(pepResults) ? pepResults : [];
   const safeTimeline = Array.isArray(timeline) ? timeline : [];
   const enrichedProcesses = discoveries.filter((item) => item.dataJud).map((item) => item.dataJud!);
   const pepReviewCount = safePepResults.filter((item) => item.encontrado).length;
   const sanctionCount = (ceis?.quantidade || 0) + (cnep?.quantidade || 0);
-  const legalCount = discoveries.length;
+  const mediaResultCount = adverseMedia?.results?.length || 0;
+  const sanctionsCleared = Boolean(ceis?.ok && cnep?.ok && sanctionCount === 0);
+  const mediaCleared = Boolean(adverseMedia?.ok && mediaResultCount === 0);
+  const clearedChecks = [
+    sanctionsCleared ? 'sanções oficiais' : null,
+    mediaCleared ? 'ocorrências públicas' : null,
+    safePepResults.length > 0 && pepReviewCount === 0 ? 'cargos políticos dos sócios' : null,
+  ].filter((label): label is string => Boolean(label));
 
   const sections: Array<{
-    id: EvidenceSectionId;
+    id: AxisTab;
     label: string;
-    helper: string;
-    count?: number;
     icon: React.ReactNode;
+    badge?: number;
   }> = [
     {
       id: 'people',
       label: 'Cadastro & Pessoas',
-      helper: 'Empresa, sócios e identidade',
-      count: safeShareholders.length,
-      icon: <Icons.Users size={17} aria-hidden="true" />,
+      icon: <Icons.Users size={16} aria-hidden="true" />,
+      badge: safeShareholders.length > 0 ? safeShareholders.length : undefined,
     },
     {
       id: 'integrity',
       label: 'Integridade & Reputação',
-      helper: 'Sanções e mídia pública',
-      count: sanctionCount,
-      icon: <Icons.ShieldCheck size={17} aria-hidden="true" />,
+      icon: <Icons.ShieldCheck size={16} aria-hidden="true" />,
+      badge: sanctionCount + mediaResultCount > 0 ? sanctionCount + mediaResultCount : undefined,
     },
     {
       id: 'legal',
       label: 'Jurídico & Publicações',
-      helper: 'Processos e descoberta documental',
-      count: legalCount,
-      icon: <Icons.Scale size={17} aria-hidden="true" />,
+      icon: <Icons.Scale size={16} aria-hidden="true" />,
+      badge: discoveries.length > 0 ? discoveries.length : undefined,
     },
     {
       id: 'audit',
       label: 'Fontes & Auditoria',
-      helper: 'Cobertura, proveniência e trilha',
-      count: safeTimeline.length,
-      icon: <Icons.Database size={17} aria-hidden="true" />,
+      icon: <Icons.Database size={16} aria-hidden="true" />,
     },
   ];
 
@@ -96,8 +96,8 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
       <header className="evidence-workspace-header">
         <div>
           <span className="evidence-eyebrow">Dossiê verificável</span>
-          <h2 id="evidence-title">Uma pergunta por vez</h2>
-          <p>Escolha o assunto. O sistema mostra somente as informações necessárias para responder a essa etapa.</p>
+          <h2 id="evidence-title">Eixos de Evidência e Auditoria</h2>
+          <p>Navegue pelas abas temáticas para inspecionar cadastros, sanções, processos e fontes com trilha rastreável.</p>
         </div>
         <div className="evidence-provenance-seal">
           <Icons.ShieldCheck size={18} aria-hidden="true" />
@@ -105,103 +105,120 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
         </div>
       </header>
 
-      <div className="evidence-workspace-grid">
-        <nav className="evidence-rail" aria-label="Assuntos do dossiê">
-          {sections.map((section) => (
+      <nav className="evidence-tab-nav" role="tablist" aria-label="Eixos das evidências">
+        {sections.map((section) => {
+          const isActive = activeAxisTab === section.id;
+          return (
             <button
               type="button"
+              role="tab"
+              id={`tab-${section.id}`}
+              aria-controls={`panel-${section.id}`}
+              aria-selected={isActive}
+              className={`evidence-tab-btn ${isActive ? 'active' : ''}`}
+              onClick={() => setActiveAxisTab(section.id)}
               key={section.id}
-              className={`evidence-rail-item ${activeSection === section.id ? 'active' : ''}`}
-              aria-current={activeSection === section.id ? 'page' : undefined}
-              onClick={() => setActiveSection(section.id)}
             >
-              <span className="evidence-rail-icon">{section.icon}</span>
-              <span className="evidence-rail-copy">
-                <strong>{section.label}</strong>
-                <small>{section.helper}</small>
-              </span>
-              {typeof section.count === 'number' ? <span className="evidence-rail-count">{section.count}</span> : null}
-            </button>
-          ))}
-        </nav>
-
-        <div className="evidence-stage" aria-live="polite">
-          {activeSection === 'people' ? (
-            <div className="evidence-stage-pane animate-fade-in" key="people">
-              <div className="evidence-stage-intro">
-                <span>Quem é a empresa?</span>
-                <h3>Cadastro, controle e pessoas relacionadas</h3>
-                <p>Confirme a existência da empresa, sua atividade e quem pode representá-la antes de avaliar riscos adicionais.</p>
-              </div>
-              <div className="evidence-component-grid">
-                <CompanyProfile empresa={empresa} cnpjFmt={diligence.cnpjFmt} />
-                <ShareholdersSection
-                  socios={safeShareholders}
-                  pepResults={safePepResults}
-                  governanceHistory={diligence.governanceHistory}
-                  onOpenDrawer={onOpenShareholders}
-                />
-              </div>
-              {pepReviewCount > 0 ? (
-                <PepSection pepResults={safePepResults} onOpenDrawer={onOpenShareholders} />
+              <span className="evidence-tab-icon" aria-hidden="true">{section.icon}</span>
+              <span className="evidence-tab-label">{section.label}</span>
+              {section.badge !== undefined ? (
+                <span className="evidence-tab-badge">{section.badge}</span>
               ) : null}
-            </div>
-          ) : null}
+            </button>
+          );
+        })}
+      </nav>
 
-          {activeSection === 'integrity' ? (
-            <div className="evidence-stage-pane animate-fade-in" key="integrity">
-              <div className="evidence-stage-intro">
-                <span>Existe impedimento?</span>
-                <h3>Sanções oficiais e ocorrências públicas</h3>
-                <p>Listas oficiais aparecem primeiro. Menções de mídia permanecem separadas e sempre exigem conferência humana.</p>
-              </div>
-              <SanctionsSection ceis={ceis} cnep={cnep} />
+      {clearedChecks.length > 0 ? (
+        <div className="evidence-zero-summary" role="status">
+          <Icons.CheckCircle size={19} aria-hidden="true" />
+          <p><strong>Verificações sem achados:</strong> {clearedChecks.join(', ')}.</p>
+        </div>
+      ) : null}
+
+      <div className="evidence-stage">
+        {activeAxisTab === 'people' && (
+          <section className="evidence-axis-section animate-fade-in-up" id="panel-people" role="tabpanel" aria-labelledby="tab-people">
+            <div className="evidence-stage-intro">
+              <span>Quem é a empresa?</span>
+              <h3 id="evidence-people-title">Cadastro, controle e pessoas relacionadas</h3>
+              <p>Confirme a existência da empresa, sua atividade e quem pode representá-la antes de avaliar riscos adicionais.</p>
+            </div>
+            <div className="evidence-component-grid">
+              <CompanyProfile empresa={empresa} cnpjFmt={diligence.cnpjFmt} />
+              <ShareholdersSection
+                socios={safeShareholders}
+                pepResults={safePepResults}
+                governanceHistory={diligence.governanceHistory}
+                onOpenDrawer={onOpenShareholders}
+              />
+            </div>
+            {pepReviewCount > 0 ? (
+              <PepSection pepResults={safePepResults} onOpenDrawer={onOpenShareholders} />
+            ) : null}
+          </section>
+        )}
+
+        {activeAxisTab === 'integrity' && (
+          <section className="evidence-axis-section animate-fade-in-up" id="panel-integrity" role="tabpanel" aria-labelledby="tab-integrity">
+            <div className="evidence-stage-intro">
+              <span>Existe impedimento?</span>
+              <h3 id="evidence-integrity-title">Sanções oficiais e ocorrências públicas</h3>
+              <p>Listas oficiais aparecem primeiro. Menções de mídia permanecem separadas e sempre exigem conferência humana.</p>
+            </div>
+            {!sanctionsCleared ? <SanctionsSection ceis={ceis} cnep={cnep} /> : null}
+            {!mediaCleared ? (
               <AdverseMediaSection
                 adverseMedia={adverseMedia}
                 onOpenDrawer={onOpenMedia}
                 onStatusChange={onMediaStatusChange}
               />
-            </div>
-          ) : null}
-
-          {activeSection === 'legal' ? (
-            <div className="evidence-stage-pane animate-fade-in" key="legal">
-              <div className="evidence-stage-intro">
-                <span>Há contexto jurídico?</span>
-                <h3>Processos e menções documentais</h3>
-                <p>Números processuais descobertos são candidatos até a validação. O DataJud enriquece somente números CNJ já identificados.</p>
+            ) : null}
+            {sanctionsCleared && mediaCleared ? (
+              <div className="evidence-zero-summary" role="status">
+                <Icons.CheckCircle size={19} aria-hidden="true" />
+                <p><strong>Nenhum impedimento:</strong> Sanções oficiais (CEIS/CNEP) e ocorrências públicas sem apontamentos.</p>
               </div>
-              <JudicialDiscoverySection
-                discoveries={discoveries}
-                onUpdateDiscoveries={onUpdateDiscoveries}
-                onOpenDrawer={onOpenDiscovery}
-                onEnrich={onEnrichDiscovery}
-                enrichingId={enrichingId}
-              />
-            </div>
-          ) : null}
+            ) : null}
+          </section>
+        )}
 
-          {activeSection === 'audit' ? (
-            <div className="evidence-stage-pane animate-fade-in" key="audit">
-              <div className="evidence-stage-intro">
-                <span>Como comprovamos?</span>
-                <h3>Conclusão, fontes e trilha de auditoria</h3>
-                <p>Revise a cobertura da análise e o caminho percorrido antes de finalizar o parecer.</p>
-              </div>
-              <EgosIntelligencePanel egos={diligence.egos} diligenceId={diligence.id} showGraph={false} />
-              <ConclusionPanel risco={risco} />
-              <EvidenceSection
-                ceis={ceis}
-                cnep={cnep}
-                pepResults={safePepResults}
-                processosJudiciais={enrichedProcesses}
-                adverseMedia={adverseMedia}
-                consultadoEm={diligence.dataAnalise}
-              />
-              <AuditTimeline timeline={safeTimeline} />
+        {activeAxisTab === 'legal' && (
+          <section className="evidence-axis-section animate-fade-in-up" id="panel-legal" role="tabpanel" aria-labelledby="tab-legal">
+            <div className="evidence-stage-intro">
+              <span>Há contexto jurídico?</span>
+              <h3 id="evidence-legal-title">Processos e menções documentais</h3>
+              <p>Números processuais descobertos são candidatos até a validação. O DataJud enriquece somente números CNJ já identificados.</p>
             </div>
-          ) : null}
-        </div>
+            <JudicialDiscoverySection
+              discoveries={discoveries}
+              onUpdateDiscoveries={onUpdateDiscoveries}
+              onOpenDrawer={onOpenDiscovery}
+              onEnrich={onEnrichDiscovery}
+              enrichingId={enrichingId}
+            />
+          </section>
+        )}
+
+        {activeAxisTab === 'audit' && (
+          <section className="evidence-axis-section animate-fade-in-up" id="panel-audit" role="tabpanel" aria-labelledby="tab-audit">
+            <div className="evidence-stage-intro">
+              <span>Como comprovamos?</span>
+              <h3 id="evidence-audit-title">Fontes, proveniência e trilha de auditoria</h3>
+              <p>Revise a cobertura da análise e o caminho percorrido antes de finalizar o parecer.</p>
+            </div>
+            <EgosIntelligencePanel egos={diligence.egos} diligenceId={diligence.id} showGraph={false} />
+            <EvidenceSection
+              ceis={ceis}
+              cnep={cnep}
+              pepResults={safePepResults}
+              processosJudiciais={enrichedProcesses}
+              adverseMedia={adverseMedia}
+              consultadoEm={diligence.dataAnalise}
+            />
+            <AuditTimeline timeline={safeTimeline} />
+          </section>
+        )}
       </div>
     </section>
   );

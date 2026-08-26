@@ -6,8 +6,6 @@ import React, { useState } from 'react';
 import { ViewType } from '../../types';
 import { Sidebar } from './Sidebar';
 import { DisclaimerBar } from './DisclaimerBar';
-import { Icons } from '../ui/Icons';
-import { Button } from '../ui/Button';
 import { DiligenceItem } from '../../features/diligence/types';
 
 interface AppShellProps {
@@ -45,22 +43,6 @@ export const AppShell: React.FC<AppShellProps> = ({
       />
 
       <div className="app-main">
-        {/* Header mobile */}
-        <header className="mobile-header">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Abrir Menu"
-          >
-            <Icons.Search size={20} />
-          </Button>
-          <span style={{ fontWeight: 'var(--font-bold)', fontSize: 'var(--text-sm)' }}>
-            Diligência 360
-          </span>
-          <div style={{ width: 28 }} />
-        </header>
-
         <DisclaimerBar />
 
         <main className="app-content">{children}</main>

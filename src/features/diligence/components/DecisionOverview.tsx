@@ -13,7 +13,6 @@ interface DecisionOverviewProps {
   onWorkflowStatusChange: (status: string) => void;
   onOpenNetwork: () => void;
   onOpenEvidence: () => void;
-  onEditRisk: () => void;
 }
 
 type Tone = 'positive' | 'attention' | 'critical' | 'neutral';
@@ -30,7 +29,6 @@ export const DecisionOverview: React.FC<DecisionOverviewProps> = ({
   onWorkflowStatusChange,
   onOpenNetwork,
   onOpenEvidence,
-  onEditRisk,
 }) => {
   const { empresa, ceis, cnep, pepResults, risco, egos } = diligence;
   const safePepResults = Array.isArray(pepResults) ? pepResults : [];
@@ -67,7 +65,6 @@ export const DecisionOverview: React.FC<DecisionOverviewProps> = ({
   );
   const reviewCount = Math.max(reviewFindings.length || legacyPepReviews, riskReviewDetails.length);
   const riskScore = risco?.score ?? 0;
-  const automaticScore = risco?.manualOverride?.automaticScore ?? risco?.automaticScore ?? riskScore;
   const isCriticalRisk = riskScore >= 60 || risco?.nivel === 'Atenção Crítica';
   const isElevatedRisk = riskScore >= 35 || risco?.nivel === 'Atenção Elevada';
   const coverage = safeCoverage;
@@ -214,14 +211,6 @@ export const DecisionOverview: React.FC<DecisionOverviewProps> = ({
       tone: activeSanctions > 0 ? 'critical' : 'positive',
     },
     {
-      label: 'Exposição de risco',
-      value: risco?.nivel?.replace('Atenção ', '') || 'Baixa',
-      detail: reviewCount > 0
-        ? plural(reviewCount, 'sinal para revisar', 'sinais para revisar')
-        : `${riskScore}/100 no índice de atenção`,
-      tone: isCriticalRisk ? 'critical' : (isElevatedRisk || riskScore >= 15) ? 'attention' : 'positive',
-    },
-    {
       label: 'Cobertura técnica',
       value: coverage.length > 0 ? `${consultedCoverage}/${applicableCoverage.length} eixos` : 'Em atualização',
       detail: unavailableCoverage.length > 0
@@ -242,10 +231,28 @@ export const DecisionOverview: React.FC<DecisionOverviewProps> = ({
           <h2>{decision.title}</h2>
           <p>{decision.copy}</p>
         </div>
-        <Button variant="secondary" onClick={onOpenEvidence}>
-          {decision.action}
-          <Icons.ArrowRight size={15} aria-hidden="true" />
-        </Button>
+        <div className="decision-command-actions" aria-label="Próximos passos">
+          <button
+            type="button"
+            className="decision-cta-btn decision-cta-primary"
+            onClick={onOpenEvidence}
+          >
+            <span className="decision-cta-text">{decision.action}</span>
+            <span className="decision-cta-icon-wrapper" aria-hidden="true">
+              <Icons.ArrowRight size={15} />
+            </span>
+          </button>
+          <button
+            type="button"
+            className="decision-cta-btn decision-cta-secondary"
+            onClick={onOpenNetwork}
+          >
+            <span className="decision-cta-text">Entender os vínculos</span>
+            <span className="decision-cta-icon-wrapper" aria-hidden="true">
+              <Icons.Network size={15} />
+            </span>
+          </button>
+        </div>
       </section>
 
       <section className="decision-signal-strip" aria-label="Sinais principais">
@@ -258,14 +265,7 @@ export const DecisionOverview: React.FC<DecisionOverviewProps> = ({
         ))}
       </section>
 
-      <ComplexQuestionnairePanel
-        diligence={diligence}
-        adverseMedia={adverseMedia}
-        discoveries={discoveries}
-        onOpenEvidence={onOpenEvidence}
-      />
-
-      <div className="decision-story-grid">
+      <div className="decision-priority-grid">
         <section className="decision-story-main">
           <div className="decision-section-heading">
             <div>
@@ -312,62 +312,59 @@ export const DecisionOverview: React.FC<DecisionOverviewProps> = ({
             </div>
           )}
 
-          <div className="decision-risk-note">
-            <div className="decision-risk-layer">
-              <span>Radar automático</span>
-              <strong>{automaticScore}<small>/100</small></strong>
-              <p>{risco?.manualOverride?.automaticLevel || 'Exposição calculada pelas fontes'}</p>
-            </div>
-            <Icons.ArrowRight className="decision-risk-arrow" size={18} aria-hidden="true" />
-            <div className={`decision-risk-layer decision-risk-final decision-risk-final-${risco?.cor || 'low'}`}>
-              <span>Classificação final</span>
-              <strong>{riskScore}<small>/100</small></strong>
-              <p>{risco?.nivel || 'Atenção Baixa'}</p>
-            </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={onEditRisk}
-              disabled={diligence.persisted === false}
-              title={diligence.persisted === false ? 'A diligência precisa estar sincronizada com o Google Sheets.' : undefined}
-            >
-              Ajustar classificação
-            </Button>
-            <p className="decision-risk-explanation">
-              {risco?.decisaoDesc || 'Quanto maior o índice, maior a necessidade de análise humana.'}
-            </p>
-            {risco?.manualOverride ? (
-              <div className="decision-risk-override-note">
-                <Icons.CheckCircle size={15} aria-hidden="true" />
-                <span><strong>Ajuste humano registrado:</strong> {risco.manualOverride.reason}</span>
-              </div>
-            ) : null}
-          </div>
         </section>
 
-        <aside className="decision-story-aside">
-          <span className="decision-section-kicker">Próximo passo</span>
-          <h3>Conduza o processo</h3>
-          <p>A decisão fica simples quando cada hipótese possui responsável, justificativa e evidência.</p>
-          <div className="decision-next-actions">
-            <button type="button" onClick={onOpenEvidence}>
-              <span>1</span>
-              <div><strong>Revisar</strong><small>Hipóteses e lacunas</small></div>
-              <Icons.ArrowRight size={14} aria-hidden="true" />
-            </button>
-            <button type="button" onClick={onOpenNetwork}>
-              <span>2</span>
-              <div><strong>Entender</strong><small>Quem se liga a quem</small></div>
-              <Icons.ArrowRight size={14} aria-hidden="true" />
-            </button>
+        <section className={`decision-coverage-card ${unavailableCoverage.length > 0 ? 'has-gaps' : 'is-complete'}`}>
+          <div className="decision-section-heading">
+            <div>
+              <span className="decision-section-kicker">Limites da análise</span>
+              <h3>{unavailableCoverage.length > 0 ? 'Lacunas de cobertura' : 'Cobertura declarada'}</h3>
+            </div>
+            <span className="decision-coverage-ratio">{consultedCoverage}/{applicableCoverage.length || '—'}</span>
           </div>
-        </aside>
+
+          {unavailableCoverage.length > 0 ? (
+            <div className="decision-coverage-list">
+              {unavailableCoverage.slice(0, 4).map((item) => (
+                <article key={item.id || `${item.axis}-${item.provider}`}>
+                  <Icons.AlertTriangle size={16} aria-hidden="true" />
+                  <div>
+                    <strong>{item.axis}</strong>
+                    <span>{item.message}</span>
+                  </div>
+                </article>
+              ))}
+              <Button variant="secondary" size="sm" onClick={onOpenEvidence}>
+                Resolver nas evidências
+                <Icons.ArrowRight size={14} aria-hidden="true" />
+              </Button>
+            </div>
+          ) : (
+            <div className="decision-coverage-complete">
+              <Icons.CheckCircle size={20} aria-hidden="true" />
+              <div>
+                <strong>{coverage.length > 0 ? `${consultedCoverage} fontes aplicáveis consultadas` : 'Cobertura em atualização'}</strong>
+                <span>{coverage.length - applicableCoverage.length > 0
+                  ? `${coverage.length - applicableCoverage.length} fonte(s) marcada(s) como não aplicável.`
+                  : 'Os limites e a proveniência estão registrados na aba Evidências.'}</span>
+              </div>
+            </div>
+          )}
+        </section>
       </div>
+
+      <ComplexQuestionnairePanel
+        diligence={diligence}
+        adverseMedia={adverseMedia}
+        discoveries={discoveries}
+        onOpenEvidence={onOpenEvidence}
+      />
 
       <section className="decision-workflow-band" aria-label="Fluxo de aprovação">
         <WorkflowControlBar
           diligence={{ ...diligence, status: workflowStatus }}
           onStatusChange={onWorkflowStatusChange}
+          showPdf={false}
         />
       </section>
 

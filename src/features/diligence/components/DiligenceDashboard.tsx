@@ -11,7 +11,6 @@ import { AdverseMediaDrawer } from './AdverseMediaDrawer';
 import { JudicialDiscoveryDrawer } from './JudicialDiscoveryDrawer';
 import { RiskOverrideModal } from './RiskOverrideModal';
 import { Icons } from '../../../components/ui/Icons';
-import { Button } from '../../../components/ui/Button';
 import { ReportService } from '../../report/services/report.service';
 
 export type DashboardTab = 'overview' | 'network' | 'evidence';
@@ -132,7 +131,13 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
 
   return (
     <main className={`dossier-v3 ${activeTab === 'network' ? 'dossier-v3-network' : ''}`}>
-      {activeTab !== 'network' ? <DiligenceHeader diligence={displayDiligence} onBack={onBack} /> : null}
+      <DiligenceHeader
+        diligence={displayDiligence}
+        onBack={onBack}
+        onExportPdf={handleExportPdf}
+        onEditRisk={() => setRiskModalOpen(true)}
+        isExportingPdf={isExportingPdf}
+      />
 
       <nav className="dossier-mode-nav" aria-label="Modos do dossiê">
         <div className="dossier-mode-group" role="tablist" aria-label="Visualização do dossiê">
@@ -143,9 +148,14 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
             className={activeTab === 'overview' ? 'active' : ''}
             onClick={() => setActiveTab('overview')}
           >
-            <Icons.Compass size={17} aria-hidden="true" />
-            <span><strong>Resumo Executivo</strong><small>Decisão e próximo passo</small></span>
-            {reviewCount > 0 ? <i>{reviewCount}</i> : null}
+            <span className="dossier-mode-icon" aria-hidden="true">
+              <Icons.Compass size={16} />
+            </span>
+            <span className="dossier-mode-copy">
+              <strong>Resumo Executivo</strong>
+              <small>Decisão e próximo passo</small>
+            </span>
+            {reviewCount > 0 ? <i className="is-attention">{reviewCount}</i> : null}
           </button>
           <button
             type="button"
@@ -154,8 +164,13 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
             className={activeTab === 'network' ? 'active' : ''}
             onClick={() => setActiveTab('network')}
           >
-            <Icons.Network size={17} aria-hidden="true" />
-            <span><strong>Rede de Vínculos</strong><small>Exploração imersiva</small></span>
+            <span className="dossier-mode-icon" aria-hidden="true">
+              <Icons.Network size={16} />
+            </span>
+            <span className="dossier-mode-copy">
+              <strong>Rede de Vínculos</strong>
+              <small>Exploração imersiva</small>
+            </span>
             {networkCount > 0 ? <i>{networkCount}</i> : null}
           </button>
           <button
@@ -165,31 +180,15 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
             className={activeTab === 'evidence' ? 'active' : ''}
             onClick={() => setActiveTab('evidence')}
           >
-            <Icons.Database size={17} aria-hidden="true" />
-            <span><strong>Evidências</strong><small>Fontes e auditoria</small></span>
+            <span className="dossier-mode-icon" aria-hidden="true">
+              <Icons.Database size={16} />
+            </span>
+            <span className="dossier-mode-copy">
+              <strong>Evidências</strong>
+              <small>Fontes e auditoria</small>
+            </span>
             {evidenceCount > 0 ? <i>{evidenceCount}</i> : null}
           </button>
-        </div>
-
-        <div className="dossier-mode-actions">
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={isExportingPdf ? <Icons.Loader size={14} aria-hidden="true" /> : <Icons.Download size={14} aria-hidden="true" />}
-            onClick={handleExportPdf}
-            disabled={isExportingPdf}
-          >
-            {isExportingPdf
-              ? 'Gerando PDF…'
-              : diligence.status === 'completed'
-                ? 'Baixar Dossiê PDF'
-                : 'Baixar Prévia PDF'}
-          </Button>
-          {activeTab === 'network' ? (
-            <Button variant="ghost" size="sm" onClick={onBack} icon={<Icons.ArrowLeft size={14} aria-hidden="true" />}>
-              Nova Consulta
-            </Button>
-          ) : null}
         </div>
       </nav>
 
@@ -203,12 +202,12 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
             onWorkflowStatusChange={setWorkflowStatus}
             onOpenNetwork={() => setActiveTab('network')}
             onOpenEvidence={() => setActiveTab('evidence')}
-            onEditRisk={() => setRiskModalOpen(true)}
           />
         ) : null}
 
         {activeTab === 'network' ? (
           <ImmersiveNetworkTab
+            diligenceId={diligence.id}
             egos={diligence.egos}
             targetCompanyName={diligence.razaoSocial}
           />

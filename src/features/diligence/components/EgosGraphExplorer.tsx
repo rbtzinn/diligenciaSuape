@@ -139,7 +139,7 @@ export const EgosGraphExplorer: React.FC<EgosGraphExplorerProps> = ({ egos }) =>
         },
         minZoom: 0.25,
         maxZoom: 2.6,
-        wheelSensitivity: 0.2,
+        wheelSensitivity: 0.55,
       });
       cyRef.current = cy;
       cy.on('tap', 'node', (event) => {

@@ -367,7 +367,14 @@ const DiligenceRepository = {
   },
 
   async appendAudit(data) {
-    return await appendAuditSafely(getGoogleSheetsClient(), data);
+    try {
+      const client = getGoogleSheetsClient();
+      if (!client.isConfigured()) return null;
+      return await appendAuditSafely(client, data);
+    } catch (e) {
+      console.warn('[DiligenceRepository] appendAudit não pôde ser gravado:', e.message);
+      return null;
+    }
   },
 
   async delete(id, user) {

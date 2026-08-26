@@ -105,10 +105,34 @@ export const ComplexQuestionnairePanel: React.FC<ComplexQuestionnairePanelProps>
       </div>
 
       <footer className="questionnaire-brief-footer">
-        <p><strong>Regra de leitura:</strong> PEP é função pública; ocorrência nominal é pista; crime ou condenação só existe quando a evidência oficial confirma.</p>
-        <Button variant="secondary" size="sm" onClick={onOpenEvidence}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '30px',
+              height: '30px',
+              borderRadius: '8px',
+              background: 'rgba(37, 99, 235, 0.12)',
+              color: '#1d4ed8',
+              flexShrink: 0,
+            }}
+          >
+            <Icons.Info size={16} />
+          </div>
+          <p style={{ margin: 0, fontSize: '12px', lineHeight: 1.5, color: '#334155' }}>
+            <strong style={{ color: '#0f172a', fontWeight: 700 }}>Regra de leitura:</strong> PEP é função pública; ocorrência nominal é pista; crime ou condenação só existe quando a evidência oficial confirma.
+          </p>
+        </div>
+
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={onOpenEvidence}
+          rightIcon={<Icons.ArrowRight size={14} aria-hidden="true" />}
+        >
           Conferir evidências
-          <Icons.ArrowRight size={14} aria-hidden="true" />
         </Button>
       </footer>
     </section>

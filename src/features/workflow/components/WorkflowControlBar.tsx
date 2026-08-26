@@ -14,11 +14,13 @@ import { Icons } from '../../../components/ui/Icons';
 interface WorkflowControlBarProps {
   diligence: DiligenceItem;
   onStatusChange: (newStatus: string) => void;
+  showPdf?: boolean;
 }
 
 export const WorkflowControlBar: React.FC<WorkflowControlBarProps> = ({
   diligence,
   onStatusChange,
+  showPdf = true,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
@@ -170,7 +172,7 @@ export const WorkflowControlBar: React.FC<WorkflowControlBarProps> = ({
             </>
           ) : null}
 
-          {status === 'completed' ? (
+          {showPdf && status === 'completed' ? (
             <Button
               variant="secondary"
               size="sm"
@@ -180,7 +182,7 @@ export const WorkflowControlBar: React.FC<WorkflowControlBarProps> = ({
               <Icons.FileText size={14} style={{ marginRight: '0.35rem' }} />
               Baixar Dossiê PDF
             </Button>
-          ) : (
+          ) : showPdf ? (
             <Button
               variant="ghost"
               size="sm"
@@ -191,7 +193,7 @@ export const WorkflowControlBar: React.FC<WorkflowControlBarProps> = ({
               <Icons.FileText size={14} style={{ marginRight: '0.35rem' }} />
               Prévia PDF
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
 

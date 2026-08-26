@@ -170,8 +170,9 @@ export const ChatDiligenceResultCard: React.FC<ChatDiligenceResultCardProps> = (
           onClick={() => onOpenDashboard(diligence)}
           icon={<Icons.ArrowRight size={14} />}
           className="diligence-btn-primary"
+          aria-label={`Abrir dossiê completo de ${diligence.razaoSocial}`}
         >
-          Abrir Ficha Completa
+          Abrir dossiê completo
         </Button>
       </div>
     </div>

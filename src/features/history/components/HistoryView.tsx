@@ -10,6 +10,7 @@ import { HistoryCard } from './HistoryCard';
 import { HistoryEmptyState } from './HistoryEmptyState';
 import { Button } from '../../../components/ui/Button';
 import { Icons } from '../../../components/ui/Icons';
+import { Modal } from '../../../components/ui/Modal';
 
 interface HistoryViewProps {
   onOpenDiligence: (item: DiligenceItem) => void;
@@ -171,52 +172,44 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       )}
 
       {/* Modal de Confirmação de Exclusão de Dossiê */}
-      {itemToDelete && (
-        <div className="modal-backdrop animate-fade-in" style={{ zIndex: 1200 }}>
-          <div
-            className="modal-content animate-fade-in-up"
-            style={{
-              maxWidth: '460px',
-              backgroundColor: '#ffffff',
-              background: '#ffffff',
-              borderRadius: 'var(--radius-xl)',
-              padding: '1.5rem',
-              boxShadow: '0 20px 40px -10px rgba(15, 41, 66, 0.35)',
-              border: '1px solid var(--border-default)',
-            }}
-          >
-            <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>
-              Remover Dossiê da Visualização
-            </h2>
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '0.5rem', lineHeight: 1.5 }}>
+      <Modal
+        isOpen={Boolean(itemToDelete)}
+        onClose={() => setItemToDelete(null)}
+        title="Remover Dossiê da Visualização"
+        icon={<Icons.Trash size={18} />}
+        size="sm"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              size="md"
+              onClick={() => setItemToDelete(null)}
+              disabled={isDeleting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="danger"
+              size="md"
+              onClick={handleConfirmDelete}
+              isLoading={isDeleting}
+            >
+              Remover Dossiê
+            </Button>
+          </>
+        }
+      >
+        {itemToDelete && (
+          <>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
               Tem certeza que deseja remover o dossiê da empresa <strong>{itemToDelete.razaoSocial}</strong> (CNPJ: {itemToDelete.cnpjFmt || itemToDelete.cnpj || 'Não informado'}) da lista ativa?
             </p>
-            <p style={{ fontSize: 'var(--text-2xs)', color: 'var(--status-critical-text)', marginTop: '0.35rem' }}>
+            <p style={{ fontSize: 'var(--text-2xs)', color: 'var(--status-critical-text)', margin: 0 }}>
               O conteúdo, as versões, os relatórios e a auditoria continuarão preservados na planilha.
             </p>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.25rem' }}>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setItemToDelete(null)}
-                disabled={isDeleting}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleConfirmDelete}
-                isLoading={isDeleting}
-                style={{ backgroundColor: 'var(--status-critical)', borderColor: 'var(--status-critical)' }}
-              >
-                Remover Dossiê
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
     </div>
   );
 };

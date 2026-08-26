@@ -43,35 +43,52 @@ const ReportRepository = {
       generatedAt: (data.generatedAt || new Date()).toISOString?.() || String(data.generatedAt),
     };
 
-    await getGoogleSheetsClient().appendValues('Relatorios!A:L', [[
-      record.id,
-      record.diligenceId,
-      record.version,
-      record.reportNumber,
-      record.fileName,
-      record.mimeType,
-      record.hashAlgorithm,
-      record.hashValue,
-      record.generatedById || '',
-      generatedBy.email || '',
-      generatedBy.name || '',
-      record.generatedAt,
-    ]]);
+    try {
+      const client = getGoogleSheetsClient();
+      if (client.isConfigured()) {
+        await client.appendValues('Relatorios!A:L', [[
+          record.id,
+          record.diligenceId,
+          record.version,
+          record.reportNumber,
+          record.fileName,
+          record.mimeType,
+          record.hashAlgorithm,
+          record.hashValue,
+          record.generatedById || '',
+          generatedBy.email || '',
+          generatedBy.name || '',
+          record.generatedAt,
+        ]]);
+      }
+    } catch (e) {
+      console.warn('[ReportRepository] Falha ao persistir metadados do relatório:', e.message);
+    }
     return record;
   },
 
   async listByDiligenceId(diligenceId) {
-    const rows = await getGoogleSheetsClient().getValues('Relatorios!A:L');
-    return rows
-      .slice(1)
-      .map(mapReport)
-      .filter((record) => record.diligenceId === diligenceId)
-      .sort((left, right) => right.version - left.version);
+    try {
+      const client = getGoogleSheetsClient();
+      if (!client.isConfigured()) return [];
+      const rows = await client.getValues('Relatorios!A:L');
+      return rows
+        .slice(1)
+        .map(mapReport)
+        .filter((record) => record.diligenceId === diligenceId)
+        .sort((left, right) => right.version - left.version);
+    } catch {
+      return [];
+    }
   },
 
   async getLatestVersion(diligenceId) {
-    const list = await this.listByDiligenceId(diligenceId);
-    return list.length > 0 ? list[0].version : 0;
+    try {
+      const list = await this.listByDiligenceId(diligenceId);
+      return list.length > 0 ? list[0].version : 0;
+    } catch {
+      return 0;
+    }
   },
 };
 

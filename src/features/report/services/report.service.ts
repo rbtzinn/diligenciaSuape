@@ -16,22 +16,27 @@ export interface DiligenceReportMetadata {
   generatedBy?: { id: string; name: string };
 }
 
-export const ReportService = {
-  async downloadReport(diligenceId: string, isPreview = false): Promise<{ fileName: string; hash: string }> {
-    const url = resolveApiUrl(`/api/diligences/${diligenceId}/report${isPreview ? '?preview=true' : ''}`);
-    const idToken = await getFirebaseIdToken();
+async function downloadPdf(
+  url: string,
+  fallbackFileName: string,
+  bodyData?: Record<string, unknown>
+): Promise<{ fileName: string; hash: string }> {
+  const idToken = await getFirebaseIdToken();
+  const headers: Record<string, string> = { Accept: 'application/pdf' };
+  if (idToken) headers.Authorization = `Bearer ${idToken}`;
+  if (bodyData) headers['Content-Type'] = 'application/json';
 
-    const headers: Record<string, string> = {
-      Accept: 'application/pdf',
-    };
-    if (idToken) {
-      headers['Authorization'] = `Bearer ${idToken}`;
-    }
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 35000);
 
+  try {
     const response = await fetch(url, {
-      method: 'GET',
+      method: bodyData ? 'POST' : 'GET',
       headers,
+      body: bodyData ? JSON.stringify(bodyData) : undefined,
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errJson = await response.json().catch(() => ({}));
@@ -39,27 +44,44 @@ export const ReportService = {
     }
 
     const hash = response.headers.get('X-Report-Hash') || '';
-    const reportNum = response.headers.get('X-Report-Number') || '';
-
-    // Obtém o nome do arquivo a partir do header ou default
-    let fileName = `Dossie_${reportNum || diligenceId}.pdf`;
+    let fileName = fallbackFileName;
     const disposition = response.headers.get('Content-Disposition');
-    if (disposition && disposition.includes('filename=')) {
-      const match = disposition.match(/filename="?([^"]+)"?/);
-      if (match && match[1]) fileName = match[1];
+    if (disposition?.includes('filename=')) {
+      const match = disposition.match(/filename="?([^";]+)"?/);
+      if (match?.[1]) fileName = match[1];
     }
 
     const blob = await response.blob();
     const downloadUrl = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const anchor = document.createElement('a');
+    anchor.href = downloadUrl;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
     window.URL.revokeObjectURL(downloadUrl);
-
     return { fileName, hash };
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error('Tempo limite excedido ao gerar o relatório. Tente novamente.');
+    }
+    throw err;
+  }
+}
+
+export const ReportService = {
+  async downloadReport(diligenceId: string, isPreview = false, diligence?: unknown): Promise<{ fileName: string; hash: string }> {
+    const url = resolveApiUrl(`/api/diligences/${diligenceId}/report${isPreview ? '?preview=true' : ''}`);
+    const body = diligence ? { diligence, preview: isPreview } : undefined;
+    return downloadPdf(url, `Dossie_${diligenceId}.pdf`, body);
+  },
+
+  async downloadEntityReport(diligenceId: string, entityId: string, diligence?: unknown): Promise<{ fileName: string; hash: string }> {
+    const query = new URLSearchParams({ entityId });
+    const url = resolveApiUrl(`/api/diligences/${diligenceId}/entity-report?${query.toString()}`);
+    const body = diligence ? { diligence, entityId } : undefined;
+    return downloadPdf(url, `Evidencias_entidade_${entityId}.pdf`, body);
   },
 
   async listReports(diligenceId: string): Promise<DiligenceReportMetadata[]> {

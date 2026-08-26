@@ -70,8 +70,6 @@ export const App: React.FC = () => {
     return <LoginView />;
   }
 
-  const isDarkMode = currentView === 'dashboard' && activeDashboardTab === 'network';
-
   const renderContent = () => {
     switch (currentView) {
       case 'dashboard':
@@ -130,7 +128,6 @@ export const App: React.FC = () => {
       }}
       historyCount={historyCount}
       onSelectRecent={(item) => handleOpenDashboard(item)}
-      isDarkMode={isDarkMode}
     >
       {renderContent()}
     </AppShell>

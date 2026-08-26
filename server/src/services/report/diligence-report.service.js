@@ -3,15 +3,16 @@
 // ==========================================================
 
 const { DiligenceHistoryService } = require('../diligence-history.service');
+const { DiligenceRepository } = require('../../repositories/diligence.repository');
 const { ReportRepository } = require('../../repositories/report.repository');
-const { ReviewRepository } = require('../../repositories/review.repository');
 const { ReportGenerator } = require('./report-generator');
 const { sanitizeFileName, generateReportNumber } = require('./report-formatter');
+const { getEntityReportContext } = require('./entity-report-context');
 
 const DiligenceReportService = {
-  async generateDiligenceReport(diligenceId, user, { isPreview = false } = {}) {
-    // 1. Carrega dados EXCLUSIVAMENTE do snapshot histórico
-    const diligence = await DiligenceHistoryService.getDiligenceById(diligenceId);
+  async generateDiligenceReport(diligenceId, user, { isPreview = false, diligence: providedDiligence } = {}) {
+    // 1. Carrega dados (utiliza o snapshot fornecido pelo cliente se existir, ou busca no histórico)
+    const diligence = providedDiligence || await DiligenceHistoryService.getDiligenceById(diligenceId);
     if (!diligence) {
       throw new Error('Dossiê histórico não encontrado.');
     }
@@ -25,8 +26,13 @@ const DiligenceReportService = {
 
     // 2. Determina número humano e versão
     const reportNumber = generateReportNumber(diligence.id);
-    const lastVersion = await ReportRepository.getLatestVersion(diligence.id);
-    const nextVersion = lastVersion + 1;
+    let nextVersion = 1;
+    try {
+      const lastVersion = await ReportRepository.getLatestVersion(diligence.id);
+      nextVersion = lastVersion + 1;
+    } catch {
+      // Se indisponível, usa versão padrão
+    }
 
     const safeName = sanitizeFileName(diligence.razaoSocial || 'EMPRESA');
     const fileName = `${reportNumber}_${safeName}_${diligence.cnpj}.pdf`;
@@ -38,33 +44,33 @@ const DiligenceReportService = {
       !isCompleted || isPreview
     );
 
-    // 4. Registra metadados e versão do relatório emitido
-    const reportRecord = await ReportRepository.createReport({
-      diligenceId: diligence.id,
-      version: nextVersion,
-      reportNumber,
-      fileName,
-      mimeType: 'application/pdf',
-      hashAlgorithm: 'SHA-256',
-      hashValue,
-      generatedBy: user || null,
-      generatedById: user ? user.id : null,
-      generatedAt: new Date(),
-    });
-
-    // 5. Registra evento de auditoria
-    await ReviewRepository.recordAction({
-      diligenceId: diligence.id,
-      user,
-      userId: user ? user.id : null,
-      entityType: 'report',
-      entityId: reportRecord.id,
-      action: 'generate_pdf',
-      previousStatus: diligence.status,
-      newStatus: diligence.status,
-      justification: `Dossiê executivo em PDF emitido (Versão ${nextVersion}, Hash SHA-256: ${hashValue.substring(0, 16)}...).`,
-      reviewedBy: user ? user.name : 'Sistema / Diligência 360',
-    });
+    // 4. Registra metadados e evento de auditoria em segundo plano (sem travar a entrega do PDF)
+    Promise.allSettled([
+      ReportRepository.createReport({
+        diligenceId: diligence.id,
+        version: nextVersion,
+        reportNumber,
+        fileName,
+        mimeType: 'application/pdf',
+        hashAlgorithm: 'SHA-256',
+        hashValue,
+        generatedBy: user || null,
+        generatedById: user ? user.id : null,
+        generatedAt: new Date(),
+      }),
+      DiligenceRepository.appendAudit({
+        diligenceId: diligence.id,
+        user,
+        userId: user ? user.id : null,
+        entityType: 'report',
+        entityId: diligence.id,
+        action: 'generate_pdf',
+        previousStatus: diligence.status,
+        newStatus: diligence.status,
+        justification: `Dossiê executivo em PDF emitido (Versão ${nextVersion}, Hash SHA-256: ${hashValue.substring(0, 16)}...).`,
+        reviewedBy: user ? user.name : 'Sistema / Diligência 360',
+      }),
+    ]).catch((err) => console.warn('[DiligenceReportService] Falha na auditoria do PDF:', err?.message));
 
     return {
       buffer,
@@ -78,6 +84,45 @@ const DiligenceReportService = {
 
   async listReports(diligenceId) {
     return await ReportRepository.listByDiligenceId(diligenceId);
+  },
+
+  async generateEntityReport(diligenceId, entityId, user, { diligence: providedDiligence } = {}) {
+    const diligence = providedDiligence || await DiligenceHistoryService.getDiligenceById(diligenceId);
+    if (!diligence) throw new Error('Dossiê histórico não encontrado.');
+    if (!entityId) throw new Error('Selecione uma entidade para gerar o relatório.');
+
+    const context = getEntityReportContext(diligence, entityId);
+    const reportNumber = `${generateReportNumber(diligence.id)}-ENT`;
+    const safeEntityName = sanitizeFileName(context.entity.name || 'ENTIDADE');
+    const fileName = `${reportNumber}_${safeEntityName}_EVIDENCIAS.pdf`;
+    const { buffer, hashValue } = await ReportGenerator.generateEntityBuffer(
+      diligence,
+      reportNumber,
+      context
+    );
+
+    // Registra evento de auditoria sem bloquear a resposta do PDF
+    DiligenceRepository.appendAudit({
+      diligenceId: diligence.id,
+      user,
+      userId: user ? user.id : null,
+      entityType: 'entity',
+      entityId: context.entity.id,
+      action: 'generate_entity_evidence_pdf',
+      previousStatus: diligence.status,
+      newStatus: diligence.status,
+      justification: `Relatório contextual de evidências emitido para ${context.entity.name} (Hash SHA-256: ${hashValue.substring(0, 16)}...).`,
+      reviewedBy: user ? user.name : 'Sistema / Diligência 360',
+    }).catch((err) => console.warn('[DiligenceReportService] Falha na auditoria da entidade:', err?.message));
+
+    return {
+      buffer,
+      fileName,
+      hashValue,
+      reportNumber,
+      mimeType: 'application/pdf',
+      entityName: context.entity.name,
+    };
   },
 };
 

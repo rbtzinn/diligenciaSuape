@@ -7,6 +7,7 @@ import { CNJ, ExtractedCNJ } from '../../../lib/cnj';
 import { DiscoverySourceType, DiscoverySource } from '../types';
 import { Button } from '../../../components/ui/Button';
 import { Icons } from '../../../components/ui/Icons';
+import { Modal } from '../../../components/ui/Modal';
 
 interface ContentAnalyzerModalProps {
   isOpen: boolean;
@@ -36,8 +37,6 @@ export const ContentAnalyzerModal: React.FC<ContentAnalyzerModalProps> = ({
     return CNJ.extractFromText(content);
   }, [content]);
 
-  if (!isOpen) return null;
-
   const handleSourceTypeChange = (type: DiscoverySourceType) => {
     setSourceType(type);
     const opt = SOURCE_OPTIONS.find((o) => o.type === type);
@@ -61,137 +60,14 @@ export const ContentAnalyzerModal: React.FC<ContentAnalyzerModalProps> = ({
   };
 
   return (
-    <div className="drawer-overlay animate-fade-in" onClick={onClose}>
-      <div
-        className="animate-scale-up"
-        style={{
-          width: '90%',
-          maxWidth: '640px',
-          backgroundColor: 'var(--bg-surface)',
-          borderRadius: 'var(--radius-lg)',
-          border: '1px solid var(--border-default)',
-          boxShadow: 'var(--shadow-lg)',
-          padding: '1.5rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Icons.FileText size={18} style={{ color: 'var(--brand-blue)' }} />
-            <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>
-              Analisar Conteúdo e Extrair Processos CNJ
-            </h2>
-          </div>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
-            <Icons.Close size={16} />
-          </button>
-        </div>
-
-        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
-          Cole abaixo qualquer trecho de publicação, certidão, notícia ou documento. O extrator identificará e validará automaticamente os números de processo CNJ.
-        </p>
-
-        {/* Seleção de Tipo de Fonte */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-          <div>
-            <label className="company-cell-label" style={{ marginBottom: '0.25rem', display: 'block' }}>
-              Tipo de Origem
-            </label>
-            <select
-              className="input-control"
-              value={sourceType}
-              onChange={(e) => handleSourceTypeChange(e.target.value as DiscoverySourceType)}
-            >
-              {SOURCE_OPTIONS.map((opt) => (
-                <option key={opt.type} value={opt.type}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="company-cell-label" style={{ marginBottom: '0.25rem', display: 'block' }}>
-              Identificação da Fonte
-            </label>
-            <input
-              type="text"
-              className="input-control"
-              value={sourceName}
-              onChange={(e) => setSourceName(e.target.value)}
-              placeholder="Ex: DJEN Edição 142 / Certidão TJPE"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="company-cell-label" style={{ marginBottom: '0.25rem', display: 'block' }}>
-            Link / Referência (Opcional)
-          </label>
-          <input
-            type="text"
-            className="input-control"
-            value={sourceUrl}
-            onChange={(e) => setSourceUrl(e.target.value)}
-            placeholder="https://..."
-          />
-        </div>
-
-        {/* Textarea para Conteúdo */}
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-            <label className="company-cell-label">Texto do Conteúdo</label>
-            <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)' }}>
-              {extracted.length} processo(s) válido(s) detectado(s)
-            </span>
-          </div>
-          <textarea
-            className="input-control font-mono"
-            rows={6}
-            placeholder="Cole aqui o texto da publicação, despacho judicial, intimação ou certidão..."
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            style={{ fontSize: 'var(--text-xs)', resize: 'vertical' }}
-            autoFocus
-          />
-        </div>
-
-        {/* Prévia de Números Detectados */}
-        {extracted.length > 0 && (
-          <div
-            style={{
-              padding: '0.75rem',
-              backgroundColor: 'var(--bg-surface-subtle)',
-              border: '1px solid var(--border-default)',
-              borderRadius: 'var(--radius-md)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.35rem',
-            }}
-          >
-            <span style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--font-semibold)', color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>
-              Processos CNJ Identificados ({extracted.length}):
-            </span>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-              {extracted.map((ext) => (
-                <span
-                  key={ext.normalized}
-                  className="font-mono badge badge-neutral"
-                  style={{ fontSize: 'var(--text-xs)' }}
-                >
-                  {ext.formatted}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Analisar Conteúdo e Extrair Processos CNJ"
+      icon={<Icons.FileText size={18} />}
+      size="lg"
+      footer={
+        <>
           <Button variant="secondary" size="md" onClick={onClose}>
             Cancelar
           </Button>
@@ -204,10 +80,111 @@ export const ContentAnalyzerModal: React.FC<ContentAnalyzerModalProps> = ({
           >
             {extracted.length > 0
               ? `Integrar ${extracted.length} Processo(s) Descoberto(s)`
-              : 'Nenhum Processo Encontrado no Texto'}
+              : 'Nenhum Processo Encontrado'}
           </Button>
+        </>
+      }
+    >
+      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0 }}>
+        Cole abaixo qualquer trecho de publicação, certidão, notícia ou documento. O extrator identificará e validará automaticamente os números de processo CNJ.
+      </p>
+
+      {/* Seleção de Tipo de Fonte */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+        <div>
+          <label className="company-cell-label" style={{ marginBottom: '0.35rem', display: 'block', fontSize: 'var(--text-xs)', fontWeight: 600 }}>
+            TIPO DE ORIGEM
+          </label>
+          <select
+            className="input-control"
+            value={sourceType}
+            onChange={(e) => handleSourceTypeChange(e.target.value as DiscoverySourceType)}
+          >
+            {SOURCE_OPTIONS.map((opt) => (
+              <option key={opt.type} value={opt.type}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="company-cell-label" style={{ marginBottom: '0.35rem', display: 'block', fontSize: 'var(--text-xs)', fontWeight: 600 }}>
+            IDENTIFICAÇÃO DA FONTE
+          </label>
+          <input
+            type="text"
+            className="input-control"
+            value={sourceName}
+            onChange={(e) => setSourceName(e.target.value)}
+            placeholder="Ex: DJEN Edição 142 / Certidão TJPE"
+          />
         </div>
       </div>
-    </div>
+
+      <div>
+        <label className="company-cell-label" style={{ marginBottom: '0.35rem', display: 'block', fontSize: 'var(--text-xs)', fontWeight: 600 }}>
+          LINK / REFERÊNCIA (OPCIONAL)
+        </label>
+        <input
+          type="text"
+          className="input-control"
+          value={sourceUrl}
+          onChange={(e) => setSourceUrl(e.target.value)}
+          placeholder="https://..."
+        />
+      </div>
+
+      {/* Textarea para Conteúdo */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+          <label className="company-cell-label" style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>
+            TEXTO DO CONTEÚDO
+          </label>
+          <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)' }}>
+            {extracted.length} processo(s) válido(s) detectado(s)
+          </span>
+        </div>
+        <textarea
+          className="input-control font-mono"
+          rows={6}
+          placeholder="Cole aqui o texto da publicação, despacho judicial, intimação ou certidão..."
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          style={{ fontSize: 'var(--text-xs)', resize: 'vertical' }}
+          autoFocus
+        />
+      </div>
+
+      {/* Prévia de Números Detectados */}
+      {extracted.length > 0 && (
+        <div
+          style={{
+            padding: '0.75rem',
+            backgroundColor: 'var(--bg-surface-subtle)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 'var(--radius-md)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.35rem',
+          }}
+        >
+          <span style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--font-semibold)', color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>
+            Processos CNJ Identificados ({extracted.length}):
+          </span>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+            {extracted.map((ext) => (
+              <span
+                key={ext.normalized}
+                className="font-mono badge badge-neutral"
+                style={{ fontSize: 'var(--text-xs)' }}
+              >
+                {ext.formatted}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </Modal>
   );
 };

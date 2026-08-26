@@ -729,15 +729,37 @@ button.ai-thinking-toggle-btn:hover {
 }
 
 .diligence-btn-primary {
-  background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%) !important;
-  box-shadow: 0 2px 8px rgba(0, 102, 255, 0.25) !important;
+  min-height: 38px;
+  padding-inline: 0.85rem !important;
+  background: linear-gradient(135deg, #2D60AD 0%, #163768 100%) !important;
+  border-color: #163768 !important;
+  box-shadow: 0 5px 14px rgba(22, 55, 104, 0.2) !important;
   font-weight: 700 !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 220ms ease, background-color 220ms ease !important;
 }
 
-.diligence-btn-primary:hover {
+.diligence-btn-primary > span:first-child {
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.diligence-btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(0, 102, 255, 0.4) !important;
+  box-shadow: 0 9px 22px rgba(22, 55, 104, 0.28) !important;
+}
+
+.diligence-btn-primary:hover:not(:disabled) > span:first-child {
+  transform: translateX(3px);
+}
+
+.diligence-btn-primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.985);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .diligence-btn-primary,
+  .diligence-btn-primary > span:first-child {
+    transition: none !important;
+  }
 }
 
 /* Animações Auxiliares */
