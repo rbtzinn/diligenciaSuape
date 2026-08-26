@@ -34,10 +34,11 @@ export const ChatDiligenceResultCard: React.FC<ChatDiligenceResultCardProps> = (
   const judicialCount = processosDescobertos?.length || 0;
 
   const handleDownloadPdf = async () => {
+    if (isDownloading) return;
     setIsDownloading(true);
     try {
       const isPreview = diligence.status !== 'completed';
-      await ReportService.downloadReport(diligence.id, isPreview);
+      await ReportService.downloadReport(diligence.id, isPreview, diligence);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Falha ao baixar relatório.';
       alert(msg);

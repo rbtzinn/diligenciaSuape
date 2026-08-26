@@ -53,9 +53,10 @@ export const WorkflowControlBar: React.FC<WorkflowControlBarProps> = ({
   };
 
   const handleDownloadPdf = async (isPreview = false) => {
+    if (isPdfLoading) return;
     setIsPdfLoading(true);
     try {
-      const result = await ReportService.downloadReport(diligence.id, isPreview);
+      const result = await ReportService.downloadReport(diligence.id, isPreview, diligence);
       setLastGeneratedHash(result.hash);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Falha ao gerar o dossiê PDF.';

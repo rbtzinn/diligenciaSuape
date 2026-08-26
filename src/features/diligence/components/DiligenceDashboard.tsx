@@ -95,11 +95,17 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   };
 
   const handleExportPdf = async () => {
+    if (isExportingPdf) return;
     setIsExportingPdf(true);
     try {
-      await ReportService.downloadReport(diligence.id, diligence.status !== 'completed');
+      await ReportService.downloadReport(
+        diligence.id,
+        diligence.status !== 'completed',
+        displayDiligence
+      );
     } catch (error) {
       console.error('Erro ao gerar relatório:', error);
+      alert(error instanceof Error ? error.message : 'Falha ao baixar o dossiê em PDF.');
     } finally {
       setIsExportingPdf(false);
     }
