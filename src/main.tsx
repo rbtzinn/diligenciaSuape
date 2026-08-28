@@ -16,6 +16,7 @@ import './styles/dossier-v3.css';
 import './styles/kpi.css';
 import './styles/drawer.css';
 import './styles/governance-history.css';
+import './styles/responsive-overrides.css';
 
 const rootElement = document.getElementById('root');
 
