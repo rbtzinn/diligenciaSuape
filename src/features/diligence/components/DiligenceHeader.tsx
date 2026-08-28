@@ -15,6 +15,7 @@ interface DiligenceHeaderProps {
 
 export const DiligenceHeader: React.FC<DiligenceHeaderProps> = ({
   diligence,
+  onBack,
   onExportPdf,
   onEditRisk,
   isExportingPdf,
@@ -47,6 +48,11 @@ export const DiligenceHeader: React.FC<DiligenceHeaderProps> = ({
   return (
     <header className="dossier-masthead">
       <div className="dossier-masthead-card">
+        {onBack ? (
+          <button type="button" className="dossier-back-button" onClick={onBack} aria-label="Voltar para nova diligência">
+            <Icons.ArrowLeft size={18} aria-hidden="true" />
+          </button>
+        ) : null}
         <div className="dossier-entity-block">
           <span className="dossier-entity-eyebrow">Dossiê de integridade · visão consolidada</span>
           <div className="dossier-entity-title-row">
