@@ -70,14 +70,15 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
   ];
 
   return (
-    <div style={{ maxWidth: '880px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+    <div className="history-page">
+      <div className="section-page-heading">
         <div>
-          <h1 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>
+          <span className="section-page-eyebrow">Gestão das análises</span>
+          <h1>
             Dossiês & Fila de Diligências
           </h1>
-          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginTop: '0.2rem' }}>
-            {totalCount} dossiê(s) com autoria, versões e workflow no Google Sheets
+          <p>
+            Encontre uma empresa, acompanhe a revisão e retome dossiês sem perder o contexto.
           </p>
         </div>
 
@@ -87,57 +88,37 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       </div>
 
       {/* Abas de Fila */}
-      <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-default)', paddingBottom: '0.5rem' }}>
+      <div className="history-tabs" role="tablist" aria-label="Filas de diligências">
         {tabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: 'var(--radius-md)',
-              border: 'none',
-              backgroundColor: activeTab === t.id ? 'var(--brand-blue-subtle)' : 'transparent',
-              color: activeTab === t.id ? 'var(--brand-blue-text)' : 'var(--text-secondary)',
-              fontWeight: activeTab === t.id ? 'var(--font-bold)' : 'var(--font-normal)',
-              fontSize: 'var(--text-xs)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-            }}
+            className={activeTab === t.id ? 'active' : ''}
+            role="tab"
+            aria-selected={activeTab === t.id}
           >
             <span>{t.label}</span>
-            <span
-              style={{
-                fontSize: 'var(--text-2xs)',
-                padding: '0.1rem 0.4rem',
-                borderRadius: '999px',
-                backgroundColor: activeTab === t.id ? 'var(--brand-blue)' : 'var(--bg-surface-subtle)',
-                color: activeTab === t.id ? '#fff' : 'var(--text-tertiary)',
-              }}
-            >
-              {t.count}
-            </span>
+            <strong>{t.count}</strong>
           </button>
         ))}
       </div>
 
       {/* Barra de Filtros */}
-      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+      <div className="history-filters">
         <input
           type="text"
           className="input-control"
           placeholder="Filtrar por razão social ou CNPJ..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          style={{ flex: 1, minWidth: '220px' }}
+          aria-label="Filtrar por razão social ou CNPJ"
         />
 
         <select
           className="input-control"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          style={{ width: 'auto', minWidth: '180px' }}
+          aria-label="Filtrar por status"
         >
           <option value="all">Todos os Status</option>
           <option value="in_progress">Em Execução</option>
@@ -159,7 +140,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
           Nenhuma diligência encontrada para os filtros selecionados.
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }} className="animate-fade-in">
+        <div className="history-list animate-fade-in">
           {items.map((item) => (
             <HistoryCard
               key={item.id}
