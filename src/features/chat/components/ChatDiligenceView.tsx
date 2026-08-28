@@ -115,7 +115,7 @@ export const ChatDiligenceView: React.FC<ChatDiligenceViewProps> = ({
       )}
 
       {/* Caixa de Prompt Fixada na Base */}
-      <div style={{ width: '100%', maxWidth: '800px', margin: 'auto auto 0 auto', paddingBottom: '1rem' }}>
+      <div className="chat-prompt-dock">
         <ChatPromptBox
           value={promptValue}
           onChange={setPromptValue}
