@@ -68,6 +68,61 @@ function isNaturalPerson(shareholder) {
   return !/\b(ltda|limitada|s a|sa|sociedade|companhia|empresa|holding|participacoes|eireli)\b/.test(name);
 }
 
+function detectCoMentionedSubjects(company, people, itemText) {
+  const textNorm = normalizeText(itemText);
+  const textDigits = String(itemText || '').replace(/\D/g, '');
+  const subjects = [];
+  const seen = new Set();
+
+  const addSubject = (subject) => {
+    const key = `${subject.subjectType}:${normalizeText(subject.subjectName)}`;
+    if (!subject.subjectName || seen.has(key)) return;
+    seen.add(key);
+    subjects.push(subject);
+  };
+
+  const corporateName = normalizeText(company?.razaoSocial);
+  const tradeName = normalizeText(company?.nomeFantasia);
+  const cnpj = String(company?.cnpj || '').replace(/\D/g, '');
+  const corporateNameMatch = corporateName.length >= 5 && textNorm.includes(corporateName);
+  const tradeNameMatch = tradeName.length >= 4 && textNorm.includes(tradeName);
+  const cnpjMatch = cnpj.length === 14 && textDigits.includes(cnpj);
+  const companyMentioned = corporateNameMatch || tradeNameMatch || cnpjMatch;
+
+  if (companyMentioned) {
+    const matchBasis = [];
+    if (corporateNameMatch) matchBasis.push('CORPORATE_NAME');
+    if (tradeNameMatch) matchBasis.push('TRADE_NAME');
+    if (cnpjMatch) matchBasis.push('CNPJ');
+    addSubject({
+      subjectType: 'company',
+      subjectName: company.razaoSocial || company.nomeFantasia || cnpj,
+      subjectDocument: cnpj || null,
+      matchBasis,
+      confidence: cnpjMatch || corporateNameMatch ? 90 : 75,
+    });
+  }
+
+  for (const person of Array.isArray(people) ? people : []) {
+    const name = String(person?.nome_socio || person?.name || '').replace(/\s+/g, ' ').trim();
+    const normalizedName = normalizeText(name);
+    const significantTokens = normalizedName.split(' ').filter((token) => token.length > 2 && !['dos', 'das', 'de'].includes(token));
+    if (!name || significantTokens.length < 2 || !textNorm.includes(normalizedName)) continue;
+
+    const cpfDigits = maskedDocumentDigits(person?.cnpj_cpf_do_socio || person?.cpfCnpj);
+    const maskedCpfMatch = Boolean(cpfDigits && textDigits.includes(cpfDigits));
+    addSubject({
+      subjectType: 'person',
+      subjectName: name,
+      subjectDocument: person?.cnpj_cpf_do_socio || person?.cpfCnpj || null,
+      matchBasis: maskedCpfMatch ? ['EXACT_NAME', 'MASKED_CPF'] : ['EXACT_NAME'],
+      confidence: maskedCpfMatch ? 90 : companyMentioned ? 80 : 65,
+    });
+  }
+
+  return subjects;
+}
+
 async function mapWithConcurrency(items, concurrency, worker) {
   const results = new Array(items.length);
   let nextIndex = 0;
@@ -365,6 +420,7 @@ class AdverseMediaService {
           subjectDocument: descriptor.subjectType === 'person' ? descriptor.subjectDocument : undefined,
           questionnaireRefs: descriptor.questionnaireRefs,
           identityStatus: descriptor.subjectType === 'person' ? correlation.identityStatus : 'documented-entity',
+          coMentionedSubjects: detectCoMentionedSubjects(company, queryPlan.people, fullContent),
           requiresHumanReview: true,
           status: 'candidate',
           searchedAt: new Date().toISOString(),
@@ -434,4 +490,4 @@ class AdverseMediaService {
   }
 }
 
-module.exports = { AdverseMediaService, SEARCH_DICTIONARY };
+module.exports = { AdverseMediaService, SEARCH_DICTIONARY, detectCoMentionedSubjects };

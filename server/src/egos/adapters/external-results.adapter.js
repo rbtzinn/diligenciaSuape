@@ -1,5 +1,11 @@
 const { normalizeName, stableHash, safeDate } = require('../domain/normalization');
 
+function resolveMediaSubjectKey(context, subject) {
+  if (subject?.subjectType === 'company') return context.companyKey;
+  if (subject?.subjectType !== 'person') return null;
+  return context.shareholderKeys.get(normalizeName(subject.subjectName)) || null;
+}
+
 function adaptMedia(builder, context, payload) {
   const companyKey = context.companyKey;
   const media = payload.adverseMedia;
@@ -7,6 +13,7 @@ function adaptMedia(builder, context, payload) {
   const companyResults = results.filter((item) => item.subjectType !== 'person').length;
   const personResults = results.filter((item) => item.subjectType === 'person').length;
   const unavailable = !media || media.semChave || media.ok === false;
+  const coMentionPairs = new Map();
   builder.addCoverage({
     axis: 'MEDIA',
     provider: 'MEDIA_SEARCH',
@@ -97,6 +104,49 @@ function adaptMedia(builder, context, payload) {
       confidence: item.matchStrength === 'high' ? 85 : item.matchStrength === 'medium' ? 65 : 40,
       retrievedAt: item.searchedAt ? safeDate(item.searchedAt) : new Date(),
     });
+
+    const resolvedCoMentions = (Array.isArray(item.coMentionedSubjects) ? item.coMentionedSubjects : [])
+      .map((subject) => ({
+        subject,
+        entityKey: resolveMediaSubjectKey(context, subject),
+      }))
+      .filter((entry) => entry.entityKey)
+      .filter((entry, index, list) => list.findIndex((candidate) => candidate.entityKey === entry.entityKey) === index);
+
+    for (let leftIndex = 0; leftIndex < resolvedCoMentions.length; leftIndex += 1) {
+      for (let rightIndex = leftIndex + 1; rightIndex < resolvedCoMentions.length; rightIndex += 1) {
+        const left = resolvedCoMentions[leftIndex];
+        const right = resolvedCoMentions[rightIndex];
+        if (left.entityKey === right.entityKey) continue;
+        const [sourceKey, targetKey] = [left.entityKey, right.entityKey].sort();
+        const pairKey = `${sourceKey}|${targetKey}`;
+        const documentIdentity = item.url || item.title || documentKey;
+        const pairConfidence = Math.min(
+          80,
+          Number(left.subject.confidence || 65),
+          Number(right.subject.confidence || 65)
+        );
+        const currentPair = coMentionPairs.get(pairKey) || {
+          sourceKey,
+          targetKey,
+          confidence: 0,
+          documents: new Map(),
+        };
+        currentPair.confidence = Math.max(currentPair.confidence, pairConfidence);
+        currentPair.documents.set(documentIdentity, {
+          documentKey,
+          sourceName: item.domain || 'Publicação na web',
+          sourceUrl: item.url || null,
+          query: (item.queriesMatched || []).join(' | ') || null,
+          identifier: documentIdentity,
+          excerpt: item.snippet || item.title || 'As duas entidades foram citadas na mesma publicação.',
+          confidence: pairConfidence,
+          retrievedAt: item.searchedAt ? safeDate(item.searchedAt) : new Date(),
+        });
+        coMentionPairs.set(pairKey, currentPair);
+      }
+    }
+
     if ((item.matchStrength === 'high' || item.matchStrength === 'medium') && (!isPersonResult || personRiskRelevant)) {
       builder.addFinding({
         entityKey: sourceKey,
@@ -111,6 +161,44 @@ function adaptMedia(builder, context, payload) {
         confidence: item.matchStrength === 'high' ? 85 : 65,
       });
     }
+  }
+
+  for (const pair of coMentionPairs.values()) {
+    const relationshipKey = builder.addRelationship({
+      key: `rel:media-co-mention:${stableHash(pair.sourceKey, pair.targetKey)}`,
+      sourceKey: pair.sourceKey,
+      targetKey: pair.targetKey,
+      type: 'CO_MENTIONED_WITH',
+      label: 'Co-mencionados em fonte pública',
+      status: 'CANDIDATE',
+      confidence: pair.confidence,
+      properties: {
+        provider: 'MEDIA_SEARCH',
+        coMentionCount: pair.documents.size,
+        requiresHumanReview: true,
+        identityConfirmed: false,
+        disclaimer: 'Co-menção não comprova vínculo pessoal, societário ou ilícito.',
+      },
+    });
+
+    for (const evidence of pair.documents.values()) {
+      builder.addEvidence({
+        entityKey: evidence.documentKey,
+        relationshipKey,
+        provider: 'MEDIA_CO_MENTION',
+        sourceName: evidence.sourceName,
+        sourceUrl: evidence.sourceUrl,
+        query: evidence.query,
+        identifier: evidence.identifier,
+        excerpt: evidence.excerpt,
+        confidence: evidence.confidence,
+        retrievedAt: evidence.retrievedAt,
+      });
+    }
+  }
+
+  if (coMentionPairs.size > 0) {
+    builder.addInsight(`${coMentionPairs.size} par(es) de entidades foram citados na mesma fonte pública; co-menção é apenas hipótese contextual.`);
   }
 }
 
@@ -260,10 +348,14 @@ function adaptOfficialGazettes(builder, companyKey, payload) {
   if (results.length > 0) builder.addInsight(`${gazettes.totalFound || results.length} edição(ões) de Diários Oficiais municipais mencionam a entidade; a menção é documental e não indica irregularidade.`);
 }
 
-function adaptCorporateNetwork(builder, companyKey, payload) {
+function adaptCorporateNetwork(builder, context, payload) {
+  const companyKey = context.companyKey;
   const network = payload.corporateNetwork;
   const companies = Array.isArray(network?.companies) ? network.companies : [];
   const relationships = Array.isArray(network?.relationships) ? network.relationships : [];
+  const personExpansion = network?.personExpansion;
+  const personMemberships = Array.isArray(personExpansion?.memberships) ? personExpansion.memberships : [];
+  const relatedPersonMemberships = personMemberships.filter((item) => !item.isRootCompany);
   const available = network?.ok === true;
   builder.addCoverage({
     axis: 'CORPORATE_EXPANSION',
@@ -271,13 +363,35 @@ function adaptCorporateNetwork(builder, companyKey, payload) {
     status: !available ? 'UNAVAILABLE' : network.consultaParcial ? 'PARTIAL' : companies.length > 0 ? 'CONSULTED' : 'NOT_APPLICABLE',
     message: !available
       ? (network?.erro || 'A expansão societária não pôde ser executada.')
-      : companies.length > 0
-        ? `${companies.length} empresa(s) e ${relationships.length} vínculo(s) adicionais foram estruturados até o nível ${network.maxDepth || 2}.`
+      : companies.length > 0 || relatedPersonMemberships.length > 0
+        ? `${companies.length} empresa(s), ${relationships.length} vínculo(s) entre CNPJs e ${relatedPersonMemberships.length} vínculo(s) por pessoa foram estruturados até o nível ${network.maxDepth || 2}.`
         : 'O QSA consultado não contém empresa com CNPJ completo para expansão automática.',
-    resultCount: companies.length,
+    resultCount: relationships.length + relatedPersonMemberships.length,
     consultedAt: network?.consultadoEm ? safeDate(network.consultadoEm) : null,
   });
-  if (!available || companies.length === 0) return;
+
+  builder.addCoverage({
+    axis: 'PERSON_CORPORATE_LINKS',
+    provider: 'MINHA_RECEITA_GRAPH',
+    status: !personExpansion
+      ? 'NOT_CONSULTED'
+      : !personExpansion.ok
+        ? 'UNAVAILABLE'
+        : personExpansion.consultaParcial
+          ? 'PARTIAL'
+          : (personExpansion.people?.length || 0) > 0
+            ? 'CONSULTED'
+            : 'NOT_APPLICABLE',
+    message: !personExpansion
+      ? 'O grafo societário por pessoa não fazia parte desta diligência.'
+      : !personExpansion.ok
+        ? (personExpansion.erro || 'O grafo público do Minha Receita não pôde ser consultado.')
+        : `${personExpansion.peopleExpanded || 0} pessoa(s) foram expandidas por nome e CPF mascarado; ${relatedPersonMemberships.length} vínculo(s) com outras empresas foram localizados. A identidade exige validação humana.`,
+    resultCount: relatedPersonMemberships.length,
+    consultedAt: personExpansion?.consultadoEm ? safeDate(personExpansion.consultadoEm) : null,
+  });
+
+  if (!available) return;
 
   for (const item of companies) {
     const company = item.company || {};
@@ -323,7 +437,103 @@ function adaptCorporateNetwork(builder, companyKey, payload) {
       retrievedAt: relationship.consultedAt ? safeDate(relationship.consultedAt) : new Date(),
     });
   }
-  builder.addInsight(`${companies.length} empresa(s) adicional(is) foram alcançadas pela expansão societária controlada.`);
+
+  const personKeyByGraphId = new Map();
+  for (const person of Array.isArray(personExpansion?.people) ? personExpansion.people : []) {
+    if (!person?.id || !person?.name) continue;
+    const normalizedPersonName = normalizeName(person.name);
+    const existingKey = context.shareholderKeys.get(normalizedPersonName);
+    const personKey = existingKey || `person:minha-receita:${person.id}`;
+    const current = builder.entities.get(personKey);
+    builder.addEntity({
+      key: personKey,
+      type: 'Person',
+      name: person.name,
+      normalizedName: normalizedPersonName,
+      role: current?.role || 'qsa_member_graph',
+      depth: current?.depth ?? 1,
+      confidence: Math.max(current?.confidence || 0, person.maskedCpf ? 85 : 70),
+      properties: {
+        graphSource: 'Minha Receita — dados abertos da RFB',
+        graphId: person.id,
+        maskedCpf: person.maskedCpf || null,
+        identityBasis: person.maskedCpf ? 'Nome exato + CPF mascarado' : 'Nome exato',
+        identityConfirmed: false,
+      },
+      identifiers: [
+        ...(person.maskedCpf ? [{ type: 'MASKED_CPF', value: person.maskedCpf, provider: 'MINHA_RECEITA_GRAPH', confidence: 65 }] : []),
+        { type: 'MINHA_RECEITA_GRAPH_ID', value: person.id, provider: 'MINHA_RECEITA_GRAPH', confidence: 85 },
+      ],
+    });
+    personKeyByGraphId.set(person.id, personKey);
+  }
+
+  let personLinksAdded = 0;
+  for (const membership of personMemberships) {
+    const personKey = personKeyByGraphId.get(membership.personId)
+      || context.shareholderKeys.get(normalizeName(membership.personName));
+    if (!personKey) continue;
+    const companyCnpj = String(membership.companyCnpj || '').replace(/\D/g, '');
+    if (companyCnpj.length !== 14) continue;
+    const targetKey = membership.isRootCompany ? companyKey : `company:cnpj:${companyCnpj}`;
+
+    if (!builder.entities.has(targetKey)) {
+      builder.addEntity({
+        key: targetKey,
+        type: 'Company',
+        name: membership.companyName || `Empresa ${companyCnpj}`,
+        normalizedName: normalizeName(membership.companyName || ''),
+        role: 'person_related_company',
+        depth: membership.depth || 2,
+        confidence: membership.confidence || 85,
+        properties: { cnpj: companyCnpj, source: personExpansion.provider },
+        identifiers: [{ type: 'CNPJ', value: companyCnpj, provider: 'MINHA_RECEITA_GRAPH', confidence: 100 }],
+      });
+    }
+
+    const alreadyLinked = [...builder.relationships.values()].some((relationship) => (
+      (relationship.sourceKey === personKey && relationship.targetKey === targetKey)
+      || (relationship.sourceKey === targetKey && relationship.targetKey === personKey)
+    ));
+    if (membership.isRootCompany && alreadyLinked) continue;
+
+    const relationshipKey = builder.addRelationship({
+      key: `rel:minha-receita-qsa:${stableHash(membership.personId, companyCnpj)}`,
+      sourceKey: personKey,
+      targetKey,
+      type: 'QSA_MEMBER_OF',
+      label: 'Consta no QSA público',
+      status: 'PROBABLE',
+      confidence: membership.confidence || 85,
+      properties: {
+        provider: 'MINHA_RECEITA_GRAPH',
+        maskedCpf: membership.maskedCpf || null,
+        matchBasis: membership.matchBasis || 'EXACT_NAME_AND_MASKED_CPF_HASH',
+        requiresHumanReview: true,
+        identityConfirmed: false,
+        disclaimer: 'O elo usa nome e CPF mascarado; valide a identidade antes de concluir que se trata da mesma pessoa.',
+      },
+    });
+    builder.addEvidence({
+      relationshipKey,
+      provider: 'MINHA_RECEITA_GRAPH',
+      sourceName: personExpansion.provider || 'Minha Receita — grafo societário (dados RFB)',
+      sourceUrl: membership.sourceUrl || null,
+      query: payload.cnpj,
+      identifier: membership.maskedCpf || membership.personId,
+      excerpt: `${membership.personName} aparece no quadro societário de ${membership.companyName} com o mesmo identificador derivado de nome${membership.maskedCpf ? ` e CPF mascarado ${membership.maskedCpf}` : ''}. A correspondência exige validação humana.`,
+      confidence: membership.confidence || 85,
+      retrievedAt: personExpansion.consultadoEm ? safeDate(personExpansion.consultadoEm) : new Date(),
+    });
+    if (!membership.isRootCompany) personLinksAdded += 1;
+  }
+
+  if (companies.length > 0) {
+    builder.addInsight(`${companies.length} empresa(s) adicional(is) foram alcançadas pela expansão societária controlada.`);
+  }
+  if (personLinksAdded > 0) {
+    builder.addInsight(`${personLinksAdded} vínculo(s) adicional(is) foram encontrados pelo mesmo nome e CPF mascarado em outros quadros societários.`);
+  }
 }
 
 function adaptFundNetwork(builder, context, payload) {
@@ -500,7 +710,7 @@ function adaptExternalResults(builder, context, payload) {
   adaptMedia(builder, context, payload);
   adaptProcesses(builder, context, payload);
   adaptOfficialGazettes(builder, context.companyKey, payload);
-  adaptCorporateNetwork(builder, context.companyKey, payload);
+  adaptCorporateNetwork(builder, context, payload);
   adaptFundNetwork(builder, context, payload);
   adaptOffshore(builder, context, payload);
 }

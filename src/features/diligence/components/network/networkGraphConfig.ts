@@ -362,8 +362,8 @@ export const CYTOSCAPE_STYLESHEET: cytoscape.StylesheetStyle[] = [
     selector: 'edge.is-hypothesis',
     style: {
       'line-style': 'dashed',
-      'line-color': '#64748b',
-      'target-arrow-color': '#64748b',
+      'line-color': '#c58b27',
+      'target-arrow-color': '#c58b27',
     } as cytoscape.Css.Edge,
   },
   {

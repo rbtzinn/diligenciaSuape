@@ -23,7 +23,7 @@ const INITIAL_STEPS: DiligenceStepConfig[] = [
   { id: 'emp', label: 'Consultando cadastro empresarial (Receita Federal)', status: 'pending' },
   { id: 'soc', label: 'Identificando quadro societário e administradores (QSA)', status: 'pending' },
   { id: 'governance', label: 'Levantando diretores e acionistas dos últimos 5 exercícios', status: 'pending' },
-  { id: 'network', label: 'Expandindo empresas relacionadas até o segundo nível', status: 'pending' },
+  { id: 'network', label: 'Expandindo empresas por CNPJ, nomes e CPF mascarado', status: 'pending' },
   { id: 'fund', label: 'Mapeando gestor, administrador e prestadores regulados (CVM)', status: 'pending' },
   { id: 'ceis', label: 'Consultando CEIS (Empresas Inidôneas e Suspensas)', status: 'pending' },
   { id: 'cnep', label: 'Consultando CNEP (Cadastro Nacional de Empresas Punidas)', status: 'pending' },
@@ -117,9 +117,12 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
         }
 
         if (corporateNetwork.ok) {
-          updateStep('network', 'done', corporateNetwork.companies.length > 0 ? `${corporateNetwork.companies.length} empresa(s) relacionada(s)` : 'Não aplicável ao QSA disponível');
-          log(corporateNetwork.companies.length > 0
-            ? `Rede societária: ${corporateNetwork.companies.length} empresa(s) e ${corporateNetwork.relationships.length} vínculo(s) adicionais.`
+          const personLinks = corporateNetwork.personExpansion?.memberships.filter((item) => !item.isRootCompany).length || 0;
+          updateStep('network', 'done', corporateNetwork.companies.length > 0
+            ? `${corporateNetwork.companies.length} empresa(s) · ${personLinks} via pessoa`
+            : 'Nenhum vínculo adicional no QSA público');
+          log(corporateNetwork.companies.length > 0 || personLinks > 0
+            ? `Rede societária: ${corporateNetwork.companies.length} empresa(s), ${corporateNetwork.relationships.length} vínculo(s) entre CNPJs e ${personLinks} por nome/CPF mascarado.`
             : 'Rede societária: o QSA disponível não contém empresa com CNPJ expansível.');
         } else {
           updateStep('network', 'error', 'Expansão indisponível');

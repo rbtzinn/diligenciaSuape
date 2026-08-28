@@ -57,7 +57,8 @@ O tutorial completo e as variáveis separadas por projeto estão em [VERCEL_DEPL
 ## Fontes integradas
 
 - Receita Federal/QSA via provedores públicos configurados.
+- Minha Receita (grafo dos dados abertos da RFB) para localizar outras empresas associadas ao mesmo nome e CPF mascarado; os elos permanecem como hipóteses até validação humana.
 - CGU: CEIS, CNEP e PEP.
 - CNJ/DataJud.
-- Brave Search para mídia adversa, quando configurada.
+- Brave Search para mídia adversa, quando configurada, incluindo co-menções entre entidades conhecidas na mesma publicação.
 - Diários oficiais e ICIJ Offshore Leaks.

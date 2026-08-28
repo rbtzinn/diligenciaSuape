@@ -4,6 +4,9 @@
 // ==========================================================
 
 const { safeFetch } = require('../utils/safeFetch');
+const { PersonCorporateNetworkService } = require('./person-corporate-network.service');
+
+const personCorporateNetworkService = new PersonCorporateNetworkService();
 
 const CompanyService = {
   async getCompanyByCNPJ(rawCnpj) {
@@ -83,10 +86,16 @@ const CompanyService = {
     }
   },
 
-  async expandCorporateNetwork(rootCompany, { maxDepth = 2, maxCompanies = 20 } = {}) {
+  async expandCorporateNetwork(rootCompany, { maxDepth = 2, maxCompanies = 20, maxPeople = 10 } = {}) {
     const rootCnpj = String(rootCompany?.cnpj || '').replace(/\D/g, '');
     if (rootCnpj.length !== 14) return { ok: false, status: 400, erro: 'CNPJ raiz inválido.', companies: [], relationships: [] };
 
+    // A expansão por pessoa é independente da expansão por CNPJ e começa cedo
+    // para evitar acrescentar uma cascata sequencial ao tempo total da rota.
+    const personExpansionPromise = personCorporateNetworkService.expand(rootCompany, {
+      maxPeople,
+      maxCompanies,
+    });
     const seen = new Map([[rootCnpj, { cnpj: rootCnpj, company: rootCompany, depth: 0 }]]);
     const queue = [{ cnpj: rootCnpj, company: rootCompany, depth: 0 }];
     const companies = [];
@@ -127,17 +136,51 @@ const CompanyService = {
       }
     }
 
+    const rawPersonExpansion = await personExpansionPromise;
+    const allowedPersonCompanies = new Set([rootCnpj, ...companies.map((item) => item.cnpj)]);
+
+    if (rawPersonExpansion.ok) {
+      for (const item of rawPersonExpansion.companies || []) {
+        if (allowedPersonCompanies.has(item.cnpj) || companies.length >= maxCompanies) continue;
+        const related = {
+          cnpj: item.cnpj,
+          company: {
+            cnpj: item.cnpj,
+            razao_social: item.name,
+            nome_fantasia: '',
+            qsa: [],
+          },
+          depth: item.depth || 2,
+          source: rawPersonExpansion.provider,
+          consultedAt: rawPersonExpansion.consultadoEm,
+        };
+        companies.push(related);
+        seen.set(item.cnpj, related);
+        allowedPersonCompanies.add(item.cnpj);
+      }
+    }
+
+    const personExpansion = {
+      ...rawPersonExpansion,
+      companies: (rawPersonExpansion.companies || []).filter((item) => allowedPersonCompanies.has(item.cnpj)),
+      memberships: (rawPersonExpansion.memberships || []).filter((item) => allowedPersonCompanies.has(item.companyCnpj)),
+    };
+    const personFailures = Number(personExpansion.failures || 0) + (personExpansion.ok ? 0 : 1);
+
     return {
       ok: true,
       status: 200,
-      provider: 'BrasilAPI / Receita Federal',
+      provider: personExpansion.ok
+        ? 'BrasilAPI / Receita Federal + Minha Receita (grafo RFB)'
+        : 'BrasilAPI / Receita Federal',
       rootCnpj,
       maxDepth,
       maxCompanies,
       companies,
       relationships,
-      failures: failures.length,
-      consultaParcial: failures.length > 0 || queue.length > 0,
+      personExpansion,
+      failures: failures.length + personFailures,
+      consultaParcial: failures.length > 0 || queue.length > 0 || personExpansion.consultaParcial || !personExpansion.ok,
       consultadoEm: new Date().toISOString(),
     };
   },

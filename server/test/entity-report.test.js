@@ -3,6 +3,8 @@ const assert = require('node:assert/strict');
 
 const { getEntityReportContext } = require('../src/services/report/entity-report-context');
 const { ReportGenerator } = require('../src/services/report/report-generator');
+const { sourceCardLayout } = require('../src/services/report/entity-report-sections');
+const PDFDocument = require('pdfkit');
 
 function sampleDiligence() {
   return {
@@ -92,4 +94,20 @@ test('PDF da entidade contém páginas e hyperlinks externos clicáveis', async 
   assert.match(hashValue, /^[a-f0-9]{64}$/);
   assert.match(rawPdf, /\/Subtype \/Link/);
   assert.match(rawPdf, /\/URI \(https:\/\/example\.test\/noticias\/pessoa-selecionada\)/);
+});
+
+test('cartão de fonte reserva espaço entre trecho da notícia e hyperlink', () => {
+  const doc = new PDFDocument({ autoFirstPage: false });
+  const layout = sourceCardLayout(doc, {
+    title: 'gustavonegreiros.com.br',
+    sourceName: 'gustavonegreiros.com.br',
+    domain: 'news.google.com',
+    excerpt: '“A reorganização do modelo operativo” adotado pelo Banco Master, diz PF - gustavonegreiros.com.br',
+    url: 'https://news.google.com/articles/teste',
+  });
+
+  assert.ok(layout.excerptHeight > 0);
+  assert.ok(layout.footerY >= layout.excerptY + layout.excerptHeight + 10);
+  assert.ok(layout.height >= layout.footerY + 18);
+  doc.end();
 });

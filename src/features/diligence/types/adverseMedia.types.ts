@@ -12,6 +12,14 @@ export type AdverseMediaSubjectType = 'company' | 'person';
 
 export type AdverseMediaIdentityStatus = 'documented-entity' | 'supported' | 'contextual' | 'unverified';
 
+export interface AdverseMediaCoMentionedSubject {
+  subjectType: AdverseMediaSubjectType;
+  subjectName: string;
+  subjectDocument?: string | null;
+  matchBasis: Array<'EXACT_NAME' | 'CORPORATE_NAME' | 'TRADE_NAME' | 'CNPJ' | 'MASKED_CPF'>;
+  confidence: number;
+}
+
 export interface AdverseMediaResult {
   id: string;
   title: string;
@@ -41,6 +49,7 @@ export interface AdverseMediaResult {
   questionnaireRefs?: string[];
   identityStatus?: AdverseMediaIdentityStatus;
   requiresHumanReview?: boolean;
+  coMentionedSubjects?: AdverseMediaCoMentionedSubject[];
   processNumbers?: ExtractedCNJ[];
   status: AdverseMediaStatus;
   searchedAt: string;

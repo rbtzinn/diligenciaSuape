@@ -164,17 +164,55 @@ function sourceKindLabel(source) {
   return 'Evidência rastreável';
 }
 
-function sourceCardHeight(doc, source) {
-  const excerpt = clampText(source.excerpt, 560);
+function sourceCardLayout(doc, source) {
+  const innerWidth = PAGE.contentWidth - 28;
+  const title = clampText(source.title, 108);
+  const metadata = `${cleanText(source.sourceName, 'Fonte pública')}${source.domain ? ` | ${source.domain}` : ''}`;
+  const excerpt = source.excerpt ? clampText(source.excerpt, 560) : '';
+
+  doc.font('Helvetica-Bold').fontSize(8.6);
+  const titleHeight = Math.min(23, doc.heightOfString(title, { width: innerWidth, lineGap: 1 }));
+
+  doc.font('Helvetica').fontSize(6.5);
+  const metadataHeight = Math.min(9, doc.heightOfString(metadata, { width: innerWidth }));
+
   doc.font('Helvetica').fontSize(7.2);
-  const excerptHeight = excerpt && excerpt !== 'Não informado'
-    ? Math.min(58, doc.heightOfString(excerpt, { width: PAGE.contentWidth - 28, lineGap: 1.5 }))
+  const excerptHeight = excerpt
+    ? Math.min(58, doc.heightOfString(excerpt, { width: innerWidth, lineGap: 1.5 }))
     : 0;
-  return Math.max(84, 70 + excerptHeight);
+
+  const titleY = 25;
+  const metadataY = titleY + Math.max(11, titleHeight) + 4;
+  const excerptY = metadataY + Math.max(8, metadataHeight) + 7;
+  const contentBottom = excerptHeight > 0
+    ? excerptY + excerptHeight
+    : metadataY + Math.max(8, metadataHeight);
+  const footerY = contentBottom + 10;
+  const height = Math.max(96, footerY + 18);
+
+  return {
+    height,
+    innerWidth,
+    title,
+    titleY,
+    titleHeight,
+    metadata,
+    metadataY,
+    metadataHeight,
+    excerpt,
+    excerptY,
+    excerptHeight,
+    footerY,
+  };
+}
+
+function sourceCardHeight(doc, source) {
+  return sourceCardLayout(doc, source).height;
 }
 
 function drawSourceCard(doc, source, y, index) {
-  const height = sourceCardHeight(doc, source);
+  const layout = sourceCardLayout(doc, source);
+  const { height } = layout;
   doc.roundedRect(PAGE.left, y, PAGE.contentWidth, height, 8)
     .fillAndStroke(index % 2 ? '#FAFBFC' : COLORS.white, COLORS.line);
   doc.fillColor(COLORS.blue).font('Courier-Bold').fontSize(5.8)
@@ -182,26 +220,40 @@ function drawSourceCard(doc, source, y, index) {
   doc.fillColor(COLORS.muted).font('Courier').fontSize(5.8)
     .text(formatDateTime(source.retrievedAt), PAGE.left + 300, y + 10, { width: 177, align: 'right' });
   doc.fillColor(COLORS.navy).font('Helvetica-Bold').fontSize(8.6)
-    .text(clampText(source.title, 108), PAGE.left + 14, y + 25, { width: PAGE.contentWidth - 28, height: 23 });
+    .text(layout.title, PAGE.left + 14, y + layout.titleY, {
+      width: layout.innerWidth,
+      height: layout.titleHeight,
+      lineGap: 1,
+      ellipsis: true,
+    });
   doc.fillColor(COLORS.slate).font('Helvetica').fontSize(6.5)
-    .text(`${cleanText(source.sourceName, 'Fonte pública')}${source.domain ? ` | ${source.domain}` : ''}`, PAGE.left + 14, y + 49, { width: PAGE.contentWidth - 28 });
-  if (source.excerpt) {
+    .text(layout.metadata, PAGE.left + 14, y + layout.metadataY, {
+      width: layout.innerWidth,
+      height: layout.metadataHeight,
+      ellipsis: true,
+    });
+  if (layout.excerpt) {
     doc.fillColor(COLORS.ink).font('Helvetica').fontSize(7.2)
-      .text(clampText(source.excerpt, 560), PAGE.left + 14, y + 64, { width: PAGE.contentWidth - 28, height: height - 86, lineGap: 1.5, ellipsis: true });
+      .text(layout.excerpt, PAGE.left + 14, y + layout.excerptY, {
+        width: layout.innerWidth,
+        height: layout.excerptHeight,
+        lineGap: 1.5,
+        ellipsis: true,
+      });
   }
   if (source.url) {
     doc.fillColor(COLORS.blue).font('Helvetica-Bold').fontSize(7.1)
-      .text('Abrir fonte original', PAGE.left + 14, y + height - 18, {
+      .text('Abrir fonte original', PAGE.left + 14, y + layout.footerY, {
         width: 145,
         link: source.url,
         underline: true,
         lineBreak: false,
       });
     doc.fillColor(COLORS.muted).font('Courier').fontSize(5.6)
-      .text(clampText(source.domain || source.url, 66), PAGE.left + 170, y + height - 18, { width: 307, align: 'right', lineBreak: false });
+      .text(clampText(source.domain || source.url, 66), PAGE.left + 170, y + layout.footerY, { width: 307, align: 'right', lineBreak: false });
   } else {
     doc.fillColor(COLORS.muted).font('Helvetica-Oblique').fontSize(6.4)
-      .text('Fonte sem URL pública preservada no snapshot.', PAGE.left + 14, y + height - 18, { width: PAGE.contentWidth - 28 });
+      .text('Fonte sem URL pública preservada no snapshot.', PAGE.left + 14, y + layout.footerY, { width: PAGE.contentWidth - 28 });
   }
   return y + height;
 }
@@ -245,4 +297,4 @@ const EntityReportSections = {
   },
 };
 
-module.exports = { EntityReportSections };
+module.exports = { EntityReportSections, sourceCardLayout };

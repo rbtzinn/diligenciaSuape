@@ -34,6 +34,8 @@ export const RELATION_TYPE_LABELS: Record<string, string> = {
   DIRECTOR_OF: 'Diretores e administradores',
   SHAREHOLDER_OF: 'Sócios e acionistas',
   LEGAL_REPRESENTATIVE_OF: 'Representantes legais',
+  QSA_MEMBER_OF: 'Vínculos por nome e CPF mascarado',
+  CO_MENTIONED_WITH: 'Co-menções em fontes públicas',
 };
 
 export const CHAIN_ENTITY_ORDER: Record<string, number> = {
