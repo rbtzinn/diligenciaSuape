@@ -53,22 +53,10 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({ item, onOpen, onDelete
 
   return (
     <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0.875rem 1.25rem',
-        backgroundColor: 'var(--bg-surface)',
-        border: '1px solid var(--border-default)',
-        borderRadius: 'var(--radius-lg)',
-        gap: '1rem',
-        cursor: 'pointer',
-        transition: 'all var(--transition-fast)',
-        boxShadow: 'var(--shadow-xs)',
-      }}
+      className="history-card"
       onClick={() => onOpen(item)}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: 0 }}>
+      <div className="history-card-main">
         <div
           style={{
             width: '40px',
@@ -112,7 +100,7 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({ item, onOpen, onDelete
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+      <div className="history-card-actions">
         {item.persisted === false && (
           <Badge variant="medium">Rascunho não persistido</Badge>
         )}
