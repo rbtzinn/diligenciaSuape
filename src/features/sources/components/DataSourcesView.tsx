@@ -133,21 +133,32 @@ export const DataSourcesView: React.FC = () => {
     },
   ];
 
+  const onlineCount = sources.filter((source) => source.status === 'online').length;
+  const attentionCount = sources.length - onlineCount;
+
   return (
-    <div style={{ maxWidth: '880px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <div>
-        <h1 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>
+    <div className="sources-page">
+      <div className="section-page-heading">
+        <div>
+          <span className="section-page-eyebrow">Rastreabilidade da análise</span>
+          <h1>
           Fontes de dados e evidências
-        </h1>
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-          Veja o que é consultado, o escopo de cada fonte e onde a decisão humana continua obrigatória.
-        </p>
+          </h1>
+          <p>Veja a cobertura, a disponibilidade e os limites de cada consulta.</p>
+        </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {sources.map((src, idx) => (
+      <div className="sources-summary" aria-label="Resumo das fontes">
+        <article><Icons.Database size={18} /><div><strong>{sources.length}</strong><span>fontes mapeadas</span></div></article>
+        <article className="is-success"><Icons.CheckCircle size={18} /><div><strong>{onlineCount}</strong><span>operacionais agora</span></div></article>
+        <article className="is-attention"><Icons.AlertTriangle size={18} /><div><strong>{attentionCount}</strong><span>sob demanda ou configuração</span></div></article>
+      </div>
+
+      <div className="sources-list">
+        {sources.map((src) => (
           <Card
-            key={idx}
+            key={src.name}
+            className="source-catalog-card"
             title={src.name}
             icon={<Icons.Database size={16} />}
             action={
@@ -156,11 +167,11 @@ export const DataSourcesView: React.FC = () => {
               </Badge>
             }
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
+            <div className="source-catalog-body">
+              <p>
                 {src.description}
               </p>
-              <div style={{ display: 'flex', gap: '1.5rem', fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', flexWrap: 'wrap', paddingTop: '0.5rem', borderTop: '1px solid var(--border-subtle)' }}>
+              <div className="source-catalog-meta">
                 <div>
                   <strong>Provedor:</strong> {src.provider}
                 </div>
