@@ -7,6 +7,8 @@ import { ViewType } from '../../types';
 import { Sidebar } from './Sidebar';
 import { DisclaimerBar } from './DisclaimerBar';
 import { DiligenceItem } from '../../features/diligence/types';
+import { WorkspaceHeader } from './WorkspaceHeader';
+import { HelpCenter } from '../help/HelpCenter';
 
 interface AppShellProps {
   currentView: ViewType;
@@ -43,10 +45,16 @@ export const AppShell: React.FC<AppShellProps> = ({
       />
 
       <div className="app-main">
+        <WorkspaceHeader
+          currentView={currentView}
+          onOpenMenu={() => setMobileMenuOpen(true)}
+        />
         <DisclaimerBar />
 
         <main className="app-content">{children}</main>
       </div>
+
+      <HelpCenter />
     </div>
   );
 };
