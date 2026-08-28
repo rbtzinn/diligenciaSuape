@@ -56,7 +56,8 @@ export const ChatPromptBox: React.FC<ChatPromptBoxProps> = ({
       <textarea
         ref={inputRef}
         className="ai-prompt-input"
-        placeholder="Envie uma mensagem ou digite o CNPJ para análise..."
+        placeholder="Digite ou cole o CNPJ da empresa"
+        aria-label="CNPJ da empresa que será analisada"
         value={value}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
