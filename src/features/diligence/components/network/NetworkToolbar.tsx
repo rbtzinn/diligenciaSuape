@@ -25,6 +25,7 @@ interface NetworkToolbarProps {
   onRelationFilterChange: (relation: string) => void;
   relationOptions: readonly SelectOption[];
   showDocuments: boolean;
+  documentCount: number;
   onToggleDocuments: () => void;
   onFit: () => void;
   isFullscreen: boolean;
@@ -42,6 +43,7 @@ export const NetworkToolbar: React.FC<NetworkToolbarProps> = ({
   onRelationFilterChange,
   relationOptions,
   showDocuments,
+  documentCount,
   onToggleDocuments,
   onFit,
   isFullscreen,
@@ -118,10 +120,11 @@ export const NetworkToolbar: React.FC<NetworkToolbarProps> = ({
         className={`network-tool-button ${showDocuments ? 'active' : ''}`}
         onClick={onToggleDocuments}
         aria-pressed={showDocuments}
-        title="Mostrar publicações e documentos associados"
+        aria-label={`${showDocuments ? 'Ocultar' : 'Mostrar'} ${documentCount} publicações e documentos associados`}
+        title={`${showDocuments ? 'Ocultar' : 'Mostrar'} ${documentCount} publicações e documentos associados`}
       >
         <Icons.FileText size={14} aria-hidden="true" />
-        <span>Documentos</span>
+        <span>Documentos ({documentCount})</span>
       </button>
 
       <div className="network-icon-actions">

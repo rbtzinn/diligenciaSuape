@@ -16,8 +16,28 @@ export interface AdverseMediaCoMentionedSubject {
   subjectType: AdverseMediaSubjectType;
   subjectName: string;
   subjectDocument?: string | null;
-  matchBasis: Array<'EXACT_NAME' | 'CORPORATE_NAME' | 'TRADE_NAME' | 'CNPJ' | 'MASKED_CPF'>;
+  matchBasis: Array<'EXACT_NAME' | 'CORPORATE_NAME' | 'TRADE_NAME' | 'CNPJ' | 'MASKED_CPF' | 'COMPANY_CONTEXT'>;
   confidence: number;
+}
+
+export interface AdverseMediaRelatedSubject {
+  subjectType: AdverseMediaSubjectType;
+  subjectName: string;
+  subjectQualification?: string;
+  subjectDocument?: string | null;
+  matchStrength?: AdverseMediaMatchStrength;
+  identityStatus?: AdverseMediaIdentityStatus;
+  matchBasis?: AdverseMediaCoMentionedSubject['matchBasis'];
+}
+
+export interface AdverseMediaProviderAttempt {
+  provider?: string;
+  providerId?: string;
+  channel?: string;
+  ok: boolean;
+  status?: number;
+  resultCount?: number;
+  erro?: string;
 }
 
 export interface AdverseMediaResult {
@@ -27,9 +47,13 @@ export interface AdverseMediaResult {
   domain: string;
   publishedAt?: string;
   snippet: string;
+  canonicalUrl?: string;
   queriesMatched: string[];
+  queryPurposes?: string[];
+  providerSources?: string[];
   matchedTerms: string[];
   categories: string[];
+  riskRelevant?: boolean;
   matchStrength: AdverseMediaMatchStrength;
   companyMatch: {
     corporateName: boolean;
@@ -50,6 +74,7 @@ export interface AdverseMediaResult {
   identityStatus?: AdverseMediaIdentityStatus;
   requiresHumanReview?: boolean;
   coMentionedSubjects?: AdverseMediaCoMentionedSubject[];
+  relatedSubjects?: AdverseMediaRelatedSubject[];
   processNumbers?: ExtractedCNJ[];
   status: AdverseMediaStatus;
   searchedAt: string;
@@ -62,7 +87,12 @@ export interface AdverseMediaQueryLog {
   ok: boolean;
   status?: number;
   count: number;
+  purpose?: string;
+  channel?: string;
+  partial?: boolean;
   provider?: string;
+  providerSources?: string[];
+  attempts?: AdverseMediaProviderAttempt[];
   erro?: string;
 }
 
@@ -72,6 +102,8 @@ export interface AdverseMediaSubjectSummary {
   searched: boolean;
   queryCount: number;
   candidatesCount: number;
+  riskRelevantCount?: number;
+  generalMentionsCount?: number;
   strongMatches: number;
   exactNameCandidates: number;
 }
@@ -89,9 +121,15 @@ export interface AdverseMediaSummary {
   peopleRequested?: number;
   peopleSearched?: number;
   peopleWithCandidates?: number;
+  peopleWithRiskRelevant?: number;
   personSearchCompleted?: boolean;
   personSearchTruncated?: boolean;
   consultaParcial?: boolean;
+  coverageStatus?: 'COMPLETE' | 'PARTIAL' | 'UNAVAILABLE';
+  deadlineExceeded?: boolean;
+  queriesPlanned?: number;
+  queryPlanVersion?: string;
+  providerSources?: string[];
   cached?: boolean;
   semChave?: boolean;
   aviso?: string;

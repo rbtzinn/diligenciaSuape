@@ -87,6 +87,7 @@ export const App: React.FC = () => {
         }
         return (
           <DiligenceDashboard
+            key={selectedDiligence.id}
             diligence={selectedDiligence}
             onBack={handleNewSearch}
             activeTab={activeDashboardTab}

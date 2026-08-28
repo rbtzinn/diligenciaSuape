@@ -98,7 +98,9 @@ export function buildCytoscapeElements(
     .filter((relationship) => (filters.relation === 'all' ? true : relationship.type === filters.relation))
     .map((relationship) => {
       const confirmed = isConfirmed(relationship.status);
-      const isDocEdge = relationship.type.toUpperCase().includes('DOCUMENT') ||
+      const isDocEdge = visible.get(relationship.sourceEntityId)?.type === 'Document' ||
+        visible.get(relationship.targetEntityId)?.type === 'Document' ||
+        relationship.type.toUpperCase().includes('DOCUMENT') ||
         relationship.label.toLowerCase().includes('publicação') ||
         relationship.label.toLowerCase().includes('menção');
 

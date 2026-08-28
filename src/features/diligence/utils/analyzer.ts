@@ -77,10 +77,13 @@ export function generateAutomatedAnalysis({ empresa, ceis, cnep, pepResults, adv
 
   // Ocorrências públicas: empresa e pessoas são avaliadas separadamente.
   const companyMediaCandidates = adverseMedia?.results.filter((item) => (
-    item.subjectType !== 'person' && (item.matchStrength === 'high' || item.matchStrength === 'medium')
+    item.subjectType !== 'person'
+    && item.riskRelevant !== false
+    && (item.matchStrength === 'high' || item.matchStrength === 'medium')
   )).length || 0;
   const personMediaCandidates = adverseMedia?.results.filter((item) => (
     item.subjectType === 'person'
+    && item.riskRelevant !== false
     && item.personMatch?.fullName
     && (item.matchStrength === 'high' || item.matchStrength === 'medium')
   )).length || 0;
@@ -123,8 +126,8 @@ export function generateAutomatedAnalysis({ empresa, ceis, cnep, pepResults, adv
     !adverseMedia || adverseMedia.semChave || !adverseMedia.ok
       ? 'Indisponível — integração não configurada ou fonte indisponível'
       : adverseMedia.results.length
-        ? `${adverseMedia.companyResultsCount ?? 0} da empresa; ${adverseMedia.personResultsCount ?? 0} nominal(is) de pessoas`
-        : 'Sem ocorrências nas fontes consultadas'
+        ? `${adverseMedia.riskRelevantCount ?? adverseMedia.results.length} ocorrência(s) potencialmente relevante(s); ${adverseMedia.generalMentionsCount ?? 0} menção(ões) geral(is)`
+        : 'Nenhum resultado nas fontes consultadas'
   }`);
   resumo.push(`Indicador de Atenção Preliminar: ${risco.score}/100 (${risco.nivel})`);
 

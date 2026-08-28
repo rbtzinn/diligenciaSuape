@@ -192,12 +192,14 @@ export const DiligenceService = {
     razaoSocial: string;
     nomeFantasia?: string;
     shareholders?: Shareholder[];
+    forceRefresh?: boolean;
   }): Promise<AdverseMediaSummary> {
     try {
       return await request<AdverseMediaSummary>('/api/adverse-media/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
+        timeoutMs: 65000,
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Falha na pesquisa de mídia adversa';

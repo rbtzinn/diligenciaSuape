@@ -5,7 +5,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import cytoscape from 'cytoscape';
-import type { EgosSnapshot } from '../types';
+import type { AdverseMediaSummary, EgosSnapshot } from '../types';
 import type {
   DepthFilter,
   FilterState,
@@ -35,6 +35,7 @@ import {
 import { NetworkToolbar } from './network/NetworkToolbar';
 import { NetworkInspector } from './network/NetworkInspector';
 import { NetworkLegend } from './network/NetworkLegend';
+import { projectNetworkDocuments } from './network/networkDocumentProjection';
 import { Icons } from '../../../components/ui/Icons';
 import { ReportService } from '../../report/services/report.service';
 import '../../../styles/network-immersive.css';
@@ -42,12 +43,14 @@ import '../../../styles/network-immersive.css';
 interface ImmersiveNetworkTabProps {
   diligenceId: string;
   egos?: EgosSnapshot;
+  adverseMedia?: AdverseMediaSummary;
   targetCompanyName?: string;
 }
 
 export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   diligenceId,
   egos,
+  adverseMedia,
   targetCompanyName = 'Empresa analisada',
 }) => {
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('radar');
@@ -69,9 +72,14 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   const filtersRef = useRef<FilterState>({ depth, relation: relationFilter, showDocuments });
   const layoutRef = useRef<LayoutMode>(layoutMode);
 
-  const entities = useMemo(() => egos?.entities || [], [egos?.entities]);
-  const relationships = useMemo(() => egos?.relationships || [], [egos?.relationships]);
-  const evidences = useMemo(() => egos?.evidences || [], [egos?.evidences]);
+  const networkData = useMemo(() => projectNetworkDocuments(
+    egos?.entities || [],
+    egos?.relationships || [],
+    egos?.evidences || [],
+    adverseMedia,
+    targetCompanyName
+  ), [adverseMedia, egos?.entities, egos?.evidences, egos?.relationships, targetCompanyName]);
+  const { entities, relationships, evidences, documentCount } = networkData;
   const findings = useMemo(() => egos?.findings || [], [egos?.findings]);
   const resolutions = useMemo(() => egos?.resolutions || [], [egos?.resolutions]);
 
@@ -278,7 +286,22 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
       const snapshot = {
         id: diligenceId,
         razaoSocial: targetCompanyName,
-        egos,
+        adverseMedia: adverseMedia ? {
+          ...adverseMedia,
+          results: adverseMedia.results.filter((item) => item.status !== 'discarded'),
+        } : adverseMedia,
+        egos: egos ? {
+          ...egos,
+          entities,
+          relationships,
+          evidences,
+          metrics: {
+            ...egos.metrics,
+            entities: entities.length,
+            relationships: relationships.length,
+            evidences: evidences.length,
+          },
+        } : egos,
       };
       await ReportService.downloadEntityReport(diligenceId, selectedEntity.id, snapshot);
     } catch (error) {
@@ -413,6 +436,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
         onRelationFilterChange={handleRelationFilterChange}
         relationOptions={relationOptions}
         showDocuments={showDocuments}
+        documentCount={documentCount}
         onToggleDocuments={handleToggleDocuments}
         onFit={handleFit}
         isFullscreen={isFullscreen}

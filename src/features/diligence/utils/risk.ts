@@ -267,7 +267,7 @@ export function calculateRisk(dados: RiskInput): RiskAssessment {
   } else {
     const activeResults = Array.from(new Map(
       (media.results || [])
-        .filter((item) => item.status !== 'discarded')
+        .filter((item) => item.status !== 'discarded' && item.riskRelevant !== false)
         .map((item) => [item.url || item.id, item]),
     ).values());
     let mediaPoints = 0;
@@ -301,7 +301,9 @@ export function calculateRisk(dados: RiskInput): RiskAssessment {
         activeResults.some((item) => item.matchStrength === 'high') ? 'alta' : 'media',
       );
     }
-    if ((media.peopleWithCandidates || 0) > 0) add('Pessoas do QSA com ocorrências públicas', Math.min(8, 3 + (media.peopleWithCandidates || 0)), `${media.peopleWithCandidates} integrante(s) possuem conteúdo candidato associado ao nome.`, 'PESSOAS_RELACIONADAS', 'uncertainty', 'media');
+    const peopleWithRiskRelevant = media.peopleWithRiskRelevant
+      ?? (media.results || []).filter((item) => item.subjectType === 'person' && item.riskRelevant !== false).length;
+    if (peopleWithRiskRelevant > 0) add('Pessoas do QSA com ocorrências públicas', Math.min(8, 3 + peopleWithRiskRelevant), peopleWithRiskRelevant + ' integrante(s) possuem conteúdo candidato associado ao nome e com termo de atenção.', 'PESSOAS_RELACIONADAS', 'uncertainty', 'media');
     if (convergenceSignals.length > 0) {
       const strongest = convergenceSignals.sort((a, b) => b.signals.length - a.signals.length)[0];
       const convergencePoints = Math.min(

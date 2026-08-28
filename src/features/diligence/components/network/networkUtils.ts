@@ -25,6 +25,10 @@ export const TYPE_LABELS: Record<string, string> = {
 };
 
 export const RELATION_TYPE_LABELS: Record<string, string> = {
+  EVIDENCED_BY: 'Evidências documentais',
+  MENTIONED_IN: 'Menções em publicações',
+  MENTIONED_IN_OFFICIAL_GAZETTE: 'Menções em diário oficial',
+  POSSIBLE_PERSON_OCCURRENCE: 'Possíveis ocorrências nominais',
   ADMINISTERS_FUND: 'Administração do fundo',
   MANAGES_FUND: 'Gestão do fundo',
   AUDITS_FUND: 'Auditoria do fundo',
@@ -220,9 +224,15 @@ export function findOptimalRoute(
     };
   }
 
+  const entityById = new Map(entities.map((entity) => [entity.id, entity]));
+  const routeCanUse = (entityId: string) => {
+    const entity = entityById.get(entityId);
+    return entity?.type !== 'Document' || entityId === target.id;
+  };
   const adjacency = new Map<string, Array<{ relationship: EgosRelationship; nextId: string }>>();
   entities.forEach((entity) => adjacency.set(entity.id, []));
   relationships.forEach((relationship) => {
+    if (!routeCanUse(relationship.sourceEntityId) || !routeCanUse(relationship.targetEntityId)) return;
     adjacency.get(relationship.sourceEntityId)?.push({ relationship, nextId: relationship.targetEntityId });
     adjacency.get(relationship.targetEntityId)?.push({ relationship, nextId: relationship.sourceEntityId });
   });

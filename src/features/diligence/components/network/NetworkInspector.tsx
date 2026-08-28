@@ -366,10 +366,10 @@ export const NetworkInspector: React.FC<NetworkInspectorProps> = ({
               </div>
             )}
 
-            {/* Menções Públicas e Notícias */}
+            {/* Fontes documentais e publicações */}
             {selectedPersonOccurrences.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <span className="network-panel-kicker">Menções Públicas e Notícias ({selectedPersonOccurrences.length})</span>
+                <span className="network-panel-kicker">Fontes documentais e publicações ({selectedPersonOccurrences.length})</span>
                 {selectedPersonOccurrences.map(({ relationship, document, evidence }) => (
                   <div
                     key={relationship.id}
@@ -417,7 +417,7 @@ export const NetworkInspector: React.FC<NetworkInspectorProps> = ({
                             transition: 'all 0.15s ease',
                           }}
                         >
-                          <span>Ver matéria original</span>
+                          <span>Abrir fonte original</span>
                           <Icons.ExternalLink size={10} />
                         </a>
                       </div>

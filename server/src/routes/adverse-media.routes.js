@@ -11,7 +11,7 @@ const adverseMediaService = new AdverseMediaService();
 router.use(authenticate);
 
 router.post('/search', async (req, res) => {
-  const { cnpj, razaoSocial, nomeFantasia, shareholders } = req.body || {};
+  const { cnpj, razaoSocial, nomeFantasia, shareholders, forceRefresh } = req.body || {};
 
   if (!cnpj && !razaoSocial) {
     return res.status(400).json({
@@ -24,7 +24,8 @@ router.post('/search', async (req, res) => {
   try {
     const result = await adverseMediaService.searchAdverseMedia(
       { cnpj, razaoSocial, nomeFantasia },
-      Array.isArray(shareholders) ? shareholders : []
+      Array.isArray(shareholders) ? shareholders : [],
+      { forceRefresh: forceRefresh === true }
     );
 
     return res.status(result.status || 200).json(result);

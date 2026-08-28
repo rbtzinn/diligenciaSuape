@@ -10,8 +10,9 @@ function adaptMedia(builder, context, payload) {
   const companyKey = context.companyKey;
   const media = payload.adverseMedia;
   const results = Array.isArray(media?.results) ? media.results : [];
-  const companyResults = results.filter((item) => item.subjectType !== 'person').length;
-  const personResults = results.filter((item) => item.subjectType === 'person').length;
+  const companyResults = media?.companyResultsCount ?? results.filter((item) => item.subjectType !== 'person').length;
+  const personResults = media?.personResultsCount ?? results.filter((item) => item.subjectType === 'person').length;
+  const riskRelevantResults = results.filter((item) => item.riskRelevant !== false);
   const unavailable = !media || media.semChave || media.ok === false;
   const coMentionPairs = new Map();
   builder.addCoverage({
@@ -21,8 +22,8 @@ function adaptMedia(builder, context, payload) {
     message: unavailable
       ? (media?.aviso || 'A busca de mídia não está configurada ou não respondeu.')
       : results.length > 0
-        ? `${companyResults} resultado(s) sobre a empresa e ${personResults} resultado(s) nominal(is) sobre integrantes foram correlacionados e deduplicados.`
-        : `Nenhuma ocorrência candidata localizada para a empresa e para ${media?.peopleSearched || 0} integrante(s) pesquisado(s).`,
+        ? `${results.length} publicação(ões) única(s) foram correlacionadas: ${riskRelevantResults.length} com termos de atenção e ${results.length - riskRelevantResults.length} menção(ões) geral(is).`
+        : `Nenhum resultado localizado nas fontes consultadas para a empresa e ${media?.peopleSearched || 0} integrante(s).`,
     resultCount: results.length,
     consultedAt: media?.consultadoEm ? safeDate(media.consultadoEm) : null,
   });
@@ -34,8 +35,8 @@ function adaptMedia(builder, context, payload) {
       axis: 'MEDIA',
       status: 'OK',
       severity: 'INFORMATIONAL',
-      title: 'Nenhuma ocorrência de mídia localizada',
-      explanation: 'As consultas configuradas foram executadas e não retornaram conteúdo correlacionado.',
+      title: 'Nenhum resultado localizado nas fontes consultadas',
+      explanation: 'As consultas configuradas foram executadas e não retornaram conteúdo correlacionado. Isso não comprova ausência de notícias fora das fontes e do período coberto.',
       confidence: 100,
     });
     return;
@@ -49,10 +50,22 @@ function adaptMedia(builder, context, payload) {
       && item.matchedTerms.length > 0
       && Array.isArray(item.categories)
       && item.categories.some((category) => category === 'criminal' || category === 'integrity');
-    const sourceKey = isPersonResult
-      ? context.shareholderKeys.get(normalizeName(item.subjectName))
-      : companyKey;
-    if (!sourceKey) continue;
+    const riskRelevant = item.riskRelevant !== false
+      && (!isPersonResult || personRiskRelevant);
+    const relatedSubjects = Array.isArray(item.relatedSubjects) && item.relatedSubjects.length > 0
+      ? item.relatedSubjects
+      : [{
+          subjectType: item.subjectType || 'company',
+          subjectName: item.subjectName || payload.razaoSocial,
+          matchStrength: item.matchStrength,
+          identityStatus: item.identityStatus,
+        }];
+    const resolvedSubjects = relatedSubjects
+      .map((subject) => ({ subject, sourceKey: resolveMediaSubjectKey(context, subject) }))
+      .filter((entry) => entry.sourceKey)
+      .filter((entry, index, list) => list.findIndex((candidate) => candidate.sourceKey === entry.sourceKey) === index);
+    const sourceKey = resolveMediaSubjectKey(context, item) || resolvedSubjects[0]?.sourceKey;
+    if (!sourceKey || resolvedSubjects.length === 0) continue;
     const documentKey = `document:web:${stableHash(item.url || item.title)}`;
     builder.addEntity({
       key: documentKey,
@@ -69,6 +82,7 @@ function adaptMedia(builder, context, payload) {
         categories: item.categories || [],
         matchedTerms: item.matchedTerms || [],
         questionnaireCandidate: personRiskRelevant,
+        riskRelevant,
         matchStrength: item.matchStrength || 'low',
         subjectType: item.subjectType || 'company',
         subjectName: item.subjectName || payload.razaoSocial,
@@ -76,34 +90,42 @@ function adaptMedia(builder, context, payload) {
         questionnaireRefs: item.questionnaireRefs || [],
       },
     });
-    const relationshipKey = builder.addRelationship({
-      sourceKey,
-      targetKey: documentKey,
-      type: isPersonResult ? 'POSSIBLE_PERSON_OCCURRENCE' : 'MENTIONED_IN',
-      label: isPersonResult ? 'Possível menção pública associada ao nome' : 'Mencionada em publicação',
-      status: 'CANDIDATE',
-      confidence: item.matchStrength === 'high' ? 85 : item.matchStrength === 'medium' ? 65 : 40,
-      properties: {
-        queriesMatched: item.queriesMatched || [],
-        provider: 'MEDIA_SEARCH',
-        subjectType: item.subjectType || 'company',
-        subjectName: item.subjectName || payload.razaoSocial,
-        requiresHumanReview: true,
-        identityConfirmed: false,
-      },
-    });
-    builder.addEvidence({
-      entityKey: documentKey,
-      relationshipKey,
-      provider: 'MEDIA_SEARCH',
-      sourceName: item.domain || 'Publicação na web',
-      sourceUrl: item.url || null,
-      query: (item.queriesMatched || []).join(' | ') || item.subjectName || payload.razaoSocial,
-      identifier: item.url || item.title,
-      excerpt: item.snippet || null,
-      confidence: item.matchStrength === 'high' ? 85 : item.matchStrength === 'medium' ? 65 : 40,
-      retrievedAt: item.searchedAt ? safeDate(item.searchedAt) : new Date(),
-    });
+    let relationshipKey = null;
+    for (const association of resolvedSubjects) {
+      const associationIsPerson = association.subject.subjectType === 'person';
+      const associationStrength = association.subject.matchStrength || item.matchStrength;
+      const associationConfidence = associationStrength === 'high' ? 85 : associationStrength === 'medium' ? 65 : 40;
+      const associationRelationshipKey = builder.addRelationship({
+        sourceKey: association.sourceKey,
+        targetKey: documentKey,
+        type: associationIsPerson ? 'POSSIBLE_PERSON_OCCURRENCE' : 'MENTIONED_IN',
+        label: associationIsPerson ? 'Possível menção pública associada ao nome' : 'Mencionada em publicação',
+        status: 'CANDIDATE',
+        confidence: associationConfidence,
+        properties: {
+          queriesMatched: item.queriesMatched || [],
+          provider: 'MEDIA_SEARCH',
+          providerSources: item.providerSources || [],
+          subjectType: association.subject.subjectType,
+          subjectName: association.subject.subjectName,
+          requiresHumanReview: true,
+          identityConfirmed: false,
+        },
+      });
+      builder.addEvidence({
+        entityKey: documentKey,
+        relationshipKey: associationRelationshipKey,
+        provider: (item.providerSources || []).join(' + ') || 'MEDIA_SEARCH',
+        sourceName: item.domain || 'Publicação na web',
+        sourceUrl: item.url || null,
+        query: (item.queriesMatched || []).join(' | ') || association.subject.subjectName || payload.razaoSocial,
+        identifier: item.url || item.title,
+        excerpt: item.snippet || null,
+        confidence: associationConfidence,
+        retrievedAt: item.searchedAt ? safeDate(item.searchedAt) : new Date(),
+      });
+      if (association.sourceKey === sourceKey) relationshipKey = associationRelationshipKey;
+    }
 
     const resolvedCoMentions = (Array.isArray(item.coMentionedSubjects) ? item.coMentionedSubjects : [])
       .map((subject) => ({
@@ -147,7 +169,7 @@ function adaptMedia(builder, context, payload) {
       }
     }
 
-    if ((item.matchStrength === 'high' || item.matchStrength === 'medium') && (!isPersonResult || personRiskRelevant)) {
+    if (riskRelevant && (item.matchStrength === 'high' || item.matchStrength === 'medium')) {
       builder.addFinding({
         entityKey: sourceKey,
         relationshipKey,

@@ -37,13 +37,15 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const [enrichingId, setEnrichingId] = useState<string | null>(null);
   const [workflowStatus, setWorkflowStatus] = useState(diligence.status);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isRefreshingMedia, setIsRefreshingMedia] = useState(false);
+  const [mediaRefreshNotice, setMediaRefreshNotice] = useState<string | null>(null);
   const [riskModalOpen, setRiskModalOpen] = useState(false);
   const [riskSaving, setRiskSaving] = useState(false);
   const [localRisk, setLocalRisk] = useState<{ diligenceId: string; risk: RiskAssessment } | null>(null);
   const effectiveRisk = localRisk?.diligenceId === diligence.id ? localRisk.risk : diligence.risco;
   const displayDiligence = useMemo(
-    () => ({ ...diligence, risco: effectiveRisk }),
-    [diligence, effectiveRisk],
+    () => ({ ...diligence, risco: effectiveRisk, adverseMedia }),
+    [adverseMedia, diligence, effectiveRisk],
   );
 
   const setActiveTab = (tab: DashboardTab) => {
@@ -92,6 +94,40 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
       ...current,
       results: current.results.map((item) => item.id === id ? { ...item, status: newStatus } : item),
     } : current);
+  };
+
+  const handleRefreshMedia = async () => {
+    if (isRefreshingMedia) return;
+    setIsRefreshingMedia(true);
+    setMediaRefreshNotice(null);
+    try {
+      const refreshed = await DiligenceService.searchAdverseMedia({
+        cnpj: diligence.cnpj,
+        razaoSocial: diligence.razaoSocial,
+        nomeFantasia: diligence.nomeFantasia,
+        shareholders: Array.isArray(diligence.socios) ? diligence.socios : [],
+        forceRefresh: true,
+      });
+      if (!refreshed.ok) {
+        setMediaRefreshNotice(refreshed.aviso || 'As fontes não responderam; os resultados anteriores foram preservados.');
+        return;
+      }
+      const reviewedStatuses = new Map(
+        (adverseMedia?.results || []).map((item) => [item.canonicalUrl || item.url || item.id, item.status])
+      );
+      const results = refreshed.results.map((item) => ({
+        ...item,
+        status: reviewedStatuses.get(item.canonicalUrl || item.url || item.id) || item.status,
+      }));
+      setAdverseMedia({ ...refreshed, results });
+      setMediaRefreshNotice(
+        refreshed.consultaParcial
+          ? 'Atualização parcial concluída. As fontes que responderam já aparecem nesta tela e nos próximos PDFs.'
+          : 'Notícias atualizadas nesta tela e nos próximos PDFs.'
+      );
+    } finally {
+      setIsRefreshingMedia(false);
+    }
   };
 
   const handleExportPdf = async () => {
@@ -215,6 +251,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           <ImmersiveNetworkTab
             diligenceId={diligence.id}
             egos={diligence.egos}
+            adverseMedia={adverseMedia}
             targetCompanyName={diligence.razaoSocial}
           />
         ) : null}
@@ -250,6 +287,9 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         onClose={() => setActiveDrawer(null)}
         adverseMedia={adverseMedia}
         onStatusChange={handleMediaStatusChange}
+        onRefresh={handleRefreshMedia}
+        isRefreshing={isRefreshingMedia}
+        refreshNotice={mediaRefreshNotice}
       />
       <JudicialDiscoveryDrawer
         isOpen={!!selectedDiscovery}

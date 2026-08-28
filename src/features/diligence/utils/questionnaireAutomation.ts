@@ -41,7 +41,7 @@ export function buildComplexQuestionnaireAnswers(
   const sanctionsAvailable = diligence.ceis?.ok === true && diligence.cnep?.ok === true;
 
   const personMedia = (adverseMedia?.results || []).filter((item) => (
-    item.subjectType === 'person' && item.status !== 'discarded'
+    item.subjectType === 'person' && item.status !== 'discarded' && item.riskRelevant !== false
   ));
   const criminalIntegrityPersonMedia = personMedia.filter((item) => (
     item.personMatch?.fullName === true
