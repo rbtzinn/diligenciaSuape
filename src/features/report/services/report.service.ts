@@ -64,7 +64,9 @@ async function downloadPdf(
   } catch (err) {
     clearTimeout(timeoutId);
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error('Tempo limite excedido ao gerar o relatório. Tente novamente.');
+      const timeoutError = new Error('Tempo limite excedido ao gerar o relatório. Tente novamente.');
+      (timeoutError as Error & { cause?: unknown }).cause = err;
+      throw timeoutError;
     }
     throw err;
   }
