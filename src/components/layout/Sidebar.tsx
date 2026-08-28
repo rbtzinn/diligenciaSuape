@@ -42,7 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   useEffect(() => {
     HistoryStorage.getAll().then((items) => {
-      setRecentItems(items.slice(0, 5));
+      setRecentItems(items.slice(0, 3));
     });
   }, [historyCount, currentView]);
 
