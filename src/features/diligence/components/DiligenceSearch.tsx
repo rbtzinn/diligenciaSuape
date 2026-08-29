@@ -12,12 +12,6 @@ interface DiligenceSearchProps {
   error?: string | null;
 }
 
-const HINT_CNPJS = [
-  { label: 'SUAPE (Porto)', cnpj: '10.518.257/0001-00' },
-  { label: 'Petrobras', cnpj: '33.000.167/0001-01' },
-  { label: 'Banco do Brasil', cnpj: '00.000.000/0001-91' },
-];
-
 export const DiligenceSearch: React.FC<DiligenceSearchProps> = ({
   onSearch,
   isLoading,
@@ -33,11 +27,6 @@ export const DiligenceSearch: React.FC<DiligenceSearchProps> = ({
     e.preventDefault();
     if (!value || isLoading) return;
     onSearch(value);
-  };
-
-  const handleSelectHint = (cnpj: string) => {
-    setValue(cnpj);
-    onSearch(cnpj);
   };
 
   return (
@@ -104,23 +93,6 @@ export const DiligenceSearch: React.FC<DiligenceSearchProps> = ({
             <span>{error}</span>
           </div>
         )}
-
-        <div className="query-hints">
-          <span>Exemplos rápidos para teste:</span>
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            {HINT_CNPJS.map((h) => (
-              <button
-                key={h.cnpj}
-                type="button"
-                className="query-hint-tag"
-                onClick={() => handleSelectHint(h.cnpj)}
-                disabled={isLoading}
-              >
-                {h.label} ({h.cnpj})
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );

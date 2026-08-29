@@ -16,6 +16,7 @@ interface AppShellProps {
   historyCount: number;
   onSelectRecent?: (item: DiligenceItem) => void;
   isDarkMode?: boolean;
+  immersive?: boolean;
   children: React.ReactNode;
 }
 
@@ -25,10 +26,21 @@ export const AppShell: React.FC<AppShellProps> = ({
   historyCount,
   onSelectRecent,
   isDarkMode = false,
+  immersive = false,
   children,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  if (immersive) {
+    return (
+      <div className="app-shell app-shell-immersive">
+        <div className="app-main">
+          <main className="app-content">{children}</main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`app-shell ${isDarkMode ? 'app-dark-mode' : ''}`}>

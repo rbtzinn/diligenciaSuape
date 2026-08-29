@@ -8,8 +8,7 @@ import { DiligenceItem } from '../features/diligence/types';
 import { useAuth } from '../features/auth/context/AuthContext';
 import { LoginView } from '../features/auth/components/LoginView';
 import { AppShell } from '../components/layout/AppShell';
-import { ChatDiligenceView } from '../features/chat/components/ChatDiligenceView';
-import { DiligenceDashboard, type DashboardTab } from '../features/diligence/components/DiligenceDashboard';
+import { InvestigationWorkspace } from '../features/diligence/components/InvestigationWorkspace';
 import { HistoryView } from '../features/history/components/HistoryView';
 import { DataSourcesView } from '../features/sources/components/DataSourcesView';
 import { useDiligence } from '../features/diligence/hooks/useDiligence';
@@ -18,7 +17,6 @@ import { HistoryStorage } from '../features/history/services/history.storage';
 export const App: React.FC = () => {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [currentView, setCurrentView] = useState<ViewType>('chat');
-  const [activeDashboardTab, setActiveDashboardTab] = useState<DashboardTab>('overview');
   const [selectedDiligence, setSelectedDiligence] = useState<DiligenceItem | null>(null);
   const [historyCount, setHistoryCount] = useState<number>(0);
 
@@ -45,16 +43,14 @@ export const App: React.FC = () => {
     setSelectedDiligence(newDiligence);
   });
 
-  const handleOpenDashboard = (diligence: DiligenceItem, defaultTab: DashboardTab = 'overview') => {
+  const handleOpenDashboard = (diligence: DiligenceItem) => {
     setSelectedDiligence(diligence);
-    setActiveDashboardTab(defaultTab);
     setCurrentView('dashboard');
   };
 
   const handleNewSearch = () => {
     resetDiligence();
     setSelectedDiligence(null);
-    setActiveDashboardTab('overview');
     setCurrentView('chat');
   };
 
@@ -73,25 +69,17 @@ export const App: React.FC = () => {
   const renderContent = () => {
     switch (currentView) {
       case 'dashboard':
-        if (!selectedDiligence) {
-          return (
-            <ChatDiligenceView
-              onSearch={runDiligence}
-              isLoading={isLoading}
-              error={error}
-              steps={steps}
-              currentDiligence={currentDiligence}
-              onOpenDashboard={handleOpenDashboard}
-            />
-          );
-        }
         return (
-          <DiligenceDashboard
-            key={selectedDiligence.id}
+          <InvestigationWorkspace
             diligence={selectedDiligence}
-            onBack={handleNewSearch}
-            activeTab={activeDashboardTab}
-            onTabChange={setActiveDashboardTab}
+            onSearch={runDiligence}
+            isLoading={isLoading}
+            error={error}
+            steps={steps}
+            historyCount={historyCount}
+            onNewSearch={handleNewSearch}
+            onOpenHistory={() => setCurrentView('history')}
+            onOpenSources={() => setCurrentView('sources')}
           />
         );
 
@@ -109,13 +97,16 @@ export const App: React.FC = () => {
       case 'chat':
       default:
         return (
-          <ChatDiligenceView
+          <InvestigationWorkspace
+            diligence={currentDiligence}
             onSearch={runDiligence}
             isLoading={isLoading}
             error={error}
             steps={steps}
-            currentDiligence={currentDiligence}
-            onOpenDashboard={handleOpenDashboard}
+            historyCount={historyCount}
+            onNewSearch={handleNewSearch}
+            onOpenHistory={() => setCurrentView('history')}
+            onOpenSources={() => setCurrentView('sources')}
           />
         );
     }
@@ -125,10 +116,15 @@ export const App: React.FC = () => {
     <AppShell
       currentView={currentView}
       onNavigate={(view) => {
-        setCurrentView(view);
+        if (view === 'chat') {
+          handleNewSearch();
+        } else {
+          setCurrentView(view);
+        }
       }}
       historyCount={historyCount}
       onSelectRecent={(item) => handleOpenDashboard(item)}
+      immersive={currentView === 'chat' || currentView === 'dashboard'}
     >
       {renderContent()}
     </AppShell>

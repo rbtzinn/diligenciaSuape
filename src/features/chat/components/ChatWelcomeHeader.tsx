@@ -14,7 +14,6 @@ interface ChatWelcomeHeaderProps {
 }
 
 export const ChatWelcomeHeader: React.FC<ChatWelcomeHeaderProps> = ({
-  onSearch,
   onOpenContentExtractor,
   isLoading,
 }) => {
@@ -26,16 +25,6 @@ export const ChatWelcomeHeader: React.FC<ChatWelcomeHeaderProps> = ({
       label: 'Analisar Documento/Texto',
       icon: <Icons.FileText size={14} />,
       action: onOpenContentExtractor,
-    },
-    {
-      label: 'Consultar Petrobras (Exemplo)',
-      icon: <Icons.Search size={14} />,
-      action: () => onSearch('33.000.167/0001-01'),
-    },
-    {
-      label: 'Consultar Ambev (Exemplo)',
-      icon: <Icons.Search size={14} />,
-      action: () => onSearch('07.526.557/0001-00'),
     },
   ];
 
@@ -78,7 +67,7 @@ export const ChatWelcomeHeader: React.FC<ChatWelcomeHeaderProps> = ({
         </article>
       </div>
 
-      <span className="welcome-quick-label">Atalhos para demonstração</span>
+      <span className="welcome-quick-label">Ação adicional</span>
       <div className="ai-suggestions-container">
         {suggestionChips.map((chip) => (
           <button

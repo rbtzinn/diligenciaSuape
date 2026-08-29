@@ -19,8 +19,6 @@ export const NetworkLegend: React.FC<NetworkLegendProps> = ({
       <div className="network-legend" aria-label="Legenda do mapa">
         <span><i className="legend-company" /> Empresa analisada</span>
         <span><i className="legend-person" /> Pessoa</span>
-        <span><i className="legend-public-office" /> Órgão público</span>
-        <span><i className="legend-document" /> Documento</span>
         <b>|</b>
         <span><b /> Confirmada</span>
         <span><b className="legend-hypothesis" /> Hipótese</span>

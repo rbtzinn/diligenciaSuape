@@ -5,7 +5,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import cytoscape from 'cytoscape';
-import type { AdverseMediaSummary, EgosSnapshot } from '../types';
+import type { AdverseMediaSummary, DiligenceItem, ProcessDiscovery } from '../types';
 import type {
   DepthFilter,
   FilterState,
@@ -14,14 +14,15 @@ import type {
   RouteSummary,
 } from './network/types';
 import {
+  filterGraphEntities,
   findOptimalRoute,
   isInternalSuapeCandidate,
   isPepCandidate,
   KINSHIP_RELATIONSHIPS,
   normalizeText,
+  relationshipMatchesFilter,
   RELATION_TYPE_LABELS,
   touches,
-  visibleEntity,
 } from './network/networkUtils';
 import {
   arrangeChain,
@@ -36,26 +37,51 @@ import { NetworkToolbar } from './network/NetworkToolbar';
 import { NetworkInspector } from './network/NetworkInspector';
 import { NetworkLegend } from './network/NetworkLegend';
 import { projectNetworkDocuments } from './network/networkDocumentProjection';
+import { InvestigationOverviewPanel } from './network/InvestigationOverviewPanel';
 import { Icons } from '../../../components/ui/Icons';
 import { ReportService } from '../../report/services/report.service';
+import { ensureEgosSnapshot } from '../utils/fallbackEgos';
 import '../../../styles/network-immersive.css';
 
 interface ImmersiveNetworkTabProps {
-  diligenceId: string;
-  egos?: EgosSnapshot;
+  diligence: DiligenceItem;
   adverseMedia?: AdverseMediaSummary;
-  targetCompanyName?: string;
+  discoveries: ProcessDiscovery[];
+  workflowStatus?: string;
+  isExportingPdf: boolean;
+  onWorkflowStatusChange: (status: string) => void;
+  onExportPdf: () => void;
+  onEditRisk: () => void;
+  onOpenPeople: () => void;
+  onOpenSanctions: () => void;
+  onOpenMedia: () => void;
+  onOpenProcesses: () => void;
+  onOpenQuestionnaire: () => void;
+  onOpenAudit: () => void;
 }
 
 export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
-  diligenceId,
-  egos,
+  diligence,
   adverseMedia,
-  targetCompanyName = 'Empresa analisada',
+  discoveries,
+  workflowStatus,
+  isExportingPdf,
+  onWorkflowStatusChange,
+  onExportPdf,
+  onEditRisk,
+  onOpenPeople,
+  onOpenSanctions,
+  onOpenMedia,
+  onOpenProcesses,
+  onOpenQuestionnaire,
+  onOpenAudit,
 }) => {
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('radar');
-  const [depth, setDepth] = useState<DepthFilter>('all');
-  const [relationFilter, setRelationFilter] = useState('all');
+  const { id: diligenceId } = diligence;
+  const egos = useMemo(() => ensureEgosSnapshot(diligence), [diligence]);
+  const targetCompanyName = diligence.razaoSocial || 'Empresa analisada';
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('chain');
+  const [depth, setDepth] = useState<DepthFilter>('2');
+  const [relationFilter, setRelationFilter] = useState('confirmed');
   const [showDocuments, setShowDocuments] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selection, setSelection] = useState<NetworkSelection | null>(null);
@@ -64,6 +90,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   const [route, setRoute] = useState<RouteSummary | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isGraphReady, setIsGraphReady] = useState(false);
+  const [isInspectorOpen, setIsInspectorOpen] = useState(true);
 
   const wrapperRef = useRef<HTMLElement | null>(null);
   const graphRef = useRef<HTMLDivElement | null>(null);
@@ -105,15 +132,26 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   }, [relationships]);
 
   const relationOptions = useMemo(() => [
+    { value: 'confirmed', label: 'Somente confirmadas' },
+    { value: 'core', label: 'Societárias e de gestão' },
     { value: 'all', label: 'Todas' },
     ...relationTypes.map(([value, label]) => ({ value, label })),
   ], [relationTypes]);
 
-  const visibleEntities = useMemo(() => entities.filter((entity) => visibleEntity(entity, {
-    depth,
-    relation: relationFilter,
-    showDocuments,
-  })), [depth, entities, relationFilter, showDocuments]);
+  const visibleEntities = useMemo(() => filterGraphEntities(
+    entities,
+    relationships,
+    { depth, relation: relationFilter, showDocuments },
+    rootEntity?.id
+  ), [depth, entities, relationFilter, relationships, rootEntity?.id, showDocuments]);
+  const visibleRelationshipCount = useMemo(() => {
+    const visibleIds = new Set(visibleEntities.map((entity) => entity.id));
+    return relationships.filter((relationship) => (
+      visibleIds.has(relationship.sourceEntityId)
+      && visibleIds.has(relationship.targetEntityId)
+      && relationshipMatchesFilter(relationship, relationFilter)
+    )).length;
+  }, [relationFilter, relationships, visibleEntities]);
 
   const selectedEntity = useMemo(() => (
     selection?.kind === 'node' ? entities.find((e) => e.id === selection.id) : undefined
@@ -231,7 +269,6 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
         style: CYTOSCAPE_STYLESHEET,
         boxSelectionEnabled: false,
         autounselectify: false,
-        wheelSensitivity: 0.55,
         minZoom: 0.15,
         maxZoom: 3.5,
       });
@@ -239,12 +276,14 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
       cy.on('tap', 'node', (evt) => {
         const node = evt.target;
         setSelection({ kind: 'node', id: node.id() });
+        setIsInspectorOpen(true);
         focusNeighborhood(cy, node.id());
       });
 
       cy.on('tap', 'edge', (evt) => {
         const edge = evt.target;
         setSelection({ kind: 'edge', id: edge.id() });
+        setIsInspectorOpen(true);
       });
 
       cy.on('tap', (evt) => {
@@ -339,6 +378,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
 
   const selectNodeById = (nodeId: string) => {
     setSelection({ kind: 'node', id: nodeId });
+    setIsInspectorOpen(true);
     if (cyRef.current) {
       cyRef.current.nodes().unselect();
       const node = cyRef.current.getElementById(nodeId);
@@ -412,12 +452,12 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
           <span>Mapa Relacional · Ambiente Investigativo</span>
           <h2>Quem se liga a quem</h2>
           <p>
-            <strong>{targetCompanyName}</strong> · Selecione uma entidade para entender vínculos e evidências.
+            <strong>{targetCompanyName}</strong> · Selecione uma pessoa ou empresa para entender a ligação.
           </p>
         </div>
         <div className="network-facts">
-          <span><strong>{entities.length}</strong> entidades</span>
-          <span><strong>{relationships.length}</strong> relações</span>
+          <span><strong>{visibleEntities.length}</strong> entidades visíveis</span>
+          <span><strong>{visibleRelationshipCount}</strong> ligações</span>
           <span className={reviewCount > 0 ? 'has-review' : ''}>
             <strong>{reviewCount}</strong> em revisão
           </span>
@@ -444,7 +484,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
       />
 
       {/* Palco do grafo e painel lateral */}
-      <div className={`network-canvas-grid ${selectedEntity || selectedRelationship ? 'panel-open' : ''}`}>
+      <div className={`network-canvas-grid ${isInspectorOpen ? 'panel-open' : ''}`}>
         <div className="network-canvas-wrap">
           <div className="network-canvas" ref={graphRef} />
           {!isGraphReady && (
@@ -457,35 +497,71 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
             visibleCount={visibleEntities.length}
             totalCount={entities.length}
           />
+          {!isInspectorOpen ? (
+            <button
+              type="button"
+              className="network-open-overview"
+              onClick={() => setIsInspectorOpen(true)}
+            >
+              <Icons.Info size={15} aria-hidden="true" />
+              <span>Abrir resumo</span>
+            </button>
+          ) : null}
         </div>
 
-        <NetworkInspector
-          selectedEntity={selectedEntity}
-          selectedRelationship={selectedRelationship}
-          sourceEntity={sourceEntity}
-          targetEntity={targetEntity}
-          route={route}
-          onTraceRoute={handleTraceRoute}
-          onClearSelection={() => {
-            setSelection(null);
-            setRoute(null);
-            if (cyRef.current) {
-              cyRef.current.elements().removeClass('is-dimmed is-route-active');
-              cyRef.current.animate({ fit: { eles: cyRef.current.elements(), padding: 60 }, duration: 400 });
-            }
-          }}
-          onSelectNode={selectNodeById}
-          isExportingPdf={exportingEntityId === selectedEntity?.id}
-          onExportEntityPdf={downloadSelectedEntityReport}
-          exportError={entityReportError}
-          selectedConnections={selectedConnections}
-          selectedEvidence={selectedEvidence}
-          selectedFindings={selectedFindings}
-          selectedPepMatches={selectedPepMatches}
-          selectedSuapeLinks={selectedSuapeLinks}
-          selectedKinshipLinks={selectedKinshipLinks}
-          selectedPersonOccurrences={selectedPersonOccurrences}
-        />
+        {isInspectorOpen && !selectedEntity && !selectedRelationship ? (
+          <InvestigationOverviewPanel
+            diligence={diligence}
+            adverseMedia={adverseMedia}
+            discoveries={discoveries}
+            entityCount={visibleEntities.length}
+            relationshipCount={visibleRelationshipCount}
+            evidenceCount={evidences.length}
+            reviewCount={reviewCount}
+            workflowStatus={workflowStatus}
+            isExportingPdf={isExportingPdf}
+            onWorkflowStatusChange={onWorkflowStatusChange}
+            onClose={() => setIsInspectorOpen(false)}
+            onExportPdf={onExportPdf}
+            onEditRisk={onEditRisk}
+            onOpenPeople={onOpenPeople}
+            onOpenSanctions={onOpenSanctions}
+            onOpenMedia={onOpenMedia}
+            onOpenProcesses={onOpenProcesses}
+            onOpenQuestionnaire={onOpenQuestionnaire}
+            onOpenAudit={onOpenAudit}
+          />
+        ) : null}
+
+        {isInspectorOpen && (selectedEntity || selectedRelationship) ? (
+          <NetworkInspector
+            selectedEntity={selectedEntity}
+            selectedRelationship={selectedRelationship}
+            sourceEntity={sourceEntity}
+            targetEntity={targetEntity}
+            route={route}
+            onTraceRoute={handleTraceRoute}
+            onClearSelection={() => {
+              setSelection(null);
+              setRoute(null);
+              if (cyRef.current) {
+                cyRef.current.elements().removeClass('is-dimmed is-route-active');
+                cyRef.current.animate({ fit: { eles: cyRef.current.elements(), padding: 60 }, duration: 400 });
+              }
+            }}
+            onSelectNode={selectNodeById}
+            isExportingPdf={exportingEntityId === selectedEntity?.id}
+            onExportEntityPdf={downloadSelectedEntityReport}
+            exportError={entityReportError}
+            selectedConnections={selectedConnections}
+            selectedEvidence={selectedEvidence}
+            selectedFindings={selectedFindings}
+            selectedPepMatches={selectedPepMatches}
+            selectedSuapeLinks={selectedSuapeLinks}
+            selectedKinshipLinks={selectedKinshipLinks}
+            selectedPersonOccurrences={selectedPersonOccurrences}
+          />
+        ) : null}
       </div>
     </section>
   );

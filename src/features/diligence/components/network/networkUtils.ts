@@ -68,6 +68,26 @@ export const KINSHIP_RELATIONSHIPS = new Set([
   'DEPENDENT_OF',
 ]);
 
+const CORE_RELATIONAL_ENTITY_TYPES = new Set([
+  'Company',
+  'Person',
+  'InvestmentFund',
+  'InvestmentFundClass',
+]);
+
+const CORE_RELATIONSHIP_TYPES = new Set([
+  'ADMINISTERS_FUND',
+  'MANAGES_FUND',
+  'AUDITS_FUND',
+  'CUSTODIAN_OF',
+  'CONTROLS_FUND',
+  'RESPONSIBLE_DIRECTOR_OF',
+  'DIRECTOR_OF',
+  'SHAREHOLDER_OF',
+  'LEGAL_REPRESENTATIVE_OF',
+  'QSA_MEMBER_OF',
+]);
+
 export function normalizeText(value: string) {
   return value
     .normalize('NFD')
@@ -197,10 +217,47 @@ export function isInternalSuapeCandidate(entity?: EgosEntity) {
 }
 
 export function visibleEntity(entity: EgosEntity, filters: FilterState) {
-  if (!filters.showDocuments && entity.type === 'Document') return false;
+  if (!filters.showDocuments && !CORE_RELATIONAL_ENTITY_TYPES.has(entity.type)) return false;
   if (filters.depth === '1' && entity.depth > 1) return false;
   if (filters.depth === '2' && entity.depth > 2) return false;
   return true;
+}
+
+export function relationshipMatchesFilter(relationship: EgosRelationship, filter: string) {
+  if (filter === 'all') return true;
+  if (filter === 'confirmed') return isConfirmed(relationship.status);
+  if (filter === 'core') return CORE_RELATIONSHIP_TYPES.has(relationship.type);
+  return relationship.type === filter;
+}
+
+export function filterGraphEntities(
+  entities: EgosEntity[],
+  relationships: EgosRelationship[],
+  filters: FilterState,
+  rootEntityId?: string
+) {
+  const candidates = entities.filter((entity) => visibleEntity(entity, filters));
+  if (filters.relation === 'all') return candidates;
+
+  const candidateIds = new Set(candidates.map((entity) => entity.id));
+  const connectedIds = new Set<string>();
+  if (rootEntityId) connectedIds.add(rootEntityId);
+  relationships
+    .filter((relationship) => relationshipMatchesFilter(relationship, filters.relation))
+    .filter((relationship) => (
+      candidateIds.has(relationship.sourceEntityId)
+      && candidateIds.has(relationship.targetEntityId)
+    ))
+    .forEach((relationship) => {
+      connectedIds.add(relationship.sourceEntityId);
+      connectedIds.add(relationship.targetEntityId);
+    });
+
+  return candidates.filter((entity) => (
+    connectedIds.has(entity.id)
+    || entity.id === rootEntityId
+    || entity.role.toUpperCase() === 'ROOT'
+  ));
 }
 
 export function findOptimalRoute(

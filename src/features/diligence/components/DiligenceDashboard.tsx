@@ -2,35 +2,29 @@ import React, { useMemo, useState } from 'react';
 import type { AdverseMediaStatus, AdverseMediaSummary, DiligenceItem, ProcessDiscovery, RiskAssessment } from '../types';
 import { DiligenceService } from '../services/diligence.service';
 import { DiscoveryEngine } from '../utils/discoveryEngine';
-import { DiligenceHeader } from './DiligenceHeader';
-import { DecisionOverview } from './DecisionOverview';
-import { EvidenceWorkspace } from './EvidenceWorkspace';
 import { ImmersiveNetworkTab } from './ImmersiveNetworkTab';
 import { ShareholdersDrawer } from './ShareholdersDrawer';
 import { AdverseMediaDrawer } from './AdverseMediaDrawer';
 import { JudicialDiscoveryDrawer } from './JudicialDiscoveryDrawer';
+import { JudicialProcessesDrawer } from './JudicialProcessesDrawer';
+import { InvestigationSanctionsDrawer } from './InvestigationSanctionsDrawer';
+import { InvestigationQuestionnaireDrawer } from './InvestigationQuestionnaireDrawer';
+import { InvestigationAuditDrawer } from './InvestigationAuditDrawer';
 import { RiskOverrideModal } from './RiskOverrideModal';
-import { Icons } from '../../../components/ui/Icons';
 import { ReportService } from '../../report/services/report.service';
-
-export type DashboardTab = 'overview' | 'network' | 'evidence';
 
 interface DiligenceDashboardProps {
   diligence: DiligenceItem;
   onBack: () => void;
-  activeTab?: DashboardTab;
-  onTabChange?: (tab: DashboardTab) => void;
 }
 
 export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   diligence,
   onBack,
-  activeTab: controlledTab,
-  onTabChange,
 }) => {
-  const [internalTab, setInternalTab] = useState<DashboardTab>('overview');
-  const activeTab = controlledTab || internalTab;
-  const [activeDrawer, setActiveDrawer] = useState<'shareholders' | 'media' | null>(null);
+  const [activeDrawer, setActiveDrawer] = useState<
+    'shareholders' | 'media' | 'sanctions' | 'processes' | 'questionnaire' | 'audit' | null
+  >(null);
   const [discoveries, setDiscoveries] = useState<ProcessDiscovery[]>(diligence.processosDescobertos || []);
   const [adverseMedia, setAdverseMedia] = useState<AdverseMediaSummary | undefined>(diligence.adverseMedia);
   const [selectedDiscovery, setSelectedDiscovery] = useState<ProcessDiscovery | null>(null);
@@ -47,11 +41,6 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
     () => ({ ...diligence, risco: effectiveRisk, adverseMedia }),
     [adverseMedia, diligence, effectiveRisk],
   );
-
-  const setActiveTab = (tab: DashboardTab) => {
-    setInternalTab(tab);
-    onTabChange?.(tab);
-  };
 
   const handleEnrichDiscovery = async (discovery: ProcessDiscovery) => {
     setEnrichingId(discovery.processNumber);
@@ -158,122 +147,31 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
     }
   };
 
-  const safeFindings = Array.isArray(diligence.egos?.findings) ? diligence.egos.findings : [];
-  const safeRelationships = Array.isArray(diligence.egos?.relationships) ? diligence.egos.relationships : [];
-  const safeEvidences = Array.isArray(diligence.egos?.evidences) ? diligence.egos.evidences : [];
   const safeShareholders = Array.isArray(diligence.socios) ? diligence.socios : [];
   const safePepResults = Array.isArray(diligence.pepResults) ? diligence.pepResults : [];
-  const findingReviewCount = safeFindings.filter((finding) =>
-    finding.status === 'REVIEW' || finding.status === 'INCONCLUSIVE'
-  ).length;
-  const riskReviewCount = (effectiveRisk?.detalhes || []).filter((detail) => detail.requerRevisao).length;
-  const reviewCount = Math.max(findingReviewCount, riskReviewCount);
-  const networkCount = safeRelationships.length;
-  const evidenceCount = safeEvidences.length;
 
   return (
-    <main className={`dossier-v3 ${activeTab === 'network' ? 'dossier-v3-network' : ''}`}>
-      <DiligenceHeader
+    <main className="investigation-dossier">
+      <button type="button" className="investigation-back-sr" onClick={onBack}>
+        Nova consulta
+      </button>
+
+      <ImmersiveNetworkTab
         diligence={displayDiligence}
-        onBack={onBack}
+        adverseMedia={adverseMedia}
+        discoveries={discoveries}
+        workflowStatus={workflowStatus}
+        isExportingPdf={isExportingPdf}
+        onWorkflowStatusChange={setWorkflowStatus}
         onExportPdf={handleExportPdf}
         onEditRisk={() => setRiskModalOpen(true)}
-        isExportingPdf={isExportingPdf}
+        onOpenPeople={() => setActiveDrawer('shareholders')}
+        onOpenSanctions={() => setActiveDrawer('sanctions')}
+        onOpenMedia={() => setActiveDrawer('media')}
+        onOpenProcesses={() => setActiveDrawer('processes')}
+        onOpenQuestionnaire={() => setActiveDrawer('questionnaire')}
+        onOpenAudit={() => setActiveDrawer('audit')}
       />
-
-      <nav className="dossier-mode-nav" aria-label="Modos do dossiê">
-        <div className="dossier-mode-group" role="tablist" aria-label="Visualização do dossiê">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'overview'}
-            className={activeTab === 'overview' ? 'active' : ''}
-            onClick={() => setActiveTab('overview')}
-          >
-            <span className="dossier-mode-icon" aria-hidden="true">
-              <Icons.Compass size={16} />
-            </span>
-            <span className="dossier-mode-copy">
-              <strong>Resumo Executivo</strong>
-              <small>Decisão e próximo passo</small>
-            </span>
-            {reviewCount > 0 ? <i className="is-attention">{reviewCount}</i> : null}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'network'}
-            className={activeTab === 'network' ? 'active' : ''}
-            onClick={() => setActiveTab('network')}
-          >
-            <span className="dossier-mode-icon" aria-hidden="true">
-              <Icons.Network size={16} />
-            </span>
-            <span className="dossier-mode-copy">
-              <strong>Rede de Vínculos</strong>
-              <small>Exploração imersiva</small>
-            </span>
-            {networkCount > 0 ? <i>{networkCount}</i> : null}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'evidence'}
-            className={activeTab === 'evidence' ? 'active' : ''}
-            onClick={() => setActiveTab('evidence')}
-          >
-            <span className="dossier-mode-icon" aria-hidden="true">
-              <Icons.Database size={16} />
-            </span>
-            <span className="dossier-mode-copy">
-              <strong>Evidências</strong>
-              <small>Fontes e auditoria</small>
-            </span>
-            {evidenceCount > 0 ? <i>{evidenceCount}</i> : null}
-          </button>
-        </div>
-      </nav>
-
-      <div className="dossier-mode-stage" role="tabpanel">
-        {activeTab === 'overview' ? (
-          <DecisionOverview
-            diligence={displayDiligence}
-            adverseMedia={adverseMedia}
-            discoveries={discoveries}
-            workflowStatus={workflowStatus}
-            onWorkflowStatusChange={setWorkflowStatus}
-            onOpenNetwork={() => setActiveTab('network')}
-            onOpenEvidence={() => setActiveTab('evidence')}
-          />
-        ) : null}
-
-        {activeTab === 'network' ? (
-          <ImmersiveNetworkTab
-            diligenceId={diligence.id}
-            egos={diligence.egos}
-            adverseMedia={adverseMedia}
-            targetCompanyName={diligence.razaoSocial}
-          />
-        ) : null}
-
-        {activeTab === 'evidence' ? (
-          <EvidenceWorkspace
-            diligence={displayDiligence}
-            discoveries={discoveries}
-            adverseMedia={adverseMedia}
-            onOpenShareholders={() => setActiveDrawer('shareholders')}
-            onOpenMedia={() => setActiveDrawer('media')}
-            onUpdateDiscoveries={setDiscoveries}
-            onOpenDiscovery={setSelectedDiscovery}
-            onEnrichDiscovery={handleEnrichDiscovery}
-            enrichingId={enrichingId}
-            onMediaStatusChange={handleMediaStatusChange}
-            onRefreshMedia={handleRefreshMedia}
-            isRefreshingMedia={isRefreshingMedia}
-            mediaRefreshNotice={mediaRefreshNotice}
-          />
-        ) : null}
-      </div>
 
       <ShareholdersDrawer
         isOpen={activeDrawer === 'shareholders'}
@@ -293,6 +191,39 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         onRefresh={handleRefreshMedia}
         isRefreshing={isRefreshingMedia}
         refreshNotice={mediaRefreshNotice}
+      />
+      <InvestigationSanctionsDrawer
+        isOpen={activeDrawer === 'sanctions'}
+        onClose={() => setActiveDrawer(null)}
+        ceis={diligence.ceis}
+        cnep={diligence.cnep}
+      />
+      <JudicialProcessesDrawer
+        isOpen={activeDrawer === 'processes'}
+        onClose={() => setActiveDrawer(null)}
+        discoveries={discoveries}
+        onUpdateDiscoveries={setDiscoveries}
+        onOpenDiscovery={(item) => {
+          setActiveDrawer(null);
+          setSelectedDiscovery(item);
+        }}
+        onEnrich={handleEnrichDiscovery}
+        enrichingId={enrichingId}
+      />
+      <InvestigationQuestionnaireDrawer
+        isOpen={activeDrawer === 'questionnaire'}
+        onClose={() => setActiveDrawer(null)}
+        onOpenAudit={() => setActiveDrawer('audit')}
+        diligence={displayDiligence}
+        adverseMedia={adverseMedia}
+        discoveries={discoveries}
+      />
+      <InvestigationAuditDrawer
+        isOpen={activeDrawer === 'audit'}
+        onClose={() => setActiveDrawer(null)}
+        diligence={displayDiligence}
+        adverseMedia={adverseMedia}
+        discoveries={discoveries}
       />
       <JudicialDiscoveryDrawer
         isOpen={!!selectedDiscovery}

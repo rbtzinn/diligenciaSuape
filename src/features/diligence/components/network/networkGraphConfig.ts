@@ -6,11 +6,11 @@ import type cytoscape from 'cytoscape';
 import type { EgosEntity, EgosRelationship } from '../../types';
 import type { FilterState, RouteSummary } from './types';
 import {
-  CHAIN_ENTITY_ORDER,
+  filterGraphEntities,
   isConfirmed,
   normalizeText,
+  relationshipMatchesFilter,
   TYPE_LABELS,
-  visibleEntity,
 } from './networkUtils';
 
 export interface GraphNodeMetrics {
@@ -63,11 +63,10 @@ export function buildCytoscapeElements(
   searchTerm: string
 ): cytoscape.ElementDefinition[] {
   const normalizedSearch = normalizeText(searchTerm);
-  const visible = new Map<string, EgosEntity>();
-
-  entities.forEach((entity) => {
-    if (visibleEntity(entity, filters)) visible.set(entity.id, entity);
-  });
+  const visible = new Map(
+    filterGraphEntities(entities, relationships, filters, rootEntity?.id)
+      .map((entity) => [entity.id, entity])
+  );
 
   const nodes: cytoscape.ElementDefinition[] = [...visible.values()].map((entity) => {
     const isRoot = rootEntity?.id === entity.id;
@@ -95,7 +94,7 @@ export function buildCytoscapeElements(
 
   const edges: cytoscape.ElementDefinition[] = relationships
     .filter((relationship) => visible.has(relationship.sourceEntityId) && visible.has(relationship.targetEntityId))
-    .filter((relationship) => (filters.relation === 'all' ? true : relationship.type === filters.relation))
+    .filter((relationship) => relationshipMatchesFilter(relationship, filters.relation))
     .map((relationship) => {
       const confirmed = isConfirmed(relationship.status);
       const isDocEdge = visible.get(relationship.sourceEntityId)?.type === 'Document' ||
@@ -204,28 +203,36 @@ export function arrangeChain(cy: cytoscape.Core, rootId?: string) {
   const grouped: Record<number, cytoscape.NodeSingular[]> = {};
   cy.nodes().forEach((node) => {
     if (node.id() === root.id()) return;
-    const type = String(node.data('entityType') || 'Person');
-    const column = CHAIN_ENTITY_ORDER[type] ?? 3;
+    const column = Math.max(1, Number(node.data('depth')) || 1);
     if (!grouped[column]) grouped[column] = [];
     grouped[column].push(node);
   });
 
-  // Espaçamento generoso entre colunas e linhas para não ficar minúsculo
-  const columnWidth = 320;
-  const rowHeight = 110;
+  // Leitura genealógica: raiz à esquerda e graus seguintes em blocos legíveis.
+  // Camadas extensas quebram em subcolunas para evitar que o mapa seja reduzido
+  // a uma faixa vertical quase impossível de selecionar.
+  const columnWidth = 270;
+  const rowHeight = 104;
+  const maxRowsPerColumn = 7;
+  let nextColumnX = columnWidth;
 
-  Object.entries(grouped).forEach(([colStr, nodes]) => {
-    const col = Number(colStr);
-    const count = nodes.length;
-    const startY = -((count - 1) * rowHeight) / 2;
-
-    nodes.forEach((node, index) => {
-      positions[node.id()] = {
-        x: col * columnWidth,
-        y: startY + index * rowHeight,
-      };
+  Object.entries(grouped)
+    .sort(([left], [right]) => Number(left) - Number(right))
+    .forEach(([, nodes]) => {
+      nodes.sort((left, right) => String(left.data('label')).localeCompare(String(right.data('label')), 'pt-BR'));
+      const subcolumnCount = Math.ceil(nodes.length / maxRowsPerColumn);
+      nodes.forEach((node, index) => {
+        const subcolumn = Math.floor(index / maxRowsPerColumn);
+        const row = index % maxRowsPerColumn;
+        const rowsInSubcolumn = Math.min(maxRowsPerColumn, nodes.length - subcolumn * maxRowsPerColumn);
+        const startY = -((rowsInSubcolumn - 1) * rowHeight) / 2;
+        positions[node.id()] = {
+          x: nextColumnX + subcolumn * columnWidth,
+          y: startY + row * rowHeight,
+        };
+      });
+      nextColumnX += Math.max(1, subcolumnCount) * columnWidth;
     });
-  });
 
   cy.layout({
     name: 'preset',
@@ -243,7 +250,7 @@ export const CYTOSCAPE_STYLESHEET: cytoscape.StylesheetStyle[] = [
     style: {
       label: 'data(label)',
       color: '#ffffff',
-      'font-family': "'Plus Jakarta Sans', 'Inter', sans-serif",
+      'font-family': 'Plus Jakarta Sans',
       'font-size': '10px',
       'font-weight': 600,
       'text-valign': 'bottom',
@@ -325,9 +332,9 @@ export const CYTOSCAPE_STYLESHEET: cytoscape.StylesheetStyle[] = [
     style: {
       'border-color': '#ffffff',
       'border-width': 4,
-      'shadow-blur': 22,
-      'shadow-color': 'rgba(255, 255, 255, 0.5)',
-      'shadow-opacity': 1,
+      'underlay-color': '#ffffff',
+      'underlay-opacity': 0.18,
+      'underlay-padding': 8,
     } as cytoscape.Css.Node,
   },
   {
@@ -341,7 +348,7 @@ export const CYTOSCAPE_STYLESHEET: cytoscape.StylesheetStyle[] = [
       'arrow-scale': 0.85,
       label: 'data(label)',
       color: '#94a3b8',
-      'font-family': "'Plus Jakarta Sans', 'Inter', sans-serif",
+      'font-family': 'Plus Jakarta Sans',
       'font-size': '9px',
       'text-rotation': 'autorotate',
       'text-margin-y': -8,
@@ -385,8 +392,9 @@ export const CYTOSCAPE_STYLESHEET: cytoscape.StylesheetStyle[] = [
       'line-color': '#ffffff',
       'target-arrow-color': '#ffffff',
       width: 4,
-      'shadow-blur': 12,
-      'shadow-color': 'rgba(255, 255, 255, 0.5)',
+      'underlay-color': '#ffffff',
+      'underlay-opacity': 0.16,
+      'underlay-padding': 4,
     } as cytoscape.Css.Edge,
   },
   // Rota destacada: separada estritamente para nós e arestas para nunca esmagar o tamanho do nó
@@ -396,9 +404,9 @@ export const CYTOSCAPE_STYLESHEET: cytoscape.StylesheetStyle[] = [
       'line-color': '#f59e0b',
       'target-arrow-color': '#f59e0b',
       width: 4.5,
-      'shadow-blur': 14,
-      'shadow-color': '#f59e0b',
-      'shadow-opacity': 0.8,
+      'underlay-color': '#f59e0b',
+      'underlay-opacity': 0.18,
+      'underlay-padding': 5,
     } as cytoscape.Css.Edge,
   },
   {
@@ -406,9 +414,9 @@ export const CYTOSCAPE_STYLESHEET: cytoscape.StylesheetStyle[] = [
     style: {
       'border-color': '#f59e0b',
       'border-width': 4,
-      'shadow-blur': 22,
-      'shadow-color': '#f59e0b',
-      'shadow-opacity': 0.85,
+      'underlay-color': '#f59e0b',
+      'underlay-opacity': 0.2,
+      'underlay-padding': 8,
     } as cytoscape.Css.Node,
   },
   {

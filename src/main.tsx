@@ -17,6 +17,7 @@ import './styles/kpi.css';
 import './styles/drawer.css';
 import './styles/governance-history.css';
 import './styles/responsive-overrides.css';
+import './styles/investigation-experience.css';
 
 const rootElement = document.getElementById('root');
 
