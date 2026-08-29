@@ -7,6 +7,7 @@ import { AdverseMediaResult, AdverseMediaStatus } from '../types';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
 import { Icons } from '../../../components/ui/Icons';
+import { formatMediaProviders } from '../utils/mediaSources';
 
 interface AdverseMediaCardProps {
   item: AdverseMediaResult;
@@ -23,8 +24,8 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
     medium: { label: 'Nome completo', variant: 'medium' },
     low: { label: 'Associação fraca', variant: 'neutral' },
   } : {
-    high: { label: 'Empresa identificada', variant: 'critical' },
-    medium: { label: 'Nome compatível', variant: 'medium' },
+    high: { label: 'Empresa identificada', variant: 'neutral' },
+    medium: { label: 'Nome compatível', variant: 'neutral' },
     low: { label: 'Correlação baixa', variant: 'neutral' },
   };
 
@@ -77,9 +78,17 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
           <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
             {item.domain} {item.publishedAt ? `• ${item.publishedAt}` : ''}
           </div>
+          {item.providerSources && item.providerSources.length > 0 ? (
+            <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)', marginTop: '0.1rem' }}>
+              Localizada por {formatMediaProviders(item.providerSources)}
+            </div>
+          ) : null}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+          <Badge variant={item.riskRelevant === false ? 'neutral' : 'medium'}>
+            {item.riskRelevant === false ? 'Menção geral' : 'Termo de atenção'}
+          </Badge>
           <Badge variant={currentMatch.variant}>{currentMatch.label}</Badge>
           {item.status === 'validated' && <Badge variant="high">Associação revisada</Badge>}
           {item.status === 'discarded' && <Badge variant="neutral">Descartado</Badge>}
@@ -101,7 +110,9 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)' }}>Termos:</span>
+          <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)' }}>
+            {item.matchedTerms.length > 0 ? 'Termos:' : 'Nenhum termo adverso no trecho retornado'}
+          </span>
           {item.matchedTerms.slice(0, 4).map((term, idx) => (
             <span key={idx} className="badge badge-neutral" style={{ fontSize: 'var(--text-2xs)' }}>
               {term}

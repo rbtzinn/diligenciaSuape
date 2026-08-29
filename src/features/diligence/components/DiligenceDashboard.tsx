@@ -268,6 +268,9 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
             onEnrichDiscovery={handleEnrichDiscovery}
             enrichingId={enrichingId}
             onMediaStatusChange={handleMediaStatusChange}
+            onRefreshMedia={handleRefreshMedia}
+            isRefreshingMedia={isRefreshingMedia}
+            mediaRefreshNotice={mediaRefreshNotice}
           />
         ) : null}
       </div>

@@ -27,6 +27,9 @@ interface EvidenceWorkspaceProps {
   onEnrichDiscovery: (item: ProcessDiscovery) => void;
   enrichingId: string | null;
   onMediaStatusChange: (id: string, status: AdverseMediaStatus) => void;
+  onRefreshMedia: () => void;
+  isRefreshingMedia: boolean;
+  mediaRefreshNotice?: string | null;
 }
 
 type AxisTab = 'people' | 'integrity' | 'legal' | 'audit';
@@ -42,6 +45,9 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
   onEnrichDiscovery,
   enrichingId,
   onMediaStatusChange,
+  onRefreshMedia,
+  isRefreshingMedia,
+  mediaRefreshNotice,
 }) => {
   const [activeAxisTab, setActiveAxisTab] = React.useState<AxisTab>('people');
   const { empresa, socios, ceis, cnep, pepResults, timeline } = diligence;
@@ -53,7 +59,7 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
   const sanctionCount = (ceis?.quantidade || 0) + (cnep?.quantidade || 0);
   const mediaResultCount = adverseMedia?.results?.length || 0;
   const sanctionsCleared = Boolean(ceis?.ok && cnep?.ok && sanctionCount === 0);
-  const mediaCleared = Boolean(adverseMedia?.ok && mediaResultCount === 0);
+  const mediaCleared = Boolean(adverseMedia?.ok && !adverseMedia.consultaParcial && mediaResultCount === 0);
   const clearedChecks = [
     sanctionsCleared ? 'sanções oficiais' : null,
     mediaCleared ? 'ocorrências públicas' : null,
@@ -172,6 +178,9 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
                 adverseMedia={adverseMedia}
                 onOpenDrawer={onOpenMedia}
                 onStatusChange={onMediaStatusChange}
+                onRefresh={onRefreshMedia}
+                isRefreshing={isRefreshingMedia}
+                refreshNotice={mediaRefreshNotice}
               />
             ) : null}
             {sanctionsCleared && mediaCleared ? (

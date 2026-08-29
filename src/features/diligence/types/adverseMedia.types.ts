@@ -28,6 +28,7 @@ export interface AdverseMediaRelatedSubject {
   matchStrength?: AdverseMediaMatchStrength;
   identityStatus?: AdverseMediaIdentityStatus;
   matchBasis?: AdverseMediaCoMentionedSubject['matchBasis'];
+  confidence?: number;
 }
 
 export interface AdverseMediaProviderAttempt {
@@ -102,8 +103,6 @@ export interface AdverseMediaSubjectSummary {
   searched: boolean;
   queryCount: number;
   candidatesCount: number;
-  riskRelevantCount?: number;
-  generalMentionsCount?: number;
   strongMatches: number;
   exactNameCandidates: number;
 }
@@ -113,6 +112,8 @@ export interface AdverseMediaSummary {
   provider?: string;
   totalFound: number;
   candidatesCount: number;
+  riskRelevantCount?: number;
+  generalMentionsCount?: number;
   strongMatches: number;
   mediumMatches: number;
   weakMatches: number;
@@ -124,6 +125,7 @@ export interface AdverseMediaSummary {
   peopleWithRiskRelevant?: number;
   personSearchCompleted?: boolean;
   personSearchTruncated?: boolean;
+  expansionQueriesSkipped?: number;
   consultaParcial?: boolean;
   coverageStatus?: 'COMPLETE' | 'PARTIAL' | 'UNAVAILABLE';
   deadlineExceeded?: boolean;

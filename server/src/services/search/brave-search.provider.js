@@ -89,6 +89,8 @@ class BraveSearchProvider extends SearchProvider {
       ?? '';
     this.fetchImpl = options.fetchImpl || safeFetch;
     this.timeoutMs = clampInteger(options.timeoutMs, 12000, 1000, 30000);
+    this.allowPersistentResults = options.allowPersistentResults
+      ?? process.env.BRAVE_SEARCH_ALLOW_PERSISTENCE === 'true';
   }
 
   get id() {
@@ -101,6 +103,10 @@ class BraveSearchProvider extends SearchProvider {
 
   isConfigured() {
     return typeof this.apiKey === 'string' && this.apiKey.trim().length > 0;
+  }
+
+  allowsPersistentUse() {
+    return this.allowPersistentResults === true;
   }
 
   supportsChannel(channel) {

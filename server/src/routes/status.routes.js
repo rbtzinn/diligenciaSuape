@@ -6,8 +6,10 @@ const express = require('express');
 const CguService = require('../services/cgu.service');
 const DatajudService = require('../services/datajud.service');
 const { checkGoogleSheetsHealth } = require('../config/google-sheets');
+const { CompositeSearchProvider } = require('../services/search/composite-search.provider');
 
 const router = express.Router();
+const mediaSearchProvider = new CompositeSearchProvider({ persistentUse: true });
 
 router.get('/', async (_req, res) => {
   const storage = await checkGoogleSheetsHealth();
@@ -25,7 +27,20 @@ router.get('/', async (_req, res) => {
       provider: 'Google Sheets',
     },
     cguConfigurada: CguService.isConfigured(),
-    buscaWebConfigurada: true,
+    buscaWebConfigurada: mediaSearchProvider.isConfigured(),
+    buscaMidia: {
+      configured: mediaSearchProvider.isConfigured(),
+      providers: mediaSearchProvider.providers.map((provider) => {
+        const configured = typeof provider.isConfigured !== 'function' || provider.isConfigured();
+        const persistenceAllowed = typeof provider.allowsPersistentUse !== 'function'
+          || provider.allowsPersistentUse();
+        return {
+          id: provider.id || provider.constructor?.name,
+          configured,
+          enabledForDossier: configured && persistenceAllowed,
+        };
+      }),
+    },
     datajudConfigurada: DatajudService.isConfigured(),
     internalSuape: {
       available: false,

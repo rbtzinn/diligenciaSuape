@@ -343,7 +343,7 @@ test('busca composta sinaliza cobertura parcial quando uma fonte falha', async (
   assert.equal(result.attempts.find((attempt) => !attempt.ok).status, 504);
 });
 
-test('busca composta registra fonte aplicável não configurada como cobertura parcial', async () => {
+test('busca composta registra fonte opcional não configurada sem rebaixar fontes ativas', async () => {
   const provider = new CompositeSearchProvider({
     providers: [
       stubProvider({
@@ -365,7 +365,7 @@ test('busca composta registra fonte aplicável não configurada como cobertura p
   const result = await provider.searchWeb({ query: 'empresa', channel: 'news' });
 
   assert.equal(result.ok, true);
-  assert.equal(result.partial, true);
+  assert.equal(result.partial, false);
   assert.equal(result.results.length, 1);
   assert.equal(result.attempts[0].providerId, 'fonte-sem-chave');
   assert.equal(result.attempts[0].skipped, true);
@@ -420,4 +420,15 @@ test('canonicalização remove rastreamento sem remover parâmetros substantivos
     canonicalizeUrl('https://WWW.Example.test/noticia/?id=9&utm_source=x&fbclid=y#topo'),
     'https://example.test/noticia?id=9',
   );
+});
+
+test('Brave exige autorização explícita para persistir resultados em dossiês', () => {
+  const transientProvider = new BraveSearchProvider({ apiKey: 'token-de-teste' });
+  const licensedProvider = new BraveSearchProvider({
+    apiKey: 'token-de-teste',
+    allowPersistentResults: true,
+  });
+
+  assert.equal(transientProvider.allowsPersistentUse(), false);
+  assert.equal(licensedProvider.allowsPersistentUse(), true);
 });

@@ -7,12 +7,16 @@ import { AdverseMediaSummary, AdverseMediaStatus } from '../types';
 import { Drawer } from '../../../components/ui/Drawer';
 import { AdverseMediaCard } from './AdverseMediaCard';
 import { Formatters } from '../../../lib/formatters';
+import { formatMediaPlan, formatMediaProviders } from '../utils/mediaSources';
 
 interface AdverseMediaDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   adverseMedia?: AdverseMediaSummary;
   onStatusChange?: (id: string, newStatus: AdverseMediaStatus) => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
+  refreshNotice?: string | null;
 }
 
 export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
@@ -20,8 +24,11 @@ export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
   onClose,
   adverseMedia,
   onStatusChange,
+  onRefresh,
+  isRefreshing = false,
+  refreshNotice,
 }) => {
-  const [filter, setFilter] = useState<'all' | 'person' | 'company' | 'high' | 'validated' | 'discarded'>('all');
+  const [filter, setFilter] = useState<'all' | 'person' | 'company' | 'adverse' | 'general' | 'high' | 'validated' | 'discarded'>('all');
   const [showQueries, setShowQueries] = useState(false);
 
   if (!adverseMedia) return null;
@@ -32,6 +39,8 @@ export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
   const filtered = results.filter((r) => {
     if (filter === 'person') return r.subjectType === 'person';
     if (filter === 'company') return r.subjectType !== 'person';
+    if (filter === 'adverse') return r.riskRelevant !== false;
+    if (filter === 'general') return r.riskRelevant === false;
     if (filter === 'high') return r.matchStrength === 'high';
     if (filter === 'validated') return r.status === 'validated';
     if (filter === 'discarded') return r.status === 'discarded';
@@ -42,10 +51,33 @@ export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
     <Drawer
       isOpen={isOpen}
       onClose={onClose}
-      title="Ocorrências Públicas: Empresa e Pessoas"
+      title="Publicações e Ocorrências: Empresa e Pessoas"
       subtitle={`${companyCount} da empresa • ${personCount} de pessoas • ${adverseMedia.peopleSearched || 0} integrante(s) pesquisado(s) • ${Formatters.dateTime(adverseMedia.consultadoEm)}`}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        {onRefresh ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-2xs)' }}>
+                {formatMediaPlan(adverseMedia.queryPlanVersion)} · {formatMediaProviders(adverseMedia.providerSources, adverseMedia.provider)}
+              </span>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={onRefresh}
+                disabled={isRefreshing}
+              >
+                {isRefreshing ? 'Atualizando notícias…' : 'Atualizar notícias'}
+              </button>
+            </div>
+            {refreshNotice ? (
+              <div className={adverseMedia.consultaParcial ? 'warn-state-block' : 'clean-state-block'} role="status">
+                <span>{refreshNotice}</span>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         {/* Painel de Consultas Executadas */}
         {adverseMedia.queriesExecuted && adverseMedia.queriesExecuted.length > 0 && (
           <div
@@ -111,6 +143,20 @@ export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
             onClick={() => setFilter('company')}
           >
             Empresa ({companyCount})
+          </button>
+          <button
+            type="button"
+            className={'btn btn-sm ' + (filter === 'adverse' ? 'btn-secondary' : 'btn-ghost')}
+            onClick={() => setFilter('adverse')}
+          >
+            Com termos de atenção ({adverseMedia.riskRelevantCount ?? results.filter((item) => item.riskRelevant !== false).length})
+          </button>
+          <button
+            type="button"
+            className={'btn btn-sm ' + (filter === 'general' ? 'btn-secondary' : 'btn-ghost')}
+            onClick={() => setFilter('general')}
+          >
+            Menções gerais ({adverseMedia.generalMentionsCount ?? results.filter((item) => item.riskRelevant === false).length})
           </button>
           <button
             type="button"

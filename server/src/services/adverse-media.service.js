@@ -39,7 +39,7 @@ function envInt(name, fallback) {
 
 const MAX_COMPANY_QUERIES = Math.max(3, envInt('ADVERSE_MEDIA_MAX_QUERIES', 6));
 const MAX_PERSON_SUBJECTS = envInt('ADVERSE_MEDIA_MAX_PERSON_SUBJECTS', 20);
-const MAX_PERSON_QUERIES = envInt('ADVERSE_MEDIA_MAX_PERSON_QUERIES', 40);
+const MAX_PERSON_QUERIES = envInt('ADVERSE_MEDIA_MAX_PERSON_QUERIES', 20);
 const SEARCH_CONCURRENCY = Math.max(1, Math.min(envInt('ADVERSE_MEDIA_CONCURRENCY', 4), 6));
 const RESULTS_PER_QUERY = Math.max(10, Math.min(envInt('ADVERSE_MEDIA_RESULTS_PER_QUERY', 25), 50));
 const GLOBAL_DEADLINE_MS = Math.max(15_000, Math.min(envInt('ADVERSE_MEDIA_DEADLINE_MS', 50_000), 65_000));
@@ -259,7 +259,7 @@ function publishedDay(value) {
 }
 
 class AdverseMediaService {
-  constructor(provider = new CompositeSearchProvider()) {
+  constructor(provider = new CompositeSearchProvider({ persistentUse: true })) {
     this.provider = provider;
   }
 
@@ -285,7 +285,7 @@ class AdverseMediaService {
     };
 
     if (formattedCnpj) {
-      add('(' + quoteSearchTerm(formattedCnpj) + ' OR ' + quoteSearchTerm(cnpj) + ')', 'identifier', 'web', 0);
+      add('(' + quoteSearchTerm(formattedCnpj) + ' OR ' + quoteSearchTerm(cnpj) + ')', 'identifier', 'news', 0);
     }
     add(razaoQuoted, 'general_mention', 'news', 1);
     if (razaoQuoted) {
@@ -314,7 +314,7 @@ class AdverseMediaService {
       add(
         razaoQuoted + ' ("ação civil pública" OR "execução fiscal" OR falência OR "recuperação judicial" OR "trabalho escravo" OR IBAMA)',
         'adverse_discovery',
-        'web',
+        'news',
         6,
       );
     }
@@ -408,12 +408,14 @@ class AdverseMediaService {
     }
 
     const expectedPersonQueries = descriptorSets.reduce((total, descriptors) => total + descriptors.length, 0);
+    const coveredPeople = new Set(personPlan.map((descriptor) => normalizeText(descriptor.subjectName)));
     return {
       version: QUERY_PLAN_VERSION,
       queries: [...companyPlan, ...personPlan],
       people,
       peopleRequested: naturalPeople.length,
-      peopleTruncated: naturalPeople.length > people.length || personPlan.length < expectedPersonQueries,
+      peopleTruncated: naturalPeople.length > people.length || coveredPeople.size < people.length,
+      expansionQueriesSkipped: Math.max(0, expectedPersonQueries - personPlan.length),
       plannedCompanyQueries: companyPlan.length,
       plannedPersonQueries: expectedPersonQueries,
       scheduledPersonQueries: personPlan.length,
@@ -631,6 +633,7 @@ class AdverseMediaService {
         const correlation = descriptor.subjectType === 'person'
           ? this.evaluatePersonCorrelation(descriptor, company, fullContent)
           : this.evaluateCorrelation(company, fullContent);
+        if (descriptor.subjectType === 'person' && correlation.matchStrength === 'low') continue;
         const { matchedTerms, categories } = this.classifyTerms(fullContent);
         const riskRelevant = matchedTerms.length > 0
           && correlation.matchStrength !== 'low'
@@ -659,6 +662,7 @@ class AdverseMediaService {
             ? correlation.identityStatus
             : 'documented-entity',
           matchBasis,
+          confidence: correlation.matchStrength === 'high' ? 85 : correlation.matchStrength === 'medium' ? 65 : 40,
         };
         const itemSources = unique([
           ...(Array.isArray(item.providerSources) ? item.providerSources : []),
@@ -666,6 +670,16 @@ class AdverseMediaService {
           item.provider,
         ]);
         const coMentionedSubjects = detectCoMentionedSubjects(company, queryPlan.people, fullContent);
+        const relatedSubjects = mergeSubjects([subject], coMentionedSubjects.map((coMentioned) => ({
+          ...coMentioned,
+          subjectQualification: coMentioned.subjectType === 'person'
+            ? queryPlan.people.find((person) => normalizeText(person.nome_socio) === normalizeText(coMentioned.subjectName))?.qualificacao_socio
+            : undefined,
+          matchStrength: coMentioned.confidence >= 85 ? 'high' : 'medium',
+          identityStatus: coMentioned.subjectType === 'person'
+            ? (coMentioned.matchBasis.includes('MASKED_CPF') ? 'supported' : 'contextual')
+            : 'documented-entity',
+        })));
         const current = documents.get(documentKey);
 
         if (current) {
@@ -674,7 +688,7 @@ class AdverseMediaService {
           current.providerSources = unique([...current.providerSources, ...itemSources]);
           current.matchedTerms = unique([...current.matchedTerms, ...matchedTerms]);
           current.categories = unique([...current.categories, ...categories]);
-          current.relatedSubjects = mergeSubjects(current.relatedSubjects, [subject]);
+          current.relatedSubjects = mergeSubjects(current.relatedSubjects, relatedSubjects);
           current.coMentionedSubjects = mergeSubjects(current.coMentionedSubjects, coMentionedSubjects);
           current.riskRelevant = current.riskRelevant || riskRelevant;
           if (String(item.snippet || '').length > String(current.snippet || '').length) {
@@ -721,7 +735,7 @@ class AdverseMediaService {
           subjectDocument: descriptor.subjectType === 'person'
             ? sanitizePersonDocument(descriptor.subjectDocument) || undefined
             : undefined,
-          relatedSubjects: [subject],
+          relatedSubjects,
           questionnaireRefs: descriptor.questionnaireRefs,
           identityStatus: descriptor.subjectType === 'person'
             ? correlation.identityStatus
@@ -816,6 +830,7 @@ class AdverseMediaService {
         ? successfulPersonQueries === scheduledPersonQueries && !queryPlan.peopleTruncated && !deadlineExceeded
         : queryPlan.peopleRequested === 0,
       personSearchTruncated: queryPlan.peopleTruncated,
+      expansionQueriesSkipped: queryPlan.expansionQueriesSkipped,
       subjects,
       results,
       queriesExecuted: executedQueries,

@@ -154,6 +154,7 @@ class CompositeSearchProvider extends SearchProvider {
   constructor(options = {}) {
     super();
     const normalizedOptions = Array.isArray(options) ? { providers: options } : options;
+    this.persistentUse = normalizedOptions.persistentUse === true;
     this.providers = normalizedOptions.providers || [
       new BraveSearchProvider(normalizedOptions.brave),
       new GoogleNewsRssProvider(normalizedOptions.googleNewsRss),
@@ -172,7 +173,11 @@ class CompositeSearchProvider extends SearchProvider {
   isConfigured() {
     return this.providers.some((provider) => {
       try {
-        return typeof provider?.isConfigured !== 'function' || provider.isConfigured();
+        const persistenceAllowed = !this.persistentUse
+          || typeof provider?.allowsPersistentUse !== 'function'
+          || provider.allowsPersistentUse();
+        return persistenceAllowed
+          && (typeof provider?.isConfigured !== 'function' || provider.isConfigured());
       } catch {
         return false;
       }
@@ -182,7 +187,11 @@ class CompositeSearchProvider extends SearchProvider {
   supportsChannel(channel) {
     return this.providers.some((provider) => {
       try {
-        return typeof provider?.supportsChannel !== 'function' || provider.supportsChannel(channel);
+        const persistenceAllowed = !this.persistentUse
+          || typeof provider?.allowsPersistentUse !== 'function'
+          || provider.allowsPersistentUse();
+        return persistenceAllowed
+          && (typeof provider?.supportsChannel !== 'function' || provider.supportsChannel(channel));
       } catch {
         return false;
       }
@@ -227,7 +236,12 @@ class CompositeSearchProvider extends SearchProvider {
         return false;
       }
     });
-    const applicableProviders = supportedProviders.filter((provider) => {
+    const persistenceEligibleProviders = supportedProviders.filter((provider) => (
+      !this.persistentUse
+      || typeof provider?.allowsPersistentUse !== 'function'
+      || provider.allowsPersistentUse()
+    ));
+    const applicableProviders = persistenceEligibleProviders.filter((provider) => {
       try {
         return typeof provider.isConfigured !== 'function' || provider.isConfigured();
       } catch {
@@ -242,7 +256,9 @@ class CompositeSearchProvider extends SearchProvider {
       ok: false,
       status: 503,
       resultCount: 0,
-      erro: 'Provedor não configurado.',
+      erro: !persistenceEligibleProviders.includes(provider)
+        ? 'Provedor não habilitado para armazenar resultados neste dossiê.'
+        : 'Provedor não configurado.',
       skipped: true,
     }));
 
@@ -313,7 +329,6 @@ class CompositeSearchProvider extends SearchProvider {
     )))];
     const partial = successfulResponses.length > 0 && (
       failedResponses.length > 0
-      || skippedProviders.length > 0
       || successfulResponses.some(({ response }) => Boolean(response.partial))
     );
     const hasMore = allMergedResults.length > results.length
