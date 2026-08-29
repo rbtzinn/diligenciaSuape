@@ -192,6 +192,42 @@ export function arrangeRadar(cy: cytoscape.Core, rootId?: string) {
   } as cytoscape.PresetLayoutOptions).run();
 }
 
+export function arrangeFocus(cy: cytoscape.Core, focusId?: string) {
+  const focusNode = focusId ? cy.getElementById(focusId) : cy.nodes().first();
+  const focus = focusNode.length ? focusNode : cy.nodes().first();
+  if (!focus.length) return;
+
+  const neighbors = cy.nodes()
+    .filter((node) => node.id() !== focus.id())
+    .sort((left, right) => String(left.data('label')).localeCompare(String(right.data('label')), 'pt-BR'));
+  const positions: Record<string, { x: number; y: number }> = {
+    [focus.id()]: { x: 0, y: 0 },
+  };
+  const count = neighbors.length;
+  const radius = count <= 4 ? 145 : count <= 8 ? 205 : 245;
+  const angleStep = (2 * Math.PI) / Math.max(1, count);
+  const angleOffset = -Math.PI / 2;
+
+  neighbors.forEach((node, index) => {
+    const angle = angleOffset + index * angleStep;
+    positions[node.id()] = {
+      x: Math.round(Math.cos(angle) * radius),
+      y: Math.round(Math.sin(angle) * radius),
+    };
+  });
+
+  cy.nodes().removeClass('is-mobile-focus');
+  focus.addClass('is-mobile-focus');
+  cy.layout({
+    name: 'preset',
+    positions,
+    fit: true,
+    padding: 76,
+    animate: true,
+    animationDuration: 280,
+  } as cytoscape.PresetLayoutOptions).run();
+}
+
 export function arrangeChain(cy: cytoscape.Core, rootId?: string) {
   const rootNode = rootId ? cy.getElementById(rootId) : cy.nodes('.is-root').first();
   const root = rootNode.length ? rootNode : cy.nodes().first();
@@ -325,6 +361,17 @@ export const CYTOSCAPE_STYLESHEET: cytoscape.StylesheetStyle[] = [
       'border-color': '#f59e0b',
       'border-width': 4,
       'background-color': '#b45309',
+    } as cytoscape.Css.Node,
+  },
+  {
+    selector: 'node.is-mobile-focus',
+    style: {
+      'border-color': '#d7f4ff',
+      'border-width': 4,
+      'underlay-color': '#38bdf8',
+      'underlay-opacity': 0.2,
+      'underlay-padding': 12,
+      'z-index': 10,
     } as cytoscape.Css.Node,
   },
   {

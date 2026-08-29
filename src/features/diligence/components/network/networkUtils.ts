@@ -217,10 +217,76 @@ export function isInternalSuapeCandidate(entity?: EgosEntity) {
 }
 
 export function visibleEntity(entity: EgosEntity, filters: FilterState) {
-  if (!filters.showDocuments && !CORE_RELATIONAL_ENTITY_TYPES.has(entity.type)) return false;
+  if (!filters.showDocuments && !isCoreRelationalEntity(entity)) return false;
   if (filters.depth === '1' && entity.depth > 1) return false;
   if (filters.depth === '2' && entity.depth > 2) return false;
   return true;
+}
+
+export function isCoreRelationalEntity(entity: EgosEntity) {
+  return CORE_RELATIONAL_ENTITY_TYPES.has(entity.type);
+}
+
+export interface FocusGraphProjection {
+  entities: EgosEntity[];
+  relationships: EgosRelationship[];
+  totalNeighbors: number;
+  visibleNeighbors: number;
+}
+
+export function projectFocusGraph(
+  entities: EgosEntity[],
+  relationships: EgosRelationship[],
+  focusEntityId: string | undefined,
+  neighborLimit: number
+): FocusGraphProjection {
+  const entityById = new Map(entities.map((entity) => [entity.id, entity]));
+  const focusEntity = focusEntityId ? entityById.get(focusEntityId) : undefined;
+  if (!focusEntity) {
+    return { entities: [], relationships: [], totalNeighbors: 0, visibleNeighbors: 0 };
+  }
+
+  const candidates = relationships
+    .filter((relationship) => touches(relationship, focusEntity.id))
+    .filter((relationship) => relationshipMatchesFilter(relationship, 'core'))
+    .map((relationship) => {
+      const neighborId = otherEntityId(relationship, focusEntity.id);
+      return { relationship, neighbor: entityById.get(neighborId) };
+    })
+    .filter((item): item is { relationship: EgosRelationship; neighbor: EgosEntity } => (
+      Boolean(item.neighbor && isCoreRelationalEntity(item.neighbor))
+    ))
+    .sort((left, right) => {
+      const statusDifference = Number(isConfirmed(right.relationship.status))
+        - Number(isConfirmed(left.relationship.status));
+      if (statusDifference !== 0) return statusDifference;
+      const confidenceDifference = (right.relationship.confidence || 0)
+        - (left.relationship.confidence || 0);
+      if (confidenceDifference !== 0) return confidenceDifference;
+      return left.neighbor.name.localeCompare(right.neighbor.name, 'pt-BR');
+    });
+
+  const uniqueConnections: Array<{ relationship: EgosRelationship; neighbor: EgosEntity }> = [];
+  const seenNeighbors = new Set<string>();
+  candidates.forEach((candidate) => {
+    if (seenNeighbors.has(candidate.neighbor.id)) return;
+    seenNeighbors.add(candidate.neighbor.id);
+    uniqueConnections.push(candidate);
+  });
+
+  const visibleConnections = uniqueConnections.slice(0, Math.max(1, neighborLimit));
+  const visibleNeighborIds = new Set(visibleConnections.map((item) => item.neighbor.id));
+  const visibleRelationships = relationships
+    .filter((relationship) => touches(relationship, focusEntity.id))
+    .filter((relationship) => relationshipMatchesFilter(relationship, 'core'))
+    .filter((relationship) => visibleNeighborIds.has(otherEntityId(relationship, focusEntity.id)));
+
+  return {
+    entities: [focusEntity, ...visibleConnections.map((item) => item.neighbor)],
+    relationships: visibleRelationships,
+    totalNeighbors: uniqueConnections.length,
+    visibleNeighbors: visibleConnections.length,
+  };
 }
 
 export function relationshipMatchesFilter(relationship: EgosRelationship, filter: string) {

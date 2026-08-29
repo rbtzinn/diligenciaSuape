@@ -30,6 +30,13 @@ interface NetworkToolbarProps {
   onFit: () => void;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
+  mobileControls?: {
+    canGoBack: boolean;
+    isFullNetwork: boolean;
+    onBack: () => void;
+    onToggleFullNetwork: () => void;
+    onOpenSummary: () => void;
+  };
 }
 
 export const NetworkToolbar: React.FC<NetworkToolbarProps> = ({
@@ -48,12 +55,57 @@ export const NetworkToolbar: React.FC<NetworkToolbarProps> = ({
   onFit,
   isFullscreen,
   onToggleFullscreen,
+  mobileControls,
 }) => {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const activeFilterCount = (depth !== '2' ? 1 : 0)
     + (relationFilter !== 'confirmed' ? 1 : 0)
     + (layoutMode !== 'chain' ? 1 : 0)
     + (showDocuments ? 1 : 0);
+
+  if (mobileControls) {
+    return (
+      <div className="network-toolbar network-toolbar-mobile" role="toolbar" aria-label="Controles móveis do mapa">
+        <button
+          type="button"
+          className="mobile-network-tool"
+          onClick={mobileControls.onBack}
+          disabled={!mobileControls.canGoBack || mobileControls.isFullNetwork}
+          aria-label="Voltar um ramo"
+          title="Voltar um ramo"
+        >
+          <Icons.ArrowLeft size={17} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          className={`mobile-network-mode ${mobileControls.isFullNetwork ? 'active' : ''}`}
+          onClick={mobileControls.onToggleFullNetwork}
+          aria-pressed={mobileControls.isFullNetwork}
+        >
+          <Icons.Layers size={16} aria-hidden="true" />
+          <span>{mobileControls.isFullNetwork ? 'Explorar ramos' : 'Rede completa'}</span>
+        </button>
+        <button
+          type="button"
+          className="mobile-network-tool"
+          onClick={onFit}
+          aria-label="Centralizar mapa"
+          title="Centralizar mapa"
+        >
+          <Icons.Maximize size={16} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          className="mobile-network-tool"
+          onClick={mobileControls.onOpenSummary}
+          aria-label="Abrir resumo da diligência"
+          title="Abrir resumo"
+        >
+          <Icons.Info size={16} aria-hidden="true" />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="network-toolbar" role="toolbar" aria-label="Controles do mapa relacional">

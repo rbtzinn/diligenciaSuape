@@ -25,6 +25,7 @@ export const NetworkLegend: React.FC<NetworkLegendProps> = ({
       </div>
 
       <div
+        className="network-visible-count"
         style={{
           position: 'absolute',
           bottom: 16,

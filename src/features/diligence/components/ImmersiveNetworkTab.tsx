@@ -16,15 +16,18 @@ import type {
 import {
   filterGraphEntities,
   findOptimalRoute,
+  isCoreRelationalEntity,
   isInternalSuapeCandidate,
   isPepCandidate,
   KINSHIP_RELATIONSHIPS,
   normalizeText,
+  projectFocusGraph,
   relationshipMatchesFilter,
   RELATION_TYPE_LABELS,
   touches,
 } from './network/networkUtils';
 import {
+  arrangeFocus,
   arrangeChain,
   arrangeRadar,
   buildCytoscapeElements,
@@ -42,6 +45,25 @@ import { Icons } from '../../../components/ui/Icons';
 import { ReportService } from '../../report/services/report.service';
 import { ensureEgosSnapshot } from '../utils/fallbackEgos';
 import '../../../styles/network-immersive.css';
+
+const MOBILE_NETWORK_BREAKPOINT = '(max-width: 760px)';
+const MOBILE_NEIGHBOR_PAGE_SIZE = 8;
+
+function useCompactNetworkViewport() {
+  const [isCompact, setIsCompact] = useState(() => (
+    typeof window !== 'undefined' && window.matchMedia(MOBILE_NETWORK_BREAKPOINT).matches
+  ));
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(MOBILE_NETWORK_BREAKPOINT);
+    const update = () => setIsCompact(mediaQuery.matches);
+    update();
+    mediaQuery.addEventListener('change', update);
+    return () => mediaQuery.removeEventListener('change', update);
+  }, []);
+
+  return isCompact;
+}
 
 interface ImmersiveNetworkTabProps {
   diligence: DiligenceItem;
@@ -77,6 +99,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   onOpenAudit,
 }) => {
   const { id: diligenceId } = diligence;
+  const isCompactViewport = useCompactNetworkViewport();
   const egos = useMemo(() => ensureEgosSnapshot(diligence), [diligence]);
   const targetCompanyName = diligence.razaoSocial || 'Empresa analisada';
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('chain');
@@ -91,13 +114,19 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isGraphReady, setIsGraphReady] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
+  const [isMobileSheetExpanded, setIsMobileSheetExpanded] = useState(false);
+  const [isMobileFullNetwork, setIsMobileFullNetwork] = useState(false);
+  const [mobileFocusEntityId, setMobileFocusEntityId] = useState<string>();
+  const [mobileTrail, setMobileTrail] = useState<string[]>([]);
+  const [mobileNeighborLimit, setMobileNeighborLimit] = useState(MOBILE_NEIGHBOR_PAGE_SIZE);
 
   const wrapperRef = useRef<HTMLElement | null>(null);
   const graphRef = useRef<HTMLDivElement | null>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
   const routeTimersRef = useRef<number[]>([]);
   const filtersRef = useRef<FilterState>({ depth, relation: relationFilter, showDocuments });
-  const layoutRef = useRef<LayoutMode>(layoutMode);
+  const compactViewportRef = useRef(isCompactViewport);
+  compactViewportRef.current = isCompactViewport;
 
   const networkData = useMemo(() => projectNetworkDocuments(
     egos?.entities || [],
@@ -122,6 +151,43 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
       || entities.find((entity) => entity.depth === 0)
       || entities[0];
   }, [entities, targetCompanyName]);
+
+  useEffect(() => {
+    if (!rootEntity) return;
+    setMobileFocusEntityId((current) => (
+      current && entities.some((entity) => entity.id === current) ? current : rootEntity.id
+    ));
+    setMobileTrail((current) => (
+      current.length > 0 && current[0] === rootEntity.id ? current : [rootEntity.id]
+    ));
+  }, [entities, rootEntity]);
+
+  const mobileFocusEntity = useMemo(() => (
+    entities.find((entity) => entity.id === mobileFocusEntityId) || rootEntity
+  ), [entities, mobileFocusEntityId, rootEntity]);
+
+  const mobileFocusProjection = useMemo(() => projectFocusGraph(
+    entities,
+    relationships,
+    mobileFocusEntity?.id,
+    mobileNeighborLimit
+  ), [entities, mobileFocusEntity?.id, mobileNeighborLimit, relationships]);
+
+  const mobileFullEntities = useMemo(() => filterGraphEntities(
+    entities,
+    relationships,
+    { depth: '2', relation: 'core', showDocuments: false },
+    rootEntity?.id
+  ), [entities, relationships, rootEntity?.id]);
+
+  const mobileFullRelationships = useMemo(() => {
+    const entityIds = new Set(mobileFullEntities.map((entity) => entity.id));
+    return relationships.filter((relationship) => (
+      entityIds.has(relationship.sourceEntityId)
+      && entityIds.has(relationship.targetEntityId)
+      && relationshipMatchesFilter(relationship, 'core')
+    ));
+  }, [mobileFullEntities, relationships]);
 
   const relationTypes = useMemo(() => {
     const labels = new Map<string, string>();
@@ -152,6 +218,21 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
       && relationshipMatchesFilter(relationship, relationFilter)
     )).length;
   }, [relationFilter, relationships, visibleEntities]);
+
+  const graphEntities = isCompactViewport
+    ? (isMobileFullNetwork ? mobileFullEntities : mobileFocusProjection.entities)
+    : entities;
+  const graphRelationships = isCompactViewport
+    ? (isMobileFullNetwork ? mobileFullRelationships : mobileFocusProjection.relationships)
+    : relationships;
+  const displayedEntities = isCompactViewport ? graphEntities : visibleEntities;
+  const displayedRelationshipCount = isCompactViewport
+    ? graphRelationships.length
+    : visibleRelationshipCount;
+  const remainingMobileNeighbors = Math.max(
+    0,
+    mobileFocusProjection.totalNeighbors - mobileFocusProjection.visibleNeighbors
+  );
 
   const selectedEntity = useMemo(() => (
     selection?.kind === 'node' ? entities.find((e) => e.id === selection.id) : undefined
@@ -257,10 +338,16 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   useEffect(() => {
     if (!graphRef.current) return;
 
-    filtersRef.current = { depth, relation: relationFilter, showDocuments };
-    layoutRef.current = layoutMode;
-
-    const elements = buildCytoscapeElements(entities, relationships, rootEntity, filtersRef.current, searchTerm);
+    filtersRef.current = isCompactViewport
+      ? { depth: 'all', relation: 'all', showDocuments: false }
+      : { depth, relation: relationFilter, showDocuments };
+    const elements = buildCytoscapeElements(
+      graphEntities,
+      graphRelationships,
+      rootEntity,
+      filtersRef.current,
+      searchTerm
+    );
 
     if (!cyRef.current) {
       const cy = cytoscape({
@@ -275,21 +362,35 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
 
       cy.on('tap', 'node', (evt) => {
         const node = evt.target;
-        setSelection({ kind: 'node', id: node.id() });
+        const nodeId = node.id();
+        setSelection({ kind: 'node', id: nodeId });
         setIsInspectorOpen(true);
-        focusNeighborhood(cy, node.id());
+        if (compactViewportRef.current) {
+          setIsMobileFullNetwork(false);
+          setMobileFocusEntityId(nodeId);
+          setMobileNeighborLimit(MOBILE_NEIGHBOR_PAGE_SIZE);
+          setMobileTrail((current) => {
+            const existingIndex = current.lastIndexOf(nodeId);
+            return existingIndex >= 0 ? current.slice(0, existingIndex + 1) : [...current, nodeId];
+          });
+          setIsMobileSheetExpanded(false);
+        } else {
+          focusNeighborhood(cy, nodeId);
+        }
       });
 
       cy.on('tap', 'edge', (evt) => {
         const edge = evt.target;
         setSelection({ kind: 'edge', id: edge.id() });
         setIsInspectorOpen(true);
+        if (compactViewportRef.current) setIsMobileSheetExpanded(true);
       });
 
       cy.on('tap', (evt) => {
         if (evt.target === cy) {
           setSelection(null);
           setRoute(null);
+          if (compactViewportRef.current) setIsMobileSheetExpanded(false);
           cy.elements().removeClass('is-dimmed is-route-active');
           cy.animate({ fit: { eles: cy.elements(), padding: 60 }, duration: 400 });
         }
@@ -309,12 +410,52 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
     }
 
     const cy = cyRef.current;
-    if (layoutMode === 'radar') {
-      arrangeRadar(cy, rootEntity?.id);
-    } else {
+    cy.resize();
+    if (isCompactViewport && !isMobileFullNetwork) {
+      arrangeFocus(cy, mobileFocusEntity?.id);
+    } else if (isCompactViewport || layoutMode === 'chain') {
       arrangeChain(cy, rootEntity?.id);
+    } else if (layoutMode === 'radar') {
+      arrangeRadar(cy, rootEntity?.id);
     }
-  }, [entities, relationships, rootEntity, depth, relationFilter, showDocuments, layoutMode, searchTerm]);
+  }, [
+    depth,
+    graphEntities,
+    graphRelationships,
+    isCompactViewport,
+    isMobileFullNetwork,
+    layoutMode,
+    mobileFocusEntity?.id,
+    relationFilter,
+    rootEntity,
+    searchTerm,
+    showDocuments,
+  ]);
+
+  useEffect(() => {
+    const container = graphRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') return undefined;
+
+    let frameId = 0;
+    const resizeGraph = () => {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(() => {
+        const cy = cyRef.current;
+        if (!cy || cy.destroyed()) return;
+        cy.resize();
+        cy.fit(cy.elements(), isCompactViewport ? 76 : 60);
+        syncGraphVisualScale(cy);
+      });
+    };
+    const observer = new ResizeObserver(resizeGraph);
+    observer.observe(container);
+    resizeGraph();
+
+    return () => {
+      observer.disconnect();
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [isCompactViewport]);
 
   // Download contextual de PDF da entidade (otimizado sem bloqueios)
   const downloadSelectedEntityReport = async () => {
@@ -379,6 +520,22 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   const selectNodeById = (nodeId: string) => {
     setSelection({ kind: 'node', id: nodeId });
     setIsInspectorOpen(true);
+    const target = entities.find((entity) => entity.id === nodeId);
+    if (isCompactViewport) {
+      if (target && isCoreRelationalEntity(target)) {
+        setIsMobileFullNetwork(false);
+        setMobileFocusEntityId(nodeId);
+        setMobileNeighborLimit(MOBILE_NEIGHBOR_PAGE_SIZE);
+        setMobileTrail((current) => {
+          const existingIndex = current.lastIndexOf(nodeId);
+          return existingIndex >= 0 ? current.slice(0, existingIndex + 1) : [...current, nodeId];
+        });
+        setIsMobileSheetExpanded(false);
+      } else {
+        setIsMobileSheetExpanded(true);
+      }
+      return;
+    }
     if (cyRef.current) {
       cyRef.current.nodes().unselect();
       const node = cyRef.current.getElementById(nodeId);
@@ -437,10 +594,46 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
     }
   };
 
+  const handleMobileBack = () => {
+    if (mobileTrail.length <= 1) return;
+    const nextTrail = mobileTrail.slice(0, -1);
+    const previousId = nextTrail[nextTrail.length - 1];
+    setMobileTrail(nextTrail);
+    setMobileFocusEntityId(previousId);
+    setMobileNeighborLimit(MOBILE_NEIGHBOR_PAGE_SIZE);
+    setSelection({ kind: 'node', id: previousId });
+    setRoute(null);
+    setIsMobileSheetExpanded(false);
+  };
+
+  const handleToggleMobileFullNetwork = () => {
+    setIsMobileFullNetwork((current) => !current);
+    setSelection(null);
+    setRoute(null);
+    setIsMobileSheetExpanded(false);
+  };
+
+  const handleOpenMobileSummary = () => {
+    setSelection(null);
+    setRoute(null);
+    setIsInspectorOpen(true);
+    setIsMobileSheetExpanded(true);
+  };
+
+  const handleClearSelection = () => {
+    setSelection(null);
+    setRoute(null);
+    setIsMobileSheetExpanded(false);
+    if (cyRef.current) {
+      cyRef.current.elements().removeClass('is-dimmed is-route-active');
+      cyRef.current.animate({ fit: { eles: cyRef.current.elements(), padding: 60 }, duration: 400 });
+    }
+  };
+
   return (
     <section
       ref={wrapperRef}
-      className={`network-investigation ${isFullscreen ? 'is-fullscreen' : ''}`}
+      className={`network-investigation ${isFullscreen ? 'is-fullscreen' : ''} ${isCompactViewport ? 'is-mobile-network' : ''} ${isMobileFullNetwork ? 'is-mobile-full-network' : ''}`}
       aria-label="Ambiente de Exploração Relacional EGOS"
     >
       {/* Header oficial do ambiente investigativo */}
@@ -455,9 +648,13 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
             <strong>{targetCompanyName}</strong> · Selecione uma pessoa ou empresa para entender a ligação.
           </p>
         </div>
+        <div className="mobile-network-heading">
+          <span>{isMobileFullNetwork ? 'Visão completa' : 'Exploração por ramos'}</span>
+          <strong title={targetCompanyName}>{targetCompanyName}</strong>
+        </div>
         <div className="network-facts">
-          <span><strong>{visibleEntities.length}</strong> entidades visíveis</span>
-          <span><strong>{visibleRelationshipCount}</strong> ligações</span>
+          <span><strong>{displayedEntities.length}</strong> entidades visíveis</span>
+          <span><strong>{displayedRelationshipCount}</strong> ligações</span>
           <span className={reviewCount > 0 ? 'has-review' : ''}>
             <strong>{reviewCount}</strong> em revisão
           </span>
@@ -481,12 +678,48 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
         onFit={handleFit}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
+        mobileControls={isCompactViewport ? {
+          canGoBack: mobileTrail.length > 1,
+          isFullNetwork: isMobileFullNetwork,
+          onBack: handleMobileBack,
+          onToggleFullNetwork: handleToggleMobileFullNetwork,
+          onOpenSummary: handleOpenMobileSummary,
+        } : undefined}
       />
 
       {/* Palco do grafo e painel lateral */}
       <div className={`network-canvas-grid ${isInspectorOpen ? 'panel-open' : ''}`}>
         <div className="network-canvas-wrap">
           <div className="network-canvas" ref={graphRef} />
+          {isCompactViewport ? (
+            <div className="mobile-network-focus-bar" aria-live="polite">
+              <div>
+                <span>{isMobileFullNetwork ? 'Rede completa' : 'Nó em foco'}</span>
+                <strong>{isMobileFullNetwork ? targetCompanyName : mobileFocusEntity?.name}</strong>
+              </div>
+              <small>{graphEntities.length} nós · {graphRelationships.length} ligações</small>
+            </div>
+          ) : null}
+          {isCompactViewport && !isMobileFullNetwork && remainingMobileNeighbors > 0 ? (
+            <button
+              type="button"
+              className="mobile-network-more"
+              onClick={() => setMobileNeighborLimit((current) => current + MOBILE_NEIGHBOR_PAGE_SIZE)}
+            >
+              <Icons.Plus size={15} aria-hidden="true" />
+              <span>Mostrar mais {Math.min(MOBILE_NEIGHBOR_PAGE_SIZE, remainingMobileNeighbors)}</span>
+              <small>{remainingMobileNeighbors} restantes</small>
+            </button>
+          ) : null}
+          {isCompactViewport
+            && !isMobileFullNetwork
+            && remainingMobileNeighbors === 0
+            && mobileTrail.length <= 1
+            && !selection ? (
+            <div className="mobile-network-hint">
+              Toque numa pessoa ou empresa para abrir somente aquele ramo.
+            </div>
+          ) : null}
           {!isGraphReady && (
             <div className="network-loading">
               <Icons.Loader size={18} />
@@ -494,7 +727,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
             </div>
           )}
           <NetworkLegend
-            visibleCount={visibleEntities.length}
+            visibleCount={displayedEntities.length}
             totalCount={entities.length}
           />
           {!isInspectorOpen ? (
@@ -509,58 +742,86 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
           ) : null}
         </div>
 
-        {isInspectorOpen && !selectedEntity && !selectedRelationship ? (
-          <InvestigationOverviewPanel
-            diligence={diligence}
-            adverseMedia={adverseMedia}
-            discoveries={discoveries}
-            entityCount={visibleEntities.length}
-            relationshipCount={visibleRelationshipCount}
-            evidenceCount={evidences.length}
-            reviewCount={reviewCount}
-            workflowStatus={workflowStatus}
-            isExportingPdf={isExportingPdf}
-            onWorkflowStatusChange={onWorkflowStatusChange}
-            onClose={() => setIsInspectorOpen(false)}
-            onExportPdf={onExportPdf}
-            onEditRisk={onEditRisk}
-            onOpenPeople={onOpenPeople}
-            onOpenSanctions={onOpenSanctions}
-            onOpenMedia={onOpenMedia}
-            onOpenProcesses={onOpenProcesses}
-            onOpenQuestionnaire={onOpenQuestionnaire}
-            onOpenAudit={onOpenAudit}
-          />
-        ) : null}
+        {isInspectorOpen ? (
+          <div className={`network-panel-slot ${isMobileSheetExpanded ? 'is-expanded' : 'is-peek'}`}>
+            {isCompactViewport ? (
+              <button
+                type="button"
+                className="mobile-network-sheet-handle"
+                onClick={() => setIsMobileSheetExpanded((current) => !current)}
+                aria-expanded={isMobileSheetExpanded}
+                aria-controls="mobile-network-sheet-content"
+              >
+                <span className="mobile-network-sheet-grip" aria-hidden="true" />
+                <span className="mobile-network-sheet-copy">
+                  <small>{selectedEntity || selectedRelationship ? 'Seleção atual' : 'Resumo da diligência'}</small>
+                  <strong>{selectedEntity?.name || selectedRelationship?.label || targetCompanyName}</strong>
+                  <span>
+                    {selectedEntity
+                      ? `${selectedConnections.length} conexões · toque para ver fontes`
+                      : selectedRelationship
+                        ? 'Toque para entender esta ligação'
+                        : `${reviewCount} ponto(s) em revisão · toque para abrir`}
+                  </span>
+                </span>
+                {isMobileSheetExpanded
+                  ? <Icons.ChevronDown size={17} aria-hidden="true" />
+                  : <Icons.ChevronUp size={17} aria-hidden="true" />}
+              </button>
+            ) : null}
 
-        {isInspectorOpen && (selectedEntity || selectedRelationship) ? (
-          <NetworkInspector
-            selectedEntity={selectedEntity}
-            selectedRelationship={selectedRelationship}
-            sourceEntity={sourceEntity}
-            targetEntity={targetEntity}
-            route={route}
-            onTraceRoute={handleTraceRoute}
-            onClearSelection={() => {
-              setSelection(null);
-              setRoute(null);
-              if (cyRef.current) {
-                cyRef.current.elements().removeClass('is-dimmed is-route-active');
-                cyRef.current.animate({ fit: { eles: cyRef.current.elements(), padding: 60 }, duration: 400 });
-              }
-            }}
-            onSelectNode={selectNodeById}
-            isExportingPdf={exportingEntityId === selectedEntity?.id}
-            onExportEntityPdf={downloadSelectedEntityReport}
-            exportError={entityReportError}
-            selectedConnections={selectedConnections}
-            selectedEvidence={selectedEvidence}
-            selectedFindings={selectedFindings}
-            selectedPepMatches={selectedPepMatches}
-            selectedSuapeLinks={selectedSuapeLinks}
-            selectedKinshipLinks={selectedKinshipLinks}
-            selectedPersonOccurrences={selectedPersonOccurrences}
-          />
+            <div className="mobile-network-sheet-content" id="mobile-network-sheet-content">
+              {!selectedEntity && !selectedRelationship ? (
+                <InvestigationOverviewPanel
+                  diligence={diligence}
+                  adverseMedia={adverseMedia}
+                  discoveries={discoveries}
+                  entityCount={displayedEntities.length}
+                  relationshipCount={displayedRelationshipCount}
+                  evidenceCount={evidences.length}
+                  reviewCount={reviewCount}
+                  workflowStatus={workflowStatus}
+                  isExportingPdf={isExportingPdf}
+                  onWorkflowStatusChange={onWorkflowStatusChange}
+                  onClose={() => {
+                    if (isCompactViewport) setIsMobileSheetExpanded(false);
+                    else setIsInspectorOpen(false);
+                  }}
+                  onExportPdf={onExportPdf}
+                  onEditRisk={onEditRisk}
+                  onOpenPeople={onOpenPeople}
+                  onOpenSanctions={onOpenSanctions}
+                  onOpenMedia={onOpenMedia}
+                  onOpenProcesses={onOpenProcesses}
+                  onOpenQuestionnaire={onOpenQuestionnaire}
+                  onOpenAudit={onOpenAudit}
+                />
+              ) : null}
+
+              {selectedEntity || selectedRelationship ? (
+                <NetworkInspector
+                  selectedEntity={selectedEntity}
+                  selectedRelationship={selectedRelationship}
+                  sourceEntity={sourceEntity}
+                  targetEntity={targetEntity}
+                  route={route}
+                  onTraceRoute={handleTraceRoute}
+                  onClearSelection={handleClearSelection}
+                  onSelectNode={selectNodeById}
+                  isExportingPdf={exportingEntityId === selectedEntity?.id}
+                  onExportEntityPdf={downloadSelectedEntityReport}
+                  exportError={entityReportError}
+                  selectedConnections={selectedConnections}
+                  selectedEvidence={selectedEvidence}
+                  selectedFindings={selectedFindings}
+                  selectedPepMatches={selectedPepMatches}
+                  selectedSuapeLinks={selectedSuapeLinks}
+                  selectedKinshipLinks={selectedKinshipLinks}
+                  selectedPersonOccurrences={selectedPersonOccurrences}
+                />
+              ) : null}
+            </div>
+          </div>
         ) : null}
       </div>
     </section>
