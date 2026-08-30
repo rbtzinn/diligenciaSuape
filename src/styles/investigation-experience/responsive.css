@@ -2,11 +2,67 @@
    DILIGÊNCIA 360 — investigation-experience · responsive
    ========================================================== */
 
-@media (max-width: 760px) {.investigation-global-bar { height: 58px; min-height: 58px; padding: 0 10px 0 12px; }
+@media (max-width: 760px) {.investigation-global-bar { height: 58px; min-height: 58px; padding: 0 12px; gap: 12px; }
 .investigation-brand > span { display: none; }
-.investigation-global-actions { gap: 2px; }
-.investigation-global-actions .investigation-new-search { width: 38px; padding: 0; }
+.investigation-brand { flex: 0 0 auto; }
+
+/* Sem rótulo, as ações viram uma fileira de alvos iguais: mesmo tamanho,
+   mesma folga e 40px de área de toque. */
+.investigation-global-actions { gap: 8px; }
+.investigation-global-actions > button,
+.investigation-global-actions .investigation-new-search,
+.investigation-global-actions .investigation-user-button {
+  position: relative;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+}
+/* Um ícone sem fundo ao lado de um botão preenchido não lê como conjunto.
+   No celular as ações secundárias ganham superfície própria; a primária
+   mantém o destaque. */
+.investigation-global-actions > button {
+  background: rgba(45, 96, 173, 0.07);
+  border-color: rgba(45, 96, 173, 0.14);
+  border-radius: 12px;
+}
+.is-loading .investigation-global-actions > button,
+.is-map .investigation-global-actions > button {
+  background: rgba(146, 191, 224, 0.1);
+  border-color: rgba(146, 191, 224, 0.18);
+}
+.investigation-global-actions .investigation-new-search,
+.is-loading .investigation-global-actions .investigation-new-search,
+.is-map .investigation-global-actions .investigation-new-search {
+  background: var(--ix-blue);
+  border-color: #557fbd;
+  border-radius: 12px;
+}
+.investigation-global-actions .investigation-user-button,
+.is-loading .investigation-global-actions .investigation-user-button,
+.is-map .investigation-global-actions .investigation-user-button {
+  background: linear-gradient(145deg, #2d60ad, #163768);
+  border-color: rgba(114, 162, 208, 0.62);
+  border-radius: 50%;
+}
 .investigation-global-actions .investigation-new-search span { display: none; }
+
+/* O contador ancora no canto do botão. Solto na linha ele não cabia nos
+   40px e acabava encostando no avatar ao lado. O anel o separa do fundo,
+   que muda de claro para escuro conforme a fase. */
+.investigation-global-actions button small {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  font-size: 8.5px;
+  box-shadow: 0 0 0 2px rgba(248, 252, 253, 0.95);
+}
+.is-loading .investigation-global-actions button small,
+.is-map .investigation-global-actions button small { box-shadow: 0 0 0 2px rgba(3, 18, 32, 0.94); }
 .investigation-landing { padding: 28px 16px; }
 .investigation-search-form { min-height: 60px; padding: 6px 6px 6px 20px; }
 .investigation-search-form button { width: 46px; height: 46px; }

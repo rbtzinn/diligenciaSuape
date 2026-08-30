@@ -40,11 +40,11 @@
 .sources-summary strong { color: currentColor; font-family: var(--font-mono); font-size: 20px; line-height: 1; }
 .sources-summary span { margin-top: 4px; color: #607286; font-size: 10px; line-height: 1.3; }
 .sources-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
-@media (max-width: 1180px) {.sources-list { grid-template-columns: 1fr; }
+@media (max-width: 1180px) {.sources-list { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 720px) {.section-page-heading { align-items: stretch; flex-direction: column; padding-top: 2px; }
 .section-page-heading .btn { width: 100%; }
-.sources-summary { grid-template-columns: 1fr; }
+.sources-summary { grid-template-columns: minmax(0, 1fr); }
 .sources-summary article { padding: 11px 13px; }
 }
 .section-page-eyebrow {

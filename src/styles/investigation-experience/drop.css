@@ -1,14 +1,15 @@
 /* ==========================================================
-   DILIGÊNCIA 360 — investigation-experience · transição da gota
-   O elo visual entre as três fases: o campo de busca vira gota
-   no carregamento, e a gota abre para revelar o dossiê.
+   DILIGÊNCIA 360 — investigation-experience · transição de fase
+   O elo visual entre as três fases: o campo de busca se recolhe
+   no carregamento, e o carregamento se abre no dossiê. É o
+   movimento contínuo que liga as telas, não uma forma.
    ========================================================== */
 
 /* ==========================================================
-   Da pílula à gota
-   O loading entra com a mesma geometria do campo de busca —
-   larga e arredondada — e se fecha numa gota. A continuidade
-   é o que faz o campo "virar" o carregamento.
+   Da pílula ao pulso
+   O carregamento entra com a mesma geometria do campo — largo e
+   arredondado — e se recolhe. É a continuidade que faz o campo
+   "virar" o carregamento.
    ========================================================== */
 
 .investigation-pulse {
@@ -43,30 +44,18 @@
 }
 
 /* A gota nasce achatada como o campo, estica e assenta. */
-/* O núcleo respira sem perder a contrarrotação: uma animação sobre
-   `transform` substitui o valor estático, então a rotação entra aqui. */
 @keyframes investigation-drop-core-breathe {
-  0%, 100% { transform: rotate(-45deg) scale(1); }
-  50%      { transform: rotate(-45deg) scale(1.06); }
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
 }
 
+/* Largo e achatado como o campo, recolhe até o círculo com um leve
+   excesso no meio do caminho, para o movimento ter peso. */
 @keyframes investigation-drop-settle {
-  0% {
-    border-radius: 999px;
-    transform: translate(-50%, -50%) rotate(0deg) scaleX(2.6) scaleY(0.55);
-  }
-  45% {
-    border-radius: 30% 50% 50% 50%;
-    transform: translate(-50%, -50%) rotate(20deg) scaleX(1) scaleY(1.16);
-  }
-  72% {
-    border-radius: 10% 50% 50% 50%;
-    transform: translate(-50%, -50%) rotate(38deg) scaleX(1.05) scaleY(0.95);
-  }
-  100% {
-    border-radius: 6% 50% 50% 50%;
-    transform: translate(-50%, -50%) rotate(45deg) scale(1);
-  }
+  0%   { border-radius: 999px; transform: translate(-50%, -50%) scaleX(2.6) scaleY(0.55); }
+  55%  { border-radius: 50%;   transform: translate(-50%, -50%) scaleX(0.94) scaleY(1.1); }
+  78%  { border-radius: 50%;   transform: translate(-50%, -50%) scaleX(1.04) scaleY(0.97); }
+  100% { border-radius: 50%;   transform: translate(-50%, -50%) scale(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -77,9 +66,9 @@
 }
 
 /* ==========================================================
-   A gota abrindo
+   A abertura
    Ao chegar o resultado, o dossiê é revelado a partir do ponto
-   onde a gota estava, crescendo até ocupar a tela.
+   onde o pulso estava, crescendo até ocupar a tela.
    ========================================================== */
 
 .investigation-dossier {

@@ -155,6 +155,19 @@
   --control-gap-lg: 0.65rem;
 }
 
+/* No toque não há ponteiro fino: a mesma escala precisa de mais área.
+   Ajustar aqui sobe todos os controles de uma vez, sem regra avulsa
+   por componente. */
+@media (max-width: 720px) {
+  :root {
+    --control-height-sm: 40px;
+    --control-height-md: 44px;
+    --control-height-lg: 50px;
+    --control-pad-x-sm: 14px;
+    --control-pad-x-md: 18px;
+  }
+}
+
 /* ==========================================================
    CORES DE VARIANTE DOS BOTÕES
    Extraídas dos valores literais que estavam embutidos nas
