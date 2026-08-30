@@ -23,6 +23,12 @@ import './styles/dossier-v3.css';
 import './styles/kpi.css';
 import './styles/drawer.css';
 import './styles/governance-history.css';
+// Telas que só tinham estilo dentro do responsive-overrides.
+// Importadas imediatamente antes dele para manter a ordem de cascata.
+import './styles/components/history.css';
+import './styles/components/sources.css';
+import './styles/components/help.css';
+
 import './styles/responsive-overrides.css';
 import './styles/investigation-experience.css';
 

@@ -920,3 +920,166 @@
     transform: none;
   }
 }
+
+/* ==========================================================
+   Camada de layout e responsividade
+   Regras vindas de responsive-overrides.css, mantidas na mesma
+   ordem relativa. Ficam aqui, junto do componente que ajustam.
+   ========================================================== */
+
+.workspace-header {
+  position: relative;
+  z-index: 80;
+  min-height: 68px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 10px clamp(1rem, 2vw, 2rem);
+  color: #183b58;
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid #dce5ee;
+  backdrop-filter: blur(14px);
+}
+
+.workspace-menu-button {
+  width: 42px;
+  height: 42px;
+  display: none;
+  place-items: center;
+  gap: 4px;
+  padding: 10px;
+  color: #173f67;
+  background: #f4f7fb;
+  border: 1px solid #d7e2ec;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.workspace-menu-button span {
+  width: 18px;
+  height: 2px;
+  display: block;
+  background: currentColor;
+  border-radius: 999px;
+}
+
+.workspace-header-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.workspace-header-copy strong {
+  overflow: hidden;
+  color: #173b5b;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-header-copy > span {
+  overflow: hidden;
+  color: #708093;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-header-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  color: #27705b;
+  background: #eef9f5;
+  border: 1px solid #cde8de;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.workspace-header-status > span {
+  width: 7px;
+  height: 7px;
+  background: #1c946e;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(28, 148, 110, 0.12);
+}
+
+.app-shell.app-dark-mode .workspace-header {
+  color: #d9e6f4;
+  background: rgba(3, 20, 38, 0.94);
+  border-bottom-color: #18324f;
+}
+
+.app-shell.app-dark-mode .workspace-header-status { color: #94dcc5; background: #0b302c; border-color: #1a5147; }
+
+@media (max-width: 960px) {
+  .workspace-header { position: sticky; top: 0; }
+
+  .workspace-menu-button { display: grid; }
+
+  .sidebar,
+  .sidebar.collapsed {
+  position: fixed;
+  z-index: 1000;
+  inset: 0 auto 0 0;
+  width: min(86vw, 310px);
+  height: 100dvh;
+  transform: translateX(-103%);
+  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1), background-color 180ms ease;
+  box-shadow: 18px 0 45px rgba(7, 22, 41, 0.2);
+  }
+
+  .sidebar.mobile-open,
+  .sidebar.collapsed.mobile-open { width: min(86vw, 310px); transform: translateX(0); }
+
+  .sidebar.collapsed.mobile-open .sidebar-brand-info,
+  .sidebar.collapsed.mobile-open .sidebar-new-text,
+  .sidebar.collapsed.mobile-open .sidebar-label,
+  .sidebar.collapsed.mobile-open .sidebar-recent-name,
+  .sidebar.collapsed.mobile-open .sidebar-nav-item span,
+  .sidebar.collapsed.mobile-open .sidebar-badge,
+  .sidebar.collapsed.mobile-open .sidebar-user-name,
+  .sidebar.collapsed.mobile-open .sidebar-user-role,
+  .sidebar.collapsed.mobile-open .sidebar-logout-btn,
+  .sidebar.collapsed.mobile-open .sidebar-brand-logos { display: initial !important; }
+
+  .sidebar.collapsed.mobile-open .sidebar-header,
+  .sidebar.collapsed.mobile-open .sidebar-footer { align-items: stretch; padding-inline: 1rem; }
+
+  .sidebar.collapsed.mobile-open .sidebar-header { flex-direction: row; }
+
+  .sidebar.collapsed.mobile-open .sidebar-top-action { padding: 0.25rem 1rem 0.65rem; }
+
+  .sidebar.collapsed.mobile-open .sidebar-new-btn,
+  .sidebar.collapsed.mobile-open .sidebar-nav-item,
+  .sidebar.collapsed.mobile-open .sidebar-recent-item { width: 100%; height: auto; justify-content: flex-start; }
+
+  .sidebar.collapsed.mobile-open .sidebar-nav { align-items: stretch; padding-inline: 0.75rem; }
+
+  .sidebar.collapsed.mobile-open .sidebar-user-pill { justify-content: flex-start; }
+
+  .sidebar-backdrop { z-index: 990; }
+
+}
+
+@media (max-width: 720px) {
+  .workspace-header { min-height: 62px; padding: 8px 12px; }
+
+  .workspace-header-copy > span { display: none; }
+
+  .workspace-header-status { width: 10px; height: 10px; padding: 0; overflow: hidden; color: transparent; background: #1c946e; border: 0; }
+
+  .workspace-header-status > span { display: none; }
+
+}
+
+@media (max-width: 420px) {
+  .workspace-header-copy strong { font-size: 13px; }
+
+}

@@ -3014,3 +3014,32 @@
   .evidence-tab-btn,
   .source-state-group > summary > svg { transition: none; }
 }
+
+/* ==========================================================
+   Camada de layout e responsividade
+   Regras vindas de responsive-overrides.css, mantidas na mesma
+   ordem relativa. Ficam aqui, junto do componente que ajustam.
+   ========================================================== */
+
+.source-catalog-card { min-width: 0; height: 100%; border-radius: 15px; box-shadow: none; }
+
+.source-catalog-card .card-header { min-height: 74px; align-items: flex-start; gap: 12px; }
+
+.source-catalog-card .card-title { min-width: 0; align-items: flex-start; line-height: 1.35; }
+
+.source-catalog-card .card-action { flex: 0 0 auto; }
+
+.source-catalog-body { display: grid; gap: 12px; }
+
+.source-catalog-body > p { margin: 0; color: var(--text-secondary); font-size: 11.5px; line-height: 1.55; }
+
+.source-catalog-meta { display: grid; gap: 6px; padding-top: 11px; color: var(--text-tertiary); border-top: 1px solid var(--border-subtle); font-size: 10px; line-height: 1.45; }
+
+.source-catalog-meta > div { min-width: 0; overflow-wrap: anywhere; }
+
+@media (max-width: 720px) {
+  .source-catalog-card .card-header { min-height: auto; align-items: stretch; flex-direction: column; }
+
+  .source-catalog-card .card-action { align-self: flex-start; }
+
+}
