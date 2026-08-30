@@ -259,26 +259,4 @@
   animation: investigation-search-arrive 650ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.investigation-search-mark {
-  display: grid;
-  width: 76px;
-  height: 76px;
-  margin-bottom: 23px;
-  place-items: center;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(69, 129, 164, 0.24);
-  border-radius: 50% 50% 52% 48% / 56% 48% 52% 44%;
-  box-shadow: 0 20px 42px rgba(34, 83, 111, 0.12), 0 0 0 13px rgba(73, 174, 202, 0.07);
-  transform: rotate(45deg);
-}
 
-.investigation-search-mark-core {
-  display: grid;
-  width: 52px;
-  height: 52px;
-  place-items: center;
-  background: linear-gradient(145deg, #2d60ad, #0d7997);
-  border-radius: 50%;
-  transform: rotate(-45deg);
-}

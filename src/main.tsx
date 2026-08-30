@@ -42,6 +42,7 @@ import './styles/investigation-experience/progress.css';
 import './styles/investigation-experience/summary.css';
 import './styles/investigation-experience/actions.css';
 import './styles/investigation-experience/responsive.css';
+import './styles/investigation-experience/drop.css';
 
 const rootElement = document.getElementById('root');
 

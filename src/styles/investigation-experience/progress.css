@@ -11,105 +11,158 @@
   text-transform: uppercase;
 }
 
-.investigation-search-stage h1, .investigation-loading-copy h1 {
-  max-width: 760px;
-  margin-top: 8px;
-  color: var(--ix-ink);
-  font-family: 'Bahnschrift SemiCondensed', 'Arial Narrow', 'Segoe UI', sans-serif;
-  font-size: clamp(38px, 5vw, 60px);
-  font-weight: 650;
-  letter-spacing: -0.035em;
-  line-height: 0.98;
-}
 
-.investigation-search-stage > p {
-  max-width: 620px;
-  margin-top: 17px;
-  color: #587181;
-  font-size: 14px;
-  line-height: 1.6;
-}
+
+/* ==========================================================
+   Entrada da consulta
+   Só o campo: sem título, sem apoio, sem rótulo visível.
+   O anel condutor gira devagar em repouso e acelera quando há
+   CNPJ digitado, sinalizando que o envio está liberado.
+   ========================================================== */
 
 .investigation-search-form {
+  --halo-speed: 9s;
+  --halo-spread: 2px;
+  position: relative;
   display: grid;
-  width: min(690px, 100%);
-  min-height: 66px;
-  margin-top: 31px;
-  padding: 7px 7px 7px 18px;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  width: min(560px, 100%);
+  min-height: 68px;
+  padding: 8px 8px 8px 26px;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(114, 151, 171, 0.52);
-  border-radius: 21px;
-  box-shadow: 0 22px 50px rgba(32, 72, 96, 0.15), 0 3px 10px rgba(28, 72, 99, 0.08);
-  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid rgba(114, 151, 171, 0.42);
+  border-radius: 999px;
+  box-shadow: 0 22px 50px rgba(32, 72, 96, 0.14), 0 3px 10px rgba(28, 72, 99, 0.07);
+  isolation: isolate;
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+
+/* O anel: um quadrado com gradiente cônico girando, recortado a uma
+   faixa fina pela máscara. Não depende de empilhamento — o miolo é
+   removido pelo próprio recorte, não coberto pelo fundo do campo. */
+.investigation-search-halo {
+  position: absolute;
+  inset: calc(var(--halo-spread) * -1);
+  padding: var(--halo-spread);
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+}
+
+.investigation-search-halo::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150%;
+  aspect-ratio: 1;
+  background: conic-gradient(
+    from 0deg,
+    rgba(45, 96, 173, 0) 0deg,
+    rgba(68, 183, 210, 0.9) 45deg,
+    rgba(45, 96, 173, 1) 95deg,
+    rgba(68, 183, 210, 0.35) 150deg,
+    rgba(45, 96, 173, 0) 220deg,
+    rgba(45, 96, 173, 0) 360deg
+  );
+  transform-origin: center;
+  animation: investigation-halo-spin var(--halo-speed) linear infinite;
 }
 
 .investigation-search-form:focus-within {
-  border-color: #4287b7;
-  box-shadow: 0 25px 56px rgba(32, 72, 96, 0.18), 0 0 0 4px rgba(68, 183, 210, 0.16);
+  --halo-speed: 4.5s;
+  --halo-spread: 3px;
+  border-color: rgba(66, 135, 183, 0.75);
+  box-shadow: 0 25px 56px rgba(32, 72, 96, 0.18);
   transform: translateY(-2px);
 }
 
-.investigation-search-form.has-error { border-color: #c95d5d; }
+/* Campo preenchido: o anel fecha o ciclo mais rápido e ganha corpo. */
+.investigation-search-form.is-ready {
+  --halo-speed: 2.6s;
+  --halo-spread: 3px;
+}
 
-.investigation-search-icon { display: grid; color: #5d8299; place-items: center; }
+.investigation-search-form.is-ready .investigation-search-halo::before { filter: saturate(1.25); }
+
+.investigation-search-form.has-error {
+  border-color: #c95d5d;
+  animation: investigation-search-shake 420ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+.investigation-search-form.has-error .investigation-search-halo::before {
+  background: conic-gradient(from 0deg, rgba(201, 93, 93, 0) 0deg, rgba(201, 93, 93, 0.9) 90deg, rgba(201, 93, 93, 0) 200deg, rgba(201, 93, 93, 0) 360deg);
+}
 
 .investigation-search-form input {
   width: 100%;
   min-width: 0;
-  height: 48px;
+  height: 50px;
   color: #143347;
   font-family: 'Cascadia Mono', Consolas, monospace;
-  font-size: clamp(15px, 2vw, 18px);
+  font-size: clamp(16px, 2.2vw, 19px);
   font-weight: 650;
-  letter-spacing: 0.025em;
+  letter-spacing: 0.03em;
+  text-align: center;
   background: transparent;
   border: 0;
   outline: 0;
 }
 
 .investigation-search-form input::placeholder {
-  color: #849aa7;
+  color: #93a8b4;
   font-family: 'Segoe UI Variable', 'Segoe UI', sans-serif;
+  font-size: 15px;
   font-weight: 450;
   letter-spacing: 0;
 }
 
+/* O botão só aparece quando há o que enviar; Enter continua funcionando. */
 .investigation-search-form button {
-  display: inline-flex;
-  min-width: 132px;
-  height: 52px;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
+  display: inline-grid;
+  width: 50px;
+  height: 50px;
+  place-items: center;
   color: #fff;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
   background: linear-gradient(135deg, #2d60ad, #1d79a0);
-  border: 1px solid #4c86bb;
-  border-radius: 15px;
-  box-shadow: inset 0 -2px 0 rgba(167, 228, 238, 0.22), 0 8px 18px rgba(31, 94, 139, 0.22);
+  border: 0;
+  border-radius: 50%;
+  box-shadow: 0 8px 18px rgba(31, 94, 139, 0.28);
   cursor: pointer;
-  transition: transform 150ms ease, filter 150ms ease, box-shadow 150ms ease;
+  opacity: 0;
+  transform: scale(0.6);
+  pointer-events: none;
+  transition: opacity 200ms ease, transform 220ms cubic-bezier(0.16, 1, 0.3, 1), filter 150ms ease;
 }
 
-.investigation-search-form button:hover:not(:disabled) {
-  filter: brightness(1.05);
-  box-shadow: inset 0 -2px 0 rgba(167, 228, 238, 0.25), 0 11px 22px rgba(31, 94, 139, 0.28);
-  transform: translateY(-1px);
+.investigation-search-form.is-ready button {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
 }
 
-.investigation-search-form button:disabled { cursor: not-allowed; opacity: 0.48; }
+.investigation-search-form button:hover { filter: brightness(1.08); }
+.investigation-search-form button:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
+.investigation-search-form button:disabled { cursor: not-allowed; }
 
-.investigation-search-help {
-  max-width: 620px !important;
-  margin-top: 16px !important;
-  color: #78909e !important;
-  font-size: 10.5px !important;
+@keyframes investigation-halo-spin {
+  from { transform: translate(-50%, -50%) rotate(0turn); }
+  to   { transform: translate(-50%, -50%) rotate(1turn); }
 }
+
+@keyframes investigation-search-shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(3px); }
+  30%, 50%, 70% { transform: translateX(-5px); }
+  40%, 60% { transform: translateX(5px); }
+}
+
 
 .investigation-search-error {
   display: inline-flex;
@@ -168,6 +221,9 @@
 
 .investigation-pulse-ring.ring-four { animation-delay: 2.16s; }
 
+/* A casca é a gota: canto superior esquerdo em ponta, girada 45°.
+   O núcleo contragira para o ícone ficar em pé, e é ele quem respira —
+   assim a casca fica livre para a morfose de entrada. */
 .investigation-pulse-drop {
   display: grid;
   width: 62px;
@@ -176,8 +232,15 @@
   color: #eafcff;
   background: linear-gradient(145deg, #2d60ad, #1692af);
   border: 1px solid #6ec8dd;
+  border-radius: 6% 50% 50% 50%;
   box-shadow: 0 0 36px rgba(75, 189, 215, 0.35), inset 0 -4px 8px rgba(3, 37, 58, 0.32);
-  animation: investigation-drop-breathe 2.3s ease-in-out infinite;
+}
+
+.investigation-pulse-drop-core {
+  display: grid;
+  place-items: center;
+  transform: rotate(-45deg);
+  animation: investigation-drop-core-breathe 2.3s ease-in-out infinite;
 }
 
 .investigation-loading-copy {
@@ -192,8 +255,13 @@
 
 .investigation-loading-copy h1 {
   max-width: 620px;
+  margin-top: 8px;
   color: #fff;
+  font-family: 'Bahnschrift SemiCondensed', 'Arial Narrow', 'Segoe UI', sans-serif;
   font-size: clamp(31px, 4vw, 46px);
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
 }
 
 .investigation-loading-target {
