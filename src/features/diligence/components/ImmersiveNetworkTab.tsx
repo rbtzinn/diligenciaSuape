@@ -1,6 +1,6 @@
 // ==========================================================
 // DILIGÊNCIA 360 — Aba da Rede Imersiva Relacional EGOS
-// 100% alinhada a network-immersive.css
+// 100% alinhada a styles/network-immersive/
 // ==========================================================
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -44,7 +44,9 @@ import { InvestigationOverviewPanel } from './network/InvestigationOverviewPanel
 import { Icons } from '../../../components/ui/Icons';
 import { ReportService } from '../../report/services/report.service';
 import { ensureEgosSnapshot } from '../utils/fallbackEgos';
-import '../../../styles/network-immersive.css';
+import '../../../styles/network-immersive/layout.css';
+import '../../../styles/network-immersive/canvas.css';
+import '../../../styles/network-immersive/connections.css';
 
 const MOBILE_NETWORK_BREAKPOINT = '(max-width: 760px)';
 const MOBILE_NEIGHBOR_PAGE_SIZE = 8;

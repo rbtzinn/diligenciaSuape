@@ -7,7 +7,6 @@
    Regras vindas de responsive-overrides.css, mantidas na mesma
    ordem relativa. Ficam aqui, junto do componente que ajustam.
    ========================================================== */
-
 .history-tabs {
   display: flex;
   gap: 6px;
@@ -18,7 +17,6 @@
   border-radius: 13px;
   scrollbar-width: thin;
 }
-
 .history-tabs button {
   min-width: max-content;
   display: inline-flex;
@@ -35,17 +33,11 @@
   font-weight: 650;
   cursor: pointer;
 }
-
 .history-tabs button.active { color: #173f67; background: #fff; box-shadow: 0 2px 7px rgba(23, 63, 103, 0.1); }
-
 .history-tabs button strong { min-width: 21px; padding: 2px 5px; color: inherit; background: rgba(45, 96, 173, 0.1); border-radius: 999px; font-size: 9px; }
-
 .history-filters { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(190px, auto); gap: 10px; }
-
 .history-filters .input-control { width: 100% !important; min-width: 0 !important; }
-
 .history-list { display: grid; gap: 10px; }
-
 .history-card {
   display: flex;
   align-items: center;
@@ -59,32 +51,16 @@
   cursor: pointer;
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
-
 .history-card:hover { border-color: #a9bfd6; box-shadow: 0 10px 24px rgba(29, 59, 91, 0.08); transform: translateY(-1px); }
-
 .history-card:focus-visible { outline: 3px solid rgba(45, 96, 173, 0.25); outline-offset: 2px; }
-
 .history-card-main { min-width: 0; display: flex; align-items: center; gap: 14px; }
-
 .history-card-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
-
-@media (max-width: 720px) {
-  .history-filters { grid-template-columns: 1fr; }
-
-  .history-card { align-items: stretch; flex-direction: column; padding: 13px; }
-
-  .history-card-main { align-items: flex-start; }
-
-  .history-card-main > div:last-child > div span:nth-child(2),
-  .history-card-main > div:last-child > div span:nth-child(4) { display: none; }
-
-  .history-card-actions { flex-wrap: wrap; padding-top: 10px; border-top: 1px solid var(--border-subtle); }
-
-  .history-card-actions .btn { margin-left: auto; }
-
+@media (max-width: 720px) {.history-filters { grid-template-columns: 1fr; }
+.history-card { align-items: stretch; flex-direction: column; padding: 13px; }
+.history-card-main { align-items: flex-start; }
+.history-card-main > div:last-child > div span:nth-child(2), .history-card-main > div:last-child > div span:nth-child(4) { display: none; }
+.history-card-actions { flex-wrap: wrap; padding-top: 10px; border-top: 1px solid var(--border-subtle); }
+.history-card-actions .btn { margin-left: auto; }
 }
-
-@media (max-width: 420px) {
-  .history-tabs button { padding-inline: 10px; }
-
+@media (max-width: 420px) {.history-tabs button { padding-inline: 10px; }
 }

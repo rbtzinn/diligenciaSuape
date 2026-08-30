@@ -1,6 +1,6 @@
 // ==========================================================
 // DILIGÊNCIA 360 — Barra de Ferramentas da Rede Imersiva
-// 100% alinhada aos estilos de network-immersive.css
+// 100% alinhada aos estilos de styles/network-immersive/
 // ==========================================================
 
 import React, { useState } from 'react';

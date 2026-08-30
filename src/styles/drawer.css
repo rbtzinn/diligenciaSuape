@@ -1,7 +1,6 @@
 /* ==========================================================
    DILIGÊNCIA 360 — Drawer & Modal Component Styles
    ========================================================== */
-
 .drawer-backdrop {
   position: fixed;
   z-index: 3500;
@@ -14,13 +13,11 @@
   visibility: hidden;
   transition: opacity 220ms ease, visibility 220ms ease;
 }
-
 .drawer-backdrop.active {
   opacity: 1;
   pointer-events: auto;
   visibility: visible;
 }
-
 .drawer-panel {
   position: fixed;
   z-index: 3501;
@@ -43,13 +40,11 @@
   transform: translate3d(calc(100% + 24px), 0, 0);
   transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease;
 }
-
 .drawer-panel.active {
   opacity: 1;
   pointer-events: auto;
   transform: translate3d(0, 0, 0);
 }
-
 .drawer-header {
   display: flex;
   align-items: center;
@@ -64,9 +59,7 @@
   border-bottom: 4px solid var(--brand-gold);
   position: relative;
 }
-
 .drawer-header > div { min-width: 0; }
-
 .drawer-eyebrow {
   color: #89b3e3;
   font-family: 'Bahnschrift SemiCondensed', 'Arial Narrow', 'Segoe UI', sans-serif;
@@ -75,7 +68,6 @@
   letter-spacing: 0.11em;
   text-transform: uppercase;
 }
-
 .drawer-title {
   margin-top: 3px;
   overflow-wrap: anywhere;
@@ -86,7 +78,6 @@
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
-
 .drawer-subtitle {
   margin-top: 7px;
   overflow-wrap: anywhere;
@@ -94,7 +85,6 @@
   font-size: 11px;
   line-height: 1.45;
 }
-
 .drawer-close-button {
   display: grid;
   width: 40px;
@@ -108,9 +98,7 @@
   cursor: pointer;
   transition: color 150ms ease, background-color 150ms ease, transform 150ms ease;
 }
-
 .drawer-close-button:hover { color: #fff; background: #234b78; transform: translateY(-1px); }
-
 .drawer-body {
   flex: 1;
   min-height: 0;
@@ -122,11 +110,9 @@
   background: linear-gradient(180deg, #f7fafc 0, #fff 150px);
   scrollbar-gutter: stable;
 }
-
 .drawer-body::-webkit-scrollbar { width: 7px; }
 .drawer-body::-webkit-scrollbar-thumb { background: #9eb1c5; border: 2px solid transparent; border-radius: 999px; background-clip: padding-box; }
 .drawer-body::-webkit-scrollbar-thumb:hover { background: #7189a2; border: 2px solid transparent; background-clip: padding-box; }
-
 .drawer-panel:focus { outline: 0; }
 .drawer-panel button:focus-visible,
 .drawer-panel a:focus-visible,
@@ -137,7 +123,6 @@
   outline: 3px solid var(--brand-gold);
   outline-offset: 3px;
 }
-
 .drawer-footer {
   display: flex;
   align-items: center;
@@ -147,7 +132,6 @@
   background: #f8fafc;
   border-top: 1px solid #d9e3ee;
 }
-
 .drawer-footer .btn {
   min-height: 38px;
   padding-inline: 15px;
@@ -155,9 +139,7 @@
   font-weight: 700;
   border-radius: 10px;
 }
-
-@media (max-width: 640px) {
-  .drawer-panel {
+@media (max-width: 640px) {.drawer-panel {
     top: 0;
     right: 0;
     bottom: 0;
@@ -166,17 +148,14 @@
     border: 0;
     border-radius: 0;
   }
-
-  .drawer-header { min-height: 96px; padding: 17px 16px; }
-  .drawer-title { font-size: 22px; }
-  .drawer-body { padding: 18px 16px; }
-  .drawer-footer { padding: 12px 16px; }
+.drawer-header { min-height: 96px; padding: 17px 16px; }
+.drawer-title { font-size: 22px; }
+.drawer-body { padding: 18px 16px; }
+.drawer-footer { padding: 12px 16px; }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .drawer-backdrop,
-  .drawer-panel,
-  .drawer-close-button {
+@media (prefers-reduced-motion: reduce) {.drawer-backdrop,
+.drawer-panel,
+.drawer-close-button {
     transition: none;
   }
 }

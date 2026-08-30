@@ -1,0 +1,157 @@
+/* ==========================================================
+   DILIGÊNCIA 360 — network-immersive · connections
+   ========================================================== */
+
+.network-direct-connections {
+  margin-top: 17px;
+  overflow: hidden;
+  background: linear-gradient(145deg, rgba(13, 49, 78, 0.96), rgba(6, 29, 51, 0.98));
+  border: 1px solid #37617e;
+  border-radius: 13px;
+  box-shadow: inset 3px 0 0 rgba(121, 200, 255, 0.82), 0 12px 28px rgba(0, 10, 22, 0.18);
+}
+
+.network-direct-connections > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 13px 10px 16px;
+  border-bottom: 1px solid #294e6c;
+}
+
+.network-direct-connections > header > div { display: grid; gap: 2px; }
+
+.network-direct-connections > header span { color: #6fa8d4; font-size: 7.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+
+.network-direct-connections > header h4 { color: #f4f8fc; font-size: 12px; line-height: 1.2; }
+
+.network-direct-connections > header > strong {
+  display: grid;
+  min-width: 31px;
+  height: 31px;
+  place-items: center;
+  color: #f2f8ff;
+  font-family: 'Cascadia Mono', Consolas, monospace;
+  font-size: 11px;
+  background: #2d60ad;
+  border-radius: 9px;
+}
+
+.network-connection-list {
+  display: grid;
+  max-height: 310px;
+  padding: 4px 8px 7px 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #4e7898 transparent;
+  scrollbar-width: thin;
+}
+
+.network-connection-list button {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 12px;
+  color: #dbe9f5;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgba(53, 88, 116, 0.68);
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.network-connection-list button:last-child { border-bottom: 0; }
+
+.network-connection-list button:hover { background: rgba(31, 81, 118, 0.34); }
+
+.network-connection-list button > i { width: 8px; height: 8px; border: 2px solid; border-radius: 50%; box-shadow: 0 0 0 4px rgba(69, 119, 157, 0.12); }
+
+.network-connection-list button > i.confirmed { background: #63d7af; border-color: #63d7af; }
+
+.network-connection-list button > i.review { background: var(--network-gold); border-color: var(--network-gold); }
+
+.network-connection-list button > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
+.network-connection-list button small { color: #72b8f1; font-size: 8px; font-weight: 750; letter-spacing: 0.03em; text-transform: uppercase; margin-bottom: 2px; }
+
+.network-connection-list button strong { color: #ffffff; font-size: 11px; line-height: 1.35; word-break: break-word; font-weight: 600; }
+
+.network-connection-list button em { color: #7f9ab4; font-size: 7.5px; font-style: normal; line-height: 1.35; }
+
+.network-connection-list button > svg { color: #79c8ff; flex-shrink: 0; transition: transform 140ms ease; }
+
+.network-connection-list button:hover > svg { transform: translateX(3px); }
+
+.network-direct-connections > p {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  padding: 9px 13px 10px 15px;
+  color: #7f99b2;
+  font-size: 7.8px;
+  line-height: 1.4;
+  background: rgba(4, 23, 40, 0.52);
+  border-top: 1px solid #294a65;
+}
+
+.network-investigation button:focus-visible,
+.network-investigation input:focus-visible,
+.network-investigation select:focus-visible,
+.network-investigation summary:focus-visible,
+.network-investigation a:focus-visible {
+  outline: 3px solid #79c8ff;
+  outline-offset: 3px;
+}
+
+@media (max-width: 1180px) {.network-investigation-header { grid-template-columns: auto minmax(0, 1fr) auto; gap: 13px; }
+.network-toolbar { align-items: center; overflow-x: auto; }
+.network-select-control .ui-select-field__label { display: none; }
+.network-search-control { min-width: 210px; }
+.network-canvas-grid.panel-open { grid-template-columns: minmax(0, 1fr) 330px; }
+}
+
+@media (max-width: 900px) {.network-investigation-header { grid-template-columns: auto minmax(0, 1fr); }
+.network-facts { grid-column: 1 / -1; justify-content: stretch; }
+.network-facts > span { justify-content: center; }
+.network-facts small { text-align: left; }
+.network-title-block { padding-left: 0; border-left: 0; }
+.network-toolbar { flex-wrap: wrap; overflow: visible; }
+.network-search-control { flex: 1 1 260px; }
+.network-tool-button { margin-left: 0; }
+.network-canvas-grid { flex: 1 1 auto; height: auto; max-height: none; min-height: 560px; }
+.network-canvas-grid.panel-open { grid-template-columns: 1fr; grid-template-rows: minmax(520px, 1fr) auto; }
+.network-inspector { height: auto; max-height: 48dvh; border-top: 1px solid #31516d; border-left: 0; }
+}
+
+@media (max-width: 640px) {.network-investigation { min-height: calc(100dvh - 110px); border-radius: 14px; }
+.network-investigation-header { grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 16px; }
+.network-workspace-mark { width: 40px; height: 40px; }
+.network-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); justify-content: stretch; }
+.network-facts > span { justify-content: center; padding-inline: 5px; }
+.network-facts small { text-align: left; }
+.network-toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 9px; }
+.network-search-control { grid-column: 1 / -1; width: 100%; min-width: 0; }
+.network-layout-switch { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-column: 1 / -1; width: 100%; }
+.network-layout-switch button { width: 100%; }
+.network-select-control { width: 100%; min-width: 0; }
+.network-tool-button { width: 100%; }
+.network-icon-actions { justify-content: end; }
+.network-canvas-grid { min-height: 560px; }
+.network-canvas-grid.panel-open { grid-template-rows: 520px auto; }
+.network-legend { right: 10px; bottom: 10px; left: 10px; gap: 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {.network-loading svg { animation: none; }
+.network-inspector { animation: none; }
+.network-canvas-grid,
+.network-layout-switch button,
+.network-tool-button,
+.network-icon-actions button,
+.network-trace-button { transition: none; }
+}

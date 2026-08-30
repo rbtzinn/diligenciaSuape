@@ -7,7 +7,6 @@
    Regras vindas de responsive-overrides.css, mantidas na mesma
    ordem relativa. Ficam aqui, junto do componente que ajustam.
    ========================================================== */
-
 .section-page-heading {
   display: flex;
   align-items: flex-end;
@@ -16,19 +15,14 @@
   padding: 8px 0 14px;
   border-bottom: 1px solid #dce5ee;
 }
-
 .section-page-heading > div { min-width: 0; }
-
 .section-page-heading h1 { margin: 0; color: var(--text-primary); font-size: clamp(1.45rem, 3vw, 2rem); line-height: 1.15; }
-
 .section-page-heading p { max-width: 660px; margin: 7px 0 0; color: var(--text-secondary); font-size: 12.5px; line-height: 1.5; }
-
 .sources-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
-
 .sources-summary article {
   min-width: 0;
   display: flex;
@@ -40,35 +34,19 @@
   border: 1px solid #d6e2ef;
   border-radius: 14px;
 }
-
 .sources-summary article.is-success { color: #147158; background: #f1faf7; border-color: #cee9df; }
-
 .sources-summary article.is-attention { color: #9a620c; background: #fff9ea; border-color: #eedaa3; }
-
 .sources-summary article > div { min-width: 0; display: grid; }
-
 .sources-summary strong { color: currentColor; font-family: var(--font-mono); font-size: 20px; line-height: 1; }
-
 .sources-summary span { margin-top: 4px; color: #607286; font-size: 10px; line-height: 1.3; }
-
 .sources-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
-
-@media (max-width: 1180px) {
-  .sources-list { grid-template-columns: 1fr; }
-
+@media (max-width: 1180px) {.sources-list { grid-template-columns: 1fr; }
 }
-
-@media (max-width: 720px) {
-  .section-page-heading { align-items: stretch; flex-direction: column; padding-top: 2px; }
-
-  .section-page-heading .btn { width: 100%; }
-
-  .sources-summary { grid-template-columns: 1fr; }
-
-  .sources-summary article { padding: 11px 13px; }
-
+@media (max-width: 720px) {.section-page-heading { align-items: stretch; flex-direction: column; padding-top: 2px; }
+.section-page-heading .btn { width: 100%; }
+.sources-summary { grid-template-columns: 1fr; }
+.sources-summary article { padding: 11px 13px; }
 }
-
 .section-page-eyebrow {
   display: block;
   margin-bottom: 6px;

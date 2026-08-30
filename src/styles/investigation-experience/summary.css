@@ -1,0 +1,340 @@
+/* ==========================================================
+   DILIGÊNCIA 360 — investigation-experience · summary
+   ========================================================== */
+
+.is-done .investigation-loading-row-icon { color: #52c59a; border-color: #377d66; }
+
+.is-error .investigation-loading-row-icon { color: #e4bd76; border-color: #76613c; }
+
+.investigation-tiny-spinner {
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid #376180;
+  border-top-color: #7ed4e3;
+  border-radius: 50%;
+  animation: investigation-spin 700ms linear infinite;
+}
+
+.investigation-tiny-dot { width: 4px; height: 4px; background: #58758b; border-radius: 50%; }
+
+/* ---------- Mapa único ---------- */
+.investigation-dossier {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: #041526;
+}
+
+.investigation-experience .network-investigation {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  overflow: hidden;
+  background: #041526;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.investigation-experience .network-investigation-header {
+  min-height: 76px;
+  padding: 11px 18px;
+  background: rgba(4, 22, 38, 0.96);
+}
+
+.investigation-experience .network-workspace-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+}
+
+.investigation-experience .network-title-block h2 { font-size: clamp(21px, 2vw, 27px); }
+
+.investigation-experience .network-title-block p { margin-top: 4px; }
+
+.investigation-experience .network-toolbar {
+  display: block;
+  min-height: 58px;
+  height: 58px;
+  padding: 7px 12px;
+  background: rgba(4, 24, 42, 0.98);
+  position: relative;
+  overflow: visible;
+}
+
+.network-toolbar-main {
+  display: flex;
+  height: 44px;
+  align-items: center;
+  gap: 8px;
+}
+
+.investigation-experience .network-search-control {
+  width: min(440px, 48vw);
+  min-width: 260px;
+  height: 42px;
+  flex: 0 1 440px;
+}
+
+.network-search-clear {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  place-items: center;
+  color: #8ca6bb;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.network-filter-trigger {
+  display: inline-flex;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 12px;
+  color: #9bb0c3;
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 650;
+  background: #0b2541;
+  border: 1px solid #2a4a68;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.network-filter-trigger.active { color: #fff; border-color: #4c78a1; }
+
+.network-filter-trigger small { display: grid; min-width: 18px; height: 18px; padding: 0 4px; place-items: center; color: #06192d; font-size: 8px; background: #79c8ff; border-radius: 999px; }
+
+.network-toolbar-main .network-icon-actions { margin-left: auto; }
+
+.network-filter-panel {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% - 1px);
+  left: 12px;
+  display: flex;
+  min-width: min(760px, calc(100vw - 24px));
+  padding: 13px;
+  align-items: flex-end;
+  gap: 10px;
+  background: rgba(7, 29, 50, 0.98);
+  border: 1px solid #294d6b;
+  border-radius: 0 0 14px 14px;
+  box-shadow: 0 22px 48px rgba(0, 10, 21, 0.42);
+  animation: investigation-filter-open 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.network-filter-panel .network-layout-switch {
+  display: grid;
+  width: auto;
+  height: auto;
+  grid-template-columns: repeat(2, minmax(88px, auto));
+  gap: 5px;
+}
+
+.network-filter-panel .network-layout-switch > span {
+  grid-column: 1 / -1;
+  color: #7190a8;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.network-filter-panel .network-layout-switch button {
+  width: auto;
+  min-width: 92px;
+  height: 42px;
+}
+
+.network-filter-panel .network-select-control { width: 175px; min-width: 150px; }
+
+.network-filter-panel .network-tool-button { min-width: 190px; height: 42px; margin-left: 0; }
+
+.network-filter-panel .network-tool-button small { color: #7894a9; }
+
+.mobile-network-heading,
+.mobile-network-focus-bar,
+.mobile-network-more,
+.mobile-network-hint,
+.mobile-network-sheet-handle { display: none; }
+
+.network-panel-slot { display: contents; }
+
+.mobile-network-sheet-content { display: contents; }
+
+.investigation-experience .network-canvas-grid {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+}
+
+.investigation-experience .network-canvas-grid.panel-open {
+  grid-template-columns: minmax(0, 1fr) clamp(350px, 29vw, 420px);
+}
+
+.network-open-overview {
+  position: absolute;
+  z-index: 8;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  min-height: 38px;
+  padding: 0 12px;
+  align-items: center;
+  gap: 7px;
+  color: #d7ebf7;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(9, 39, 65, 0.91);
+  border: 1px solid #376181;
+  border-radius: 10px;
+  backdrop-filter: blur(12px);
+  cursor: pointer;
+}
+
+/* ---------- Painel de resumo ---------- */
+.investigation-overview-panel { display: flex; min-width: 0; overflow: hidden; }
+
+.investigation-overview-scroll {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  padding: 18px 17px 26px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.investigation-overview-head {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(63, 101, 132, 0.52);
+}
+
+.investigation-overview-head > div { min-width: 0; }
+
+.investigation-overview-head h3 {
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  color: #fff;
+  font-family: 'Bahnschrift SemiCondensed', 'Arial Narrow', sans-serif;
+  font-size: 20px;
+  font-weight: 680;
+  line-height: 1.08;
+}
+
+.investigation-overview-head p {
+  margin-top: 6px;
+  color: #839db2;
+  font-family: 'Cascadia Mono', Consolas, monospace;
+  font-size: 8.5px;
+}
+
+.investigation-overview-head button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  padding: 0;
+  place-items: center;
+  color: #9fb5ca;
+  background: #0d2843;
+  border: 1px solid #2a4e70;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.investigation-risk-card {
+  display: grid;
+  padding: 13px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  background: #0b2947;
+  border: 1px solid #315675;
+  border-left-width: 3px;
+  border-radius: 13px;
+}
+
+.investigation-risk-card.tone-low { border-left-color: #42c596; }
+
+.investigation-risk-card.tone-medium { border-left-color: #e1af4e; }
+
+.investigation-risk-card.tone-high, .investigation-risk-card.tone-critical { border-left-color: #e66c6c; }
+
+.investigation-risk-score {
+  display: flex;
+  width: 54px;
+  height: 54px;
+  align-items: baseline;
+  justify-content: center;
+  place-content: center;
+  color: #fff;
+  background: rgba(2, 19, 34, 0.5);
+  border: 1px solid #3d6483;
+  border-radius: 50%;
+}
+
+.investigation-risk-score strong { font-family: 'Cascadia Mono', Consolas, monospace; font-size: 19px; }
+
+.investigation-risk-score span { color: #708da4; font-size: 7px; }
+
+.investigation-risk-card > div:nth-child(2) { min-width: 0; }
+
+.investigation-risk-card > div:nth-child(2) > span { display: block; color: #7195ad; font-size: 7.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.investigation-risk-card > div:nth-child(2) > strong { display: block; margin-top: 2px; color: #fff; font-size: 11px; }
+
+.investigation-risk-card > div:nth-child(2) > p { margin-top: 4px; color: #9eb4c5; font-size: 8.5px; line-height: 1.45; }
+
+.investigation-risk-card > button {
+  padding: 6px 8px;
+  color: #9bd6ff;
+  font: inherit;
+  font-size: 8px;
+  font-weight: 700;
+  background: transparent;
+  border: 1px solid #3d6483;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.investigation-risk-card > button:disabled { cursor: not-allowed; opacity: 0.45; }
+
+.investigation-overview-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.investigation-overview-metrics span {
+  display: flex;
+  min-width: 0;
+  padding: 8px 5px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #7893a8;
+  font-size: 7.5px;
+  text-align: center;
+  background: #08213a;
+  border: 1px solid #254761;
+  border-radius: 8px;
+}
+
+.investigation-overview-metrics strong { color: #fff; font-family: 'Cascadia Mono', Consolas, monospace; font-size: 10px; }
