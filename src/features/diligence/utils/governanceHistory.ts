@@ -101,7 +101,11 @@ function buildCvmTimeline(history: GovernanceHistoryResult, referenceDate: Date)
   const years = history.years.length > 0
     ? [...history.years].sort((left, right) => left - right)
     : Array.from({ length: 5 }, (_, index) => currentYear - 4 + index);
-  const coverage = new Map(history.coverage.map((item) => [item.year, item.status]));
+  // O dossiê vai para a planilha e volta: registros antigos podem não ter
+  // `coverage`, e o tipo declara o campo como obrigatório, então o
+  // compilador não protege essa leitura.
+  const coverageList = Array.isArray(history.coverage) ? history.coverage : [];
+  const coverage = new Map(coverageList.map((item) => [item.year, item.status]));
 
   const entries = history.members.map((member): GovernanceTimelineEntry => {
     const categories: GovernanceCategory[] = [];
@@ -163,7 +167,7 @@ function buildCvmTimeline(history: GovernanceHistoryResult, referenceDate: Date)
     currentYear: years[years.length - 1] || currentYear,
     historical: true,
     coverageStatus: history.coverageStatus,
-    consultedYears: history.consultedYears || history.coverage.filter((item) => item.status === 'consulted').length,
+    consultedYears: history.consultedYears || coverageList.filter((item) => item.status === 'consulted').length,
     sourceName: history.provider,
     sourceUrl: history.sourceUrl,
     consultedAt: history.consultadoEm,
@@ -176,7 +180,7 @@ export function buildGovernanceTimeline(
   history?: GovernanceHistoryResult,
   referenceDate = new Date(),
 ): GovernanceTimeline {
-  if (history?.applicable && history.ok && history.members.length > 0) {
+  if (history?.applicable && history.ok && (history.members?.length || 0) > 0) {
     return buildCvmTimeline(history, referenceDate);
   }
 
