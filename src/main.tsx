@@ -7,7 +7,15 @@ import ReactDOM from 'react-dom/client';
 import { AuthProvider } from './features/auth/context/AuthContext';
 import { App } from './app/App';
 
+// Tokens primeiro: todo o resto os consome.
+import './styles/tokens.css';
 import './styles/index.css';
+
+// Primitivos de UI, na mesma posição de cascata que ocupavam dentro do index.css.
+import './styles/components/button.css';
+import './styles/components/badge.css';
+import './styles/components/card.css';
+
 import './styles/animations.css';
 import './styles/sidebar.css';
 import './styles/dashboard.css';

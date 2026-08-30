@@ -1,0 +1,193 @@
+/* ==========================================================
+   DILIGÊNCIA 360 — Botão
+   Base + três tamanhos + cinco variantes. Tamanho e cor vêm
+   de tokens.css; este arquivo só descreve a forma.
+   ========================================================== */
+
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--control-gap-md);
+  font-family: inherit;
+  font-weight: var(--font-semibold);
+  letter-spacing: -0.01em;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  outline: none;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.btn .btn-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.btn .btn-icon,
+.btn .btn-right-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btn svg,
+.btn .btn-icon svg,
+.btn .btn-right-icon svg {
+  flex-shrink: 0;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--brand-blue);
+  outline-offset: 2px;
+}
+
+/* ---------- Tamanhos ---------- */
+
+.btn-sm {
+  min-height: var(--control-height-sm);
+  padding: var(--control-pad-y-sm) var(--control-pad-x-sm);
+  font-size: var(--control-font-sm);
+  border-radius: var(--control-radius-sm);
+  gap: var(--control-gap-sm);
+}
+
+.btn-md {
+  min-height: var(--control-height-md);
+  padding: var(--control-pad-y-md) var(--control-pad-x-md);
+  font-size: var(--control-font-md);
+  border-radius: var(--control-radius-md);
+  gap: var(--control-gap-md);
+}
+
+.btn-lg {
+  min-height: var(--control-height-lg);
+  padding: var(--control-pad-y-lg) var(--control-pad-x-lg);
+  font-size: var(--control-font-lg);
+  border-radius: var(--control-radius-lg);
+  gap: var(--control-gap-lg);
+}
+
+/* ---------- Variantes ---------- */
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--btn-primary-from) 0%, var(--btn-primary-to) 100%);
+  color: var(--btn-primary-fg) !important;
+  border: 1px solid var(--btn-hairline);
+  box-shadow: 0 2px 6px var(--btn-primary-shadow);
+}
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--btn-primary-hover-from) 0%, var(--btn-primary-hover-to) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--btn-primary-shadow-hover);
+  color: var(--btn-primary-fg) !important;
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px var(--btn-primary-shadow-active);
+}
+.btn-primary .btn-label,
+.btn-primary .btn-icon,
+.btn-primary span,
+.btn-primary svg {
+  color: var(--btn-primary-fg) !important;
+  fill: currentColor;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.btn-secondary {
+  background-color: var(--bg-surface);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px var(--btn-neutral-shadow);
+}
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--bg-surface-hover);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px var(--btn-neutral-shadow-hover);
+}
+.btn-secondary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px var(--btn-neutral-shadow);
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--text-secondary);
+  border-color: transparent;
+}
+.btn-ghost:hover:not(:disabled) {
+  background-color: var(--bg-surface-hover);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+.btn-ghost:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, var(--btn-danger-from) 0%, var(--btn-danger-to) 100%);
+  color: var(--btn-danger-fg);
+  border-color: var(--btn-hairline);
+  box-shadow: 0 2px 6px var(--btn-danger-shadow);
+}
+.btn-danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--btn-danger-hover-from) 0%, var(--btn-danger-hover-to) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--btn-danger-shadow-hover);
+  color: var(--btn-danger-fg);
+}
+
+.btn-outline {
+  background-color: transparent;
+  border-color: var(--brand-blue-border);
+  color: var(--brand-blue);
+}
+.btn-outline:hover:not(:disabled) {
+  background-color: var(--brand-blue-subtle);
+  border-color: var(--brand-blue);
+  color: var(--brand-blue-hover);
+  transform: translateY(-1px);
+}
+
+.btn:disabled {
+  opacity: var(--btn-disabled-opacity);
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ---------- Indicador de carregamento ---------- */
+
+.btn-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: var(--radius-full);
+  display: inline-block;
+  animation: spin 0.75s linear infinite;
+}
+
