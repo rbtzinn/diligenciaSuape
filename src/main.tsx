@@ -10,7 +10,6 @@ import { App } from './app/App';
 import './styles/index.css';
 import './styles/animations.css';
 import './styles/sidebar.css';
-import './styles/chat.css';
 import './styles/dashboard.css';
 import './styles/dossier-v3.css';
 import './styles/kpi.css';
