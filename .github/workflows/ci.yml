@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Uma execução por branch: um push novo cancela a anterior.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificacao:
+    name: Verificação
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+
+      - name: Instalar dependências
+        run: |
+          npm ci --no-audit --no-fund
+          npm --prefix server ci --no-audit --no-fund
+
+      # Cada passo roda mesmo se o anterior falhar, para o PR mostrar
+      # todos os problemas de uma vez em vez de um por execução.
+      - name: Lint
+        if: '!cancelled()'
+        run: npm run lint
+
+      - name: Typecheck
+        if: '!cancelled()'
+        run: npm run typecheck
+
+      - name: Testes do backend
+        if: '!cancelled()'
+        run: npm test
+
+      - name: Testes do frontend
+        if: '!cancelled()'
+        run: npm run test:web
+
+      - name: Build
+        if: '!cancelled()'
+        run: npm run build
