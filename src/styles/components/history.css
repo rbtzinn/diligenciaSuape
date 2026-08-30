@@ -37,8 +37,12 @@
 .history-tabs button strong { min-width: 21px; padding: 2px 5px; color: inherit; background: rgba(45, 96, 173, 0.1); border-radius: 999px; font-size: 9px; }
 .history-filters { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(190px, auto); gap: 10px; }
 .history-filters .input-control { width: 100% !important; min-width: 0 !important; }
-.history-list { display: grid; gap: 10px; }
+/* `minmax(0, 1fr)` em vez do `auto` implícito: item de grid tem
+   `min-width: auto` por padrão e, com ele, um card de título longo
+   estica a trilha para além da tela em vez de truncar o texto. */
+.history-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .history-card {
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -57,7 +61,7 @@
 .history-card-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
 @media (max-width: 720px) {.history-filters { grid-template-columns: 1fr; }
 .history-card { align-items: stretch; flex-direction: column; padding: 13px; }
-.history-card-main { align-items: flex-start; }
+.history-card-main { width: 100%; align-items: flex-start; }
 .history-card-main > div:last-child > div span:nth-child(2), .history-card-main > div:last-child > div span:nth-child(4) { display: none; }
 .history-card-actions { flex-wrap: wrap; padding-top: 10px; border-top: 1px solid var(--border-subtle); }
 .history-card-actions .btn { margin-left: auto; }
