@@ -197,6 +197,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         onClose={() => setActiveDrawer(null)}
         ceis={diligence.ceis}
         cnep={diligence.cnep}
+        personSanctions={diligence.personSanctions}
       />
       <JudicialProcessesDrawer
         isOpen={activeDrawer === 'processes'}

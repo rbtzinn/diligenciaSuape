@@ -1,6 +1,6 @@
 // ==========================================================
 // DILIGÊNCIA 360 — Legenda da Rede Imersiva
-// 100% alinhada a network-immersive.css
+// 100% alinhada a styles/network-immersive/
 // ==========================================================
 
 import React from 'react';

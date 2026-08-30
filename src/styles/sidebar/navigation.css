@@ -1,0 +1,277 @@
+/* ==========================================================
+   DILIGÊNCIA 360 — sidebar · navigation
+   ========================================================== */
+
+/* ==========================================================
+   DILIGÊNCIA 360 — Sidebar Institucional SUAPE (Design Moderno & Refinado)
+   ========================================================== */
+.sidebar {
+  width: var(--sidebar-w, 260px);
+  height: 100vh;
+  background-color: #FFFFFF;
+  border-right: 1px solid #D7E1EE;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  z-index: 100;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 1px 0 3px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+}
+
+.sidebar button {
+  touch-action: manipulation;
+}
+
+.sidebar button:focus-visible {
+  outline: 3px solid #2D60AD;
+  outline-offset: 2px;
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  padding: 0;
+  background: rgba(7, 22, 41, 0.48);
+  border: 0;
+  cursor: default;
+}
+
+.sidebar-backdrop:focus-visible {
+  outline: 3px solid #2D60AD;
+  outline-offset: -6px;
+}
+
+/* ==========================================================
+   SIDEBAR RECOLHIDA (MODO COMPACTO)
+   ========================================================== */
+.sidebar.collapsed {
+  width: 68px;
+}
+
+.sidebar.collapsed .sidebar-brand-info,
+.sidebar.collapsed .sidebar-new-text,
+.sidebar.collapsed .sidebar-label,
+.sidebar.collapsed .sidebar-recent-name,
+.sidebar.collapsed .sidebar-nav-item span,
+.sidebar.collapsed .sidebar-badge,
+.sidebar.collapsed .sidebar-user-name,
+.sidebar.collapsed .sidebar-user-role,
+.sidebar.collapsed .sidebar-logout-btn,
+.sidebar.collapsed .sidebar-brand-logos {
+  display: none !important;
+}
+
+.sidebar.collapsed .sidebar-header {
+  padding: 1.1rem 0.5rem 0.85rem;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.sidebar.collapsed .sidebar-logo {
+  width: 44px;
+  height: 44px;
+}
+
+.sidebar.collapsed .sidebar-top-action {
+  padding: 0.25rem 0.5rem 0.65rem;
+}
+
+.sidebar.collapsed .sidebar-new-btn {
+  padding: 0.5rem;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.sidebar.collapsed .sidebar-new-icon-box {
+  width: 22px;
+  height: 22px;
+}
+
+.sidebar.collapsed .sidebar-nav {
+  padding: 0.4rem 0.5rem;
+  align-items: center;
+}
+
+.sidebar.collapsed .sidebar-nav-item {
+  padding: 0.65rem;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+
+.sidebar.collapsed .sidebar-recent-item {
+  padding: 0.5rem;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  padding: 0.75rem 0.5rem 1rem;
+  align-items: center;
+}
+
+.sidebar.collapsed .sidebar-user-pill {
+  padding: 0.25rem;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  justify-content: center;
+}
+
+/* ==========================================================
+   HEADER DA SIDEBAR
+   ========================================================== */
+.sidebar-header {
+  padding: 1.2rem 1rem 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sidebar-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #FFFFFF 0%, #EFF4FB 100%);
+  border: 1px solid #B7C9E4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(45, 96, 173, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  padding: 0;
+  cursor: pointer;
+}
+
+.sidebar-logo:hover {
+  transform: scale(1.04);
+  border-color: #2D60AD;
+  box-shadow: 0 5px 14px rgba(45, 96, 173, 0.2);
+}
+
+.sidebar-logo:focus-visible {
+  outline: 3px solid #2D60AD;
+  outline-offset: 3px;
+}
+
+.sidebar-logo img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.sidebar-brand-name {
+  font-size: 14.5px;
+  font-weight: 750;
+  color: #0F172A;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  display: block;
+}
+
+.sidebar-brand-sub {
+  font-size: 10px;
+  color: #2D60AD;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+
+/* ==========================================================
+   BOTÃO "+ NOVA DILIGÊNCIA"
+   ========================================================== */
+.sidebar-top-action {
+  padding: 0.25rem 0.85rem 0.75rem;
+}
+
+.sidebar-new-btn {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  background-color: #FFFFFF;
+  border: 1.5px solid #D7E1EE;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0F172A;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(45, 96, 173, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease,
+              box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.sidebar-new-icon-box {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background-color: #EFF4FB;
+  color: #2D60AD;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.sidebar-new-btn:hover {
+  background-color: #F8FAFC;
+  border-color: #2D60AD;
+  color: #234D8E;
+  box-shadow: 0 4px 12px rgba(45, 96, 173, 0.14);
+  transform: translateY(-1px);
+}
+
+.sidebar-new-btn:hover .sidebar-new-icon-box {
+  background-color: #2D60AD;
+  color: #FFFFFF;
+  transform: rotate(90deg);
+}
+
+.sidebar-new-btn:active {
+  transform: translateY(0);
+}
+
+/* ==========================================================
+   CORPO DE NAVEGAÇÃO
+   ========================================================== */
+.sidebar-nav {
+  flex: 1;
+  padding: 0.4rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Scrollbar fina e elegante */
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: #E2E8F0;
+  border-radius: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: #CBD5E1;
+}

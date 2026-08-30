@@ -1,0 +1,108 @@
+/* ==========================================================
+   DILIGÊNCIA 360 — investigation-experience · transição da gota
+   O elo visual entre as três fases: o campo de busca vira gota
+   no carregamento, e a gota abre para revelar o dossiê.
+   ========================================================== */
+
+/* ==========================================================
+   Da pílula à gota
+   O loading entra com a mesma geometria do campo de busca —
+   larga e arredondada — e se fecha numa gota. A continuidade
+   é o que faz o campo "virar" o carregamento.
+   ========================================================== */
+
+.investigation-pulse {
+  animation: investigation-pill-to-drop 900ms cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+.investigation-pulse-drop {
+  animation: investigation-drop-settle 900ms cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+@keyframes investigation-pill-to-drop {
+  0% {
+    width: min(560px, 84vw);
+    height: 68px;
+    flex-basis: 68px;
+    border-radius: 999px;
+    opacity: 0.9;
+  }
+  55% {
+    width: 150px;
+    height: 150px;
+    flex-basis: 150px;
+    border-radius: 50%;
+  }
+  100% {
+    width: 230px;
+    height: 230px;
+    flex-basis: 230px;
+    border-radius: 50%;
+    opacity: 1;
+  }
+}
+
+/* A gota nasce achatada como o campo, estica e assenta. */
+/* O núcleo respira sem perder a contrarrotação: uma animação sobre
+   `transform` substitui o valor estático, então a rotação entra aqui. */
+@keyframes investigation-drop-core-breathe {
+  0%, 100% { transform: rotate(-45deg) scale(1); }
+  50%      { transform: rotate(-45deg) scale(1.06); }
+}
+
+@keyframes investigation-drop-settle {
+  0% {
+    border-radius: 999px;
+    transform: translate(-50%, -50%) rotate(0deg) scaleX(2.6) scaleY(0.55);
+  }
+  45% {
+    border-radius: 30% 50% 50% 50%;
+    transform: translate(-50%, -50%) rotate(20deg) scaleX(1) scaleY(1.16);
+  }
+  72% {
+    border-radius: 10% 50% 50% 50%;
+    transform: translate(-50%, -50%) rotate(38deg) scaleX(1.05) scaleY(0.95);
+  }
+  100% {
+    border-radius: 6% 50% 50% 50%;
+    transform: translate(-50%, -50%) rotate(45deg) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .investigation-search-halo { animation: none; }
+  .investigation-search-form.has-error { animation: none; }
+  .investigation-pulse,
+  .investigation-pulse-drop { animation: none; }
+}
+
+/* ==========================================================
+   A gota abrindo
+   Ao chegar o resultado, o dossiê é revelado a partir do ponto
+   onde a gota estava, crescendo até ocupar a tela.
+   ========================================================== */
+
+.investigation-dossier {
+  animation: investigation-drop-open 780ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes investigation-drop-open {
+  0% {
+    clip-path: circle(4% at 50% 42%);
+    opacity: 0.35;
+    transform: scale(0.985);
+  }
+  40% {
+    clip-path: circle(26% at 50% 46%);
+    opacity: 1;
+  }
+  100% {
+    clip-path: circle(150% at 50% 50%);
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .investigation-dossier { animation: none; clip-path: none; }
+}

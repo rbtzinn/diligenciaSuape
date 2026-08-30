@@ -65,8 +65,13 @@ function statusPalette(status) {
   if (['UNAVAILABLE', 'ERROR', 'CRITICAL', 'BLOCKED'].includes(key)) {
     return { foreground: COLORS.red, background: COLORS.redSoft, label: 'Indisponível' };
   }
-  if (['NOT_APPLICABLE', 'NOT_CONSULTED', 'SKIPPED'].includes(key)) {
+  if (['NOT_APPLICABLE'].includes(key)) {
     return { foreground: COLORS.neutral, background: COLORS.neutralSoft, label: 'Não aplicável' };
+  }
+  // Lacuna: a fonte existia e não foi acionada. Não confundir com "não aplicável",
+  // que significa ausência de obrigação técnica.
+  if (['NOT_CONSULTED', 'SKIPPED'].includes(key)) {
+    return { foreground: COLORS.amber, background: COLORS.amberSoft, label: 'Não consultado' };
   }
   return { foreground: COLORS.neutral, background: COLORS.neutralSoft, label: cleanText(status, 'Informativo') };
 }

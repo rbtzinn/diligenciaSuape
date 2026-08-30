@@ -12,6 +12,7 @@ import {
   OfficialGazetteSummary,
   OffshoreSummary,
   PepPartnerResult,
+  PersonSanctionsSummary,
   ProcessDiscovery,
   RiskAssessment,
   RiskDetail,
@@ -22,6 +23,7 @@ export interface RiskInput {
   empresa: CompanyData;
   ceis?: SanctionsResult;
   cnep?: SanctionsResult;
+  personSanctions?: PersonSanctionsSummary;
   pepResults: PepPartnerResult[];
   adverseMedia?: AdverseMediaSummary;
   corporateNetwork?: CorporateNetworkSummary;
@@ -182,6 +184,48 @@ export function calculateRisk(dados: RiskInput): RiskAssessment {
   };
   applySanctions('CEIS', dados.ceis);
   applySanctions('CNEP', dados.cnep);
+
+  // Sócios pessoa física nos mesmos cadastros. A busca é nominal, então
+  // nenhum resultado é tratado como confirmado: mesmo o índice máximo
+  // permanece hipótese até a validação documental da identidade.
+  const personSanctions = dados.personSanctions;
+  if (personSanctions && personSanctions.coverageStatus !== 'NOT_APPLICABLE') {
+    if (personSanctions.coverageStatus === 'UNAVAILABLE') {
+      add(
+        'Sanções dos sócios não puderam ser verificadas',
+        6,
+        'Os sócios pessoa física não foram rastreados em CEIS e CNEP nesta execução.',
+        'COBERTURA', 'coverage', 'alta',
+      );
+    } else {
+      if (personSanctions.coverageStatus === 'PARTIAL') {
+        add(
+          'Cobertura incompleta das sanções dos sócios',
+          4,
+          personSanctions.aviso || 'Parte dos sócios não pôde ser verificada.',
+          'COBERTURA', 'coverage', 'alta',
+        );
+      }
+      const strong = personSanctions.strongCandidates || 0;
+      const weak = Math.max(0, (personSanctions.totalCandidates || 0) - strong);
+      if (strong > 0) {
+        add(
+          'Sócio pessoa física com correspondência forte em cadastro de sanção',
+          Math.min(30, 18 + ((strong - 1) * 6)),
+          `${strong} correspondência(s) com nome e CPF mascarado compatíveis em CEIS/CNEP. A identidade ainda exige validação documental.`,
+          'PESSOAS_RELACIONADAS', 'uncertainty', 'media',
+        );
+      }
+      if (weak > 0) {
+        add(
+          'Sócio pessoa física com homônimo em cadastro de sanção',
+          Math.min(10, 4 + ((weak - 1) * 2)),
+          `${weak} coincidência(s) apenas nominal(is), sem CPF mascarado compatível. Homônimos são frequentes.`,
+          'PESSOAS_RELACIONADAS', 'uncertainty', 'baixa',
+        );
+      }
+    }
+  }
 
   const pepMatches = (dados.pepResults || []).filter((item) => item.encontrado);
   const pepUnavailable = (dados.pepResults || []).filter((item) => item.semChave || !item.ok).length;

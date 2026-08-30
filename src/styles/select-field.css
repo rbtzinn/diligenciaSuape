@@ -14,7 +14,6 @@
   gap: 4px;
   min-width: 0;
 }
-
 .ui-select-field__label {
   padding-left: 3px;
   color: var(--select-field-label);
@@ -24,13 +23,11 @@
   line-height: 1.15;
   text-transform: uppercase;
 }
-
 .ui-select-field__control {
   display: block;
   min-width: 0;
   position: relative;
 }
-
 .ui-select-field__control select {
   width: 100%;
   height: var(--select-field-height);
@@ -51,7 +48,6 @@
   outline: 0;
   transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
-
 .ui-select-field__chevron {
   position: absolute;
   top: 50%;
@@ -61,27 +57,22 @@
   transform: translateY(-50%);
   transition: color 150ms ease, transform 150ms ease;
 }
-
 .ui-select-field__control:hover select {
   background: var(--select-field-bg-hover);
   border-color: var(--select-field-border-hover);
 }
-
 .ui-select-field:focus-within .ui-select-field__control select {
   border-color: var(--select-field-focus);
   box-shadow: 0 0 0 3px var(--select-field-focus-ring), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
-
 .ui-select-field:focus-within .ui-select-field__chevron {
   color: var(--select-field-focus);
   transform: translateY(-50%) translateY(1px);
 }
-
 .ui-select-field__control select:disabled {
   opacity: 0.58;
   cursor: not-allowed;
 }
-
 .ui-select-field--dark {
   --select-field-bg: linear-gradient(180deg, #0d2b4b 0%, #0a233e 100%);
   --select-field-bg-hover: #103151;
@@ -93,13 +84,9 @@
   --select-field-focus: #79c8ff;
   --select-field-focus-ring: rgba(121, 200, 255, 0.25);
 }
-
 .ui-select-field--dark option {
   color: #e2edf8;
   background: #0b2541;
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .ui-select-field__control select,
-  .ui-select-field__chevron { transition: none; }
+@media (prefers-reduced-motion: reduce) {.ui-select-field__control select, .ui-select-field__chevron { transition: none; }
 }

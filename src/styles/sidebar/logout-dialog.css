@@ -1,0 +1,283 @@
+/* ==========================================================
+   DILIGÊNCIA 360 — sidebar · logout dialog
+   ========================================================== */
+
+.logout-dialog-action--stay:hover:not(:disabled) {
+  color: #FFFFFF;
+  background: rgba(45, 96, 173, 0.3);
+  border-color: rgba(127, 171, 221, 0.5);
+}
+
+.logout-dialog-action--exit {
+  color: #FFFFFF;
+  background: #B73743;
+  border: 1px solid #D85A65;
+  box-shadow: 0 9px 24px rgba(183, 55, 67, 0.22);
+}
+
+.logout-dialog-action--exit:hover:not(:disabled) {
+  background: #CA424E;
+  border-color: #ED7881;
+  box-shadow: 0 12px 30px rgba(183, 55, 67, 0.3);
+}
+
+@keyframes logoutBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes logoutDialogIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 520px) {.logout-dialog-backdrop {
+    align-items: end;
+    padding: 12px;
+  }
+.logout-dialog {
+    padding: 30px 22px 22px;
+    border-radius: 22px;
+  }
+.logout-dialog-accent {
+    left: 22px;
+  }
+.logout-dialog-icon {
+    width: 52px;
+    height: 52px;
+    margin-bottom: 20px;
+    border-radius: 16px;
+  }
+.logout-dialog-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {.logout-dialog-backdrop, .logout-dialog {
+    animation: none;
+  }
+.logout-dialog-action {
+    transition: none;
+  }
+.logout-dialog-action:hover:not(:disabled) {
+    transform: none;
+  }
+}
+
+.sidebar-brand-logos {
+  position: relative;
+  width: 164px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  overflow: hidden;
+}
+
+.sidebar-compliance-logo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 280px;
+  height: auto;
+  max-width: none;
+  opacity: 0.9;
+  pointer-events: none;
+  user-select: none;
+  transform: translate(-50%, -50%);
+}
+
+/* ==========================================================
+   SIDEBAR MODO ESCURO INVESTIGATIVO
+   ========================================================== */
+.sidebar.dark-mode {
+  background-color: #071629;
+  border-right: 1px solid #163A60;
+  color: #F1F5F9;
+  box-shadow: 1px 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar.dark-mode .sidebar-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.sidebar.dark-mode .sidebar-logo {
+  background: #FFFFFF;
+  border-color: #FCB315;
+  box-shadow: 0 3px 12px rgba(252, 179, 21, 0.18);
+}
+
+.sidebar.dark-mode button:focus-visible, .sidebar.dark-mode .sidebar-logo:focus-visible {
+  outline-color: #FCB315;
+}
+
+.sidebar.dark-mode .sidebar-brand-name {
+  color: #FFFFFF;
+}
+
+.sidebar.dark-mode .sidebar-brand-sub {
+  color: #FCB315;
+}
+
+.sidebar.dark-mode .sidebar-new-btn {
+  background-color: #08213B;
+  border-color: #1E3A5F;
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar.dark-mode .sidebar-new-icon-box {
+  background-color: rgba(45, 96, 173, 0.3);
+  color: #D8E5F7;
+}
+
+.sidebar.dark-mode .sidebar-new-btn:hover {
+  background-color: #0D3252;
+  border-color: #6B94CF;
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(45, 96, 173, 0.3);
+}
+
+.sidebar.dark-mode .sidebar-new-btn:hover .sidebar-new-icon-box {
+  background-color: #2D60AD;
+  color: #FFFFFF;
+}
+
+.sidebar.dark-mode .sidebar-nav::-webkit-scrollbar-thumb {
+  background: #1E3A5F;
+}
+
+.sidebar.dark-mode .sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: #255380;
+}
+
+.sidebar.dark-mode .sidebar-label {
+  color: #A7B8CA;
+}
+
+.sidebar.dark-mode .sidebar-nav-item {
+  color: #B9C7D7;
+}
+
+.sidebar.dark-mode .sidebar-nav-item:hover {
+  background-color: rgba(45, 96, 173, 0.22);
+  color: #FFFFFF;
+}
+
+.sidebar.dark-mode .sidebar-nav-item:hover svg {
+  color: #FCB315;
+}
+
+.sidebar.dark-mode .sidebar-nav-item.active {
+  background: linear-gradient(135deg, #2D60AD 0%, #234D8E 100%);
+  border-color: #6B94CF;
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(45, 96, 173, 0.42);
+}
+
+.sidebar.dark-mode .sidebar-nav-item.active svg {
+  color: #FFFFFF;
+}
+
+.sidebar.dark-mode .sidebar-recent-item {
+  color: #B9C7D7;
+}
+
+.sidebar.dark-mode .sidebar-recent-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #FFFFFF;
+}
+
+.sidebar.dark-mode .sidebar-recent-item:hover svg {
+  color: #FCB315 !important;
+}
+
+.sidebar.dark-mode .sidebar-badge {
+  background: #08213B;
+  color: #D8E5F7;
+  border-color: #3D679B;
+}
+
+.sidebar.dark-mode .sidebar-footer {
+  background-color: #071629;
+  border-top: 1px solid #163A60;
+}
+
+.sidebar.dark-mode .sidebar-user-pill {
+  background-color: #08213B;
+  border-color: #1E3A5F;
+}
+
+.sidebar.dark-mode .sidebar-user-pill:hover {
+  background-color: #0D2D4F;
+  border-color: #255380;
+}
+
+.sidebar.dark-mode .sidebar-user-name {
+  color: #FFFFFF;
+}
+
+.sidebar.dark-mode .sidebar-user-role {
+  color: #FCB315;
+}
+
+.sidebar.dark-mode .sidebar-logout-btn {
+  color: #A7B8CA;
+}
+
+.sidebar.dark-mode .sidebar-logout-btn:hover {
+  background-color: #1E3A5F;
+  color: #FFFFFF;
+}
+
+.sidebar.dark-mode .sidebar-compliance-logo {
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {.sidebar,
+.sidebar-logo,
+.sidebar-new-btn,
+.sidebar-new-icon-box,
+.sidebar-nav-item,
+.sidebar-recent-item,
+.sidebar-recent-icon,
+.sidebar-user-pill,
+.sidebar-logout-btn {
+    transition: none;
+  }
+.sidebar-logo:hover,
+.sidebar-new-btn:hover,
+.sidebar-new-btn:hover .sidebar-new-icon-box,
+.sidebar-nav-item:hover,
+.sidebar-recent-item:hover,
+.sidebar-recent-item:hover .sidebar-recent-icon {
+    transform: none;
+  }
+}
+
+/* ==========================================================
+   Camada de layout e responsividade
+   Regras vindas de responsive-overrides.css, mantidas na mesma
+   ordem relativa. Ficam aqui, junto do componente que ajustam.
+   ========================================================== */
+.workspace-header {
+  position: relative;
+  z-index: 80;
+  min-height: 68px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 10px clamp(1rem, 2vw, 2rem);
+  color: #183b58;
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid #dce5ee;
+  backdrop-filter: blur(14px);
+}

@@ -36,6 +36,7 @@ const SearchLanding: React.FC<{
   onSubmit: () => void;
 }> = ({ value, error, onChange, onSubmit }) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const ready = value.trim().length > 0;
 
   return (
     <main className="investigation-landing">
@@ -45,29 +46,17 @@ const SearchLanding: React.FC<{
         <span />
       </div>
 
-      <section className="investigation-search-stage" aria-labelledby="investigation-search-title">
-        <div className="investigation-search-mark" aria-hidden="true">
-          <span className="investigation-search-mark-core">
-            <Icons.Network size={25} />
-          </span>
-        </div>
-        <span className="investigation-eyebrow">Diligência de integridade · SUAPE</span>
-        <h1 id="investigation-search-title">Quem está por trás desta empresa?</h1>
-        <p>
-          Informe um CNPJ. O sistema consulta fontes públicas e organiza pessoas,
-          empresas e evidências em um único mapa de vínculos.
-        </p>
-
+      <section className="investigation-search-stage" aria-label="Consulta de CNPJ">
         <form
-          className={`investigation-search-form ${error ? 'has-error' : ''}`}
+          className={`investigation-search-form ${error ? 'has-error' : ''} ${ready ? 'is-ready' : ''}`}
           onSubmit={(event) => {
             event.preventDefault();
             onSubmit();
           }}
         >
-          <span className="investigation-search-icon" aria-hidden="true">
-            <Icons.Search size={20} />
-          </span>
+          {/* Anel condutor: gira sempre, acelera quando há CNPJ digitado. */}
+          <span className="investigation-search-halo" aria-hidden="true" />
+
           <label className="investigation-sr-only" htmlFor="investigation-cnpj">
             CNPJ da empresa
           </label>
@@ -76,31 +65,26 @@ const SearchLanding: React.FC<{
             id="investigation-cnpj"
             name="cnpj"
             type="text"
-            inputMode="text"
+            inputMode="numeric"
             autoComplete="off"
             placeholder="Digite ou cole o CNPJ"
             value={value}
             onChange={(event) => onChange(formatSearchInput(event.target.value))}
-            aria-describedby={error ? 'investigation-search-error' : 'investigation-search-help'}
+            aria-describedby={error ? 'investigation-search-error' : undefined}
             aria-invalid={Boolean(error)}
             autoFocus
           />
-          <button type="submit" disabled={!value.trim()} aria-label="Iniciar diligência">
-            <span>Investigar</span>
-            <Icons.ArrowRight size={17} aria-hidden="true" />
+          <button type="submit" disabled={!ready} aria-label="Iniciar diligência">
+            <Icons.ArrowRight size={18} aria-hidden="true" />
           </button>
         </form>
 
         {error ? (
           <div className="investigation-search-error" id="investigation-search-error" role="alert">
-            <Icons.AlertCircle size={16} aria-hidden="true" />
+            <Icons.AlertCircle size={15} aria-hidden="true" />
             <span>{error}</span>
           </div>
-        ) : (
-          <p className="investigation-search-help" id="investigation-search-help">
-            Nenhuma conclusão é automática. Achados e homônimos permanecem sujeitos à revisão humana.
-          </p>
-        )}
+        ) : null}
       </section>
     </main>
   );
@@ -124,7 +108,9 @@ const DiligencePulse: React.FC<{
         <span className="investigation-pulse-ring ring-three" />
         <span className="investigation-pulse-ring ring-four" />
         <span className="investigation-pulse-drop">
-          <Icons.Building size={25} />
+          <span className="investigation-pulse-drop-core">
+            <Icons.Building size={25} />
+          </span>
         </span>
       </div>
 
