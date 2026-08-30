@@ -221,9 +221,8 @@
 
 .investigation-pulse-ring.ring-four { animation-delay: 2.16s; }
 
-/* A casca é a gota: canto superior esquerdo em ponta, girada 45°.
-   O núcleo contragira para o ícone ficar em pé, e é ele quem respira —
-   assim a casca fica livre para a morfose de entrada. */
+/* A casca faz a morfose de entrada; o núcleo respira. Separar os dois
+   evita que uma animação sobrescreva a outra em `transform`. */
 .investigation-pulse-drop {
   display: grid;
   width: 62px;
@@ -232,14 +231,12 @@
   color: #eafcff;
   background: linear-gradient(145deg, #2d60ad, #1692af);
   border: 1px solid #6ec8dd;
-  border-radius: 6% 50% 50% 50%;
   box-shadow: 0 0 36px rgba(75, 189, 215, 0.35), inset 0 -4px 8px rgba(3, 37, 58, 0.32);
 }
 
 .investigation-pulse-drop-core {
   display: grid;
   place-items: center;
-  transform: rotate(-45deg);
   animation: investigation-drop-core-breathe 2.3s ease-in-out infinite;
 }
 

@@ -60,6 +60,9 @@
 .history-card-main { min-width: 0; display: flex; align-items: center; gap: 14px; }
 .history-card-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
 @media (max-width: 720px) {.history-filters { grid-template-columns: 1fr; }
+.history-tabs button { min-height: 40px; }
+/* Excluir é ação destrutiva: precisa de alvo cheio, não de ícone apertado. */
+.history-card-actions .btn { min-width: 40px; min-height: 40px; }
 .history-card { align-items: stretch; flex-direction: column; padding: 13px; }
 .history-card-main { width: 100%; align-items: flex-start; }
 .history-card-main > div:last-child > div span:nth-child(2), .history-card-main > div:last-child > div span:nth-child(4) { display: none; }
