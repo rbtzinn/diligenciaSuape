@@ -27,6 +27,7 @@ const INITIAL_STEPS: DiligenceStepConfig[] = [
   { id: 'fund', label: 'Mapeando gestor, administrador e prestadores regulados (CVM)', status: 'pending' },
   { id: 'ceis', label: 'Consultando CEIS (Empresas Inidôneas e Suspensas)', status: 'pending' },
   { id: 'cnep', label: 'Consultando CNEP (Cadastro Nacional de Empresas Punidas)', status: 'pending' },
+  { id: 'personSanctions', label: 'Rastreando sócios pessoa física em CEIS e CNEP', status: 'pending' },
   { id: 'pep', label: 'Verificando Pessoas Expostas Politicamente (PEP dos sócios)', status: 'pending' },
   { id: 'media', label: 'Buscando ocorrências públicas e notícias na web', status: 'pending' },
   { id: 'gazettes', label: 'Pesquisando menções em Diários Oficiais municipais', status: 'pending' },
@@ -140,33 +141,53 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           log(`Rede regulatória de fundos: ${fundNetwork.erro || 'fonte indisponível'}.`, 'warning');
         }
 
-        // 3. CEIS
+        // 3–4. Sanções da empresa e dos sócios pessoa física.
+        // As três consultas são independentes entre si.
         updateStep('ceis', 'loading');
-        const ceisRes = await DiligenceService.getCEIS(clean);
-        if (ceisRes.semChave || !ceisRes.ok) {
-          const detail = ceisRes.semChave ? 'Integração não configurada' : 'Fonte indisponível';
-          updateStep('ceis', 'error', detail);
-          log(`CEIS: ${detail}.`, 'warning');
-        } else {
-          updateStep('ceis', 'done', ceisRes.encontrado ? `${ceisRes.quantidade} registro(s)` : 'Sem ocorrências');
-          log(
-            ceisRes.encontrado ? `CEIS: ${ceisRes.quantidade} registro(s) encontrado(s).` : 'CEIS: Nenhuma ocorrência nas fontes consultadas.',
-            ceisRes.encontrado ? 'warning' : 'info'
-          );
+        updateStep('cnep', 'loading');
+        updateStep('personSanctions', 'loading');
+        const [ceisRes, cnepRes, personSanctions] = await Promise.all([
+          DiligenceService.getCEIS(clean),
+          DiligenceService.getCNEP(clean),
+          DiligenceService.screenPersonSanctions(socios),
+        ]);
+
+        for (const [id, label, res] of [
+          ['ceis', 'CEIS', ceisRes],
+          ['cnep', 'CNEP', cnepRes],
+        ] as const) {
+          if (res.semChave || !res.ok) {
+            const detail = res.semChave ? 'Integração não configurada' : 'Fonte indisponível';
+            updateStep(id, 'error', detail);
+            log(`${label}: ${detail}.`, 'warning');
+          } else {
+            updateStep(id, 'done', res.encontrado ? `${res.quantidade} registro(s)` : 'Sem ocorrências');
+            log(
+              res.encontrado
+                ? `${label}: ${res.quantidade} registro(s) encontrado(s).`
+                : `${label}: Nenhuma ocorrência nas fontes consultadas.`,
+              res.encontrado ? 'warning' : 'info'
+            );
+          }
         }
 
-        // 4. CNEP
-        updateStep('cnep', 'loading');
-        const cnepRes = await DiligenceService.getCNEP(clean);
-        if (cnepRes.semChave || !cnepRes.ok) {
-          const detail = cnepRes.semChave ? 'Integração não configurada' : 'Fonte indisponível';
-          updateStep('cnep', 'error', detail);
-          log(`CNEP: ${detail}.`, 'warning');
+        if (personSanctions.coverageStatus === 'NOT_APPLICABLE') {
+          updateStep('personSanctions', 'done', 'Nenhum sócio pessoa física');
+          log('Sanções de sócios: o quadro societário não tem pessoa física para rastrear.');
+        } else if (personSanctions.coverageStatus === 'UNAVAILABLE') {
+          updateStep('personSanctions', 'error', 'Fonte indisponível');
+          log(`Sanções de sócios: ${personSanctions.aviso || personSanctions.erro || 'fonte indisponível'}.`, 'warning');
         } else {
-          updateStep('cnep', 'done', cnepRes.encontrado ? `${cnepRes.quantidade} registro(s)` : 'Sem ocorrências');
+          const partial = personSanctions.coverageStatus === 'PARTIAL';
+          updateStep('personSanctions', partial ? 'error' : 'done',
+            personSanctions.totalCandidates > 0
+              ? `${personSanctions.totalCandidates} candidato(s) para revisão`
+              : `${personSanctions.peopleSearched} sócio(s) sem correspondência`);
           log(
-            cnepRes.encontrado ? `CNEP: ${cnepRes.quantidade} registro(s) encontrado(s).` : 'CNEP: Nenhuma ocorrência nas fontes consultadas.',
-            cnepRes.encontrado ? 'warning' : 'info'
+            personSanctions.totalCandidates > 0
+              ? `Sanções de sócios: ${personSanctions.totalCandidates} correspondência(s) nominal(is) em ${personSanctions.peopleSearched} sócio(s) pesquisado(s); nenhuma confirma identidade.`
+              : `Sanções de sócios: ${personSanctions.peopleSearched} sócio(s) pesquisado(s) sem correspondência nos cadastros.`,
+            personSanctions.totalCandidates > 0 ? 'warning' : 'info'
           );
         }
 
@@ -307,6 +328,7 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           empresa,
           ceis: ceisRes,
           cnep: cnepRes,
+          personSanctions,
           pepResults,
           adverseMedia: mediaRes,
           corporateNetwork,
@@ -335,6 +357,7 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           governanceHistory,
           ceis: ceisRes,
           cnep: cnepRes,
+          personSanctions,
           pepResults,
           processosDescobertos: discoveredProcesses,
           processDiscoveryExecuted: officialGazettes.ok || mediaRes.ok,

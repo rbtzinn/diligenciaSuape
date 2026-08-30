@@ -59,6 +59,10 @@ O tutorial completo e as variáveis separadas por projeto estão em [VERCEL_DEPL
 - Receita Federal/QSA via provedores públicos configurados.
 - Minha Receita (grafo dos dados abertos da RFB) para localizar outras empresas associadas ao mesmo nome e CPF mascarado; os elos permanecem como hipóteses até validação humana.
 - CGU: CEIS, CNEP e PEP.
+- CEIS e CNEP também para os sócios pessoa física, por busca nominal. O quadro
+  societário público não expõe o CPF completo, então cada retorno é candidato
+  sujeito a revisão: a identidade só se sustenta quando o CPF mascarado das duas
+  fontes coincide, e mesmo assim exige validação documental.
 - CNJ/DataJud.
 - Brave Search para mídia adversa, quando configurada, incluindo co-menções entre entidades conhecidas na mesma publicação.
 - Diários oficiais e ICIJ Offshore Leaks.

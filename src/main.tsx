@@ -34,6 +34,7 @@ import './styles/governance-history/people.css';
 import './styles/components/history.css';
 import './styles/components/sources.css';
 import './styles/components/help.css';
+import './styles/components/person-sanctions.css';
 
 import './styles/responsive-overrides.css';
 import './styles/investigation-experience/landing.css';

@@ -178,6 +178,58 @@ export interface PepPartnerResult {
   registros: PepRecord[];
 }
 
+export interface PersonSanctionSignal {
+  code: string;
+  label: string;
+  matched: boolean;
+  weight: number;
+  detail: string;
+}
+
+export interface PersonSanctionCandidate {
+  cadastro: 'CEIS' | 'CNEP';
+  sancionado: string;
+  documentoSancionado: string;
+  orgao: string;
+  sancao: string;
+  inicio: string;
+  fim: string;
+  vigente: boolean;
+  processo: string;
+  fonte: string;
+  /** Índice de compatibilidade 0–100. Não é probabilidade nem confirmação. */
+  score: number;
+  status: string;
+  signals: PersonSanctionSignal[];
+  requiresHumanReview: boolean;
+  identityConfirmed: boolean;
+}
+
+export interface PersonSanctionResult {
+  nome: string;
+  qualificacao: string;
+  maskedCpf: string | null;
+  consultado: boolean;
+  cadastrosIndisponiveis: string[];
+  candidatos: PersonSanctionCandidate[];
+}
+
+export interface PersonSanctionsSummary {
+  ok: boolean;
+  provider?: string;
+  consultadoEm?: string;
+  peopleInQsa: number;
+  peopleSearched: number;
+  peopleTruncated?: boolean;
+  totalCandidates: number;
+  strongCandidates: number;
+  coverageStatus: 'CONSULTED' | 'PARTIAL' | 'UNAVAILABLE' | 'NOT_APPLICABLE';
+  aviso?: string;
+  limitacao?: string;
+  erro?: string;
+  resultados: PersonSanctionResult[];
+}
+
 export interface RiskDetail {
   criterio: string;
   pontos: number;
@@ -401,6 +453,7 @@ export interface DiligenceItem {
   governanceHistory?: GovernanceHistoryResult;
   ceis?: SanctionsResult;
   cnep?: SanctionsResult;
+  personSanctions?: PersonSanctionsSummary;
   pepResults: PepPartnerResult[];
   processosJudiciais?: JudicialProcessItem[];
   processosDescobertos?: ProcessDiscovery[];

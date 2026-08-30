@@ -1,13 +1,15 @@
 import React from 'react';
 import { Drawer } from '../../../components/ui/Drawer';
-import type { SanctionsResult } from '../types';
+import type { PersonSanctionsSummary, SanctionsResult } from '../types';
 import { SanctionsSection } from './SanctionsSection';
+import { PersonSanctionsSection } from './PersonSanctionsSection';
 
 interface InvestigationSanctionsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   ceis?: SanctionsResult;
   cnep?: SanctionsResult;
+  personSanctions?: PersonSanctionsSummary;
 }
 
 export const InvestigationSanctionsDrawer: React.FC<InvestigationSanctionsDrawerProps> = ({
@@ -15,6 +17,7 @@ export const InvestigationSanctionsDrawer: React.FC<InvestigationSanctionsDrawer
   onClose,
   ceis,
   cnep,
+  personSanctions,
 }) => (
   <Drawer
     isOpen={isOpen}
@@ -24,6 +27,7 @@ export const InvestigationSanctionsDrawer: React.FC<InvestigationSanctionsDrawer
   >
     <div className="investigation-sanctions-stack">
       <SanctionsSection ceis={ceis} cnep={cnep} />
+      <PersonSanctionsSection personSanctions={personSanctions} />
     </div>
   </Drawer>
 );

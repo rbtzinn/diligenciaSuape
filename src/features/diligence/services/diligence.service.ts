@@ -18,6 +18,7 @@ import {
   GovernanceHistoryResult,
   FundNetworkSummary,
   RiskAssessment,
+  PersonSanctionsSummary,
 } from '../types';
 
 interface CompanyApiResponse {
@@ -142,6 +143,34 @@ export const DiligenceService = {
         quantidade: 0,
         registros: [],
         erro: message,
+      };
+    }
+  },
+
+  /**
+   * Rastreia sócios pessoa física nos cadastros de sanção.
+   * A busca é nominal porque o QSA público não traz o CPF completo.
+   */
+  async screenPersonSanctions(shareholders: Shareholder[]): Promise<PersonSanctionsSummary> {
+    try {
+      return await request<PersonSanctionsSummary>('/api/cgu/person-sanctions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shareholders }),
+        timeoutMs: 90_000,
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Falha no rastreio de sanções dos sócios';
+      return {
+        ok: false,
+        peopleInQsa: shareholders.length,
+        peopleSearched: 0,
+        totalCandidates: 0,
+        strongCandidates: 0,
+        coverageStatus: 'UNAVAILABLE',
+        erro: message,
+        aviso: message,
+        resultados: [],
       };
     }
   },

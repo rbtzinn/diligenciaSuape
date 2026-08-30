@@ -4,6 +4,7 @@
 
 const express = require('express');
 const CguService = require('../services/cgu.service');
+const { PersonSanctionsService } = require('../services/person-sanctions.service');
 const { authenticate } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
@@ -25,6 +26,14 @@ router.get('/cnep/:cnpj', async (req, res) => {
 router.get('/pep', async (req, res) => {
   const result = await CguService.getPEP(req.query.nome);
   res.status(result.status || 200).json(result);
+});
+
+// Rastreio nominal de sócios pessoa física em CEIS e CNEP.
+// Fonte indisponível é lacuna de cobertura declarada no corpo, não erro HTTP:
+// o dossiê precisa registrar a tentativa mesmo quando a CGU não responde.
+router.post('/person-sanctions', async (req, res) => {
+  const result = await PersonSanctionsService.screen(req.body?.shareholders || []);
+  res.json(result);
 });
 
 module.exports = router;

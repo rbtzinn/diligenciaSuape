@@ -24,6 +24,7 @@ const COVERAGE_LABELS = Object.freeze({
   GOVERNANCE: 'Governança - 5 exercícios',
   PEP: 'Pessoas expostas politicamente',
   CEIS: 'Sanções CEIS',
+  PERSON_SANCTIONS: 'Sanções dos sócios (PF)',
   CNEP: 'Sanções CNEP',
   MEDIA: 'Mídia e ocorrências públicas',
   PROCESS_DISCOVERY: 'Descoberta processual',
@@ -101,13 +102,78 @@ function getCoverageRows(diligence) {
     }));
   }
 
+  // Sem snapshot EGOS, a cobertura é derivada do resultado de cada fonte.
+  // Nunca declare CONSULTED sem que a fonte tenha efetivamente respondido:
+  // um dossiê em que o CEIS falhou não pode se parecer com um dossiê limpo.
+  const sourceStatus = (result) => {
+    if (!result) return { status: 'NOT_CONSULTED', message: 'Fonte não acionada nesta execução.' };
+    if (result.semChave) return { status: 'UNAVAILABLE', message: 'Integração não configurada; a fonte não foi consultada.' };
+    if (result.ok === false) return { status: 'UNAVAILABLE', message: cleanText(result.erro || result.aviso, 'A fonte não respondeu.') };
+    if (result.consultaParcial) return { status: 'PARTIAL', message: cleanText(result.aviso, 'Consulta parcial: podem existir registros adicionais.') };
+    return { status: 'CONSULTED', message: null };
+  };
+
+  const sanctionRow = (label, provider, result) => {
+    const { status, message } = sourceStatus(result);
+    return {
+      axis: label,
+      provider,
+      status,
+      count: status === 'CONSULTED' || status === 'PARTIAL' ? (result?.quantidade || 0) : 0,
+      message: message || (result?.quantidade
+        ? `${result.quantidade} registro(s) retornado(s) pela fonte.`
+        : 'Fonte consultada, sem ocorrência para o documento pesquisado.'),
+    };
+  };
+
+  const peps = asArray(diligence.pepResults);
+  const pepUnavailable = peps.filter((item) => item.semChave || item.ok === false).length;
+  const pepStatus = peps.length === 0
+    ? 'NOT_CONSULTED'
+    : pepUnavailable === peps.length ? 'UNAVAILABLE' : pepUnavailable > 0 ? 'PARTIAL' : 'CONSULTED';
+
+  const personSanctions = diligence.personSanctions;
+  const media = diligence.adverseMedia;
+  const mediaStatus = sourceStatus(media);
+
   return [
-    { axis: 'Cadastro empresarial', provider: 'Receita Federal', status: 'CONSULTED', count: 1, message: 'Cadastro e situação consultados.' },
-    { axis: 'Pessoas expostas politicamente', provider: 'CGU / PEP', status: 'CONSULTED', count: asArray(diligence.pepResults).length, message: 'Integrantes pesquisados por nome e identificadores disponíveis.' },
-    { axis: 'Sanções CEIS', provider: 'CGU / CEIS', status: 'CONSULTED', count: diligence.ceis?.quantidade || 0, message: 'Sanções administrativas consultadas.' },
-    { axis: 'Sanções CNEP', provider: 'CGU / CNEP', status: 'CONSULTED', count: diligence.cnep?.quantidade || 0, message: 'Sanções anticorrupção consultadas.' },
-    { axis: 'Mídia e ocorrências públicas', provider: diligence.adverseMedia?.provider || 'Pesquisa Web', status: diligence.adverseMedia?.semChave ? 'UNAVAILABLE' : 'CONSULTED', count: diligence.adverseMedia?.totalFound || 0, message: diligence.adverseMedia?.aviso || 'Pesquisa pública executada.' },
-    { axis: 'Descoberta processual', provider: 'CNJ / fontes públicas', status: 'CONSULTED', count: asArray(diligence.processosDescobertos).length, message: 'Números processuais pesquisados.' },
+    { axis: 'Cadastro empresarial', provider: 'Receita Federal', status: diligence.empresa ? 'CONSULTED' : 'UNAVAILABLE', count: diligence.empresa ? 1 : 0, message: diligence.empresa ? 'Cadastro e situação consultados.' : 'Cadastro não recuperado.' },
+    {
+      axis: 'Pessoas expostas politicamente',
+      provider: 'CGU / PEP',
+      status: pepStatus,
+      count: peps.filter((item) => item.encontrado).length,
+      message: pepStatus === 'UNAVAILABLE'
+        ? 'Nenhum integrante pôde ser verificado.'
+        : pepStatus === 'PARTIAL'
+          ? `${peps.length - pepUnavailable} de ${peps.length} integrante(s) verificados.`
+          : `${peps.length} integrante(s) pesquisados por nome.`,
+    },
+    sanctionRow('Sanções CEIS', 'CGU / CEIS', diligence.ceis),
+    sanctionRow('Sanções CNEP', 'CGU / CNEP', diligence.cnep),
+    {
+      axis: 'Sanções dos sócios (PF)',
+      provider: 'CGU / CEIS e CNEP — busca nominal',
+      status: personSanctions?.coverageStatus || 'NOT_CONSULTED',
+      count: personSanctions?.totalCandidates || 0,
+      message: cleanText(personSanctions?.aviso, 'Sócios pessoa física não rastreados nesta execução.'),
+    },
+    {
+      axis: 'Mídia e ocorrências públicas',
+      provider: cleanText(media?.provider, 'Pesquisa Web'),
+      status: mediaStatus.status,
+      count: media?.totalFound || 0,
+      message: mediaStatus.message || 'Pesquisa pública executada.',
+    },
+    {
+      axis: 'Descoberta processual',
+      provider: 'CNJ / fontes públicas',
+      status: diligence.processDiscoveryExecuted ? 'CONSULTED' : 'NOT_CONSULTED',
+      count: asArray(diligence.processosDescobertos).length,
+      message: diligence.processDiscoveryExecuted
+        ? 'Números processuais extraídos das fontes que responderam. Não houve varredura por parte.'
+        : 'Nenhuma fonte de descoberta respondeu; não há varredura processual nesta execução.',
+    },
   ];
 }
 
@@ -370,12 +436,13 @@ function drawCoveragePage(doc, diligence) {
   const partial = coverage.filter((item) => String(item.status).toUpperCase() === 'PARTIAL').length;
   const unavailable = coverage.filter((item) => String(item.status).toUpperCase() === 'UNAVAILABLE').length;
   const notApplicable = coverage.filter((item) => String(item.status).toUpperCase() === 'NOT_APPLICABLE').length;
+  const notConsulted = coverage.filter((item) => ['NOT_CONSULTED', 'SKIPPED'].includes(String(item.status).toUpperCase())).length;
   let y = beginSectionPage(doc, { number: 3, eyebrow: 'Cobertura real', title: 'O que conseguimos pesquisar', subtitle: 'Cada eixo mostra fonte, resultado e limite. Lacunas técnicas permanecem visíveis para não criar falsa segurança.' });
   y = drawMetricRow(doc, [
     { value: String(consulted), label: 'Consultados', caption: 'Consulta concluída', palette: { foreground: COLORS.green, background: COLORS.greenSoft } },
     { value: String(partial), label: 'Parciais', caption: 'Cobertura incompleta', palette: { foreground: COLORS.amber, background: COLORS.amberSoft } },
     { value: String(unavailable), label: 'Indisponíveis', caption: 'Lacuna declarada', palette: unavailable ? { foreground: COLORS.red, background: COLORS.redSoft } : { foreground: COLORS.green, background: COLORS.greenSoft } },
-    { value: String(notApplicable), label: 'Não aplicáveis', caption: 'Sem obrigação técnica', palette: { foreground: COLORS.neutral, background: COLORS.neutralSoft } },
+    { value: String(notConsulted + notApplicable), label: 'Fora da consulta', caption: notConsulted ? `${notConsulted} não consultado(s)` : 'Sem obrigação técnica', palette: notConsulted ? { foreground: COLORS.amber, background: COLORS.amberSoft } : { foreground: COLORS.neutral, background: COLORS.neutralSoft } },
   ], y) + 18;
 
   const widths = [130, 86, 70, 38, 167];
@@ -413,7 +480,7 @@ function drawCoveragePage(doc, diligence) {
     minHeight: 56,
     palette: { foreground: COLORS.neutral, background: COLORS.neutralSoft, border: COLORS.line },
     title: 'Regra de transparência da cobertura',
-    body: 'Consultado significa que a fonte respondeu. Parcial, indisponível e não aplicável possuem significados distintos e não podem ser tratados como ausência de ocorrência.',
+    body: 'Consultado significa que a fonte respondeu. Parcial, indisponível, não consultado e não aplicável possuem significados distintos e não podem ser tratados como ausência de ocorrência. A descoberta processual depende de menção pública: não houve varredura por parte.',
     titleSize: 8.6,
     bodySize: 6.8,
   });
@@ -588,4 +655,4 @@ const ReportSections = {
   },
 };
 
-module.exports = { ReportSections };
+module.exports = { ReportSections, getCoverageRows };
