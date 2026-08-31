@@ -64,7 +64,8 @@
 .is-loading .investigation-global-actions button small,
 .is-map .investigation-global-actions button small { box-shadow: 0 0 0 2px rgba(3, 18, 32, 0.94); }
 .investigation-landing { padding: 28px 16px; }
-.investigation-search-form { min-height: 60px; padding: 6px 6px 6px 20px; }
+.investigation-search-form { min-height: 60px; padding: 6px; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 3px; }
+.investigation-search-leading { width: 34px; height: 34px; }
 .investigation-search-form button { width: 46px; height: 46px; }
 .investigation-search-form input { height: 46px; font-size: 15px; }
 .investigation-loading-stage { padding-top: 32px; }
@@ -326,13 +327,15 @@
 }
 
 @media (max-width: 430px) {.investigation-global-actions > button:nth-of-type(3) { display: none; }
-.investigation-search-form { padding-left: 16px; gap: 6px; }
+.investigation-search-form { padding: 6px; gap: 2px; grid-template-columns: 34px minmax(0, 1fr) auto; }
+.investigation-search-leading { width: 32px; height: 32px; }
 .investigation-search-form input { font-size: 13.5px; letter-spacing: 0.02em; }
 .investigation-search-form input::placeholder { font-size: 13px; }
 .investigation-quick-actions > div { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {.investigation-search-stage,
+.investigation-search-mesh span,
 .investigation-pulse-ring,
 .investigation-pulse-drop,
 .investigation-tiny-spinner,
@@ -342,6 +345,7 @@
 .investigation-progress-track > span,
 .investigation-global-bar,
 .investigation-search-form,
+.investigation-search-leading,
 .investigation-global-actions > button {
     transition: none !important;
   }

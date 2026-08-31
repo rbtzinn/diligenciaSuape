@@ -39,8 +39,9 @@
 }
 
 .investigation-experience .network-investigation-header {
-  min-height: 76px;
-  padding: 11px 18px;
+  min-height: 88px;
+  padding: 12px 18px;
+  flex: 0 0 auto;
   background: rgba(4, 22, 38, 0.96);
 }
 
@@ -52,7 +53,7 @@
 
 .investigation-experience .network-title-block h2 { font-size: clamp(21px, 2vw, 27px); }
 
-.investigation-experience .network-title-block p { margin-top: 4px; }
+.investigation-experience .network-title-block p { margin-top: 4px; line-height: 1.35; }
 
 .investigation-experience .network-toolbar {
   display: block;
@@ -119,7 +120,7 @@
   z-index: 40;
   top: calc(100% - 1px);
   left: 12px;
-  display: flex;
+  display: none;
   min-width: min(760px, calc(100vw - 24px));
   padding: 13px;
   align-items: flex-end;
@@ -130,6 +131,8 @@
   box-shadow: 0 22px 48px rgba(0, 10, 21, 0.42);
   animation: investigation-filter-open 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+.network-filter-panel.is-open { display: flex; }
 
 .network-filter-panel .network-layout-switch {
   display: grid;
@@ -159,6 +162,60 @@
 .network-filter-panel .network-tool-button { min-width: 190px; height: 42px; margin-left: 0; }
 
 .network-filter-panel .network-tool-button small { color: #7894a9; }
+
+@media (min-width: 1280px) {
+  .investigation-experience .network-toolbar {
+    display: grid;
+    height: 76px;
+    min-height: 76px;
+    grid-template-columns: minmax(260px, 420px) minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 8px;
+  }
+
+  .network-toolbar-main { display: contents; }
+
+  .investigation-experience .network-search-control {
+    width: 100%;
+    min-width: 0;
+    grid-column: 1;
+    grid-row: 1;
+    flex: none;
+  }
+
+  .network-filter-trigger { display: none; }
+
+  .network-filter-panel {
+    position: static;
+    display: flex;
+    min-width: 0;
+    padding: 0;
+    grid-column: 2;
+    grid-row: 1;
+    align-items: flex-end;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    animation: none;
+  }
+
+  .network-filter-panel .network-layout-switch { flex: 0 0 auto; }
+
+  .network-filter-panel .network-select-control {
+    width: 150px;
+    min-width: 130px;
+    flex: 1 1 150px;
+  }
+
+  .network-filter-panel .network-tool-button { min-width: 170px; }
+
+  .network-toolbar-main .network-icon-actions {
+    margin-left: 0;
+    grid-column: 3;
+    grid-row: 1;
+  }
+}
 
 .mobile-network-heading,
 .mobile-network-focus-bar,
@@ -278,21 +335,36 @@
 .investigation-risk-card.tone-high, .investigation-risk-card.tone-critical { border-left-color: #e66c6c; }
 
 .investigation-risk-score {
-  display: flex;
+  display: grid;
   width: 54px;
   height: 54px;
-  align-items: baseline;
-  justify-content: center;
-  place-content: center;
+  place-items: center;
   color: #fff;
   background: rgba(2, 19, 34, 0.5);
   border: 1px solid #3d6483;
   border-radius: 50%;
 }
 
-.investigation-risk-score strong { font-family: 'Cascadia Mono', Consolas, monospace; font-size: 19px; }
+.investigation-risk-score-value {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 1px;
+  line-height: 1;
+}
 
-.investigation-risk-score span { color: #708da4; font-size: 7px; }
+.investigation-risk-score strong {
+  font-family: 'Cascadia Mono', Consolas, monospace;
+  font-size: 19px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.investigation-risk-score small {
+  color: #708da4;
+  font-size: 7px;
+  line-height: 1;
+}
 
 .investigation-risk-card > div:nth-child(2) { min-width: 0; }
 

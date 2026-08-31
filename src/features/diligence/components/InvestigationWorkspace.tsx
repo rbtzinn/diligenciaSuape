@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Icons } from '../../../components/ui/Icons';
 import { LogoutConfirmationDialog } from '../../../components/layout/LogoutConfirmationDialog';
 import { useAuth } from '../../auth/context/AuthContext';
@@ -36,26 +36,64 @@ const SearchLanding: React.FC<{
   onSubmit: () => void;
 }> = ({ value, error, onChange, onSubmit }) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const launchTimerRef = useRef<number | null>(null);
+  const [isLaunching, setIsLaunching] = useState(false);
   const ready = value.trim().length > 0;
 
+  useEffect(() => () => {
+    if (launchTimerRef.current !== null) {
+      window.clearTimeout(launchTimerRef.current);
+    }
+  }, []);
+
+  const submitWithTransition = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!ready || isLaunching) return;
+
+    // Mantém o retorno de validação imediato. A transição inspirada no
+    // Skiper 84 só acontece quando o CNPJ já pode iniciar a diligência.
+    if (!CNPJ.validate(value) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      onSubmit();
+      return;
+    }
+
+    setIsLaunching(true);
+    launchTimerRef.current = window.setTimeout(() => {
+      launchTimerRef.current = null;
+      onSubmit();
+    }, 950);
+  };
+
   return (
-    <main className="investigation-landing">
+    <main className={`investigation-landing ${isLaunching ? 'is-launching' : ''}`}>
+      {/* Malha animada baseada no comportamento visual do Skiper UI 84. */}
+      <div className="investigation-search-mesh" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
+
       <div className="investigation-landing-watermark" aria-hidden="true">
         <span />
         <span />
         <span />
       </div>
 
-      <section className="investigation-search-stage" aria-label="Consulta de CNPJ">
+      <section
+        className={`investigation-search-stage ${isLaunching ? 'is-launching' : ''}`}
+        aria-label="Consulta de CNPJ"
+      >
         <form
-          className={`investigation-search-form ${error ? 'has-error' : ''} ${ready ? 'is-ready' : ''}`}
-          onSubmit={(event) => {
-            event.preventDefault();
-            onSubmit();
-          }}
+          className={`investigation-search-form ${error ? 'has-error' : ''} ${ready ? 'is-ready' : ''} ${isLaunching ? 'is-launching' : ''}`}
+          onSubmit={submitWithTransition}
+          aria-busy={isLaunching}
         >
           {/* Anel condutor: gira sempre, acelera quando há CNPJ digitado. */}
           <span className="investigation-search-halo" aria-hidden="true" />
+
+          <span className="investigation-search-leading" aria-hidden="true">
+            <Icons.Search size={17} />
+          </span>
 
           <label className="investigation-sr-only" htmlFor="investigation-cnpj">
             CNPJ da empresa
@@ -72,12 +110,17 @@ const SearchLanding: React.FC<{
             onChange={(event) => onChange(formatSearchInput(event.target.value))}
             aria-describedby={error ? 'investigation-search-error' : undefined}
             aria-invalid={Boolean(error)}
+            readOnly={isLaunching}
             autoFocus
           />
-          <button type="submit" disabled={!ready} aria-label="Iniciar diligência">
+          <button type="submit" disabled={!ready || isLaunching} aria-label="Iniciar diligência">
             <Icons.ArrowRight size={18} aria-hidden="true" />
           </button>
         </form>
+
+        <div className="investigation-search-launch-copy" aria-live="polite" aria-atomic="true">
+          {isLaunching ? 'Preparando sua diligência…' : ''}
+        </div>
 
         {error ? (
           <div className="investigation-search-error" id="investigation-search-error" role="alert">

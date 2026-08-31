@@ -109,8 +109,10 @@ export const InvestigationOverviewPanel: React.FC<InvestigationOverviewPanelProp
 
         <section className={`investigation-risk-card tone-${tone}`}>
           <div className="investigation-risk-score" aria-label={`Índice de atenção ${score} de 100`}>
-            <strong>{score}</strong>
-            <span>/100</span>
+            <span className="investigation-risk-score-value">
+              <strong>{score}</strong>
+              <small>/100</small>
+            </span>
           </div>
           <div>
             <span>Índice de atenção</span>

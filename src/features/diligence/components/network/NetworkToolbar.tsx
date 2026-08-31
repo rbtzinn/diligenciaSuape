@@ -164,62 +164,65 @@ export const NetworkToolbar: React.FC<NetworkToolbarProps> = ({
         </div>
       </div>
 
-      {filtersOpen ? (
-        <div className="network-filter-panel" id="network-filter-panel">
-          <div className="network-layout-switch" role="radiogroup" aria-label="Organização do mapa">
-            <span>Organização</span>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={layoutMode === 'chain'}
-              className={layoutMode === 'chain' ? 'active' : ''}
-              onClick={() => onLayoutModeChange('chain')}
-            >
-              <Icons.Network size={14} aria-hidden="true" />
-              <span>Por graus</span>
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={layoutMode === 'radar'}
-              className={layoutMode === 'radar' ? 'active' : ''}
-              onClick={() => onLayoutModeChange('radar')}
-            >
-              <Icons.Compass size={14} aria-hidden="true" />
-              <span>Radial</span>
-            </button>
-          </div>
-
-          <div className="network-select-control">
-            <SelectField
-              label="Até onde mostrar"
-              value={depth}
-              options={DEPTH_OPTIONS}
-              onChange={(val) => onDepthChange(val as DepthFilter)}
-            />
-          </div>
-
-          <div className="network-select-control">
-            <SelectField
-              label="Tipo de ligação"
-              value={relationFilter}
-              options={relationOptions}
-              onChange={onRelationFilterChange}
-            />
-          </div>
-
+      <div
+        className={`network-filter-panel ${filtersOpen ? 'is-open' : ''}`}
+        id="network-filter-panel"
+        role="group"
+        aria-label="Filtros do mapa"
+      >
+        <div className="network-layout-switch" role="radiogroup" aria-label="Organização do mapa">
+          <span>Organização</span>
           <button
             type="button"
-            className={`network-tool-button ${showDocuments ? 'active' : ''}`}
-            onClick={onToggleDocuments}
-            aria-pressed={showDocuments}
+            role="radio"
+            aria-checked={layoutMode === 'chain'}
+            className={layoutMode === 'chain' ? 'active' : ''}
+            onClick={() => onLayoutModeChange('chain')}
           >
-            <Icons.FileText size={14} aria-hidden="true" />
-            <span>{showDocuments ? 'Ocultar fontes do mapa' : 'Mostrar fontes no mapa'}</span>
-            <small>{documentCount}</small>
+            <Icons.Network size={14} aria-hidden="true" />
+            <span>Por graus</span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={layoutMode === 'radar'}
+            className={layoutMode === 'radar' ? 'active' : ''}
+            onClick={() => onLayoutModeChange('radar')}
+          >
+            <Icons.Compass size={14} aria-hidden="true" />
+            <span>Radial</span>
           </button>
         </div>
-      ) : null}
+
+        <div className="network-select-control">
+          <SelectField
+            label="Até onde mostrar"
+            value={depth}
+            options={DEPTH_OPTIONS}
+            onChange={(val) => onDepthChange(val as DepthFilter)}
+          />
+        </div>
+
+        <div className="network-select-control">
+          <SelectField
+            label="Tipo de ligação"
+            value={relationFilter}
+            options={relationOptions}
+            onChange={onRelationFilterChange}
+          />
+        </div>
+
+        <button
+          type="button"
+          className={`network-tool-button ${showDocuments ? 'active' : ''}`}
+          onClick={onToggleDocuments}
+          aria-pressed={showDocuments}
+        >
+          <Icons.FileText size={14} aria-hidden="true" />
+          <span>{showDocuments ? 'Ocultar fontes do mapa' : 'Mostrar fontes no mapa'}</span>
+          <small>{documentCount}</small>
+        </button>
+      </div>
     </div>
   );
 };
