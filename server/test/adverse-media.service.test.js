@@ -45,6 +45,17 @@ test('plano sempre prioriza CNPJ e cobre todas as pessoas antes da expansão', (
     new Set(plan.queries.filter((item) => item.subjectType === 'person').map((item) => item.subjectName)),
     new Set(['ANA MARIA SILVA', 'BRUNO SOUZA LIMA']),
   );
+  const anaQueries = plan.queries.filter((item) => item.subjectName === 'ANA MARIA SILVA');
+  assert.deepEqual(
+    anaQueries.map((item) => item.purpose),
+    ['general_mention', 'person_context', 'adverse_discovery'],
+  );
+  assert.equal(anaQueries[0].query, '"ANA MARIA SILVA"');
+  assert.match(anaQueries[1].query, /"ANA MARIA SILVA" "EXEMPLO"/);
+  assert.match(anaQueries[2].query, /"ANA MARIA SILVA" \(investigação OR denúncia/);
+  assert.equal(plan.plannedPersonQueries, 6);
+  assert.equal(plan.scheduledPersonQueries, 6);
+  assert.equal(plan.expansionQueriesSkipped, 0);
   assert.equal(JSON.stringify(plan).includes('12345678901'), false);
   assert.equal(sanitizePersonDocument('12345678901'), '***456789**');
 });

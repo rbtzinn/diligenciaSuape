@@ -7,7 +7,7 @@
 const crypto = require('crypto');
 const { CompositeSearchProvider } = require('./search/composite-search.provider');
 
-const QUERY_PLAN_VERSION = 'adverse-media-v4';
+const QUERY_PLAN_VERSION = 'adverse-media-v5';
 const SEARCH_DICTIONARY = {
   integrity: [
     'corrupção', 'fraude', 'suborno', 'improbidade', 'propina', 'desvio',
@@ -39,7 +39,7 @@ function envInt(name, fallback) {
 
 const MAX_COMPANY_QUERIES = Math.max(3, envInt('ADVERSE_MEDIA_MAX_QUERIES', 6));
 const MAX_PERSON_SUBJECTS = envInt('ADVERSE_MEDIA_MAX_PERSON_SUBJECTS', 20);
-const MAX_PERSON_QUERIES = envInt('ADVERSE_MEDIA_MAX_PERSON_QUERIES', 20);
+const MAX_PERSON_QUERIES = envInt('ADVERSE_MEDIA_MAX_PERSON_QUERIES', MAX_PERSON_SUBJECTS * 3);
 const SEARCH_CONCURRENCY = Math.max(1, Math.min(envInt('ADVERSE_MEDIA_CONCURRENCY', 4), 6));
 const RESULTS_PER_QUERY = Math.max(10, Math.min(envInt('ADVERSE_MEDIA_RESULTS_PER_QUERY', 25), 50));
 const GLOBAL_DEADLINE_MS = Math.max(15_000, Math.min(envInt('ADVERSE_MEDIA_DEADLINE_MS', 50_000), 65_000));
@@ -343,18 +343,24 @@ class AdverseMediaService {
     const nameQuoted = quoteSearchTerm(name);
     const companyName = String(company?.nomeFantasia || company?.razaoSocial || '').trim();
     const companyQuoted = quoteSearchTerm(companyName);
-    const contextualQuery = companyQuoted && normalizeText(companyName) !== normalizeText(name)
-      ? nameQuoted + ' ' + companyQuoted
-      : nameQuoted;
-    return [
-      { query: contextualQuery, purpose: 'person_context', channel: 'news', priority: 10 },
-      {
-        query: nameQuoted + ' (investigação OR denúncia OR condenação OR corrupção OR fraude OR improbidade OR "lavagem de dinheiro" OR prisão)',
-        purpose: 'adverse_discovery',
+    const descriptors = [
+      { query: nameQuoted, purpose: 'general_mention', channel: 'news', priority: 10 },
+    ];
+    if (companyQuoted && normalizeText(companyName) !== normalizeText(name)) {
+      descriptors.push({
+        query: nameQuoted + ' ' + companyQuoted,
+        purpose: 'person_context',
         channel: 'news',
         priority: 20,
-      },
-    ];
+      });
+    }
+    descriptors.push({
+      query: nameQuoted + ' (investigação OR denúncia OR condenação OR corrupção OR fraude OR improbidade OR "lavagem de dinheiro" OR prisão)',
+      purpose: 'adverse_discovery',
+      channel: 'news',
+      priority: 30,
+    });
+    return descriptors;
   }
 
   generatePersonQueries(person, company = {}) {
@@ -780,7 +786,8 @@ class AdverseMediaService {
     const scheduledPersonQueries = executedQueries
       .filter((query) => query.subjectType === 'person').length;
     const providerPartial = executedQueries.some((query) => query.partial);
-    const consultaParcial = queryPlan.peopleTruncated
+    const personPlanIncomplete = queryPlan.peopleTruncated || queryPlan.expansionQueriesSkipped > 0;
+    const consultaParcial = personPlanIncomplete
       || deadlineExceeded
       || providerPartial
       || successfulQueries < executedQueries.length;
@@ -827,9 +834,9 @@ class AdverseMediaService {
       peopleWithCandidates: subjects.filter((subject) => subject.candidatesCount > 0).length,
       peopleWithRiskRelevant,
       personSearchCompleted: scheduledPersonQueries > 0
-        ? successfulPersonQueries === scheduledPersonQueries && !queryPlan.peopleTruncated && !deadlineExceeded
+        ? successfulPersonQueries === scheduledPersonQueries && !personPlanIncomplete && !deadlineExceeded
         : queryPlan.peopleRequested === 0,
-      personSearchTruncated: queryPlan.peopleTruncated,
+      personSearchTruncated: personPlanIncomplete,
       expansionQueriesSkipped: queryPlan.expansionQueriesSkipped,
       subjects,
       results,
