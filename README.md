@@ -105,3 +105,30 @@ O serviço fica em `http://127.0.0.1:8888` e a configuração está em
 backend recebe HTTP 403. Antes de uso compartilhado, troque `SEARXNG_SECRET`.
 Sem SearXNG, defina `SEARXNG_BASE_URL` vazio: o DuckDuckGo Lite assume o canal
 web sozinho, com menos cobertura.
+
+## Base funcional interna (opcional)
+
+Compara o quadro societário investigado com as identidades funcionais da
+organização, para revelar que uma pessoa do QSA também tem vínculo institucional.
+
+Aponte `INTERNAL_SUAPE_DATASET_PATH` para a planilha autorizada:
+
+```bash
+INTERNAL_SUAPE_DATASET_PATH=/dados/folha-julho-2026.xlsx
+```
+
+A leitura reconhece o cabeçalho por nome de coluna e importa **somente**
+`NOME`, `CHAPA`, `CPF` (mascarado), `TIPO DE FUNCIONÁRIO` e a competência
+(`ANO`/`MÊS`). Cada aba vira um tipo de vínculo: funcionário, comissionado,
+cedido, conselho de administração, conselho fiscal e comitê de auditoria.
+
+Remuneração é descartada na leitura, não na exibição: salário, evento de folha,
+provento, desconto e totais nunca entram em memória, então não podem alcançar o
+grafo, o relatório em PDF nem o histórico. O teste
+`server/test/payroll-workbook.test.js` falha se qualquer valor de folha
+sobreviver ao carregamento.
+
+O cruzamento é nominal e continua sendo hipótese: nome igual soma pontos, CPF
+mascarado coincidente soma mais, e nada é tratado como identidade confirmada
+sem validação documental. Sem a variável configurada, o painel de fontes mostra
+a base como não importada e nenhuma comparação acontece.

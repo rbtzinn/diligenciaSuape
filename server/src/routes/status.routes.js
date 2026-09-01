@@ -7,12 +7,14 @@ const CguService = require('../services/cgu.service');
 const DatajudService = require('../services/datajud.service');
 const { checkGoogleSheetsHealth } = require('../config/google-sheets');
 const { CompositeSearchProvider } = require('../services/search/composite-search.provider');
+const { InternalSuapeProvider } = require('../egos/adapters/internal-suape/internal-suape.provider');
 
 const router = express.Router();
 const mediaSearchProvider = new CompositeSearchProvider({ persistentUse: true });
 
 router.get('/', async (_req, res) => {
   const storage = await checkGoogleSheetsHealth();
+  const internalSuape = await InternalSuapeProvider.load();
 
   res.json({
     status: storage.connected ? 'online' : 'degraded',
@@ -43,10 +45,14 @@ router.get('/', async (_req, res) => {
     },
     datajudConfigurada: DatajudService.isConfigured(),
     internalSuape: {
-      available: false,
-      people: 0,
-      referencePeriod: null,
-      message: 'Base interna opcional não configurada nesta implantação.',
+      available: internalSuape.available,
+      people: internalSuape.people.length,
+      referencePeriod: internalSuape.dataset?.referencePeriod || null,
+      sheets: internalSuape.dataset?.sheets || [],
+      payrollValuesImported: false,
+      message: internalSuape.available
+        ? `Identidades funcionais carregadas da base autorizada. Remuneração não é importada.`
+        : internalSuape.message || 'Base interna opcional não configurada nesta implantação.',
     },
     versao: '3.0.0-firebase-sheets',
     timestamp: new Date().toISOString(),
