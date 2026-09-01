@@ -12,6 +12,8 @@ server/.env.local
 *.log
 *.xlsx
 *.xls
+# Exceção: a base funcional autorizada é implantada junto do backend.
+!server/data/*.xlsx
 *.csv
 *.tsv
 .DS_Store
