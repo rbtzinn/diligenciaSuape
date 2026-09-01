@@ -105,3 +105,45 @@ O serviço fica em `http://127.0.0.1:8888` e a configuração está em
 backend recebe HTTP 403. Antes de uso compartilhado, troque `SEARXNG_SECRET`.
 Sem SearXNG, defina `SEARXNG_BASE_URL` vazio: o DuckDuckGo Lite assume o canal
 web sozinho, com menos cobertura.
+
+## Base funcional interna (opcional)
+
+Compara o quadro societario investigado com as identidades funcionais da
+organizacao, para revelar que uma pessoa do QSA tambem tem vinculo institucional.
+
+A aplicacao le a base minimizada, um CSV com apenas nome, chapa, CPF mascarado,
+tipo de vinculo, competencia e aba de origem. Gere esse arquivo a partir da folha
+institucional:
+
+```bash
+node server/scripts/build-functional-dataset.js /caminho/folha-julho-2026.xlsx server/data/base-funcional.csv
+```
+
+Depois aponte a variavel. Caminho absoluto vale para execucao local; caminho
+relativo e resolvido a partir de `server/`, formato necessario em Vercel e
+Docker, onde o processo nao roda na pasta do projeto:
+
+```bash
+INTERNAL_SUAPE_DATASET_PATH=data/base-funcional.csv
+```
+
+A folha `.xlsx` original tambem e aceita diretamente, util em execucao local. Nos
+dois formatos a remuneracao e descartada na leitura, nao na exibicao: salario,
+evento de folha, provento, desconto e totais nunca entram em memoria e por isso
+nao alcancam o grafo, o PDF nem o historico. O teste
+`server/test/payroll-workbook.test.js` falha se algum valor de folha sobreviver.
+
+O `.gitignore` versiona apenas o CSV de `server/data/` e continua ignorando
+qualquer `.xlsx`, para que a folha original nao seja commitada por descuido. Em
+ambiente serverless nao ha disco gravavel nem como enviar o arquivo por variavel
+de ambiente, entao a base viaja no bundle: o `vercel.json` do backend declara
+`includeFiles: "data/**"`, porque o rastreamento de dependencias da Vercel nao
+detecta leitura por caminho vindo de variavel de ambiente.
+
+Cada aba da folha vira um tipo de vinculo: funcionario, comissionado, cedido,
+conselho de administracao, conselho fiscal e comite de auditoria.
+
+O cruzamento e nominal e continua sendo hipotese: nome igual soma pontos, CPF
+mascarado coincidente soma mais, e nada e tratado como identidade confirmada sem
+validacao documental. Sem a variavel configurada, o painel de fontes mostra a
+base como nao importada e nenhuma comparacao acontece.

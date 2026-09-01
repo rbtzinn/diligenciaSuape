@@ -14,6 +14,10 @@ server/.env.local
 *.xls
 *.csv
 *.tsv
+# Exceção após as regras acima, senão elas voltariam a ignorar o arquivo:
+# a base funcional minimizada é implantada junto do backend, enquanto a
+# planilha original, com remuneração, continua ignorada de propósito.
+!server/data/*.csv
 .DS_Store
 Thumbs.db
 scratch/

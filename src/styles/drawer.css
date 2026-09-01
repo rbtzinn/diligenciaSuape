@@ -159,3 +159,22 @@
     transition: none;
   }
 }
+
+/* Sócio pessoa jurídica: abre a diligência dele direto do quadro societário. */
+.governance-drill-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 650;
+  color: #d6ecff;
+  background: rgba(18, 58, 96, 0.6);
+  border: 1px solid #2f6da8;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.governance-drill-button:hover { background: rgba(26, 79, 128, 0.85); }

@@ -19,6 +19,7 @@ import type {
   RouteSummary,
   SuapeLinkContext,
 } from './types';
+import { extractEntityCnpj, formatCnpj, isDrillableCompany } from '../../utils/entityCnpj';
 import {
   confidencePercent,
   formatGeneratedAt,
@@ -39,6 +40,8 @@ interface NetworkInspectorProps {
   onSelectNode: (id: string) => void;
   isExportingPdf: boolean;
   onExportEntityPdf: () => void;
+  currentCnpj?: string;
+  onDrillCompany?: (cnpj: string, name: string) => void;
   exportError: string;
   selectedConnections: DirectConnectionContext[];
   selectedEvidence: EgosEvidenceItem[];
@@ -68,8 +71,14 @@ export const NetworkInspector: React.FC<NetworkInspectorProps> = ({
   selectedSuapeLinks,
   selectedKinshipLinks,
   selectedPersonOccurrences,
+  currentCnpj,
+  onDrillCompany,
 }) => {
   if (!selectedEntity && !selectedRelationship) return null;
+
+  const drillCnpj = isDrillableCompany(selectedEntity, currentCnpj)
+    ? extractEntityCnpj(selectedEntity)
+    : null;
 
   return (
     <aside
@@ -172,6 +181,23 @@ export const NetworkInspector: React.FC<NetworkInspectorProps> = ({
               >
                 <Icons.Compass size={16} />
                 <span>Traçar caminho até aqui</span>
+                <Icons.ArrowRight size={14} />
+              </button>
+            )}
+
+            {/* Atalho para investigar uma empresa vinculada sem redigitar o CNPJ */}
+            {drillCnpj && onDrillCompany && (
+              <button
+                type="button"
+                className="network-drill-button"
+                onClick={() => onDrillCompany(drillCnpj, selectedEntity.name)}
+                style={{ width: '100%', boxSizing: 'border-box' }}
+              >
+                <Icons.Search size={16} />
+                <span>
+                  <strong>Fazer a diligência desta empresa</strong>
+                  <small translate="no">CNPJ {formatCnpj(drillCnpj)}</small>
+                </span>
                 <Icons.ArrowRight size={14} />
               </button>
             )}

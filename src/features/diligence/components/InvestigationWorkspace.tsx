@@ -16,6 +16,8 @@ interface InvestigationWorkspaceProps {
   onNewSearch: () => void;
   onOpenHistory: () => void;
   onOpenSources: () => void;
+  onDrillCompany?: (cnpj: string, name: string) => void;
+  prefilledCnpj?: string;
 }
 
 function userInitials(name?: string) {
@@ -211,13 +213,20 @@ export const InvestigationWorkspace: React.FC<InvestigationWorkspaceProps> = ({
   onNewSearch,
   onOpenHistory,
   onOpenSources,
+  onDrillCompany,
+  prefilledCnpj,
 }) => {
   const { user, logout } = useAuth();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(prefilledCnpj || '');
   const [logoutOpen, setLogoutOpen] = useState(false);
   const logoutButtonRef = useRef<HTMLButtonElement>(null);
   const phase = diligence ? 'map' : isLoading ? 'loading' : 'search';
   const visibleQuery = useMemo(() => query || diligence?.cnpjFmt || '', [diligence?.cnpjFmt, query]);
+
+  // O CNPJ vindo do mapa chega depois da montagem; o campo acompanha.
+  useEffect(() => {
+    if (prefilledCnpj) setQuery(prefilledCnpj);
+  }, [prefilledCnpj]);
 
   const submitSearch = () => {
     if (!query.trim() || isLoading) return;
@@ -287,7 +296,11 @@ export const InvestigationWorkspace: React.FC<InvestigationWorkspaceProps> = ({
         {phase === 'loading' ? <DiligencePulse query={visibleQuery} steps={steps} /> : null}
 
         {phase === 'map' && diligence ? (
-          <DiligenceDashboard diligence={diligence} onBack={startAnotherSearch} />
+          <DiligenceDashboard
+            diligence={diligence}
+            onBack={startAnotherSearch}
+            onDrillCompany={onDrillCompany}
+          />
         ) : null}
       </div>
 

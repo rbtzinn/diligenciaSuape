@@ -82,6 +82,7 @@ interface ImmersiveNetworkTabProps {
   onOpenProcesses: () => void;
   onOpenQuestionnaire: () => void;
   onOpenAudit: () => void;
+  onDrillCompany?: (cnpj: string, name: string) => void;
 }
 
 export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
@@ -99,6 +100,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   onOpenProcesses,
   onOpenQuestionnaire,
   onOpenAudit,
+  onDrillCompany,
 }) => {
   const { id: diligenceId } = diligence;
   const isCompactViewport = useCompactNetworkViewport();
@@ -820,6 +822,8 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
                   selectedSuapeLinks={selectedSuapeLinks}
                   selectedKinshipLinks={selectedKinshipLinks}
                   selectedPersonOccurrences={selectedPersonOccurrences}
+                  currentCnpj={diligence.cnpj}
+                  onDrillCompany={onDrillCompany}
                 />
               ) : null}
             </div>

@@ -19,6 +19,7 @@ export const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>('chat');
   const [selectedDiligence, setSelectedDiligence] = useState<DiligenceItem | null>(null);
   const [historyCount, setHistoryCount] = useState<number>(0);
+  const [prefilledCnpj, setPrefilledCnpj] = useState<string>('');
 
   const updateHistoryBadge = async () => {
     const total = await HistoryStorage.count();
@@ -51,7 +52,21 @@ export const App: React.FC = () => {
   const handleNewSearch = () => {
     resetDiligence();
     setSelectedDiligence(null);
+    setPrefilledCnpj('');
     setCurrentView('chat');
+  };
+
+  /**
+   * Atalho do mapa e do quadro societário: abre a diligência de uma empresa
+   * vinculada sem obrigar a redigitar o CNPJ. O campo fica preenchido e a
+   * consulta já começa, para que o analista não perca o fio da investigação.
+   */
+  const handleDrillCompany = (cnpj: string) => {
+    resetDiligence();
+    setSelectedDiligence(null);
+    setPrefilledCnpj(cnpj);
+    setCurrentView('chat');
+    runDiligence(cnpj);
   };
 
   if (isAuthLoading) {
@@ -80,6 +95,8 @@ export const App: React.FC = () => {
             onNewSearch={handleNewSearch}
             onOpenHistory={() => setCurrentView('history')}
             onOpenSources={() => setCurrentView('sources')}
+            onDrillCompany={handleDrillCompany}
+            prefilledCnpj={prefilledCnpj}
           />
         );
 
@@ -107,6 +124,8 @@ export const App: React.FC = () => {
             onNewSearch={handleNewSearch}
             onOpenHistory={() => setCurrentView('history')}
             onOpenSources={() => setCurrentView('sources')}
+            onDrillCompany={handleDrillCompany}
+            prefilledCnpj={prefilledCnpj}
           />
         );
     }
