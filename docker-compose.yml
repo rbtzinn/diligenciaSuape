@@ -23,7 +23,12 @@ services:
       CGU_API_KEY: ${CGU_API_KEY:-}
       BRAVE_SEARCH_API_KEY: ${BRAVE_SEARCH_API_KEY:-}
       DATAJUD_API_KEY: ${DATAJUD_API_KEY:-}
-      ADVERSE_MEDIA_MAX_QUERIES: ${ADVERSE_MEDIA_MAX_QUERIES:-4}
+      ADVERSE_MEDIA_MAX_QUERIES: ${ADVERSE_MEDIA_MAX_QUERIES:-9}
+      SEARXNG_BASE_URL: ${SEARXNG_BASE_URL:-http://searxng:8080}
+      DUCKDUCKGO_SEARCH_ENABLED: ${DUCKDUCKGO_SEARCH_ENABLED:-true}
+    depends_on:
+      searxng:
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/status"]
       interval: 10s
@@ -32,6 +37,22 @@ services:
       start_period: 10s
     ports:
       - "3000:3000"
+    networks:
+      - diligencia_net
+
+  # Metabusca aberta: dá ao backend um canal web gratuito, sem chave de API.
+  # Publicada só em loopback (127.0.0.1:8888) para uso do backend em dev.
+  searxng:
+    image: searxng/searxng:latest
+    container_name: diligencia360_searxng
+    restart: unless-stopped
+    environment:
+      SEARXNG_BASE_URL: ${SEARXNG_PUBLIC_URL:-http://searxng:8080/}
+      SEARXNG_SECRET: ${SEARXNG_SECRET:-troque-esta-chave}
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    ports:
+      - "127.0.0.1:8888:8080"
     networks:
       - diligencia_net
 

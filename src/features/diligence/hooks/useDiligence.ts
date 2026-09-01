@@ -280,10 +280,11 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           cnpj: clean,
           razaoSocial: empresa.razao_social || '',
           nomeFantasia: empresa.nome_fantasia || '',
+          shareholders: socios,
         });
         if (officialGazettes.ok) {
           updateStep('gazettes', 'done', `${officialGazettes.totalFound} edição(ões); ${officialGazettes.returned} amostra(s)`);
-          log(`Diários Oficiais: ${officialGazettes.totalFound} edição(ões) localizada(s); ${officialGazettes.returned} evidência(s) estruturada(s).`);
+          log(`Diários Oficiais: ${officialGazettes.totalFound} edição(ões) localizada(s); ${officialGazettes.returned} evidência(s) estruturada(s), incluindo ${officialGazettes.peopleSearched || 0} pessoa(s) física(s) pesquisada(s) pelo nome.`);
           for (const gazette of officialGazettes.results) {
             const extracted = CNJ.extractFromText(gazette.excerpts.join(' '));
             if (extracted.length > 0) {

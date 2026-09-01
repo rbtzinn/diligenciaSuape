@@ -176,6 +176,6 @@ test('busca composta inclui GDELT depois de Brave e Google News RSS', () => {
 
   assert.deepEqual(
     provider.providers.map((source) => source.id),
-    ['brave', 'google-news-rss', 'gdelt-doc'],
+    ['brave', 'google-news-rss', 'gdelt-doc', 'searxng', 'duckduckgo-lite'],
   );
 });

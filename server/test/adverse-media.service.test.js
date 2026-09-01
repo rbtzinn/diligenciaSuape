@@ -47,14 +47,19 @@ test('plano sempre prioriza CNPJ e cobre todas as pessoas antes da expansão', (
   );
   const anaQueries = plan.queries.filter((item) => item.subjectName === 'ANA MARIA SILVA');
   assert.deepEqual(
-    anaQueries.map((item) => item.purpose),
+    anaQueries.filter((item) => item.channel === 'news').map((item) => item.purpose),
     ['general_mention', 'person_context', 'adverse_discovery'],
   );
   assert.equal(anaQueries[0].query, '"ANA MARIA SILVA"');
   assert.match(anaQueries[1].query, /"ANA MARIA SILVA" "EXEMPLO"/);
   assert.match(anaQueries[2].query, /"ANA MARIA SILVA" \(investigação OR denúncia/);
-  assert.equal(plan.plannedPersonQueries, 6);
-  assert.equal(plan.scheduledPersonQueries, 6);
+  // O canal web cobre documentos que o índice de notícias não alcança.
+  const anaWeb = anaQueries.filter((item) => item.channel === 'web');
+  assert.ok(anaWeb.some((item) => item.purpose === 'official_document'));
+  assert.ok(anaWeb.some((item) => item.purpose === 'document_file'));
+  assert.ok(anaWeb.some((item) => item.purpose === 'institutional_record'));
+  assert.ok(anaWeb.some((item) => item.query.includes('filetype:pdf')));
+  assert.equal(plan.plannedPersonQueries, plan.scheduledPersonQueries);
   assert.equal(plan.expansionQueriesSkipped, 0);
   assert.equal(JSON.stringify(plan).includes('12345678901'), false);
   assert.equal(sanitizePersonDocument('12345678901'), '***456789**');

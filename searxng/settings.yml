@@ -1,0 +1,29 @@
+# ==========================================================
+# DILIGÊNCIA 360 — SearXNG interno
+# Instância privada usada apenas pelo backend, na rede do Compose.
+# O formato json é obrigatório: sem ele o provedor searxng falha com HTTP 403.
+# ==========================================================
+
+use_default_settings: true
+
+general:
+  instance_name: 'Diligência 360 — busca interna'
+  donation_url: false
+  contact_url: false
+
+server:
+  # Troque por um valor próprio antes de subir em ambiente compartilhado.
+  secret_key: 'troque-esta-chave'
+  limiter: false
+  image_proxy: false
+
+search:
+  safe_search: 0
+  autocomplete: ''
+  default_lang: 'pt-BR'
+  formats:
+    - html
+    - json
+
+ui:
+  default_locale: 'pt_BR'
