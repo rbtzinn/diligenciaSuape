@@ -6,7 +6,9 @@
 
 const crypto = require('crypto');
 
-const API_URL = process.env.QUERIDO_DIARIO_API_URL || 'https://api.queridodiario.ok.org.br/gazettes';
+// O host antigo (api.queridodiario.ok.org.br) saiu do ar; queridodiario.ok.org.br/api
+// responde 302 para cá. Apontar direto evita depender do redirecionamento.
+const API_URL = process.env.QUERIDO_DIARIO_API_URL || 'https://api.queridodiario.org.br/gazettes';
 const REQUEST_TIMEOUT_MS = 15_000;
 
 function envInt(name, fallback, minimum, maximum) {
