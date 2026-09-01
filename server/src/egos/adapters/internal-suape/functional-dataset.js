@@ -78,6 +78,35 @@ function readFunctionalDataset(content, { sourceName = 'Base funcional interna' 
   };
 }
 
+/**
+ * Empacota o CSV como módulo JavaScript.
+ *
+ * Em ambiente serverless o bundle inclui apenas o que o rastreamento de
+ * dependências consegue enxergar no código. Um arquivo lido por caminho vindo
+ * de variável de ambiente é invisível para esse rastreamento e fica de fora do
+ * deploy sem gerar erro de build. Como módulo, a base é código: entra sempre.
+ *
+ * O conteúdo continua sendo o mesmo CSV, linha a linha, para que o diff de
+ * cada competência permaneça legível em auditoria.
+ */
+function wrapAsModule(csv, { referencePeriod = null, people = 0 } = {}) {
+  const safeCsv = csv.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
+  return `// ==========================================================
+// DILIGÊNCIA 360 — Base funcional minimizada
+// Arquivo gerado por scripts/build-functional-dataset.js. Não edite à mão.
+//
+// Competência: ${referencePeriod || 'não informada'} | Pessoas: ${people}
+// Contém nome, chapa, CPF mascarado, tipo de vínculo, competência e origem.
+// Remuneração não é gravada aqui.
+// ==========================================================
+
+module.exports = {
+  referencePeriod: ${JSON.stringify(referencePeriod)},
+  csv: \`${safeCsv}\`,
+};
+`;
+}
+
 function escapeCsvValue(value) {
   const text = String(value ?? '');
   return /[",;\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
@@ -101,4 +130,4 @@ function writeFunctionalDataset(people) {
   return `${lines.join('\n')}\n`;
 }
 
-module.exports = { readFunctionalDataset, writeFunctionalDataset, COLUMNS };
+module.exports = { readFunctionalDataset, writeFunctionalDataset, wrapAsModule, COLUMNS };

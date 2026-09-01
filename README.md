@@ -119,13 +119,14 @@ institucional:
 node server/scripts/build-functional-dataset.js /caminho/folha-julho-2026.xlsx server/data/base-funcional.csv
 ```
 
-Depois aponte a variavel. Caminho absoluto vale para execucao local; caminho
-relativo e resolvido a partir de `server/`, formato necessario em Vercel e
-Docker, onde o processo nao roda na pasta do projeto:
+O script grava dois arquivos: `base-funcional.csv`, legivel em diff para auditoria,
+e `base-funcional.js`, o mesmo conteudo embutido como modulo. A aplicacao carrega o
+modulo automaticamente, sem precisar de variavel de ambiente.
 
-```bash
-INTERNAL_SUAPE_DATASET_PATH=data/base-funcional.csv
-```
+`INTERNAL_SUAPE_DATASET_PATH` continua disponivel para apontar outro arquivo, CSV ou
+XLSX, util em execucao local. Caminho absoluto vale local; caminho relativo e resolvido
+a partir de `server/`. Se o caminho configurado nao existir, a base embutida assume.
+
 
 A folha `.xlsx` original tambem e aceita diretamente, util em execucao local. Nos
 dois formatos a remuneracao e descartada na leitura, nao na exibicao: salario,
