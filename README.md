@@ -111,11 +111,22 @@ web sozinho, com menos cobertura.
 Compara o quadro societário investigado com as identidades funcionais da
 organização, para revelar que uma pessoa do QSA também tem vínculo institucional.
 
-Aponte `INTERNAL_SUAPE_DATASET_PATH` para a planilha autorizada:
+Aponte `INTERNAL_SUAPE_DATASET_PATH` para a planilha autorizada. Caminho absoluto
+vale para execução local; caminho relativo é resolvido a partir de `server/`, que é
+o formato necessário em Vercel e Docker, onde o processo não roda na pasta do projeto.
 
 ```bash
-INTERNAL_SUAPE_DATASET_PATH=/dados/folha-julho-2026.xlsx
+# Local
+INTERNAL_SUAPE_DATASET_PATH=C:/dados/folha-julho-2026.xlsx
+
+# Vercel ou Docker, com a planilha versionada em server/data/
+INTERNAL_SUAPE_DATASET_PATH=data/folha-julho-2026.xlsx
 ```
+
+Em ambiente serverless não há disco gravável nem como enviar o arquivo por variável
+de ambiente: 178 KB viram 243 KB em base64 e estouram o limite de 64 KB da Vercel.
+A planilha precisa ser implantada junto do backend. Ela contém nome e CPF mascarado
+de cada pessoa, então o repositório precisa ser privado e o acesso restrito.
 
 A leitura reconhece o cabeçalho por nome de coluna e importa **somente**
 `NOME`, `CHAPA`, `CPF` (mascarado), `TIPO DE FUNCIONÁRIO` e a competência

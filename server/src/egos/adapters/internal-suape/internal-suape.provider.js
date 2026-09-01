@@ -13,9 +13,21 @@ const { readPayrollWorkbook } = require('./payroll-workbook');
 
 const cache = new Map();
 
+// Raiz do backend: server/src/egos/adapters/internal-suape -> server
+const SERVER_ROOT = path.resolve(__dirname, '../../../..');
+
+/**
+ * Caminho absoluto continua valendo para execução local.
+ * Caminho relativo é resolvido a partir da raiz do backend, e não do
+ * diretório de trabalho, porque em ambiente serverless o processo não
+ * roda necessariamente na pasta do projeto.
+ */
 function datasetPath() {
   const configured = String(process.env.INTERNAL_SUAPE_DATASET_PATH || '').trim();
-  return configured ? path.resolve(configured) : '';
+  if (!configured) return '';
+  return path.isAbsolute(configured)
+    ? path.normalize(configured)
+    : path.resolve(SERVER_ROOT, configured);
 }
 
 function unavailable(message) {
