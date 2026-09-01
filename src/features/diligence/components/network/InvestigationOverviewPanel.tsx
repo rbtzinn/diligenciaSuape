@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Icons } from '../../../../components/ui/Icons';
 import { WorkflowControlBar } from '../../../workflow/components/WorkflowControlBar';
 import type { AdverseMediaSummary, DiligenceItem, ProcessDiscovery } from '../../types';
+import { buildRiskNarrative } from '../../utils/riskNarrative';
 
 interface InvestigationOverviewPanelProps {
   diligence: DiligenceItem;
@@ -74,6 +75,11 @@ export const InvestigationOverviewPanel: React.FC<InvestigationOverviewPanelProp
       .slice(0, 3);
   }, [diligence.analise?.alertas, diligence.risco?.detalhes]);
 
+  const narrative = useMemo(
+    () => buildRiskNarrative(diligence, adverseMedia, discoveries),
+    [adverseMedia, diligence, discoveries],
+  );
+
   const decisionCopy = sanctions > 0
     ? 'Existe registro em base oficial que precisa ser examinado antes de qualquer decisão.'
     : score >= 60
@@ -127,6 +133,40 @@ export const InvestigationOverviewPanel: React.FC<InvestigationOverviewPanelProp
           >
             Revisar
           </button>
+        </section>
+
+        <section className={`investigation-plain-read tone-${narrative.tone}`} aria-label="Leitura simples do risco">
+          <div className="investigation-plain-read-head">
+            <Icons.FileText size={15} aria-hidden="true" />
+            <div>
+              <span className="network-panel-kicker">Em poucas palavras</span>
+              <strong>{narrative.headline}</strong>
+            </div>
+          </div>
+          <p className="investigation-plain-read-verdict">{narrative.verdict}</p>
+
+          {narrative.supports.length > 0 ? (
+            <div className="investigation-plain-read-block">
+              <span>O que foi encontrado</span>
+              <ul>
+                {narrative.supports.map((item) => <li key={item}>{item}</li>)}
+              </ul>
+            </div>
+          ) : null}
+
+          {narrative.gaps.length > 0 ? (
+            <div className="investigation-plain-read-block is-gap">
+              <span>O que ficou sem verificar</span>
+              <ul>
+                {narrative.gaps.map((item) => <li key={item}>{item}</li>)}
+              </ul>
+            </div>
+          ) : null}
+
+          <p className="investigation-plain-read-next">
+            <Icons.ArrowRight size={14} aria-hidden="true" />
+            {narrative.nextStep}
+          </p>
         </section>
 
         <div className="investigation-overview-metrics" aria-label="Tamanho do mapa">
