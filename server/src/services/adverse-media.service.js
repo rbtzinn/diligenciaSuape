@@ -32,15 +32,40 @@ const SEARCH_DICTIONARY = {
   ],
 };
 
+// Domínios oficiais gratuitos que publicam atos e registros nominais.
+// Ajustável por ambiente para incluir portais estaduais e municipais.
+const INSTITUTIONAL_SITES = String(
+  process.env.ADVERSE_MEDIA_INSTITUTIONAL_SITES
+  || [
+    'portaldatransparencia.gov.br',
+    'tcu.gov.br',
+    'tce.pe.gov.br',
+    'tse.jus.br',
+    'pncp.gov.br',
+    'cnj.jus.br',
+    'mpf.mp.br',
+    'mppe.mp.br',
+    'in.gov.br',
+    'diariooficial.pe.gov.br',
+  ].join(','),
+)
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
+
+const INSTITUTIONAL_SITE_FILTER = INSTITUTIONAL_SITES.length > 0
+  ? '(' + INSTITUTIONAL_SITES.map((site) => `site:${site}`).join(' OR ') + ')'
+  : '';
+
 function envInt(name, fallback) {
   const value = parseInt(process.env[name], 10);
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
-const MAX_COMPANY_QUERIES = Math.max(3, envInt('ADVERSE_MEDIA_MAX_QUERIES', 6));
+const MAX_COMPANY_QUERIES = Math.max(3, envInt('ADVERSE_MEDIA_MAX_QUERIES', 9));
 const MAX_PERSON_SUBJECTS = envInt('ADVERSE_MEDIA_MAX_PERSON_SUBJECTS', 20);
-const MAX_PERSON_QUERIES = envInt('ADVERSE_MEDIA_MAX_PERSON_QUERIES', MAX_PERSON_SUBJECTS * 3);
-const SEARCH_CONCURRENCY = Math.max(1, Math.min(envInt('ADVERSE_MEDIA_CONCURRENCY', 4), 6));
+const MAX_PERSON_QUERIES = envInt('ADVERSE_MEDIA_MAX_PERSON_QUERIES', MAX_PERSON_SUBJECTS * 8);
+const SEARCH_CONCURRENCY = Math.max(1, Math.min(envInt('ADVERSE_MEDIA_CONCURRENCY', 6), 6));
 const RESULTS_PER_QUERY = Math.max(10, Math.min(envInt('ADVERSE_MEDIA_RESULTS_PER_QUERY', 25), 50));
 const GLOBAL_DEADLINE_MS = Math.max(15_000, Math.min(envInt('ADVERSE_MEDIA_DEADLINE_MS', 50_000), 65_000));
 const QUERY_TIMEOUT_MS = Math.max(4_000, Math.min(envInt('ADVERSE_MEDIA_QUERY_TIMEOUT_MS', 9_000), 15_000));
@@ -319,10 +344,27 @@ class AdverseMediaService {
       );
     }
 
+    if (razaoQuoted) {
+      add(razaoQuoted, 'general_mention', 'web', 7);
+      add(
+        razaoQuoted + ' (edital OR contrato OR "diário oficial" OR portaria OR "termo aditivo" OR sanção)',
+        'official_document',
+        'web',
+        8,
+      );
+      add(razaoQuoted + ' filetype:pdf', 'document_file', 'web', 9);
+    }
+    if (formattedCnpj) {
+      add('(' + quoteSearchTerm(formattedCnpj) + ' OR ' + quoteSearchTerm(cnpj) + ')', 'identifier', 'web', 10);
+    }
+    if (razaoQuoted && INSTITUTIONAL_SITE_FILTER) {
+      add(razaoQuoted + ' ' + INSTITUTIONAL_SITE_FILTER, 'institutional_record', 'web', 11);
+    }
+
     const seen = new Set();
     return candidates
       .filter((descriptor) => {
-        const key = normalizeText(descriptor.query);
+        const key = `${descriptor.channel}|${normalizeText(descriptor.query)}`;
         if (!key || seen.has(key)) return false;
         seen.add(key);
         return true;
@@ -360,6 +402,69 @@ class AdverseMediaService {
       channel: 'news',
       priority: 30,
     });
+
+    // O canal web alcança o que RSS de notícia não indexa: atos oficiais,
+    // atas, editais, listas de sanção e PDFs institucionais.
+    descriptors.push({
+      query: nameQuoted,
+      purpose: 'general_mention',
+      channel: 'web',
+      priority: 40,
+    });
+    descriptors.push({
+      query: nameQuoted + ' (portaria OR nomeação OR exoneração OR edital OR ata OR contrato OR "diário oficial")',
+      purpose: 'official_document',
+      channel: 'web',
+      priority: 50,
+    });
+    descriptors.push({
+      query: nameQuoted + ' (site:gov.br OR site:jus.br OR site:leg.br OR site:mp.br)',
+      purpose: 'official_document',
+      channel: 'web',
+      priority: 60,
+    });
+    descriptors.push({
+      query: nameQuoted + ' filetype:pdf',
+      purpose: 'document_file',
+      channel: 'web',
+      priority: 70,
+    });
+    if (companyQuoted && normalizeText(companyName) !== normalizeText(name)) {
+      descriptors.push({
+        query: nameQuoted + ' ' + companyQuoted,
+        purpose: 'person_context',
+        channel: 'web',
+        priority: 80,
+      });
+    }
+
+    // Bases públicas nominais que não expõem busca por nome em API aberta
+    // são alcançadas pelo índice web, restritas aos domínios oficiais.
+    if (INSTITUTIONAL_SITE_FILTER) {
+      descriptors.push({
+        query: nameQuoted + ' ' + INSTITUTIONAL_SITE_FILTER,
+        purpose: 'institutional_record',
+        channel: 'web',
+        priority: 85,
+      });
+    }
+
+    // Variante sem os nomes do meio cobre publicações que abreviam o nome,
+    // mas só entra quando ainda restam pelo menos dois tokens fortes.
+    const tokens = String(name).split(/\s+/).filter(Boolean);
+    if (tokens.length >= 3) {
+      const shortName = `${tokens[0]} ${tokens[tokens.length - 1]}`;
+      const shortQuoted = quoteSearchTerm(shortName);
+      if (shortQuoted && normalizeText(shortName) !== normalizeText(name) && companyQuoted) {
+        descriptors.push({
+          query: shortQuoted + ' ' + companyQuoted,
+          purpose: 'name_variant',
+          channel: 'web',
+          priority: 90,
+        });
+      }
+    }
+
     return descriptors;
   }
 

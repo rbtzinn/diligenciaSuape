@@ -256,6 +256,9 @@ export const DiligenceService = {
     cnpj: string;
     razaoSocial: string;
     nomeFantasia?: string;
+    shareholders?: Shareholder[];
+    territoryIds?: string[];
+    publishedSince?: string;
   }): Promise<OfficialGazetteSummary> {
     try {
       return await request<OfficialGazetteSummary>('/api/official-gazettes/search', {

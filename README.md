@@ -66,3 +66,42 @@ O tutorial completo e as variáveis separadas por projeto estão em [VERCEL_DEPL
 - CNJ/DataJud.
 - Brave Search para mídia adversa, quando configurada, incluindo co-menções entre entidades conhecidas na mesma publicação.
 - Diários oficiais e ICIJ Offshore Leaks.
+
+## Pesquisa gratuita e ampla
+
+A busca não depende de provedor pago. Sem chave Brave, o sistema opera com quatro
+fontes gratuitas, divididas em dois canais:
+
+- Canal de notícias: Google News RSS e GDELT DOC.
+- Canal web: SearXNG (metabusca própria, sem chave) e DuckDuckGo Lite como reserva.
+
+O canal web existe porque índice de notícia não alcança documento. É ele que traz
+portaria, ata, edital, contrato, acórdão e PDF institucional. Para cada pessoa
+física do quadro societário e para a empresa são geradas consultas de:
+
+- menção geral;
+- termos adversos (investigação, denúncia, condenação, fraude, improbidade);
+- documentos oficiais (`portaria`, `nomeação`, `edital`, `ata`, `diário oficial`);
+- arquivos (`filetype:pdf`);
+- domínios oficiais (`ADVERSE_MEDIA_INSTITUTIONAL_SITES`: Portal da Transparência,
+  TCU, TCE-PE, TSE, PNCP, CNJ, MPF, MPPE, Imprensa Nacional, Diário Oficial de PE);
+- variante abreviada do nome, sempre ancorada no nome da empresa.
+
+Os diários oficiais do Querido Diário passam a ser pesquisados também pelo nome de
+cada pessoa física do quadro, não só pela razão social.
+
+Homônimo é o risco central da busca nominal. Nome completo sem âncora (empresa,
+CNPJ ou CPF mascarado no mesmo texto) fica classificado como correlação média ou
+baixa e não eleva risco sozinho. Nome com uma única palavra não é pesquisado.
+
+Para subir a metabusca própria:
+
+```bash
+docker compose up -d searxng
+```
+
+O serviço fica em `http://127.0.0.1:8888` e a configuração está em
+`searxng/settings.yml` — o formato `json` precisa continuar habilitado, senão o
+backend recebe HTTP 403. Antes de uso compartilhado, troque `SEARXNG_SECRET`.
+Sem SearXNG, defina `SEARXNG_BASE_URL` vazio: o DuckDuckGo Lite assume o canal
+web sozinho, com menos cobertura.
