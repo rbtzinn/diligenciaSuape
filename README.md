@@ -108,38 +108,42 @@ web sozinho, com menos cobertura.
 
 ## Base funcional interna (opcional)
 
-Compara o quadro societário investigado com as identidades funcionais da
-organização, para revelar que uma pessoa do QSA também tem vínculo institucional.
+Compara o quadro societario investigado com as identidades funcionais da
+organizacao, para revelar que uma pessoa do QSA tambem tem vinculo institucional.
 
-Aponte `INTERNAL_SUAPE_DATASET_PATH` para a planilha autorizada. Caminho absoluto
-vale para execução local; caminho relativo é resolvido a partir de `server/`, que é
-o formato necessário em Vercel e Docker, onde o processo não roda na pasta do projeto.
+A aplicacao le a base minimizada, um CSV com apenas nome, chapa, CPF mascarado,
+tipo de vinculo, competencia e aba de origem. Gere esse arquivo a partir da folha
+institucional:
 
 ```bash
-# Local
-INTERNAL_SUAPE_DATASET_PATH=C:/dados/folha-julho-2026.xlsx
-
-# Vercel ou Docker, com a planilha versionada em server/data/
-INTERNAL_SUAPE_DATASET_PATH=data/folha-julho-2026.xlsx
+node server/scripts/build-functional-dataset.js /caminho/folha-julho-2026.xlsx server/data/base-funcional.csv
 ```
 
-Em ambiente serverless não há disco gravável nem como enviar o arquivo por variável
-de ambiente: 178 KB viram 243 KB em base64 e estouram o limite de 64 KB da Vercel.
-A planilha precisa ser implantada junto do backend. Ela contém nome e CPF mascarado
-de cada pessoa, então o repositório precisa ser privado e o acesso restrito.
+Depois aponte a variavel. Caminho absoluto vale para execucao local; caminho
+relativo e resolvido a partir de `server/`, formato necessario em Vercel e
+Docker, onde o processo nao roda na pasta do projeto:
 
-A leitura reconhece o cabeçalho por nome de coluna e importa **somente**
-`NOME`, `CHAPA`, `CPF` (mascarado), `TIPO DE FUNCIONÁRIO` e a competência
-(`ANO`/`MÊS`). Cada aba vira um tipo de vínculo: funcionário, comissionado,
-cedido, conselho de administração, conselho fiscal e comitê de auditoria.
+```bash
+INTERNAL_SUAPE_DATASET_PATH=data/base-funcional.csv
+```
 
-Remuneração é descartada na leitura, não na exibição: salário, evento de folha,
-provento, desconto e totais nunca entram em memória, então não podem alcançar o
-grafo, o relatório em PDF nem o histórico. O teste
-`server/test/payroll-workbook.test.js` falha se qualquer valor de folha
-sobreviver ao carregamento.
+A folha `.xlsx` original tambem e aceita diretamente, util em execucao local. Nos
+dois formatos a remuneracao e descartada na leitura, nao na exibicao: salario,
+evento de folha, provento, desconto e totais nunca entram em memoria e por isso
+nao alcancam o grafo, o PDF nem o historico. O teste
+`server/test/payroll-workbook.test.js` falha se algum valor de folha sobreviver.
 
-O cruzamento é nominal e continua sendo hipótese: nome igual soma pontos, CPF
-mascarado coincidente soma mais, e nada é tratado como identidade confirmada
-sem validação documental. Sem a variável configurada, o painel de fontes mostra
-a base como não importada e nenhuma comparação acontece.
+O `.gitignore` versiona apenas o CSV de `server/data/` e continua ignorando
+qualquer `.xlsx`, para que a folha original nao seja commitada por descuido. Em
+ambiente serverless nao ha disco gravavel nem como enviar o arquivo por variavel
+de ambiente, entao a base viaja no bundle: o `vercel.json` do backend declara
+`includeFiles: "data/**"`, porque o rastreamento de dependencias da Vercel nao
+detecta leitura por caminho vindo de variavel de ambiente.
+
+Cada aba da folha vira um tipo de vinculo: funcionario, comissionado, cedido,
+conselho de administracao, conselho fiscal e comite de auditoria.
+
+O cruzamento e nominal e continua sendo hipotese: nome igual soma pontos, CPF
+mascarado coincidente soma mais, e nada e tratado como identidade confirmada sem
+validacao documental. Sem a variavel configurada, o painel de fontes mostra a
+base como nao importada e nenhuma comparacao acontece.

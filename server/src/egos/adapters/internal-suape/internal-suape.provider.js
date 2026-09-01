@@ -10,6 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const { readPayrollWorkbook } = require('./payroll-workbook');
+const { readFunctionalDataset } = require('./functional-dataset');
 
 const cache = new Map();
 
@@ -54,9 +55,12 @@ const InternalSuapeProvider = {
 
     try {
       const buffer = fs.readFileSync(filePath);
-      const parsed = readPayrollWorkbook(buffer, {
-        sourceName: `Base funcional ${organization} — ${path.basename(filePath)}`,
-      });
+      const sourceName = `Base funcional ${organization} — ${path.basename(filePath)}`;
+      // CSV é o formato minimizado, gerado por scripts/build-functional-dataset.js.
+      // XLSX é a folha institucional original, de onde a remuneração é descartada.
+      const parsed = path.extname(filePath).toLowerCase() === '.csv'
+        ? readFunctionalDataset(buffer.toString('utf8'), { sourceName })
+        : readPayrollWorkbook(buffer, { sourceName });
 
       if (parsed.people.length === 0) {
         return unavailable('A base funcional foi lida, mas nenhuma identidade funcional foi reconhecida.');

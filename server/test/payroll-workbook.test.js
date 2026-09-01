@@ -128,3 +128,45 @@ test('competência exige ano e mês numéricos', () => {
   assert.equal(referencePeriodFrom('', '7'), null);
   assert.equal(referencePeriodFrom('2026', 'julho'), null);
 });
+
+test('base minimizada faz a volta completa sem carregar remuneração', () => {
+  const { readFunctionalDataset, writeFunctionalDataset } = require('../src/egos/adapters/internal-suape/functional-dataset');
+
+  const csv = writeFunctionalDataset([
+    {
+      employeeKey: '0001405',
+      name: 'ADRIANO ALVES DE ALENCAR',
+      maskedCpf: '***.509.434-**',
+      affiliations: [{ employmentType: 'Efetivo', referencePeriod: '07/2026', sourceSheet: 'FUNCIONÁRIO JULHO 2026' }],
+    },
+    {
+      employeeKey: '0002069',
+      name: 'PESSOA COM, VÍRGULA',
+      maskedCpf: '***.431.528-**',
+      affiliations: [{ employmentType: 'Conselho de Administração', referencePeriod: '07/2026', sourceSheet: 'CONSELHO ADM JULHO 2026' }],
+    },
+  ]);
+
+  assert.match(csv.split('\n')[0], /^nome,chapa,cpf_mascarado,tipo_vinculo,competencia,origem$/);
+  assert.match(csv, /"PESSOA COM, VÍRGULA"/);
+
+  const parsed = readFunctionalDataset(csv, { sourceName: 'Base de teste' });
+  assert.equal(parsed.people.length, 2);
+  assert.equal(parsed.dataset.referencePeriod, '07/2026');
+  assert.equal(parsed.dataset.payrollValuesImported, false);
+  assert.equal(parsed.people[1].name, 'PESSOA COM, VÍRGULA');
+  assert.equal(parsed.people[1].affiliations[0].employmentType, 'Conselho de Administração');
+});
+
+test('base minimizada descarta linha sem CPF mascarado', () => {
+  const { readFunctionalDataset } = require('../src/egos/adapters/internal-suape/functional-dataset');
+  const csv = [
+    'nome,chapa,cpf_mascarado,tipo_vinculo,competencia,origem',
+    'TOTAL GERAL,,,Efetivo,07/2026,FOLHA',
+    'PESSOA VALIDA,0009,***.777.888-**,Efetivo,07/2026,FOLHA',
+  ].join('\n');
+
+  const parsed = readFunctionalDataset(csv, { sourceName: 'Base de teste' });
+  assert.equal(parsed.people.length, 1);
+  assert.equal(parsed.people[0].name, 'PESSOA VALIDA');
+});
