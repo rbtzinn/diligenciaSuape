@@ -16,11 +16,13 @@ import { ReportService } from '../../report/services/report.service';
 interface DiligenceDashboardProps {
   diligence: DiligenceItem;
   onBack: () => void;
+  onDrillCompany?: (cnpj: string, name: string) => void;
 }
 
 export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   diligence,
   onBack,
+  onDrillCompany,
 }) => {
   const [activeDrawer, setActiveDrawer] = useState<
     'shareholders' | 'media' | 'sanctions' | 'processes' | 'questionnaire' | 'audit' | null
@@ -171,6 +173,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         onOpenProcesses={() => setActiveDrawer('processes')}
         onOpenQuestionnaire={() => setActiveDrawer('questionnaire')}
         onOpenAudit={() => setActiveDrawer('audit')}
+        onDrillCompany={onDrillCompany}
       />
 
       <ShareholdersDrawer
@@ -182,6 +185,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         consultedAt={diligence.companyConsultedAt || diligence.dataAnalise}
         legalNature={diligence.empresa.natureza_juridica}
         governanceHistory={diligence.governanceHistory}
+        onDrillCompany={onDrillCompany}
       />
       <AdverseMediaDrawer
         isOpen={activeDrawer === 'media'}

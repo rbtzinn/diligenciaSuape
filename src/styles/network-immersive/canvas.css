@@ -297,3 +297,26 @@
 .network-entity-report-card button:disabled { opacity: 0.65; cursor: wait; }
 
 .network-entity-report-card > p { grid-column: 1 / -1; margin: 0; color: #ffb8b2; font-size: 8px; line-height: 1.4; }
+
+/* Atalho para investigar uma empresa vinculada sem redigitar o CNPJ. */
+.network-drill-button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 46px;
+  padding: 9px 12px;
+  color: #d6ecff;
+  text-align: left;
+  background: rgba(18, 58, 96, 0.72);
+  border: 1px solid #2f6da8;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 150ms ease, transform 150ms ease;
+}
+
+.network-drill-button:hover { background: rgba(26, 79, 128, 0.9); transform: translateY(-1px); }
+.network-drill-button span { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.network-drill-button strong { font-size: 11px; font-weight: 750; color: #ffffff; }
+.network-drill-button small { font-size: 10px; color: #9fc4e6; }

@@ -9,6 +9,12 @@ import { Drawer } from '../../../components/ui/Drawer';
 import { Icons } from '../../../components/ui/Icons';
 import { Formatters } from '../../../lib/formatters';
 import { buildGovernanceTimeline, type GovernanceCategory } from '../utils/governanceHistory';
+import { extractShareholderCnpj } from '../utils/entityCnpj';
+
+/** Só sócio pessoa jurídica com CNPJ completo permite abrir nova diligência. */
+function entryCnpj(document?: string): string | null {
+  return extractShareholderCnpj({ nome_socio: '', cnpj_cpf_do_socio: document });
+}
 
 interface ShareholdersDrawerProps {
   isOpen: boolean;
@@ -19,6 +25,7 @@ interface ShareholdersDrawerProps {
   consultedAt?: string;
   legalNature?: string;
   governanceHistory?: GovernanceHistoryResult;
+  onDrillCompany?: (cnpj: string, name: string) => void;
 }
 
 type GovernanceFilter = 'all' | GovernanceCategory | 'former';
@@ -53,6 +60,7 @@ export const ShareholdersDrawer: React.FC<ShareholdersDrawerProps> = ({
   consultedAt,
   legalNature,
   governanceHistory,
+  onDrillCompany,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<GovernanceFilter>('all');
@@ -196,6 +204,17 @@ export const ShareholdersDrawer: React.FC<ShareholdersDrawerProps> = ({
                         {timeline.historical && !entry.isCurrent ? <b className="former">Não consta em {timeline.currentYear}</b> : null}
                       </div>
                       {entry.evidenceSummary ? <small className="governance-evidence-line">{entry.evidenceSummary}</small> : null}
+                      {/* Sócio pessoa jurídica: abre nova diligência sem redigitar o CNPJ. */}
+                      {onDrillCompany && entryCnpj(entry.document) ? (
+                        <button
+                          type="button"
+                          className="governance-drill-button"
+                          onClick={() => onDrillCompany(entryCnpj(entry.document) as string, entry.name)}
+                        >
+                          <Icons.Search size={13} aria-hidden="true" />
+                          <span>Fazer a diligência desta empresa</span>
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                   {entry.exercises.map((exercise) => (
