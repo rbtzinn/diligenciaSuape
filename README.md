@@ -205,11 +205,41 @@ fila, sem cobrança. Duas travas evitam gasto acidental: no OpenRouter só passa
 modelos terminados em `:free`, e o Gemini deve ser usado pela chave do AI Studio,
 sem faturamento ativado no projeto Google Cloud.
 
+### Busca assistida por IA
+
+Última camada, para quando o plano fixo de consultas termina sem achado relevante.
+
+A tentação natural é perguntar ao modelo "quais fraudes esta empresa cometeu".
+Não faça isso: o modelo não tem base de dados de empresas brasileiras e responde
+completando padrões, produzindo número de processo, valor de multa e nome de
+operação com aparência perfeita e origem inexistente. Num dossiê que vira PDF
+sobre uma empresa real, isso é risco de difamação.
+
+O que a rota faz em vez disso, em duas etapas:
+
+1. o modelo propõe **consultas de busca** que o plano fixo não cobriu — órgãos
+   estaduais e municipais, tribunal de contas da jurisdição, conselho profissional,
+   agência reguladora do CNAE, sindicato, Ministério Público do Trabalho, variações
+   do nome empresarial, sócio somado ao município;
+2. os buscadores reais executam essas consultas e os resultados voltam com fonte,
+   domínio e URL verificáveis.
+
+Toda consulta precisa estar **ancorada** na razão social, no nome fantasia, no CNPJ
+ou no nome completo de uma pessoa do quadro. Consulta sem âncora é rejeitada antes
+de rodar, porque traria notícia de empresa homônima como se fosse da investigada.
+
+O modelo ainda pode declarar hipóteses sobre a empresa, mas elas voltam num bloco
+de **quarentena**, visualmente separado, marcadas como `NAO_CONFIRMADA`. Não contam
+como evidência, não entram no cálculo de risco e não devem sair em relatório para
+terceiros sem verificação humana. Quando o modelo não conhece a empresa, devolver
+lista vazia é a resposta correta e é o que o prompt pede explicitamente.
+
 Endpoints:
 
 - `GET /api/ai/status` — provedores configurados.
 - `POST /api/ai/evidence-pack` — mostra o que seria enviado ao modelo, sem gastar cota.
 - `POST /api/ai/dossier-analysis` — gera a análise consolidada.
+- `POST /api/ai/investigative-leads` — busca assistida: o modelo sugere, os buscadores confirmam.
 
 A saída exige validação humana: não substitui parecer jurídico, e ausência de
 achado não é atestado de idoneidade.

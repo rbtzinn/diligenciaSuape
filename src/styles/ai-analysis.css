@@ -234,3 +234,25 @@
   border-top: 1px solid #e2e8f0;
   padding-top: 12px;
 }
+
+/* Quarentena: precisa parecer diferente de tudo que tem fonte. */
+.ai-quarantine {
+  border-width: 2px;
+  border-style: dashed;
+}
+
+.ai-quarantine .ai-analysis-bullets {
+  margin-top: 4px;
+}
+
+.ai-quarantine .ai-analysis-bullets li {
+  margin-bottom: 6px;
+}
+
+.ai-analysis-details code {
+  background: rgba(15, 23, 42, 0.06);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.75rem;
+  word-break: break-word;
+}
