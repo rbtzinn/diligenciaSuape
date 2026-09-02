@@ -454,6 +454,179 @@ export function ensureEgosSnapshot(diligence: DiligenceItem): EgosSnapshot {
     });
   }
 
+  const registerPublicOrganization = (
+    name: string | undefined,
+    provider: string,
+    code?: string,
+    cnpj?: string,
+    parent?: string,
+  ) => {
+    const cleanCnpj = CNPJ.clean(cnpj || '');
+    const key = code
+      ? `organization:siafi:${code}`
+      : cleanCnpj
+        ? `organization:cnpj:${cleanCnpj}`
+        : `organization:public:${stableHash(normalizeName(name))}`;
+    registerEntity({
+      key,
+      type: 'Organization',
+      name: name || 'Órgão público não informado',
+      normalizedName: normalizeName(name),
+      role: 'public_contracting_body',
+      depth: 1,
+      confidence: 100,
+      properties: { provider, publicOrganization: true, parentOrganization: parent || null, projectedLocally: true },
+      identifiers: [
+        ...(cleanCnpj ? [{ type: 'CNPJ', value: cleanCnpj, provider, confidence: 100 }] : []),
+        ...(code ? [{ type: 'SIAFI', value: code, provider, confidence: 100 }] : []),
+      ],
+    });
+    return key;
+  };
+
+  const registerPublicContract = (
+    provider: string,
+    contract: {
+      id?: number;
+      numeroControlePncp?: string;
+      numeroContrato?: string;
+      numeroProcesso?: string;
+      objeto?: string;
+      orgao?: string;
+      orgaoCodigo?: string;
+      orgaoCnpj?: string;
+      orgaoVinculado?: string;
+      orgaoVinculadoCodigo?: string;
+      orgaoSuperior?: string;
+      valorGlobal?: number | null;
+      valorFinal?: number;
+      valorInicial?: number | null;
+      dataAssinatura?: string;
+      vigenciaInicio?: string;
+      vigenciaFim?: string;
+      url?: string | null;
+    },
+    consultedAt?: string,
+  ) => {
+    const organizationKey = registerPublicOrganization(
+      contract.orgaoVinculado || contract.orgao,
+      provider,
+      contract.orgaoVinculadoCodigo || contract.orgaoCodigo,
+      contract.orgaoCnpj,
+      contract.orgaoSuperior,
+    );
+    const identifier = String(contract.numeroControlePncp || contract.id || contract.numeroContrato || contract.objeto || organizationKey);
+    const value = Number(contract.valorGlobal ?? contract.valorFinal ?? contract.valorInicial) || 0;
+    const key = `rel:public-contract:${stableHash(`${provider}|${identifier}|${organizationKey}`)}`;
+    const relationship = registerRelationship({
+      key,
+      sourceKey: rootKey,
+      targetKey: organizationKey,
+      type: 'CONTRACTED_BY',
+      label: 'Contratada por',
+      status: 'CONFIRMED',
+      confidence: 100,
+      properties: {
+        provider,
+        contractNumber: contract.numeroContrato || null,
+        processNumber: contract.numeroProcesso || null,
+        object: contract.objeto || null,
+        value,
+        signedAt: contract.dataAssinatura || null,
+        validFrom: contract.vigenciaInicio || null,
+        validUntil: contract.vigenciaFim || null,
+        sourceUrl: contract.url || null,
+        projectedLocally: true,
+      },
+    });
+    if (!relationship) return;
+    registerEvidence(`${key}|evidence`, {
+      relationshipId: relationship.id,
+      provider,
+      sourceName: provider === 'PNCP' ? 'Portal Nacional de Contratações Públicas' : 'Portal da Transparência do Governo Federal',
+      sourceUrl: contract.url || null,
+      query: rootCnpj || null,
+      identifier,
+      excerpt: `${contract.numeroContrato ? `Contrato ${contract.numeroContrato}. ` : ''}${contract.objeto || 'Objeto não informado.'}`,
+      confidence: 100,
+      retrievedAt: consultedAt || generatedAt,
+    });
+  };
+
+  const pncpContracts = diligence.pncp?.contratos || [];
+  pncpContracts.forEach((contract) => registerPublicContract('PNCP', contract, diligence.pncp?.consultadoEm));
+  coverage.push({
+    id: stableId('fallback-coverage', `${root.key}|pncp`),
+    axis: 'PUBLIC_CONTRACTS',
+    provider: 'PNCP',
+    status: diligence.pncp?.ok ? (diligence.pncp.consultaParcial ? 'PARTIAL' : 'CONSULTED') : 'UNAVAILABLE',
+    message: diligence.pncp?.ok
+      ? `${pncpContracts.length} contrato(s) foram confirmados pelo CNPJ no PNCP.`
+      : (diligence.pncp?.erro || 'O PNCP não foi consultado.'),
+    resultCount: pncpContracts.length,
+    consultedAt: diligence.pncp?.consultadoEm,
+  });
+
+  const federalContracts = (diligence.federalExposure?.contratos || [])
+    .filter((contract) => contract.cnpjConfirmado !== false);
+  federalContracts.forEach((contract) => registerPublicContract(
+    'CGU_FEDERAL_CONTRACTS',
+    contract,
+    diligence.federalExposure?.consultadoEm,
+  ));
+  (diligence.federalExposure?.recursos?.orgaos || []).forEach((agency) => {
+    const organizationKey = registerPublicOrganization(
+      agency.nome,
+      'CGU_FEDERAL_RESOURCES',
+      agency.codigo,
+      undefined,
+      agency.orgaoSuperior,
+    );
+    const key = `rel:public-payment:${stableHash(`${rootKey}|${organizationKey}|${diligence.federalExposure?.recursos?.periodoInicio}`)}`;
+    const relationship = registerRelationship({
+      key,
+      sourceKey: rootKey,
+      targetKey: organizationKey,
+      type: 'RECEIVED_PUBLIC_RESOURCES_FROM',
+      label: 'Recebeu recursos de',
+      status: 'CONFIRMED',
+      confidence: 100,
+      properties: {
+        provider: 'CGU_FEDERAL_RESOURCES',
+        value: agency.valorTotal,
+        periodStart: diligence.federalExposure?.recursos?.periodoInicio || null,
+        periodEnd: diligence.federalExposure?.recursos?.periodoFim || null,
+        sourceUrl: diligence.federalExposure?.sourceUrl || null,
+        projectedLocally: true,
+      },
+    });
+    if (!relationship) return;
+    registerEvidence(`${key}|evidence`, {
+      relationshipId: relationship.id,
+      provider: 'CGU_FEDERAL_RESOURCES',
+      sourceName: 'Portal da Transparência do Governo Federal',
+      sourceUrl: diligence.federalExposure?.sourceUrl || null,
+      query: rootCnpj || null,
+      identifier: agency.codigo || agency.nome,
+      excerpt: `Pagamentos agregados no período consultado: ${agency.valorTotal}.`,
+      confidence: 100,
+      retrievedAt: diligence.federalExposure?.consultadoEm || generatedAt,
+    });
+  });
+  coverage.push({
+    id: stableId('fallback-coverage', `${root.key}|federal-exposure`),
+    axis: 'PUBLIC_CONTRACTS',
+    provider: 'CGU_FEDERAL_CONTRACTS',
+    status: diligence.federalExposure?.ok
+      ? (diligence.federalExposure.consultaParcial ? 'PARTIAL' : 'CONSULTED')
+      : 'UNAVAILABLE',
+    message: diligence.federalExposure?.ok
+      ? `${federalContracts.length} contrato(s) federal(is) e ${diligence.federalExposure.recursos?.quantidadeRegistros || 0} pagamento(s) foram vinculados ao CNPJ.`
+      : (diligence.federalExposure?.erro || 'A exposição federal não foi consultada.'),
+    resultCount: federalContracts.length + (diligence.federalExposure?.recursos?.quantidadeRegistros || 0),
+    consultedAt: diligence.federalExposure?.consultadoEm,
+  });
+
   (diligence.risco?.detalhes || [])
     .filter((detail) => detail.requerRevisao)
     .forEach((detail, index) => {

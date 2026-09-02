@@ -45,6 +45,8 @@ const COVERAGE_LABELS = Object.freeze({
   CORPORATE_EXPANSION: 'Expansão societária',
   FUND_RELATIONSHIPS: 'Prestadores e rede de fundos',
   FUND_NETWORK: 'Prestadores e rede de fundos',
+  PUBLIC_CONTRACTS: 'Contratos públicos confirmados',
+  PUBLIC_PAYMENTS: 'Pagamentos públicos confirmados',
 });
 
 function asArray(value) {

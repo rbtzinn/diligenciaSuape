@@ -20,6 +20,7 @@ import {
   RiskAssessment,
   PersonSanctionsSummary,
   PncpSummary,
+  FederalExposureSummary,
 } from '../types';
 
 interface CompanyApiResponse {
@@ -342,6 +343,24 @@ export const DiligenceService = {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Falha na consulta ao PNCP';
       return { ok: false, erro: message, contratos: [], contratacoes: [], consultadoEm: new Date().toISOString() };
+    }
+  },
+
+  /** Contratos e pagamentos do Executivo Federal, confirmados pelo CNPJ. */
+  async getFederalExposure(cnpj: string): Promise<FederalExposureSummary> {
+    try {
+      return await request<FederalExposureSummary>(`/api/cgu/federal-exposure/${CNPJ.clean(cnpj)}`, {
+        timeoutMs: 90_000,
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Falha na consulta ao Portal da Transparência';
+      return {
+        ok: false,
+        erro: message,
+        contratos: [],
+        recursos: null,
+        consultadoEm: new Date().toISOString(),
+      };
     }
   },
 };

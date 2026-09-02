@@ -1,6 +1,6 @@
 // ==========================================================
-// DILIGÊNCIA 360 — Contratos públicos no PNCP
-// Fonte direta: não passa por buscador e não depende do canal web.
+// DILIGÊNCIA 360 — Contratos e pagamentos públicos
+// Fontes diretas: PNCP e Portal da Transparência do Governo Federal.
 // ==========================================================
 
 import React from 'react';
@@ -8,12 +8,13 @@ import { Drawer } from '../../../components/ui/Drawer';
 import { Badge } from '../../../components/ui/Badge';
 import { EmptyState } from '../../../components/ui/EmptyState';
 import { Icons } from '../../../components/ui/Icons';
-import type { PncpContract, PncpSummary } from '../types';
+import type { FederalContract, FederalExposureSummary, PncpContract, PncpSummary } from '../types';
 
 interface PncpContractsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   pncp?: PncpSummary;
+  federalExposure?: FederalExposureSummary;
 }
 
 function formatCurrency(value?: number | null) {
@@ -82,30 +83,65 @@ const ContractCard: React.FC<{ contract: PncpContract; confirmed: boolean }> = (
   </article>
 );
 
-export const PncpContractsDrawer: React.FC<PncpContractsDrawerProps> = ({ isOpen, onClose, pncp }) => {
+const FederalContractCard: React.FC<{ contract: FederalContract }> = ({ contract }) => (
+  <article className="pncp-card">
+    <header className="pncp-card-head">
+      <Badge variant="high" size="sm">CNPJ confirmado · Federal</Badge>
+      <strong>{contract.numeroContrato || 'Contrato sem número'}</strong>
+    </header>
+    <p className="pncp-card-object">{contract.objeto || 'Objeto não informado'}</p>
+    <dl className="pncp-card-grid">
+      <div><dt>Órgão</dt><dd>{contract.orgao || '—'}</dd></div>
+      <div><dt>Órgão superior</dt><dd>{contract.orgaoSuperior || '—'}</dd></div>
+      <div><dt>Valor final</dt><dd className="pncp-value">{formatCurrency(contract.valorFinal || contract.valorInicial)}</dd></div>
+      <div>
+        <dt>Vigência</dt>
+        <dd>{formatDate(contract.vigenciaInicio) || '—'}{contract.vigenciaFim ? ` até ${formatDate(contract.vigenciaFim)}` : ''}</dd>
+      </div>
+      <div><dt>Processo</dt><dd>{contract.numeroProcesso || '—'}</dd></div>
+      <div><dt>Situação</dt><dd>{contract.situacao || '—'}</dd></div>
+    </dl>
+    {contract.url ? (
+      <a className="pncp-card-link" href={contract.url} target="_blank" rel="noopener noreferrer">
+        Abrir no Portal da Transparência
+        <Icons.ExternalLink size={12} aria-hidden="true" />
+      </a>
+    ) : null}
+  </article>
+);
+
+export const PncpContractsDrawer: React.FC<PncpContractsDrawerProps> = ({
+  isOpen,
+  onClose,
+  pncp,
+  federalExposure,
+}) => {
   const confirmados = pncp?.contratos || [];
   const divergentes = pncp?.contratosDivergentes || [];
   const naoVerificados = pncp?.contratosNaoVerificados || [];
   const contratacoes = pncp?.contratacoes || [];
   const resumo = pncp?.resumo;
+  const federalContracts = federalExposure?.contratos || [];
+  const federalResources = federalExposure?.recursos;
+  const totalContracts = (resumo?.confirmados || 0) + federalContracts.length;
 
   return (
     <Drawer
       isOpen={isOpen}
       onClose={onClose}
-      title="Contratos públicos (PNCP)"
+      title="Contratos e recursos públicos"
       subtitle={
-        pncp?.ok
-          ? `${resumo?.confirmados || 0} contrato(s) confirmado(s) pelo CNPJ do fornecedor em ${resumo?.orgaosDistintos || 0} órgão(s)`
-          : 'Consulta ao Portal Nacional de Contratações Públicas'
+        pncp?.ok || federalExposure?.ok
+          ? `${totalContracts} contrato(s) confirmado(s) pelo CNPJ em fontes oficiais`
+          : 'Consultas ao PNCP e ao Portal da Transparência'
       }
     >
       <div className="pncp-stack">
-        {!pncp ? (
+        {!pncp && !federalExposure ? (
           <EmptyState
             icon={<Icons.Landmark size={28} />}
             title="Consulta não executada"
-            description="Rode uma nova diligência para consultar o PNCP."
+            description="Rode uma nova diligência para consultar as fontes públicas."
           />
         ) : null}
 
@@ -113,6 +149,59 @@ export const PncpContractsDrawer: React.FC<PncpContractsDrawerProps> = ({ isOpen
           <div className="pncp-notice pncp-notice-error">
             <strong>Fonte indisponível.</strong>
             <p>{pncp.erro}</p>
+          </div>
+        ) : null}
+
+        {federalExposure?.ok ? (
+          <>
+            <section className="pncp-section">
+              <h3>Contratos do Executivo Federal ({federalContracts.length})</h3>
+              <p className="pncp-hint">
+                Registros do Portal da Transparência localizados diretamente pelo CNPJ do fornecedor.
+              </p>
+              {federalContracts.length > 0 ? (
+                federalContracts.map((contract, index) => (
+                  <FederalContractCard key={contract.id || index} contract={contract} />
+                ))
+              ) : (
+                <p className="pncp-hint">Nenhum contrato federal foi retornado para o CNPJ.</p>
+              )}
+            </section>
+
+            {federalResources ? (
+              <section className="pncp-section">
+                <h3>Pagamentos do Executivo Federal</h3>
+                <div className="pncp-total">
+                  <span>Total no período {federalResources.periodoInicio} a {federalResources.periodoFim}</span>
+                  <strong>{formatCurrency(federalResources.valorTotal)}</strong>
+                </div>
+                {federalResources.orgaos.length > 0 ? (
+                  <ul className="pncp-plain-list">
+                    {federalResources.orgaos.map((agency) => (
+                      <li key={agency.codigo || agency.nome}>
+                        <strong>{agency.nome}</strong> — {formatCurrency(agency.valorTotal)}
+                        {agency.orgaoSuperior ? ` · ${agency.orgaoSuperior}` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="pncp-hint">Nenhum pagamento federal foi retornado no período consultado.</p>
+                )}
+              </section>
+            ) : null}
+
+            {federalExposure.consultaParcial ? (
+              <div className="pncp-notice pncp-notice-warning">
+                <strong>Cobertura federal parcial.</strong>
+                <p>{federalExposure.falhas?.join(' · ') || 'Um ou mais períodos não responderam.'}</p>
+              </div>
+            ) : null}
+            <p className="pncp-disclaimer">{federalExposure.limitacao}</p>
+          </>
+        ) : federalExposure ? (
+          <div className="pncp-notice pncp-notice-error">
+            <strong>Portal da Transparência indisponível.</strong>
+            <p>{federalExposure.erro}</p>
           </div>
         ) : null}
 
@@ -136,7 +225,7 @@ export const PncpContractsDrawer: React.FC<PncpContractsDrawerProps> = ({ isOpen
             ) : null}
 
             <section className="pncp-section">
-              <h3>Contratos confirmados ({confirmados.length})</h3>
+              <h3>Contratos confirmados no PNCP ({confirmados.length})</h3>
               {confirmados.length > 0 ? (
                 confirmados.map((contract, index) => (
                   <ContractCard key={contract.numeroControlePncp || index} contract={contract} confirmed />

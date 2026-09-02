@@ -309,20 +309,22 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
         }
 
 
-        // 6C. PNCP — fonte direta de contrato publico, sem depender de buscador.
-        // A busca do portal casa o nome no texto; o backend confirma pelo CNPJ
-        // do fornecedor antes de qualquer contrato entrar no dossie.
+        // 6C. Contratos públicos — PNCP e Portal da Transparência em paralelo.
+        // Ambas as fontes confirmam o fornecedor pelo CNPJ antes de materializar
+        // contratos e órgãos públicos no dossiê e no grafo.
         updateStep('pncp', 'loading');
-        const pncp = await DiligenceService.getPncpContracts({
-          cnpj: clean,
-          razaoSocial: empresa.razao_social || '',
-          nomeFantasia: empresa.nome_fantasia || '',
-        });
+        const [pncp, federalExposure] = await Promise.all([
+          DiligenceService.getPncpContracts({
+            cnpj: clean,
+            razaoSocial: empresa.razao_social || '',
+            nomeFantasia: empresa.nome_fantasia || '',
+          }),
+          DiligenceService.getFederalExposure(clean),
+        ]);
+        const federais = federalExposure.resumo?.contratosConfirmados || 0;
         if (pncp.ok) {
           const confirmados = pncp.resumo?.confirmados || 0;
           const divergentes = pncp.resumo?.divergentes || 0;
-          updateStep('pncp', pncp.consultaParcial ? 'error' : 'done',
-            confirmados > 0 ? confirmados + ' contrato(s) confirmado(s)' : 'Sem contrato confirmado');
           if (confirmados > 0) {
             const valor = pncp.resumo?.valorTotalConfirmado || 0;
             log('PNCP: ' + confirmados + ' contrato(s) publico(s) confirmado(s) pelo CNPJ do fornecedor, em ' +
@@ -338,9 +340,33 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
             log('PNCP: parte das consultas falhou; a cobertura desta execucao esta incompleta.', 'warning');
           }
         } else {
-          updateStep('pncp', 'error', 'Fonte indisponivel');
           log('PNCP: ' + (pncp.erro || 'fonte indisponivel') + '.', 'warning');
         }
+        if (federalExposure.ok) {
+          const recursos = federalExposure.resumo?.recursosRecebidos || 0;
+          log('Portal da Transparência: ' + federais + ' contrato(s) federal(is) e ' +
+            recursos.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) +
+            ' em pagamentos no período consultado, todos vinculados ao CNPJ.');
+          if (federalExposure.consultaParcial) {
+            log('Portal da Transparência: parte do histórico federal não respondeu; a cobertura foi marcada como parcial.', 'warning');
+          }
+        } else {
+          log('Portal da Transparência — contratos e pagamentos: ' +
+            (federalExposure.erro || 'fonte indisponível') + '.', 'warning');
+        }
+        const publicSourcesOk = pncp.ok || federalExposure.ok;
+        const publicCoveragePartial = !pncp.ok || !federalExposure.ok
+          || Boolean(pncp.consultaParcial) || Boolean(federalExposure.consultaParcial);
+        const totalPublicContracts = (pncp.resumo?.confirmados || 0) + federais;
+        updateStep(
+          'pncp',
+          publicSourcesOk ? (publicCoveragePartial ? 'error' : 'done') : 'error',
+          publicSourcesOk
+            ? totalPublicContracts > 0
+              ? totalPublicContracts + ' contrato(s) confirmado(s)'
+              : 'Sem contrato confirmado'
+            : 'Fontes indisponíveis',
+        );
         // 6D. Offshore Leaks — reconciliação nominal, nunca confirmação automática
         updateStep('offshore', 'loading');
         const offshore = await DiligenceService.searchOffshore({
@@ -403,6 +429,7 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           fundNetwork,
           offshore,
           pncp,
+          federalExposure,
           risco,
           analise,
           timeline,

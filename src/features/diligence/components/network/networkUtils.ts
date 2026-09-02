@@ -40,6 +40,8 @@ export const RELATION_TYPE_LABELS: Record<string, string> = {
   LEGAL_REPRESENTATIVE_OF: 'Representantes legais',
   QSA_MEMBER_OF: 'Vínculos por nome e CPF mascarado',
   CO_MENTIONED_WITH: 'Co-menções em fontes públicas',
+  CONTRACTED_BY: 'Contratos públicos confirmados',
+  RECEIVED_PUBLIC_RESOURCES_FROM: 'Pagamentos públicos confirmados',
 };
 
 export const CHAIN_ENTITY_ORDER: Record<string, number> = {
@@ -73,6 +75,7 @@ const CORE_RELATIONAL_ENTITY_TYPES = new Set([
   'Person',
   'InvestmentFund',
   'InvestmentFundClass',
+  'Organization',
 ]);
 
 const CORE_RELATIONSHIP_TYPES = new Set([
@@ -86,6 +89,8 @@ const CORE_RELATIONSHIP_TYPES = new Set([
   'SHAREHOLDER_OF',
   'LEGAL_REPRESENTATIVE_OF',
   'QSA_MEMBER_OF',
+  'CONTRACTED_BY',
+  'RECEIVED_PUBLIC_RESOURCES_FROM',
 ]);
 
 export function normalizeText(value: string) {

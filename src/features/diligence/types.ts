@@ -10,6 +10,7 @@ import { CorporateNetworkSummary } from './types/corporateNetwork.types';
 import { OffshoreSummary } from './types/offshore.types';
 import { FundNetworkSummary } from './types/fundNetwork.types';
 import { PncpSummary } from './types/pncp.types';
+import { FederalExposureSummary } from './types/federalExposure.types';
 
 export * from './types/judicial.types';
 export * from './types/adverseMedia.types';
@@ -19,6 +20,7 @@ export * from './types/offshore.types';
 export * from './types/fundNetwork.types';
 export * from './types/aiAnalysis.types';
 export * from './types/pncp.types';
+export * from './types/federalExposure.types';
 
 export interface Shareholder {
   nome_socio: string;
@@ -480,6 +482,7 @@ export interface DiligenceItem {
   returnJustification?: string;
   egos?: EgosSnapshot;
   pncp?: PncpSummary;
+  federalExposure?: FederalExposureSummary;
 }
 
 export interface DiligenceStepConfig {

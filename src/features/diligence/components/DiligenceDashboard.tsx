@@ -238,6 +238,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         isOpen={activeDrawer === 'pncp'}
         onClose={() => setActiveDrawer(null)}
         pncp={diligence.pncp}
+        federalExposure={diligence.federalExposure}
       />
       <AiAnalysisDrawer
         isOpen={activeDrawer === 'ai'}

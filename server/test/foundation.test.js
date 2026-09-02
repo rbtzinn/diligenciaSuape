@@ -9,6 +9,7 @@ const { adaptReceita } = require('../src/egos/adapters/receita.adapter');
 const { adaptCgu } = require('../src/egos/adapters/cgu.adapter');
 const { adaptExternalResults } = require('../src/egos/adapters/external-results.adapter');
 const { aggregateGovernanceRecords } = require('../src/services/cvm-governance.service');
+const { mapFederalContract, summarizeResourceReceipts } = require('../src/services/cgu.service');
 const {
   applyEgosOverlay,
   classifyRisk,
@@ -462,6 +463,88 @@ test('rotas de consulta recusam acesso sem token', async (t) => {
     headers: { Origin: 'https://origem-nao-autorizada.example' },
   });
   assert.equal(corsResponse.status, 403);
+});
+
+test('contrato federal só é marcado como confirmado pelo CNPJ exato', () => {
+  const record = {
+    id: 703541,
+    numero: '000162017',
+    fornecedor: { cnpjFormatado: '07.868.353/0001-57', nome: 'SOLIMP' },
+    unidadeGestora: { codigo: '153037', nome: 'UNIVERSIDADE FEDERAL DE ALAGOAS' },
+    valorFinalCompra: 2215986.15,
+  };
+
+  assert.equal(mapFederalContract(record, '07868353000157').cnpjConfirmado, true);
+  assert.equal(mapFederalContract(record, '11222333000181').cnpjConfirmado, false);
+});
+
+test('pagamentos federais são agregados por órgão sem inflar o total', () => {
+  const summary = summarizeResourceReceipts([
+    { codigoPessoa: '07868353000157', anoMes: '201701', codigoOrgao: '26231', nomeOrgao: 'UFAL', valor: 100 },
+    { codigoPessoa: '07868353000157', anoMes: '201702', codigoOrgao: '26231', nomeOrgao: 'UFAL', valor: 250 },
+    { codigoPessoa: '11222333000181', anoMes: '201702', codigoOrgao: '26231', nomeOrgao: 'UFAL', valor: 9999 },
+  ], '07868353000157');
+
+  assert.equal(summary.quantidadeRegistros, 2);
+  assert.equal(summary.valorTotal, 350);
+  assert.equal(summary.orgaos.length, 1);
+  assert.equal(summary.orgaos[0].valorTotal, 350);
+});
+
+test('EGOS materializa contratos e pagamentos públicos como relações oficiais', () => {
+  const payload = {
+    id: 'diligence-public-contracts',
+    cnpj: '07868353000157',
+    razaoSocial: 'SOLIMP TERCEIRIZACOES DE MAO DE OBRA LTDA',
+    dataAnalise: '2026-09-02T10:00:00.000Z',
+    empresa: { cnpj: '07868353000157', razao_social: 'SOLIMP TERCEIRIZACOES DE MAO DE OBRA LTDA', descricao_situacao_cadastral: 'ATIVA' },
+    socios: [],
+    pncp: {
+      ok: true,
+      consultadoEm: '2026-09-02T10:00:00.000Z',
+      contratos: [{
+        origem: 'PNCP',
+        numeroControlePncp: '08903189000134-2-000014/2026',
+        numeroContrato: '14/2026',
+        orgao: 'RECIFE CAMARA MUNICIPAL',
+        orgaoCnpj: '08903189000134',
+        fornecedorCnpj: '07868353000157',
+        valorGlobal: 6487287.48,
+        status: 'CONFIRMADO',
+        url: 'https://pncp.gov.br/app/contratos/08903189000134/2026/14',
+      }],
+    },
+    federalExposure: {
+      ok: true,
+      sourceUrl: 'https://portaldatransparencia.gov.br/pessoa-juridica/07868353000157',
+      consultadoEm: '2026-09-02T10:00:00.000Z',
+      contratos: [{
+        origem: 'PORTAL_TRANSPARENCIA',
+        id: 703541,
+        numeroContrato: '000162017',
+        orgao: 'UNIVERSIDADE FEDERAL DE ALAGOAS',
+        orgaoCodigo: '153037',
+        fornecedorCnpj: '07868353000157',
+        cnpjConfirmado: true,
+        valorFinal: 2215986.15,
+      }],
+      recursos: {
+        quantidadeRegistros: 9,
+        periodoInicio: '01/2014',
+        periodoFim: '09/2026',
+        orgaos: [{ codigo: '26231', nome: 'UNIVERSIDADE FEDERAL DE ALAGOAS', valorTotal: 861264.89 }],
+      },
+    },
+  };
+  const builder = new EgosGraphBuilder({ diligenceId: payload.id, rootCnpj: payload.cnpj });
+  const context = adaptReceita(builder, payload);
+  adaptExternalResults(builder, context, payload);
+  const snapshot = builder.toSnapshot();
+
+  assert.equal(snapshot.relationships.filter((item) => item.type === 'CONTRACTED_BY').length, 2);
+  assert.equal(snapshot.relationships.filter((item) => item.type === 'RECEIVED_PUBLIC_RESOURCES_FROM').length, 1);
+  assert.equal(snapshot.evidences.filter((item) => item.provider === 'CGU_FEDERAL_CONTRACTS').length, 1);
+  assert.equal(snapshot.coverage.find((item) => item.provider === 'PNCP').status, 'CONSULTED');
 });
 
 test('usa a credencial válida do Google Sheets quando a chave Firebase legada está inválida', () => {

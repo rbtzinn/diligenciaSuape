@@ -9,6 +9,8 @@ const CGU_API_KEY = process.env.CGU_API_KEY || '';
 const MAX_PAGES_SAFETY = 20; // Limite técnico de segurança (300 registros)
 const PAGE_SIZE = 15;        // Tamanho de página praticado pela API da CGU
 const BASE_URL = 'https://api.portaldatransparencia.gov.br/api-de-dados';
+const FEDERAL_RESOURCES_START_YEAR = 2014;
+const FEDERAL_RESOURCES_MAX_YEARS = 15;
 
 function parseBRDate(str) {
   if (!str || typeof str !== 'string') return null;
@@ -90,6 +92,141 @@ function mapSanctionRecord(x, defaultLabel) {
   };
 }
 
+function onlyDigits(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+function companyPortalUrl(cnpj) {
+  return `https://portaldatransparencia.gov.br/pessoa-juridica/${onlyDigits(cnpj)}`;
+}
+
+function mapFederalContract(record, investigatedCnpj) {
+  const supplierCnpj = onlyDigits(record?.fornecedor?.cnpjFormatado);
+  return {
+    origem: 'PORTAL_TRANSPARENCIA',
+    id: record?.id,
+    numeroContrato: record?.numero || '',
+    numeroProcesso: record?.numeroProcesso || record?.compra?.numeroProcesso || '',
+    numeroCompra: record?.compra?.numero || '',
+    objeto: record?.objeto || record?.compra?.objeto || '',
+    situacao: record?.situacaoContrato || '',
+    modalidade: record?.modalidadeCompra || '',
+    orgao: record?.unidadeGestora?.nome || record?.unidadeGestoraCompras?.nome || '',
+    orgaoCodigo: record?.unidadeGestora?.codigo || '',
+    orgaoCnpj: onlyDigits(record?.unidadeGestora?.orgaoVinculado?.cnpj),
+    orgaoVinculado: record?.unidadeGestora?.orgaoVinculado?.nome || '',
+    orgaoVinculadoCodigo: record?.unidadeGestora?.orgaoVinculado?.codigoSIAFI || '',
+    orgaoSuperior: record?.unidadeGestora?.orgaoMaximo?.nome || '',
+    fornecedorNome: record?.fornecedor?.nome || record?.fornecedor?.razaoSocialReceita || '',
+    fornecedorCnpj: supplierCnpj,
+    fornecedorCnpjFmt: record?.fornecedor?.cnpjFormatado || '',
+    cnpjConfirmado: Boolean(supplierCnpj && supplierCnpj === onlyDigits(investigatedCnpj)),
+    valorInicial: Number(record?.valorInicialCompra) || 0,
+    valorFinal: Number(record?.valorFinalCompra) || 0,
+    dataAssinatura: record?.dataAssinatura || '',
+    dataPublicacao: record?.dataPublicacaoDOU || '',
+    vigenciaInicio: record?.dataInicioVigencia || '',
+    vigenciaFim: record?.dataFimVigencia || '',
+    url: companyPortalUrl(investigatedCnpj),
+  };
+}
+
+function summarizeResourceReceipts(rows, investigatedCnpj) {
+  const cnpj = onlyDigits(investigatedCnpj);
+  const matching = (Array.isArray(rows) ? rows : []).filter((row) => (
+    !onlyDigits(row?.codigoPessoa) || onlyDigits(row.codigoPessoa) === cnpj
+  ));
+  const agencies = new Map();
+  const years = new Map();
+  let valorTotal = 0;
+
+  for (const row of matching) {
+    const value = Number(row?.valor) || 0;
+    const year = String(row?.anoMes || '').slice(0, 4) || 'Não informado';
+    const agencyKey = String(row?.codigoOrgao || row?.nomeOrgao || row?.codigoUG || 'nao-informado');
+    const current = agencies.get(agencyKey) || {
+      codigo: row?.codigoOrgao || '',
+      nome: row?.nomeOrgao || row?.nomeUG || 'Órgão não informado',
+      orgaoSuperiorCodigo: row?.codigoOrgaoSuperior || '',
+      orgaoSuperior: row?.nomeOrgaoSuperior || '',
+      valorTotal: 0,
+      meses: new Set(),
+      unidades: new Set(),
+    };
+    current.valorTotal += value;
+    if (row?.anoMes) current.meses.add(String(row.anoMes));
+    if (row?.nomeUG) current.unidades.add(String(row.nomeUG));
+    agencies.set(agencyKey, current);
+    years.set(year, (years.get(year) || 0) + value);
+    valorTotal += value;
+  }
+
+  return {
+    quantidadeRegistros: matching.length,
+    valorTotal,
+    orgaos: [...agencies.values()]
+      .map((agency) => ({
+        ...agency,
+        meses: [...agency.meses].sort(),
+        unidades: [...agency.unidades].sort(),
+      }))
+      .sort((a, b) => b.valorTotal - a.valorTotal),
+    anos: [...years.entries()]
+      .map(([ano, valor]) => ({ ano, valor }))
+      .sort((a, b) => a.ano.localeCompare(b.ano)),
+  };
+}
+
+function annualPeriods(now = new Date()) {
+  const currentYear = now.getUTCFullYear();
+  const currentMonth = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const firstYear = Math.max(FEDERAL_RESOURCES_START_YEAR, currentYear - FEDERAL_RESOURCES_MAX_YEARS + 1);
+  return Array.from({ length: currentYear - firstYear + 1 }, (_, index) => {
+    const year = firstYear + index;
+    return {
+      year,
+      start: `01/${year}`,
+      end: year === currentYear ? `${currentMonth}/${year}` : `12/${year}`,
+    };
+  });
+}
+
+async function fetchFederalResourceReceipts(cnpj) {
+  const periods = annualPeriods();
+  const rows = [];
+  const failedPeriods = [];
+  let consultaParcial = false;
+
+  // Três anos por vez mantêm a diligência rápida sem estourar a cota pública.
+  for (let index = 0; index < periods.length; index += 3) {
+    const batch = periods.slice(index, index + 3);
+    const results = await Promise.all(batch.map(async (period) => {
+      try {
+        const result = await fetchAllPages('despesas/recursos-recebidos', {
+          mesAnoInicio: period.start,
+          mesAnoFim: period.end,
+          codigoFavorecido: cnpj,
+        });
+        return { period, ...result };
+      } catch (error) {
+        return { period, error };
+      }
+    }));
+
+    for (const result of results) {
+      if (result.error) {
+        consultaParcial = true;
+        failedPeriods.push(String(result.period.year));
+        continue;
+      }
+      rows.push(...result.rows);
+      consultaParcial = consultaParcial || result.consultaParcial;
+    }
+  }
+
+  return { rows, consultaParcial, failedPeriods, periods };
+}
+
 const CADASTROS = Object.freeze({
   CEIS: { path: 'ceis', label: 'Sanção registrada', fonte: 'Portal da Transparência (CGU / CEIS)' },
   CNEP: { path: 'cnep', label: 'Punição registrada', fonte: 'Portal da Transparência (CGU / CNEP)' },
@@ -147,6 +284,80 @@ const CguService = {
   async getCNEP(rawCnpj) {
     const cnpj = String(rawCnpj).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
     return querySanctions('CNEP', { codigoSancionado: cnpj });
+  },
+
+  /** Contratos e pagamentos do Executivo Federal vinculados exatamente ao CNPJ. */
+  async getFederalExposure(rawCnpj) {
+    const cnpj = onlyDigits(rawCnpj);
+    const consultadoEm = new Date().toISOString();
+    const sourceUrl = companyPortalUrl(cnpj);
+    if (cnpj.length !== 14) {
+      return { ok: false, status: 400, erro: 'CNPJ inválido.', cnpj, contratos: [], recursos: null, consultadoEm };
+    }
+    if (!this.isConfigured()) {
+      return {
+        ok: false,
+        semChave: true,
+        erro: 'Integração CGU não configurada.',
+        cnpj,
+        contratos: [],
+        recursos: null,
+        consultadoEm,
+      };
+    }
+
+    const failures = [];
+    let contractsResult = { rows: [], consultaParcial: false };
+    let resourcesResult = { rows: [], consultaParcial: false, failedPeriods: [], periods: annualPeriods() };
+
+    try {
+      contractsResult = await fetchAllPages('contratos/cpf-cnpj', { cpfCnpj: cnpj });
+    } catch (error) {
+      failures.push(`Contratos federais: ${error.message}`);
+    }
+    try {
+      resourcesResult = await fetchFederalResourceReceipts(cnpj);
+    } catch (error) {
+      failures.push(`Recursos recebidos: ${error.message}`);
+    }
+    if (resourcesResult.periods?.length > 0
+      && resourcesResult.failedPeriods?.length === resourcesResult.periods.length) {
+      failures.push('Recursos recebidos: todos os períodos consultados falharam.');
+    }
+
+    const contracts = contractsResult.rows
+      .map((row) => mapFederalContract(row, cnpj))
+      .filter((contract) => contract.cnpjConfirmado);
+    const resourceSummary = summarizeResourceReceipts(resourcesResult.rows, cnpj);
+    const periods = resourcesResult.periods || annualPeriods();
+    const consultaParcial = failures.length > 0
+      || contractsResult.consultaParcial
+      || resourcesResult.consultaParcial;
+
+    return {
+      ok: failures.length < 2,
+      provider: 'Portal da Transparência do Governo Federal (CGU)',
+      sourceUrl,
+      consultadoEm,
+      cnpjInvestigado: cnpj,
+      consultaParcial,
+      falhas: failures,
+      contratos: contracts,
+      recursos: {
+        ...resourceSummary,
+        periodoInicio: periods[0]?.start,
+        periodoFim: periods[periods.length - 1]?.end,
+        anosComFalha: resourcesResult.failedPeriods || [],
+      },
+      resumo: {
+        contratosConfirmados: contracts.length,
+        valorContratos: contracts.reduce((total, contract) => total + (contract.valorFinal || contract.valorInicial || 0), 0),
+        recursosRecebidos: resourceSummary.valorTotal,
+        orgaosContratantes: new Set(contracts.map((contract) => contract.orgaoCodigo || contract.orgao)).size,
+        orgaosPagadores: resourceSummary.orgaos.length,
+      },
+      limitacao: `A consulta cobre o Executivo Federal. Os pagamentos foram pesquisados de ${periods[0]?.start} a ${periods[periods.length - 1]?.end}; estados, municípios e períodos anteriores não estão incluídos.`,
+    };
   },
 
   /**
@@ -214,3 +425,6 @@ const CguService = {
 };
 
 module.exports = CguService;
+module.exports.mapFederalContract = mapFederalContract;
+module.exports.summarizeResourceReceipts = summarizeResourceReceipts;
+module.exports.annualPeriods = annualPeriods;

@@ -101,7 +101,13 @@ export const InvestigationOverviewPanel: React.FC<InvestigationOverviewPanelProp
     { id: 'processes', label: 'Processos encontrados', count: discoveries.length, icon: <Icons.Scale size={16} />, action: onOpenProcesses },
     { id: 'questionnaire', label: 'Checagens da política', count: undefined, icon: <Icons.CheckCircle size={16} />, action: onOpenQuestionnaire },
     { id: 'audit', label: 'Fontes e auditoria', count: evidenceCount, icon: <Icons.Database size={16} />, action: onOpenAudit },
-    { id: 'pncp', label: 'Contratos públicos (PNCP)', count: diligence.pncp?.resumo?.confirmados, icon: <Icons.Landmark size={16} />, action: onOpenPncp },
+    {
+      id: 'pncp',
+      label: 'Contratos e recursos públicos',
+      count: (diligence.pncp?.resumo?.confirmados || 0) + (diligence.federalExposure?.resumo?.contratosConfirmados || 0),
+      icon: <Icons.Landmark size={16} />,
+      action: onOpenPncp,
+    },
     { id: 'ai', label: 'Leitura consolidada por IA', count: undefined, icon: <Icons.Sparkles size={16} />, action: onOpenAiAnalysis },
   ];
 

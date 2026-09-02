@@ -22,6 +22,12 @@ router.get('/cnep/:cnpj', async (req, res) => {
   res.status(result.status || 200).json(result);
 });
 
+// Contratos e pagamentos do Executivo Federal — vínculo exato por CNPJ.
+router.get('/federal-exposure/:cnpj', async (req, res) => {
+  const result = await CguService.getFederalExposure(req.params.cnpj);
+  res.status(result.status || 200).json(result);
+});
+
 // PEP — Pessoas Expostas Politicamente
 router.get('/pep', async (req, res) => {
   const result = await CguService.getPEP(req.query.nome);

@@ -25,6 +25,8 @@ const AXIS_LABELS: Record<string, string> = {
   INTERNAL_SUAPE: 'Vínculo institucional SUAPE',
   CORPORATE_EXPANSION: 'Expansão societária',
   FUND_RELATIONSHIPS: 'Gestor, administrador e prestadores do fundo',
+  PUBLIC_CONTRACTS: 'Contratos públicos confirmados',
+  PUBLIC_PAYMENTS: 'Pagamentos públicos confirmados',
   ENTITY_RESOLUTION: 'Resolução de identidade',
   RELATIONSHIPS: 'Rede de relacionamentos',
 };

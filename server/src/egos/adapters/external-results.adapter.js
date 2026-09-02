@@ -370,6 +370,181 @@ function adaptOfficialGazettes(builder, companyKey, payload) {
   if (results.length > 0) builder.addInsight(`${gazettes.totalFound || results.length} edição(ões) de Diários Oficiais municipais mencionam a entidade; a menção é documental e não indica irregularidade.`);
 }
 
+function publicOrganizationKey({ cnpj, code, name }) {
+  const digits = String(cnpj || '').replace(/\D/g, '');
+  if (code) return `organization:siafi:${String(code).trim()}`;
+  if (digits) return `organization:cnpj:${digits}`;
+  return `organization:public:${stableHash(normalizeName(name))}`;
+}
+
+function addPublicOrganization(builder, organization, provider) {
+  const key = publicOrganizationKey(organization);
+  const identifiers = [];
+  const cnpj = String(organization.cnpj || '').replace(/\D/g, '');
+  if (cnpj) identifiers.push({ type: 'CNPJ', value: cnpj, provider, confidence: 100 });
+  if (organization.code) identifiers.push({ type: 'SIAFI', value: String(organization.code), provider, confidence: 100 });
+  builder.addEntity({
+    key,
+    type: 'Organization',
+    name: organization.name || 'Órgão público não informado',
+    normalizedName: normalizeName(organization.name),
+    role: 'public_contracting_body',
+    depth: 1,
+    confidence: 100,
+    properties: {
+      publicOrganization: true,
+      provider,
+      parentOrganization: organization.parent || null,
+    },
+    identifiers,
+  });
+  return key;
+}
+
+function addPublicContract(builder, companyKey, contract, provider, retrievedAt, query) {
+  const organizationKey = addPublicOrganization(builder, {
+    cnpj: contract.orgaoCnpj,
+    code: contract.orgaoVinculadoCodigo || contract.orgaoCodigo,
+    name: contract.orgaoVinculado || contract.orgao,
+    parent: contract.orgaoSuperior,
+  }, provider);
+  const identifier = contract.numeroControlePncp || contract.id || contract.numeroContrato
+    || stableHash(contract.orgao, contract.objeto, contract.dataAssinatura);
+  const value = Number(contract.valorGlobal ?? contract.valorFinal ?? contract.valorInicial) || 0;
+  const relationshipKey = builder.addRelationship({
+    key: `rel:public-contract:${stableHash(provider, identifier, companyKey, organizationKey)}`,
+    sourceKey: companyKey,
+    targetKey: organizationKey,
+    type: 'CONTRACTED_BY',
+    label: 'Contratada por',
+    status: 'CONFIRMED',
+    confidence: 100,
+    properties: {
+      provider,
+      contractNumber: contract.numeroContrato || null,
+      processNumber: contract.numeroProcesso || null,
+      object: contract.objeto || null,
+      value,
+      signedAt: contract.dataAssinatura || null,
+      validFrom: contract.vigenciaInicio || null,
+      validUntil: contract.vigenciaFim || null,
+      sourceUrl: contract.url || null,
+    },
+  });
+  builder.addEvidence({
+    relationshipKey,
+    provider,
+    sourceName: provider === 'PNCP' ? 'Portal Nacional de Contratações Públicas' : 'Portal da Transparência do Governo Federal',
+    sourceUrl: contract.url || null,
+    query,
+    identifier: String(identifier),
+    excerpt: `${contract.numeroContrato ? `Contrato ${contract.numeroContrato}. ` : ''}${contract.objeto || 'Objeto não informado.'}${value ? ` Valor: R$ ${value.toFixed(2)}.` : ''}`,
+    confidence: 100,
+    retrievedAt,
+  });
+}
+
+function adaptPublicContracts(builder, context, payload) {
+  const pncp = payload.pncp;
+  const pncpContracts = Array.isArray(pncp?.contratos) ? pncp.contratos : [];
+  builder.addCoverage({
+    axis: 'PUBLIC_CONTRACTS',
+    provider: 'PNCP',
+    status: pncp?.ok ? (pncp.consultaParcial ? 'PARTIAL' : 'CONSULTED') : 'UNAVAILABLE',
+    message: pncp?.ok
+      ? `${pncpContracts.length} contrato(s) do PNCP foram confirmados pelo CNPJ do fornecedor.`
+      : (pncp?.erro || 'O PNCP não foi consultado nesta diligência.'),
+    resultCount: pncpContracts.length,
+    consultedAt: pncp?.consultadoEm ? safeDate(pncp.consultadoEm) : null,
+  });
+  for (const contract of pncpContracts) {
+    addPublicContract(
+      builder,
+      context.companyKey,
+      contract,
+      'PNCP',
+      pncp?.consultadoEm ? safeDate(pncp.consultadoEm) : new Date(),
+      payload.cnpj,
+    );
+  }
+
+  const federal = payload.federalExposure;
+  const federalContracts = Array.isArray(federal?.contratos)
+    ? federal.contratos.filter((contract) => contract.cnpjConfirmado !== false)
+    : [];
+  builder.addCoverage({
+    axis: 'PUBLIC_CONTRACTS',
+    provider: 'CGU_FEDERAL_CONTRACTS',
+    status: federal?.ok ? (federal.consultaParcial ? 'PARTIAL' : 'CONSULTED') : 'UNAVAILABLE',
+    message: federal?.ok
+      ? `${federalContracts.length} contrato(s) do Executivo Federal foram confirmados diretamente pelo CNPJ.`
+      : (federal?.erro || 'Os contratos do Executivo Federal não foram consultados nesta diligência.'),
+    resultCount: federalContracts.length,
+    consultedAt: federal?.consultadoEm ? safeDate(federal.consultadoEm) : null,
+  });
+  for (const contract of federalContracts) {
+    addPublicContract(
+      builder,
+      context.companyKey,
+      contract,
+      'CGU_FEDERAL_CONTRACTS',
+      federal?.consultadoEm ? safeDate(federal.consultadoEm) : new Date(),
+      payload.cnpj,
+    );
+  }
+
+  const resourceAgencies = Array.isArray(federal?.recursos?.orgaos) ? federal.recursos.orgaos : [];
+  builder.addCoverage({
+    axis: 'PUBLIC_PAYMENTS',
+    provider: 'CGU_FEDERAL_RESOURCES',
+    status: federal?.ok ? (federal.consultaParcial ? 'PARTIAL' : 'CONSULTED') : 'UNAVAILABLE',
+    message: federal?.ok
+      ? `${federal?.recursos?.quantidadeRegistros || 0} registro(s) de pagamento foram agregados em ${resourceAgencies.length} órgão(s) federais.`
+      : (federal?.erro || 'Os pagamentos do Executivo Federal não foram consultados nesta diligência.'),
+    resultCount: federal?.recursos?.quantidadeRegistros || 0,
+    consultedAt: federal?.consultadoEm ? safeDate(federal.consultadoEm) : null,
+  });
+  for (const agency of resourceAgencies) {
+    const organizationKey = addPublicOrganization(builder, {
+      code: agency.codigo,
+      name: agency.nome,
+      parent: agency.orgaoSuperior,
+    }, 'CGU_FEDERAL_RESOURCES');
+    const relationshipKey = builder.addRelationship({
+      key: `rel:public-payment:${stableHash(context.companyKey, organizationKey, federal?.recursos?.periodoInicio, federal?.recursos?.periodoFim)}`,
+      sourceKey: context.companyKey,
+      targetKey: organizationKey,
+      type: 'RECEIVED_PUBLIC_RESOURCES_FROM',
+      label: 'Recebeu recursos de',
+      status: 'CONFIRMED',
+      confidence: 100,
+      properties: {
+        provider: 'CGU_FEDERAL_RESOURCES',
+        value: Number(agency.valorTotal) || 0,
+        periodStart: federal?.recursos?.periodoInicio || null,
+        periodEnd: federal?.recursos?.periodoFim || null,
+        sourceUrl: federal?.sourceUrl || null,
+      },
+    });
+    builder.addEvidence({
+      relationshipKey,
+      provider: 'CGU_FEDERAL_RESOURCES',
+      sourceName: 'Portal da Transparência do Governo Federal',
+      sourceUrl: federal?.sourceUrl || null,
+      query: payload.cnpj,
+      identifier: agency.codigo || agency.nome,
+      excerpt: `Pagamentos agregados no período consultado: R$ ${(Number(agency.valorTotal) || 0).toFixed(2)}.`,
+      confidence: 100,
+      retrievedAt: federal?.consultadoEm ? safeDate(federal.consultadoEm) : new Date(),
+    });
+  }
+
+  const totalContracts = pncpContracts.length + federalContracts.length;
+  if (totalContracts || resourceAgencies.length) {
+    builder.addInsight(`${totalContracts} contrato(s) e ${resourceAgencies.length} vínculo(s) de pagamento público foram materializados como relações oficiais.`);
+  }
+}
+
 function adaptCorporateNetwork(builder, context, payload) {
   const companyKey = context.companyKey;
   const network = payload.corporateNetwork;
@@ -732,6 +907,7 @@ function adaptExternalResults(builder, context, payload) {
   adaptMedia(builder, context, payload);
   adaptProcesses(builder, context, payload);
   adaptOfficialGazettes(builder, context.companyKey, payload);
+  adaptPublicContracts(builder, context, payload);
   adaptCorporateNetwork(builder, context, payload);
   adaptFundNetwork(builder, context, payload);
   adaptOffshore(builder, context, payload);
