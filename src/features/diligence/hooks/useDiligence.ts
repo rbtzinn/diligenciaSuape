@@ -31,6 +31,7 @@ const INITIAL_STEPS: DiligenceStepConfig[] = [
   { id: 'pep', label: 'Verificando Pessoas Expostas Politicamente (PEP dos sócios)', status: 'pending' },
   { id: 'media', label: 'Buscando ocorrências públicas e notícias na web', status: 'pending' },
   { id: 'gazettes', label: 'Pesquisando menções em Diários Oficiais municipais', status: 'pending' },
+  { id: 'pncp', label: 'Consultando contratos públicos no PNCP', status: 'pending' },
   { id: 'offshore', label: 'Reconciliando nomes na base Offshore Leaks (ICIJ)', status: 'pending' },
   { id: 'risk', label: 'Calculando indicador preliminar de atenção', status: 'pending' },
 ];
@@ -307,7 +308,40 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           log(`Diários Oficiais: ${officialGazettes.erro || 'fonte indisponível'}.`, 'warning');
         }
 
-        // 6C. Offshore Leaks — reconciliação nominal, nunca confirmação automática
+
+        // 6C. PNCP — fonte direta de contrato publico, sem depender de buscador.
+        // A busca do portal casa o nome no texto; o backend confirma pelo CNPJ
+        // do fornecedor antes de qualquer contrato entrar no dossie.
+        updateStep('pncp', 'loading');
+        const pncp = await DiligenceService.getPncpContracts({
+          cnpj: clean,
+          razaoSocial: empresa.razao_social || '',
+          nomeFantasia: empresa.nome_fantasia || '',
+        });
+        if (pncp.ok) {
+          const confirmados = pncp.resumo?.confirmados || 0;
+          const divergentes = pncp.resumo?.divergentes || 0;
+          updateStep('pncp', pncp.consultaParcial ? 'error' : 'done',
+            confirmados > 0 ? confirmados + ' contrato(s) confirmado(s)' : 'Sem contrato confirmado');
+          if (confirmados > 0) {
+            const valor = pncp.resumo?.valorTotalConfirmado || 0;
+            log('PNCP: ' + confirmados + ' contrato(s) publico(s) confirmado(s) pelo CNPJ do fornecedor, em ' +
+              (pncp.resumo?.orgaosDistintos || 0) + ' orgao(s), somando ' +
+              valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) + '.');
+          } else {
+            log('PNCP: nenhum contrato confirmado para o CNPJ investigado.');
+          }
+          if (divergentes > 0) {
+            log('PNCP: ' + divergentes + ' documento(s) citam o nome, mas foram assinados por outro CNPJ; tratados como homonimo.', 'warning');
+          }
+          if (pncp.consultaParcial) {
+            log('PNCP: parte das consultas falhou; a cobertura desta execucao esta incompleta.', 'warning');
+          }
+        } else {
+          updateStep('pncp', 'error', 'Fonte indisponivel');
+          log('PNCP: ' + (pncp.erro || 'fonte indisponivel') + '.', 'warning');
+        }
+        // 6D. Offshore Leaks — reconciliação nominal, nunca confirmação automática
         updateStep('offshore', 'loading');
         const offshore = await DiligenceService.searchOffshore({
           company: { cnpj: clean, razaoSocial: empresa.razao_social || '', nomeFantasia: empresa.nome_fantasia || '' },
@@ -368,6 +402,7 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           corporateNetwork,
           fundNetwork,
           offshore,
+          pncp,
           risco,
           analise,
           timeline,

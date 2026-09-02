@@ -19,6 +19,7 @@ import {
   FundNetworkSummary,
   RiskAssessment,
   PersonSanctionsSummary,
+  PncpSummary,
 } from '../types';
 
 interface CompanyApiResponse {
@@ -320,5 +321,27 @@ export const DiligenceService = {
     versao: string;
   }> {
     return await request('/api/status');
+  },
+
+  /**
+   * Contratos publicos no PNCP. Fonte direta, sem depender de buscador.
+   * A busca do portal casa o nome no texto do documento; a confirmacao por
+   * CNPJ do fornecedor acontece no backend.
+   */
+  async getPncpContracts(params: { cnpj: string; razaoSocial?: string; nomeFantasia?: string }): Promise<PncpSummary> {
+    try {
+      return await request<PncpSummary>('/api/pncp/contratos', {
+        method: 'POST',
+        body: JSON.stringify({
+          cnpj: CNPJ.clean(params.cnpj),
+          razaoSocial: params.razaoSocial,
+          nomeFantasia: params.nomeFantasia,
+        }),
+        timeoutMs: 90_000,
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Falha na consulta ao PNCP';
+      return { ok: false, erro: message, contratos: [], contratacoes: [], consultadoEm: new Date().toISOString() };
+    }
   },
 };

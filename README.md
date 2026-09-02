@@ -147,6 +147,39 @@ backend recebe HTTP 403. Antes de uso compartilhado, troque `SEARXNG_SECRET`.
 Sem SearXNG, defina `SEARXNG_BASE_URL` vazio: o DuckDuckGo Lite assume o canal
 web sozinho, com menos cobertura.
 
+## Contratos públicos (PNCP)
+
+Fonte direta de contrato público, sem depender de buscador. Enquanto o canal web
+está bloqueado, é a via que traz contrato municipal e federal para o dossiê.
+
+O PNCP expõe duas APIs, usadas em sequência:
+
+1. **Busca textual** (), a mesma que o portal consome. Aceita nome,
+   mas não informa o fornecedor: casa o termo no texto do documento. Resultado
+   aqui é candidato, nunca conclusão.
+2. **Detalhe do contrato** (),
+   que traz , o CNPJ de quem assinou.
+
+A confirmação é o passo 2 comparado ao CNPJ investigado. Sem ele, uma busca por
+um nome curto traria contrato de qualquer empresa cujo edital cite a palavra. O
+dossiê separa três situações: contrato **confirmado** pelo CNPJ, contrato que
+**cita o nome mas é de outro CNPJ** (homônimo) e contrato **não verificado**,
+quando o detalhe não respondeu.
+
+A API de consulta oficial () não serve para esta
+finalidade: filtra por órgão e data, nunca por fornecedor, e varrer o país inteiro
+passaria de um milhão de registros por ano.
+
+Duas cautelas de implementação, ambas por comportamento observado da API:
+
+- A primeira chamada falha com frequência e a seguinte funciona, então há
+  retentativa. Sem ela o adaptador reportaria ausência de contrato por falha de
+  rede, o falso negativo que este projeto trata como defeito grave.
+- O endpoint de busca não consta do OpenAPI. Se o formato mudar, a consulta falha
+  explicitamente em vez de devolver lista vazia.
+
+Não exige chave nem cadastro.
+
 ## Base funcional interna (opcional)
 
 Compara o quadro societario investigado com as identidades funcionais da

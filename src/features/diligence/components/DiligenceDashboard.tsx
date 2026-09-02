@@ -11,6 +11,7 @@ import { InvestigationSanctionsDrawer } from './InvestigationSanctionsDrawer';
 import { InvestigationQuestionnaireDrawer } from './InvestigationQuestionnaireDrawer';
 import { InvestigationAuditDrawer } from './InvestigationAuditDrawer';
 import { AiAnalysisDrawer } from './AiAnalysisDrawer';
+import { PncpContractsDrawer } from './PncpContractsDrawer';
 import { RiskOverrideModal } from './RiskOverrideModal';
 import { ReportService } from '../../report/services/report.service';
 
@@ -26,7 +27,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   onDrillCompany,
 }) => {
   const [activeDrawer, setActiveDrawer] = useState<
-    'shareholders' | 'media' | 'sanctions' | 'processes' | 'questionnaire' | 'audit' | 'ai' | null
+    'shareholders' | 'media' | 'sanctions' | 'processes' | 'questionnaire' | 'audit' | 'ai' | 'pncp' | null
   >(null);
   const [discoveries, setDiscoveries] = useState<ProcessDiscovery[]>(diligence.processosDescobertos || []);
   const [adverseMedia, setAdverseMedia] = useState<AdverseMediaSummary | undefined>(diligence.adverseMedia);
@@ -175,6 +176,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         onOpenQuestionnaire={() => setActiveDrawer('questionnaire')}
         onOpenAudit={() => setActiveDrawer('audit')}
         onOpenAiAnalysis={() => setActiveDrawer('ai')}
+        onOpenPncp={() => setActiveDrawer('pncp')}
         onDrillCompany={onDrillCompany}
       />
 
@@ -231,6 +233,11 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         diligence={displayDiligence}
         adverseMedia={adverseMedia}
         discoveries={discoveries}
+      />
+      <PncpContractsDrawer
+        isOpen={activeDrawer === 'pncp'}
+        onClose={() => setActiveDrawer(null)}
+        pncp={diligence.pncp}
       />
       <AiAnalysisDrawer
         isOpen={activeDrawer === 'ai'}

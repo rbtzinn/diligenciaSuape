@@ -20,6 +20,7 @@ const diligenceRoutes = require('./routes/diligence.routes');
 const reportRoutes = require('./routes/report.routes');
 const statusRoutes = require('./routes/status.routes');
 const aiRoutes = require('./routes/ai.routes');
+const pncpRoutes = require('./routes/pncp.routes');
 
 const app = express();
 
@@ -61,7 +62,7 @@ const mediaRateLimit = rateLimit({
   message: { ok: false, erro: 'Limite temporário de pesquisas de mídia atingido.' },
 });
 
-app.use(['/api/empresa', '/api/cgu', '/api/judicial', '/api/official-gazettes', '/api/offshore'], providerRateLimit);
+app.use(['/api/empresa', '/api/cgu', '/api/judicial', '/api/official-gazettes', '/api/offshore', '/api/pncp'], providerRateLimit);
 app.use('/api/adverse-media', mediaRateLimit);
 
 // A cota gratuita dos provedores de IA é diária, então o limite local é curto
@@ -91,6 +92,7 @@ app.use('/api/diligences', diligenceRoutes);
 app.use('/api/diligences', reportRoutes);
 app.use('/api/status', statusRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/pncp', pncpRoutes);
 
 app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
