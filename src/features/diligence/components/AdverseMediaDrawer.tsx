@@ -34,6 +34,7 @@ export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
   if (!adverseMedia) return null;
 
   const results = adverseMedia.results || [];
+  const failedQueryCount = (adverseMedia.queriesExecuted || []).filter((item) => item.ok === false).length;
   const companyCount = adverseMedia.companyResultsCount ?? results.filter((item) => item.subjectType !== 'person').length;
   const personCount = adverseMedia.personResultsCount ?? results.filter((item) => item.subjectType === 'person').length;
   const filtered = results.filter((r) => {
@@ -97,6 +98,11 @@ export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
             >
               <span style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>
                 Consultas Realizadas no Provedor ({adverseMedia.queriesExecuted.length})
+                {failedQueryCount > 0 ? (
+                  <span style={{ color: 'var(--status-critical-text)', marginLeft: '0.4rem' }}>
+                    · {failedQueryCount} sem resposta do provedor
+                  </span>
+                ) : null}
               </span>
               <button type="button" className="btn btn-ghost btn-sm" style={{ padding: '0.1rem 0.4rem' }}>
                 {showQueries ? 'Ocultar' : 'Exibir'}
@@ -113,7 +119,20 @@ export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
                       </span>
                       <code className="font-mono" style={{ display: 'block', overflow: 'hidden', color: 'var(--text-secondary)', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.query}</code>
                     </div>
-                    <span style={{ color: 'var(--text-tertiary)', flexShrink: 0 }}>{q.count} itens</span>
+                    {/* Consulta bloqueada e consulta sem achado são opostos.
+                        Mostrar "0 itens" nas duas esconde a falha do canal. */}
+                    <span
+                      style={{
+                        color: q.ok === false ? 'var(--status-critical-text)' : 'var(--text-tertiary)',
+                        fontWeight: q.ok === false ? 'var(--font-bold)' : undefined,
+                        flexShrink: 0,
+                      }}
+                      title={q.ok === false ? q.erro || 'A consulta não foi respondida pelo provedor.' : undefined}
+                    >
+                      {q.ok === false
+                        ? `falhou${q.status ? ` (HTTP ${q.status})` : ''}`
+                        : `${q.count} itens`}
+                    </span>
                   </div>
                 ))}
               </div>

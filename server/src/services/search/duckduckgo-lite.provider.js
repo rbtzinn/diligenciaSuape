@@ -183,9 +183,15 @@ class DuckDuckGoLiteProvider extends SearchProvider {
       const results = parseResults(html, requestedCount);
 
       if (results.length === 0 && !/result-link/i.test(html)) {
+        // O DuckDuckGo responde HTTP 202 com uma página de desafio quando
+        // detecta automação, em vez de recusar com 429. Sem distinguir isso da
+        // mudança de layout, o diagnóstico manda procurar o bug no lugar errado.
+        const bloqueado = /anomaly|challenge|captcha/i.test(html);
         return this.failure(
-          502,
-          'DuckDuckGo Lite retornou HTML sem o formato de resultados esperado.',
+          bloqueado ? 429 : 502,
+          bloqueado
+            ? 'DuckDuckGo Lite bloqueou a consulta por detecção de automação. O canal web fica indisponível até o bloqueio cessar.'
+            : 'DuckDuckGo Lite retornou HTML sem o formato de resultados esperado.',
           normalizedChannel,
         );
       }

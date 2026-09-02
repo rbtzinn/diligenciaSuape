@@ -169,7 +169,7 @@ test('normaliza datas compactas do GDELT sem alterar valor desconhecido', () => 
   assert.equal(normalizeSeenDate(''), undefined);
 });
 
-test('busca composta inclui GDELT depois de Brave e Google News RSS', () => {
+test('busca composta registra os provedores na ordem de preferência', () => {
   const provider = new CompositeSearchProvider({
     brave: { apiKey: '' },
   });

@@ -73,7 +73,26 @@ A busca não depende de provedor pago. Sem chave Brave, o sistema opera com quat
 fontes gratuitas, divididas em dois canais:
 
 - Canal de notícias: Google News RSS e GDELT DOC.
-- Canal web: SearXNG (metabusca própria, sem chave) e DuckDuckGo Lite como reserva.
+- Canal web: SearXNG (metabusca própria) e DuckDuckGo Lite.
+
+### O canal web está degradado
+
+O DuckDuckGo Lite não é API: é página HTML consumida por scraping. Ele passou a
+responder HTTP 202 com página de desafio ao detectar automação — IP de datacenter,
+rajada de consultas e ausência de impressão digital de navegador. Não existe ajuste
+de volume que torne isso confiável.
+
+Com o SearXNG não configurado e o Brave impedido de persistir resultados, o canal
+web fica sem provedor utilizável, e as consultas institucionais — tribunal de contas,
+PNCP, CNJ, diários oficiais — não são respondidas. O dossiê marca essas consultas
+como falha, nunca como ausência de achado.
+
+O Google Programmable Search foi avaliado e descartado: a Custom Search JSON API está
+fechada para novos clientes e será descontinuada em 1º de janeiro de 2027. Não vale
+construir sobre ela.
+
+A direção adotada é substituir a busca por operadores `site:` por integração direta
+com os dados abertos de cada órgão, que é mais confiável e não depende de buscador.
 
 O canal web existe porque índice de notícia não alcança documento. É ele que traz
 portaria, ata, edital, contrato, acórdão e PDF institucional. Para cada pessoa

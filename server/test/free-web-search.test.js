@@ -152,3 +152,76 @@ test('diários oficiais pesquisam empresa e cada pessoa física do quadro', asyn
     global.fetch = originalFetch;
   }
 });
+
+test('DuckDuckGo Lite distingue bloqueio por automação de mudança de layout', async () => {
+  // O DuckDuckGo responde 202 com página de desafio, não 429.
+  const paginaDeDesafio = '<html><head><title>DuckDuckGo</title></head>'
+    + '<body><script>var anomaly_challenge = true;</script>'
+    + '<div>If this error persists, please let us know</div></body></html>';
+
+  const provider = new DuckDuckGoLiteProvider({
+    fetchImpl: async () => ({ ok: true, status: 202, text: async () => paginaDeDesafio }),
+  });
+
+  const response = await provider.searchWeb({ query: '"SOLIMP TERCEIRIZACOES"', channel: 'web' });
+
+  assert.equal(response.ok, false, 'bloqueio não pode virar sucesso com lista vazia');
+  assert.equal(response.status, 429, 'bloqueio por automação precisa ser distinguível de layout quebrado');
+  assert.match(response.erro, /bloqueou a consulta/);
+});
+
+test('diário oficial é pesquisado também pelo nome curto da empresa', async () => {
+  // O diário publica "Contrato 21/2022, firmado com a SOLIMP", nunca a razão
+  // social inteira. Com busca por frase exata, procurar só o nome completo
+  // devolve zero e o dossiê conclui que não há publicação.
+  const queries = [];
+  const originalFetch = global.fetch;
+  global.fetch = async (url) => {
+    queries.push(new URL(url).searchParams.get('querystring'));
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ total_gazettes: 0, gazettes: [] }),
+    };
+  };
+
+  try {
+    await OfficialGazetteService.search(
+      { cnpj: '12345678000190', razaoSocial: 'SOLIMP TERCEIRIZACOES DE MAO DE OBRA LTDA' },
+      { shareholders: [] },
+    );
+
+    assert.ok(
+      queries.includes('"SOLIMP TERCEIRIZACOES DE MAO DE OBRA"'),
+      'a razão social sem o tipo societário precisa ser pesquisada',
+    );
+    assert.ok(
+      queries.includes('"SOLIMP"'),
+      'o termo distintivo precisa ser pesquisado, porque é como o diário cita a empresa',
+    );
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('termo distintivo curto demais não vira consulta em diário oficial', async () => {
+  const queries = [];
+  const originalFetch = global.fetch;
+  global.fetch = async (url) => {
+    queries.push(new URL(url).searchParams.get('querystring'));
+    return { ok: true, status: 200, json: async () => ({ total_gazettes: 0, gazettes: [] }) };
+  };
+
+  try {
+    await OfficialGazetteService.search(
+      { cnpj: '12345678000190', razaoSocial: 'ABC COMERCIO DE ALIMENTOS LTDA' },
+      { shareholders: [] },
+    );
+
+    // "ABC" tem menos de quatro letras: pesquisar isso em diário oficial
+    // devolveria ruído puro.
+    assert.equal(queries.includes('"ABC"'), false);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
