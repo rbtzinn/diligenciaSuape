@@ -9,6 +9,7 @@ import { OfficialGazetteSummary } from './types/officialGazette.types';
 import { CorporateNetworkSummary } from './types/corporateNetwork.types';
 import { OffshoreSummary } from './types/offshore.types';
 import { FundNetworkSummary } from './types/fundNetwork.types';
+import { PncpSummary } from './types/pncp.types';
 
 export * from './types/judicial.types';
 export * from './types/adverseMedia.types';
@@ -17,6 +18,7 @@ export * from './types/corporateNetwork.types';
 export * from './types/offshore.types';
 export * from './types/fundNetwork.types';
 export * from './types/aiAnalysis.types';
+export * from './types/pncp.types';
 
 export interface Shareholder {
   nome_socio: string;
@@ -477,6 +479,7 @@ export interface DiligenceItem {
   reviewedBy?: { id: string; name: string; role?: string };
   returnJustification?: string;
   egos?: EgosSnapshot;
+  pncp?: PncpSummary;
 }
 
 export interface DiligenceStepConfig {

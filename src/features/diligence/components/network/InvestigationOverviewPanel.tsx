@@ -25,6 +25,7 @@ interface InvestigationOverviewPanelProps {
   onOpenQuestionnaire: () => void;
   onOpenAudit: () => void;
   onOpenAiAnalysis: () => void;
+  onOpenPncp: () => void;
 }
 
 type Tone = 'low' | 'medium' | 'high' | 'critical';
@@ -57,6 +58,7 @@ export const InvestigationOverviewPanel: React.FC<InvestigationOverviewPanelProp
   onOpenQuestionnaire,
   onOpenAudit,
   onOpenAiAnalysis,
+  onOpenPncp,
 }) => {
   const score = Math.max(0, Math.min(100, diligence.risco?.score || 0));
   const tone = riskTone(score);
@@ -99,6 +101,7 @@ export const InvestigationOverviewPanel: React.FC<InvestigationOverviewPanelProp
     { id: 'processes', label: 'Processos encontrados', count: discoveries.length, icon: <Icons.Scale size={16} />, action: onOpenProcesses },
     { id: 'questionnaire', label: 'Checagens da política', count: undefined, icon: <Icons.CheckCircle size={16} />, action: onOpenQuestionnaire },
     { id: 'audit', label: 'Fontes e auditoria', count: evidenceCount, icon: <Icons.Database size={16} />, action: onOpenAudit },
+    { id: 'pncp', label: 'Contratos públicos (PNCP)', count: diligence.pncp?.resumo?.confirmados, icon: <Icons.Landmark size={16} />, action: onOpenPncp },
     { id: 'ai', label: 'Leitura consolidada por IA', count: undefined, icon: <Icons.Sparkles size={16} />, action: onOpenAiAnalysis },
   ];
 

@@ -7,7 +7,7 @@
     "start": "node index.js",
     "dev": "node index.js",
     "build": "node --check index.js",
-    "test": "node --test test/foundation.test.js test/person-sanctions.test.js test/google-sheets.integration.test.js test/entity-report.test.js test/person-corporate-network.test.js test/search-providers.test.js test/gdelt-doc.provider.test.js test/adverse-media.service.test.js test/free-web-search.test.js test/payroll-workbook.test.js test/ai-dossier-analysis.test.js test/investigative-leads.test.js"
+    "test": "node --test test/foundation.test.js test/person-sanctions.test.js test/google-sheets.integration.test.js test/entity-report.test.js test/person-corporate-network.test.js test/search-providers.test.js test/gdelt-doc.provider.test.js test/adverse-media.service.test.js test/free-web-search.test.js test/payroll-workbook.test.js test/ai-dossier-analysis.test.js test/investigative-leads.test.js test/pncp.service.test.js"
   },
   "engines": {
     "node": "24.x"
