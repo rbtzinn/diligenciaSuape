@@ -152,3 +152,20 @@ test('diários oficiais pesquisam empresa e cada pessoa física do quadro', asyn
     global.fetch = originalFetch;
   }
 });
+
+test('DuckDuckGo Lite distingue bloqueio por automação de mudança de layout', async () => {
+  // O DuckDuckGo responde 202 com página de desafio, não 429.
+  const paginaDeDesafio = '<html><head><title>DuckDuckGo</title></head>'
+    + '<body><script>var anomaly_challenge = true;</script>'
+    + '<div>If this error persists, please let us know</div></body></html>';
+
+  const provider = new DuckDuckGoLiteProvider({
+    fetchImpl: async () => ({ ok: true, status: 202, text: async () => paginaDeDesafio }),
+  });
+
+  const response = await provider.searchWeb({ query: '"SOLIMP TERCEIRIZACOES"', channel: 'web' });
+
+  assert.equal(response.ok, false, 'bloqueio não pode virar sucesso com lista vazia');
+  assert.equal(response.status, 429, 'bloqueio por automação precisa ser distinguível de layout quebrado');
+  assert.match(response.erro, /bloqueou a consulta/);
+});
