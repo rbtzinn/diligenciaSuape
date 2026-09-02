@@ -154,11 +154,11 @@ está bloqueado, é a via que traz contrato municipal e federal para o dossiê.
 
 O PNCP expõe duas APIs, usadas em sequência:
 
-1. **Busca textual** (), a mesma que o portal consome. Aceita nome,
+1. **Busca textual** (`/api/search`), a mesma que o portal consome. Aceita nome,
    mas não informa o fornecedor: casa o termo no texto do documento. Resultado
    aqui é candidato, nunca conclusão.
-2. **Detalhe do contrato** (),
-   que traz , o CNPJ de quem assinou.
+2. **Detalhe do contrato** (`/api/pncp/v1/orgaos/{cnpj}/contratos/{ano}/{sequencial}`),
+   que traz `niFornecedor`, o CNPJ de quem assinou.
 
 A confirmação é o passo 2 comparado ao CNPJ investigado. Sem ele, uma busca por
 um nome curto traria contrato de qualquer empresa cujo edital cite a palavra. O
@@ -166,7 +166,7 @@ dossiê separa três situações: contrato **confirmado** pelo CNPJ, contrato qu
 **cita o nome mas é de outro CNPJ** (homônimo) e contrato **não verificado**,
 quando o detalhe não respondeu.
 
-A API de consulta oficial () não serve para esta
+A API de consulta oficial (`/api/consulta/v1/contratos`) não serve para esta
 finalidade: filtra por órgão e data, nunca por fornecedor, e varrer o país inteiro
 passaria de um milhão de registros por ano.
 
