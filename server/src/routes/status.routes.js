@@ -10,13 +10,18 @@ const { CompositeSearchProvider } = require('../services/search/composite-search
 const { InternalSuapeProvider } = require('../egos/adapters/internal-suape/internal-suape.provider');
 const LlmProvider = require('../services/ai/llm.provider');
 const { describeCollectionLimits } = require('../services/adverse-media.service');
+const { PncpService } = require('../services/pncp.service');
 
 const router = express.Router();
 const mediaSearchProvider = new CompositeSearchProvider({ persistentUse: true });
 
-router.get('/', async (_req, res) => {
+router.get('/', async (req, res) => {
   const storage = await checkGoogleSheetsHealth();
   const internalSuape = await InternalSuapeProvider.load();
+
+  // Sonda sob demanda: /api/status?probe=pncp. Fica fora do caminho padrão
+  // porque faz chamada externa, e o status é consultado com frequência.
+  const pncpProbe = String(req.query.probe || '') === 'pncp' ? await PncpService.probe() : null;
 
   res.json({
     status: storage.connected ? 'online' : 'degraded',
@@ -47,6 +52,7 @@ router.get('/', async (_req, res) => {
     },
     datajudConfigurada: DatajudService.isConfigured(),
     coletaMidia: describeCollectionLimits(),
+    ...(pncpProbe ? { pncp: pncpProbe } : {}),
     analiseIa: {
       configured: LlmProvider.isConfigured(),
       providers: LlmProvider.listProviders(),
