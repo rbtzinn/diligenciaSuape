@@ -224,6 +224,35 @@ const PncpService = {
   parseItemUrl,
 
   /**
+   * Sonda de conectividade, exposta no /api/status sob demanda.
+   *
+   * O adaptador funciona da máquina do desenvolvedor e pode não funcionar da
+   * função serverless: o DuckDuckGo já bloqueia esta implantação por IP de
+   * datacenter. Sem uma sonda executada de dentro do ambiente publicado, não há
+   * como distinguir "empresa sem contrato" de "PNCP recusa a origem".
+   */
+  async probe() {
+    const iniciadoEm = Date.now();
+    try {
+      const { total, items } = await searchDocuments('prefeitura', 'contrato');
+      return {
+        alcancavel: true,
+        tempoMs: Date.now() - iniciadoEm,
+        totalDaConsultaDeControle: total,
+        itensRecebidos: items.length,
+      };
+    } catch (error) {
+      return {
+        alcancavel: false,
+        tempoMs: Date.now() - iniciadoEm,
+        status: error.status || null,
+        erro: error.message,
+        detalhe: error.detail || null,
+      };
+    }
+  },
+
+  /**
    * Busca contratos e contratações do PNCP para a empresa investigada.
    */
   async search(company = {}) {
