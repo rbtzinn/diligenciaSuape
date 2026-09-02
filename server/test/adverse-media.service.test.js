@@ -157,3 +157,53 @@ test('falha total não é armazenada como falso resultado negativo', async () =>
   assert.equal(second.ok, true);
   assert.equal(second.cached, undefined);
 });
+
+test('a varredura institucional entra no plano e cita os tribunais de contas', () => {
+  const service = new AdverseMediaService({ isConfigured: () => true, searchWeb: async () => ({ ok: true, results: [] }) });
+  const descriptors = service.generateCompanyQueryDescriptors(company);
+  const institucionais = descriptors.filter((item) => item.purpose === 'institutional_record');
+
+  assert.ok(institucionais.length > 0, 'o plano precisa conter consultas institucionais');
+
+  const textoInstitucional = institucionais.map((item) => item.query).join(' ');
+  for (const dominio of ['tce.pe.gov.br', 'tcu.gov.br', 'pncp.gov.br', 'portaldatransparencia.gov.br']) {
+    assert.ok(textoInstitucional.includes(`site:${dominio}`), `faltou ${dominio} no plano institucional`);
+  }
+});
+
+test('os domínios institucionais são divididos em blocos, não empilhados numa consulta só', () => {
+  const service = new AdverseMediaService({ isConfigured: () => true, searchWeb: async () => ({ ok: true, results: [] }) });
+  const institucionais = service
+    .generateCompanyQueryDescriptors(company)
+    .filter((item) => item.purpose === 'institutional_record');
+
+  assert.ok(institucionais.length >= 2, 'dez domínios em uma consulta única fazem o buscador truncar a expressão');
+  for (const descriptor of institucionais) {
+    const ocorrencias = descriptor.query.match(/site:/g) || [];
+    assert.ok(ocorrencias.length <= 4, `bloco com ${ocorrencias.length} domínios excede o limite por consulta`);
+  }
+});
+
+test('com teto apertado, o corte preserva CNPJ e varredura institucional', () => {
+  const anterior = process.env.ADVERSE_MEDIA_MAX_QUERIES;
+  process.env.ADVERSE_MEDIA_MAX_QUERIES = '5';
+  delete require.cache[require.resolve('../src/services/adverse-media.service')];
+
+  try {
+    const { AdverseMediaService: Reloaded } = require('../src/services/adverse-media.service');
+    const service = new Reloaded({ isConfigured: () => true, searchWeb: async () => ({ ok: true, results: [] }) });
+    const descriptors = service.generateCompanyQueryDescriptors(company);
+
+    assert.equal(descriptors.length, 5);
+    const propositos = descriptors.map((item) => item.purpose);
+    assert.ok(propositos.includes('institutional_record'), 'a varredura institucional não pode ser a primeira sacrificada');
+    assert.ok(propositos.includes('identifier'), 'a consulta por CNPJ precisa sobreviver ao corte');
+
+    const prioridades = descriptors.map((item) => item.priority);
+    assert.deepEqual(prioridades, [...prioridades].sort((a, b) => a - b), 'o plano final deve seguir a ordem de prioridade');
+  } finally {
+    if (anterior === undefined) delete process.env.ADVERSE_MEDIA_MAX_QUERIES;
+    else process.env.ADVERSE_MEDIA_MAX_QUERIES = anterior;
+    delete require.cache[require.resolve('../src/services/adverse-media.service')];
+  }
+});

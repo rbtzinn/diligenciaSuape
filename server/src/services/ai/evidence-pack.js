@@ -5,8 +5,20 @@
 // um identificador desta lista, e achados sem citação válida são descartados.
 // ==========================================================
 
-const MAX_EVIDENCE_ITEMS = 220;
+// O teto existe pela janela de contexto do modelo, não pela tela: a gaveta de
+// mídia mostra tudo que foi coletado, enquanto a IA recebe um recorte grande e
+// declarado. Quando o corte acontece, o pacote sinaliza e a análise registra
+// como lacuna, em vez de omitir em silêncio.
+function envInt(name, fallback) {
+  const value = parseInt(process.env[name], 10);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+const MAX_EVIDENCE_ITEMS = Math.max(50, Math.min(envInt('AI_MAX_EVIDENCE_ITEMS', 400), 800));
 const MAX_DETAIL_LENGTH = 700;
+
+// Vagas garantidas para os eixos coletados depois da mídia.
+const RESERVA_DEMAIS_EIXOS = 120;
 
 function text(value) {
   if (value === null || value === undefined) return '';
@@ -361,7 +373,14 @@ function collectAdverseMedia(collector, dossier) {
     return peso(right) - peso(left);
   });
 
-  for (const resultado of ordenados) {
+  // A mídia é o eixo mais volumoso e roda no meio da coleta. Sem uma reserva,
+  // ela consumiria o pacote inteiro e apagaria diários oficiais, rede societária,
+  // offshore e base interna, que são coletados depois.
+  const orcamentoMidia = Math.max(40, MAX_EVIDENCE_ITEMS - RESERVA_DEMAIS_EIXOS);
+  const selecionados = ordenados.slice(0, orcamentoMidia);
+  const omitidos = ordenados.length - selecionados.length;
+
+  for (const resultado of selecionados) {
     collector.add({
       eixo,
       titulo: text(resultado.title) || 'Publicação sem título',
@@ -405,6 +424,8 @@ function collectAdverseMedia(collector, dossier) {
       summary.personSearchTruncated && 'A busca por pessoas foi truncada por limite de tempo.',
       summary.deadlineExceeded && 'O prazo global da pesquisa foi atingido.',
       summary.aviso,
+      omitidos > 0
+        && `${omitidos} publicação(ões) ficaram fora do pacote enviado à IA por limite de contexto; todas seguem visíveis na gaveta de mídia do dossiê.`,
       Array.isArray(summary.providerSources) && summary.providerSources.length > 0
         && `Canais: ${summary.providerSources.join('; ')}`,
     ]),
