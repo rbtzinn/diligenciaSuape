@@ -11,6 +11,10 @@ const {
   listProviders,
 } = require('../services/ai/dossier-analysis.service');
 const { authenticate } = require('../middlewares/auth.middleware');
+const { investigate } = require('../services/ai/investigative-leads.service');
+const { CompositeSearchProvider } = require('../services/search/composite-search.provider');
+
+const leadSearchProvider = new CompositeSearchProvider({ persistentUse: true });
 
 router.use(authenticate);
 
@@ -55,6 +59,42 @@ router.post('/dossier-analysis', async (req, res) => {
   } catch (err) {
     console.error('[AI Route] Erro interno:', err.message);
     return res.status(500).json({ ok: false, erro: 'Falha ao gerar a análise por IA.' });
+  }
+});
+
+// Última camada: aciona quando o plano fixo termina sem achado relevante.
+// O modelo propõe consultas, os buscadores reais executam. As hipóteses do
+// modelo voltam em quarentena e não entram no cálculo de risco.
+router.post('/investigative-leads', async (req, res) => {
+  const { empresa, socios, cobertura } = req.body || {};
+  if (!empresa || typeof empresa !== 'object' || !(empresa.razaoSocial || empresa.cnpj)) {
+    return res.status(400).json({ ok: false, erro: 'Informe a empresa com ao menos razão social ou CNPJ.' });
+  }
+  if (!isConfigured()) {
+    return res.status(503).json({
+      ok: false,
+      erro: 'Nenhum provedor de IA gratuito está configurado neste ambiente.',
+      provedores: listProviders(),
+    });
+  }
+
+  try {
+    const resultado = await investigate(
+      {
+        company: empresa,
+        shareholders: Array.isArray(socios) ? socios : [],
+        coverage: Array.isArray(cobertura) ? cobertura : [],
+      },
+      leadSearchProvider
+    );
+    return res.json(resultado);
+  } catch (err) {
+    console.error('[AI Leads Route] Erro interno:', err.message);
+    return res.status(err.status === 429 ? 429 : 503).json({
+      ok: false,
+      erro: err.message || 'Falha ao gerar a busca assistida.',
+      tentativas: err.attempts || [],
+    });
   }
 });
 

@@ -53,23 +53,46 @@ const INSTITUTIONAL_SITES = String(
   .map((value) => value.trim())
   .filter(Boolean);
 
-const INSTITUTIONAL_SITE_FILTER = INSTITUTIONAL_SITES.length > 0
-  ? '(' + INSTITUTIONAL_SITES.map((site) => `site:${site}`).join(' OR ') + ')'
-  : '';
+// Uma única consulta com dez operadores site: OR faz os buscadores truncarem a
+// expressão e devolverem quase só o primeiro domínio. Quebrar em blocos menores
+// garante que TCE, PNCP e Ministério Público apareçam de fato, e não só o
+// portal que ficou no começo da lista.
+const INSTITUTIONAL_SITES_PER_QUERY = Math.max(
+  1,
+  Math.min(envInt('ADVERSE_MEDIA_INSTITUTIONAL_SITES_PER_QUERY', 4), 10),
+);
+
+function chunk(values, size) {
+  const blocks = [];
+  for (let index = 0; index < values.length; index += size) {
+    blocks.push(values.slice(index, index + size));
+  }
+  return blocks;
+}
+
+const INSTITUTIONAL_SITE_FILTERS = chunk(INSTITUTIONAL_SITES, INSTITUTIONAL_SITES_PER_QUERY)
+  .map((block) => '(' + block.map((site) => `site:${site}`).join(' OR ') + ')');
+
+// Mantido para compatibilidade com quem já importava o filtro único.
+const INSTITUTIONAL_SITE_FILTER = INSTITUTIONAL_SITE_FILTERS[0] || '';
 
 function envInt(name, fallback) {
   const value = parseInt(process.env[name], 10);
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
-const MAX_COMPANY_QUERIES = Math.max(3, envInt('ADVERSE_MEDIA_MAX_QUERIES', 9));
+// O plano da empresa gera até 12 consultas distintas. O teto antigo de 9 cortava
+// justamente as três últimas — PDF, CNPJ no canal web e a varredura institucional
+// (TCE, PNCP, Ministério Público) —, que são as mais relevantes para contrato
+// público. O padrão agora cobre o plano inteiro.
+const MAX_COMPANY_QUERIES = Math.max(3, envInt('ADVERSE_MEDIA_MAX_QUERIES', 14));
 const MAX_PERSON_SUBJECTS = envInt('ADVERSE_MEDIA_MAX_PERSON_SUBJECTS', 20);
 const MAX_PERSON_QUERIES = envInt('ADVERSE_MEDIA_MAX_PERSON_QUERIES', MAX_PERSON_SUBJECTS * 8);
 const SEARCH_CONCURRENCY = Math.max(1, Math.min(envInt('ADVERSE_MEDIA_CONCURRENCY', 6), 6));
-const RESULTS_PER_QUERY = Math.max(10, Math.min(envInt('ADVERSE_MEDIA_RESULTS_PER_QUERY', 25), 50));
+const RESULTS_PER_QUERY = Math.max(10, Math.min(envInt('ADVERSE_MEDIA_RESULTS_PER_QUERY', 50), 50));
 const GLOBAL_DEADLINE_MS = Math.max(15_000, Math.min(envInt('ADVERSE_MEDIA_DEADLINE_MS', 50_000), 65_000));
 const QUERY_TIMEOUT_MS = Math.max(4_000, Math.min(envInt('ADVERSE_MEDIA_QUERY_TIMEOUT_MS', 9_000), 15_000));
-const MAX_TOTAL_RESULTS = Math.max(50, Math.min(envInt('ADVERSE_MEDIA_MAX_RESULTS', 250), 500));
+const MAX_TOTAL_RESULTS = Math.max(50, Math.min(envInt('ADVERSE_MEDIA_MAX_RESULTS', 500), 500));
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const PARTIAL_CACHE_TTL_MS = 60 * 1000;
 const NEGATIVE_CACHE_TTL_MS = 2 * 60 * 1000;
@@ -357,19 +380,37 @@ class AdverseMediaService {
     if (formattedCnpj) {
       add('(' + quoteSearchTerm(formattedCnpj) + ' OR ' + quoteSearchTerm(cnpj) + ')', 'identifier', 'web', 10);
     }
-    if (razaoQuoted && INSTITUTIONAL_SITE_FILTER) {
-      add(razaoQuoted + ' ' + INSTITUTIONAL_SITE_FILTER, 'institutional_record', 'web', 11);
+    if (razaoQuoted) {
+      INSTITUTIONAL_SITE_FILTERS.forEach((filter, blockIndex) => {
+        add(razaoQuoted + ' ' + filter, 'institutional_record', 'web', 11 + blockIndex);
+      });
     }
 
     const seen = new Set();
-    return candidates
-      .filter((descriptor) => {
-        const key = `${descriptor.channel}|${normalizeText(descriptor.query)}`;
-        if (!key || seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .slice(0, MAX_COMPANY_QUERIES);
+    const unique = candidates.filter((descriptor) => {
+      const key = `${descriptor.channel}|${normalizeText(descriptor.query)}`;
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    if (unique.length <= MAX_COMPANY_QUERIES) return unique;
+
+    // Com teto apertado, o corte por ordem de inserção sacrificava sempre as
+    // consultas institucionais, que ficam no fim do plano e são as que trazem
+    // TCE, PNCP e Ministério Público. A reserva abaixo garante lugar para elas
+    // antes de o restante disputar as vagas remanescentes.
+    const isProtected = (descriptor) => descriptor.purpose === 'institutional_record'
+      || descriptor.purpose === 'identifier';
+    const protectedOnes = unique.filter(isProtected).slice(0, MAX_COMPANY_QUERIES);
+    const remaining = unique.filter((descriptor) => !isProtected(descriptor));
+    const selected = [
+      ...protectedOnes,
+      ...remaining.slice(0, Math.max(0, MAX_COMPANY_QUERIES - protectedOnes.length)),
+    ];
+
+    // Reordena pelo plano original para o índice da consulta seguir previsível.
+    return selected.sort((left, right) => left.priority - right.priority);
   }
 
   generateQueries(company) {

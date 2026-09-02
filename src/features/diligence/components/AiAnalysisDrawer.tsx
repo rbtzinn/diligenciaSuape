@@ -10,11 +10,12 @@ import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
 import { EmptyState } from '../../../components/ui/EmptyState';
 import { Icons } from '../../../components/ui/Icons';
-import { AiAnalysisService } from '../services/ai-analysis.service';
+import { AiAnalysisService, AiLeadsService } from '../services/ai-analysis.service';
 import type {
   AiAnalysisResult,
   AiCoverageStatus,
   AiFinding,
+  AiLeadsResult,
   AiProviderStatus,
   AiSeverity,
   DiligenceItem,
@@ -137,6 +138,9 @@ export const AiAnalysisDrawer: React.FC<AiAnalysisDrawerProps> = ({ isOpen, onCl
   const [isConfigured, setIsConfigured] = useState<boolean | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [leads, setLeads] = useState<AiLeadsResult | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [leadsError, setLeadsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen || isConfigured !== null) return;
@@ -155,6 +159,8 @@ export const AiAnalysisDrawer: React.FC<AiAnalysisDrawerProps> = ({ isOpen, onCl
   useEffect(() => {
     setAnalysis(null);
     setError(null);
+    setLeads(null);
+    setLeadsError(null);
   }, [diligence.id]);
 
   const runAnalysis = useCallback(async () => {
@@ -169,6 +175,30 @@ export const AiAnalysisDrawer: React.FC<AiAnalysisDrawerProps> = ({ isOpen, onCl
     }
     setAnalysis(result);
   }, [diligence]);
+
+  const runLeadSearch = useCallback(async () => {
+    setIsSearching(true);
+    setLeadsError(null);
+    const resultado = await AiLeadsService.investigate({
+      empresa: {
+        razaoSocial: diligence.razaoSocial,
+        nomeFantasia: diligence.nomeFantasia,
+        cnpj: diligence.cnpj,
+        atividade: diligence.empresa?.cnae_fiscal_descricao,
+        municipio: diligence.empresa?.municipio,
+        uf: diligence.empresa?.uf,
+        naturezaJuridica: diligence.empresa?.natureza_juridica,
+      },
+      socios: Array.isArray(diligence.socios) ? diligence.socios : [],
+      cobertura: (analysis?.cobertura || []).map((item) => ({ eixo: item.eixo, status: item.status })),
+    });
+    setIsSearching(false);
+    if (!resultado.ok) {
+      setLeadsError(resultado.erro || 'Não foi possível concluir a busca assistida.');
+      return;
+    }
+    setLeads(resultado);
+  }, [analysis?.cobertura, diligence]);
 
   const coverage = useMemo(() => analysis?.cobertura || [], [analysis?.cobertura]);
   const missingCoverage = useMemo(
@@ -343,6 +373,111 @@ export const AiAnalysisDrawer: React.FC<AiAnalysisDrawerProps> = ({ isOpen, onCl
                   ))}
                 </ul>
               </details>
+            </section>
+
+            <section className="ai-analysis-section">
+              <header className="ai-analysis-section-head">
+                <h3>Busca assistida por IA</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  icon={<Icons.Search size={14} />}
+                  isLoading={isSearching}
+                  loadingLabel="Pesquisando..."
+                  onClick={runLeadSearch}
+                >
+                  {leads ? 'Pesquisar de novo' : 'Procurar mais'}
+                </Button>
+              </header>
+              <p className="ai-analysis-hint">
+                Use quando as fontes acima terminarem sem achado. O modelo não responde o que existe sobre a empresa — ele
+                propõe <strong>onde procurar</strong>, e os buscadores reais executam. Consulta que não cite a empresa, o
+                CNPJ ou um sócio é rejeitada antes de rodar, para não trazer homônimo.
+              </p>
+
+              {leadsError ? (
+                <div className="ai-analysis-notice ai-analysis-notice-error">
+                  <p>{leadsError}</p>
+                </div>
+              ) : null}
+
+              {leads ? (
+                <>
+                  <p className="ai-analysis-hint">
+                    {leads.consultasExecutadas?.length || 0} consulta(s) executada(s) ·{' '}
+                    {leads.resultados?.length || 0} página(s) encontrada(s)
+                    {leads.consultasDescartadas && leads.consultasDescartadas.length > 0
+                      ? ` · ${leads.consultasDescartadas.length} rejeitada(s) por falta de âncora`
+                      : ''}
+                  </p>
+
+                  {leads.resultados && leads.resultados.length > 0 ? (
+                    <ul className="ai-evidence-full-list">
+                      {leads.resultados.map((item) => (
+                        <li key={item.url}>
+                          <div>
+                            <strong>{item.title}</strong>
+                            {item.snippet ? <p>{item.snippet}</p> : null}
+                            <span className="ai-evidence-source">
+                              {item.domain}
+                              {item.publishedAt ? ` · ${item.publishedAt}` : ''} · veio de: {item.origemConsulta}
+                            </span>
+                            <a href={item.url} target="_blank" rel="noopener noreferrer">
+                              Abrir fonte
+                              <Icons.ExternalLink size={12} aria-hidden="true" />
+                            </a>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="ai-analysis-paragraph">
+                      As consultas sugeridas rodaram e não retornaram página nova. Isso é um resultado, não uma falha.
+                    </p>
+                  )}
+
+                  <details className="ai-analysis-details">
+                    <summary>Consultas executadas ({leads.consultasExecutadas?.length || 0})</summary>
+                    <ul>
+                      {(leads.consultasExecutadas || []).map((item, index) => (
+                        <li key={`${item.termo}-${index}`}>
+                          <code>{item.termo}</code> — {item.ok === false ? `falhou: ${item.erro}` : `${item.resultCount ?? 0} resultado(s)`}
+                          {item.motivo ? <div className="ai-evidence-source">{item.motivo}</div> : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+
+                  {leads.hipoteses && leads.hipoteses.length > 0 ? (
+                    <div className="ai-analysis-notice ai-analysis-notice-warning ai-quarantine">
+                      <strong>⚠️ Quarentena: {leads.hipoteses.length} hipótese(s) sem nenhuma fonte</strong>
+                      <p>
+                        O que segue é <strong>lembrança do modelo</strong>, não registro público. Nenhuma busca confirmou.
+                        Não vale como evidência, não entra no cálculo de risco e não pode ir para relatório enviado a
+                        terceiros sem verificação humana. Trate cada linha como pista a investigar, nunca como fato.
+                      </p>
+                      <ul className="ai-analysis-bullets">
+                        {leads.hipoteses.map((item, index) => (
+                          <li key={`hipotese-${index}`}>
+                            <Badge variant="neutral" size="sm">
+                              confiança {item.confianca}
+                            </Badge>{' '}
+                            {item.afirmacao}
+                            {item.comoVerificar ? (
+                              <div className="ai-evidence-source">Verificar em: {item.comoVerificar}</div>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <p className="ai-analysis-hint">
+                      O modelo não declarou nenhuma hipótese sobre esta empresa — resposta honesta e preferível a
+                      inventar registro.
+                    </p>
+                  )}
+                </>
+              ) : null}
             </section>
 
             <p className="ai-analysis-disclaimer">

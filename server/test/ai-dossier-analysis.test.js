@@ -195,3 +195,36 @@ test('a trava de custo bloqueia modelo pago no OpenRouter', () => {
     else process.env.OPENROUTER_MODEL = modeloAnterior;
   }
 });
+
+test('a mídia não consome o pacote inteiro e apaga os eixos coletados depois', () => {
+  const dossie = dossieCompleto();
+  dossie.adverseMedia.results = Array.from({ length: 600 }, (_, index) => ({
+    id: `m${index}`,
+    title: `Publicação número ${index}`,
+    url: `https://exemplo.com/${index}`,
+    domain: 'exemplo.com',
+    snippet: 'Trecho.',
+    matchedTerms: [],
+    categories: [],
+    riskRelevant: index < 5,
+    matchStrength: 'low',
+    status: 'candidate',
+  }));
+  dossie.offshore = {
+    ok: true,
+    provider: 'ICIJ Offshore Leaks',
+    totalQueries: 1,
+    candidates: [{ name: 'EXEMPLO HOLDINGS', jurisdiction: 'Panamá', sourceDataset: 'Panama Papers' }],
+    consultadoEm: '2026-09-02T12:00:00.000Z',
+  };
+
+  const pack = buildEvidencePack(dossie);
+  const eixos = new Set(pack.evidencias.map((item) => item.eixo));
+
+  assert.ok(eixos.has('MIDIA'));
+  assert.ok(eixos.has('OFFSHORE'), 'offshore é coletado depois da mídia e não pode ser engolido por ela');
+  assert.ok(eixos.has('SCORE_INTERNO'), 'a metodologia interna fecha a coleta e precisa sobreviver');
+
+  const midia = pack.cobertura.find((item) => item.eixo === 'MIDIA');
+  assert.match(midia.detalhe, /ficaram fora do pacote enviado à IA/, 'o corte precisa ser declarado, não silencioso');
+});

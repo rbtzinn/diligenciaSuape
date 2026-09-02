@@ -77,3 +77,51 @@ export interface AiAnalysisResult {
   aviso?: string;
   provedores?: AiProviderStatus[];
 }
+
+// ----------------------------------------------------------
+// Busca assistida por IA: o modelo propõe consultas, os buscadores
+// reais executam. As hipóteses voltam em quarentena, sem fonte.
+// ----------------------------------------------------------
+
+export interface AiLeadQuery {
+  termo: string;
+  canal: 'web' | 'news';
+  alvo: 'empresa' | 'pessoa';
+  motivo?: string | null;
+  ok?: boolean;
+  resultCount?: number;
+  erro?: string;
+}
+
+export interface AiLeadResult {
+  title: string;
+  url: string;
+  domain: string;
+  snippet: string;
+  publishedAt?: string | null;
+  origemConsulta: string;
+  motivoDaConsulta?: string | null;
+}
+
+export interface AiHypothesis {
+  afirmacao: string;
+  tipo: string;
+  confianca: 'alta' | 'media' | 'baixa';
+  comoVerificar?: string | null;
+  status: 'NAO_CONFIRMADA';
+}
+
+export interface AiLeadsResult {
+  ok: boolean;
+  erro?: string;
+  versao?: string;
+  geradoEm?: string;
+  provedor?: string;
+  modelo?: string;
+  consultas?: AiLeadQuery[];
+  consultasDescartadas?: Array<{ termo: string; motivo: string }>;
+  consultasExecutadas?: AiLeadQuery[];
+  resultados?: AiLeadResult[];
+  hipoteses?: AiHypothesis[];
+  aviso?: string;
+}
