@@ -73,7 +73,27 @@ A busca não depende de provedor pago. Sem chave Brave, o sistema opera com quat
 fontes gratuitas, divididas em dois canais:
 
 - Canal de notícias: Google News RSS e GDELT DOC.
-- Canal web: SearXNG (metabusca própria, sem chave) e DuckDuckGo Lite como reserva.
+- Canal web: Google Programmable Search (API oficial, 100 consultas/dia grátis),
+  com SearXNG e DuckDuckGo Lite como reserva.
+
+O DuckDuckGo Lite não é API: é página HTML consumida por scraping. Ele passou a
+responder HTTP 202 com página de desafio quando detecta automação — IP de
+datacenter, rajada de consultas e ausência de impressão digital de navegador.
+Não há ajuste de volume que torne isso confiável, então o canal web passou a
+depender de uma API de verdade. O DuckDuckGo segue registrado como reserva.
+
+### Configurar o Google Programmable Search
+
+1. Crie o mecanismo em ,
+   marcando **Pesquisar em toda a web**. Copie o **ID do mecanismo** para .
+2. Ative a **Custom Search API** em .
+3. Gere uma chave em **APIs e serviços > Credenciais > Criar credenciais > Chave de API**
+   e copie para .
+
+O plano gratuito dá 100 consultas por dia, sem cartão de crédito. Como uma
+diligência completa gasta cerca de 14 consultas no canal web, o teto equivale a
+aproximadamente 7 diligências por dia. Esgotada a cota, a API responde 429 e o
+dossiê registra a fonte como indisponível — nunca como ausência de achado.
 
 O canal web existe porque índice de notícia não alcança documento. É ele que traz
 portaria, ata, edital, contrato, acórdão e PDF institucional. Para cada pessoa

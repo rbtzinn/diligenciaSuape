@@ -8,6 +8,7 @@ const { BraveSearchProvider } = require('./brave-search.provider');
 const { GoogleNewsRssProvider } = require('./google-news-rss.provider');
 const { GdeltDocProvider } = require('./gdelt-doc.provider');
 const { SearxngProvider } = require('./searxng.provider');
+const { GoogleCseProvider } = require('./google-cse.provider');
 const { DuckDuckGoLiteProvider } = require('./duckduckgo-lite.provider');
 
 const TRACKING_PARAMS = new Set([
@@ -162,6 +163,7 @@ class CompositeSearchProvider extends SearchProvider {
       new GoogleNewsRssProvider(normalizedOptions.googleNewsRss),
       new GdeltDocProvider(normalizedOptions.gdelt),
       new SearxngProvider(normalizedOptions.searxng),
+      new GoogleCseProvider(normalizedOptions.googleCse),
       new DuckDuckGoLiteProvider(normalizedOptions.duckduckgo),
     ];
   }
