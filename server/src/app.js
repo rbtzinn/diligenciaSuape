@@ -19,6 +19,7 @@ const offshoreRoutes = require('./routes/offshore.routes');
 const diligenceRoutes = require('./routes/diligence.routes');
 const reportRoutes = require('./routes/report.routes');
 const statusRoutes = require('./routes/status.routes');
+const aiRoutes = require('./routes/ai.routes');
 
 const app = express();
 
@@ -63,6 +64,17 @@ const mediaRateLimit = rateLimit({
 app.use(['/api/empresa', '/api/cgu', '/api/judicial', '/api/official-gazettes', '/api/offshore'], providerRateLimit);
 app.use('/api/adverse-media', mediaRateLimit);
 
+// A cota gratuita dos provedores de IA é diária, então o limite local é curto
+// de propósito: evita torrar o saldo do dia em poucos minutos de uso.
+const aiRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { ok: false, erro: 'Limite temporário de análises por IA atingido. Aguarde alguns minutos.' },
+});
+app.use('/api/ai', aiRateLimit);
+
 // Servir arquivos estáticos da SPA
 app.use(express.static(path.join(__dirname, '..', '..', 'dist')));
 
@@ -78,6 +90,7 @@ app.use('/api/offshore', offshoreRoutes);
 app.use('/api/diligences', diligenceRoutes);
 app.use('/api/diligences', reportRoutes);
 app.use('/api/status', statusRoutes);
+app.use('/api/ai', aiRoutes);
 
 app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);

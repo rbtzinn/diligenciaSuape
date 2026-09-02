@@ -27,6 +27,7 @@ import './styles/dossier-v3/return-review.css';
 import './styles/dossier-v3/risk-override.css';
 import './styles/dossier-v3/evidence.css';
 import './styles/drawer.css';
+import './styles/ai-analysis.css';
 import './styles/governance-history/coverage.css';
 import './styles/governance-history/people.css';
 // Telas que só tinham estilo dentro do responsive-overrides.

@@ -49,6 +49,36 @@ Em **Settings > Build and Deployment**:
 
 O `package.json` do backend já fixa Node `24.x`.
 
+## 2.1 Análise consolidada por IA (gratuita)
+
+A leitura do dossiê por IA roda **somente no backend**. A chave nunca vai para o
+projeto do frontend: variáveis `VITE_*` são embutidas no JavaScript entregue ao
+navegador e ficariam públicas.
+
+Ainda em `diligencia360-api` > **Settings > Environment Variables > Production**,
+acrescente ao menos uma destas. Todas operam em cota gratuita e nenhuma exige
+cartão de crédito:
+
+```dotenv
+GROQ_API_KEY=SUA_CHAVE
+GEMINI_API_KEY=SUA_CHAVE_SE_USAR
+GITHUB_MODELS_TOKEN=SEU_TOKEN_SE_USAR
+```
+
+| Provedor | Onde obter | Observação |
+| --- | --- | --- |
+| Groq | `console.groq.com/keys` | Login com GitHub ou Google. Mais rápido. |
+| Google Gemini | `aistudio.google.com/apikey` | Use a chave do AI Studio. **Não** ative faturamento no projeto Google Cloud. |
+| GitHub Models | `github.com/settings/tokens` | Token sem escopos extras. Cota diária menor. |
+
+Configurar as três dá redundância: quando a cota diária da primeira acaba, o
+provedor responde HTTP 429 e o backend cai para a próxima da fila sozinho. Sem
+cartão cadastrado não existe cobrança por excedente; o pedido apenas falha.
+
+O `server/vercel.json` define `maxDuration: 60` para a função. A análise usa tempo
+limite interno de 45s, abaixo desse teto, para que um provedor lento vire mensagem
+tratada na tela em vez de corte da plataforma.
+
 ## 3. Projeto do frontend na Vercel
 
 No projeto `diligencia-suape`, configure em **Settings > Environment Variables > Production**:

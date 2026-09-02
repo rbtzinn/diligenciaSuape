@@ -8,6 +8,7 @@ const DatajudService = require('../services/datajud.service');
 const { checkGoogleSheetsHealth } = require('../config/google-sheets');
 const { CompositeSearchProvider } = require('../services/search/composite-search.provider');
 const { InternalSuapeProvider } = require('../egos/adapters/internal-suape/internal-suape.provider');
+const LlmProvider = require('../services/ai/llm.provider');
 
 const router = express.Router();
 const mediaSearchProvider = new CompositeSearchProvider({ persistentUse: true });
@@ -44,6 +45,13 @@ router.get('/', async (_req, res) => {
       }),
     },
     datajudConfigurada: DatajudService.isConfigured(),
+    analiseIa: {
+      configured: LlmProvider.isConfigured(),
+      providers: LlmProvider.listProviders(),
+      message: LlmProvider.isConfigured()
+        ? 'Análise consolidada por IA disponível em provedores de cota gratuita.'
+        : 'Nenhuma chave de IA gratuita configurada. A análise consolidada fica indisponível.',
+    },
     internalSuape: {
       available: internalSuape.available,
       people: internalSuape.people.length,

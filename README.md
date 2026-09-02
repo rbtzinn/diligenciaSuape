@@ -119,13 +119,14 @@ institucional:
 node server/scripts/build-functional-dataset.js /caminho/folha-julho-2026.xlsx server/data/base-funcional.csv
 ```
 
-Depois aponte a variavel. Caminho absoluto vale para execucao local; caminho
-relativo e resolvido a partir de `server/`, formato necessario em Vercel e
-Docker, onde o processo nao roda na pasta do projeto:
+O script grava dois arquivos: `base-funcional.csv`, legivel em diff para auditoria,
+e `base-funcional.js`, o mesmo conteudo embutido como modulo. A aplicacao carrega o
+modulo automaticamente, sem precisar de variavel de ambiente.
 
-```bash
-INTERNAL_SUAPE_DATASET_PATH=data/base-funcional.csv
-```
+`INTERNAL_SUAPE_DATASET_PATH` continua disponivel para apontar outro arquivo, CSV ou
+XLSX, util em execucao local. Caminho absoluto vale local; caminho relativo e resolvido
+a partir de `server/`. Se o caminho configurado nao existir, a base embutida assume.
+
 
 A folha `.xlsx` original tambem e aceita diretamente, util em execucao local. Nos
 dois formatos a remuneracao e descartada na leitura, nao na exibicao: salario,
@@ -147,3 +148,46 @@ O cruzamento e nominal e continua sendo hipotese: nome igual soma pontos, CPF
 mascarado coincidente soma mais, e nada e tratado como identidade confirmada sem
 validacao documental. Sem a variavel configurada, o painel de fontes mostra a
 base como nao importada e nenhuma comparacao acontece.
+
+## Leitura consolidada por IA (gratuita)
+
+Um painel do dossiê aciona um modelo de linguagem para ler todas as evidências já
+coletadas e redigir a análise consolidada: resumo executivo, achados ordenados por
+severidade, cobertura de cada fonte, lacunas e perguntas sugeridas ao fornecedor.
+
+A IA não pesquisa e não descobre fatos. Ela recebe apenas o pacote de evidências
+numerado que o backend monta a partir do dossiê, e cada achado precisa citar um
+identificador desse pacote. Achado sem citação válida é descartado antes de chegar
+à tela — é a trava contra afirmação inventada.
+
+Provedores suportados, todos em cota gratuita e sem cartão de crédito. Basta uma
+chave; as demais servem de reserva quando a cota diária de uma acaba:
+
+| Ordem | Provedor | Onde obter a chave | Variável |
+| --- | --- | --- | --- |
+| 1 | Groq | `console.groq.com/keys` | `GROQ_API_KEY` |
+| 2 | Google Gemini (AI Studio) | `aistudio.google.com/apikey` | `GEMINI_API_KEY` |
+| 3 | GitHub Models | `github.com/settings/tokens` | `GITHUB_MODELS_TOKEN` |
+| 4 | OpenRouter (opcional) | `openrouter.ai/keys` | `OPENROUTER_API_KEY` |
+
+O modelo de cada provedor é configurável (`GROQ_MODEL`, `GEMINI_MODEL`, ...). Os
+catálogos mudam e um modelo aposentado passa a responder HTTP 404, com a mensagem
+dizendo qual variável ajustar. Para ver o que a sua chave enxerga:
+
+```bash
+curl -s https://api.groq.com/openai/v1/models -H "Authorization: Bearer $GROQ_API_KEY"
+```
+
+Ao esgotar a cota o provedor responde HTTP 429 e o backend cai para o próximo da
+fila, sem cobrança. Duas travas evitam gasto acidental: no OpenRouter só passam
+modelos terminados em `:free`, e o Gemini deve ser usado pela chave do AI Studio,
+sem faturamento ativado no projeto Google Cloud.
+
+Endpoints:
+
+- `GET /api/ai/status` — provedores configurados.
+- `POST /api/ai/evidence-pack` — mostra o que seria enviado ao modelo, sem gastar cota.
+- `POST /api/ai/dossier-analysis` — gera a análise consolidada.
+
+A saída exige validação humana: não substitui parecer jurídico, e ausência de
+achado não é atestado de idoneidade.

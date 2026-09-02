@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 const { readPayrollWorkbook } = require('../src/egos/adapters/internal-suape/payroll-workbook');
-const { writeFunctionalDataset } = require('../src/egos/adapters/internal-suape/functional-dataset');
+const { writeFunctionalDataset, wrapAsModule } = require('../src/egos/adapters/internal-suape/functional-dataset');
 
 function main() {
   const [inputArg, outputArg] = process.argv.slice(2);
@@ -39,9 +39,18 @@ function main() {
   }
 
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-  fs.writeFileSync(outputPath, writeFunctionalDataset(parsed.people), 'utf8');
+  const csv = writeFunctionalDataset(parsed.people);
+  fs.writeFileSync(outputPath, csv, 'utf8');
+
+  // O módulo é o formato que sobrevive ao empacotamento em serverless.
+  const modulePath = path.join(path.dirname(outputPath), 'base-funcional.js');
+  fs.writeFileSync(modulePath, wrapAsModule(csv, {
+    referencePeriod: parsed.dataset.referencePeriod,
+    people: parsed.people.length,
+  }), 'utf8');
 
   console.log(`Base funcional minimizada gravada em ${outputPath}`);
+  console.log(`Módulo para implantação gravado em ${modulePath}`);
   console.log(`Pessoas: ${parsed.people.length} | Competência: ${parsed.dataset.referencePeriod || 'não informada'}`);
   for (const sheet of parsed.dataset.sheets) {
     console.log(`  ${sheet.sheet}: ${sheet.people}`);

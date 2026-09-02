@@ -35,18 +35,49 @@ function unavailable(message) {
   return { available: false, people: [], dataset: null, message };
 }
 
+/**
+ * Base embutida como módulo, usada quando não há arquivo em disco.
+ *
+ * É o caminho normal em serverless: o rastreamento de dependências da
+ * plataforma não enxerga leitura por caminho vindo de variável de ambiente,
+ * então um arquivo solto ficaria fora do bundle. Como módulo, entra sempre.
+ */
+function loadBundledDataset(organization) {
+  let bundled;
+  try {
+    // Caminho literal, para que o rastreamento de dependências o detecte.
+    bundled = require('../../../../data/base-funcional.js');
+  } catch {
+    return null;
+  }
+
+  const csv = typeof bundled?.csv === 'string' ? bundled.csv : '';
+  if (!csv.trim()) return null;
+
+  const parsed = readFunctionalDataset(csv, {
+    sourceName: `Base funcional ${organization} — base-funcional.js`,
+  });
+  return parsed.people.length > 0
+    ? { available: true, people: parsed.people, dataset: parsed.dataset }
+    : null;
+}
+
 const InternalSuapeProvider = {
   async load(organization = 'SUAPE') {
     const filePath = datasetPath();
     if (!filePath) {
-      return unavailable('Nenhuma base interna autorizada está configurada nesta implantação.');
+      return loadBundledDataset(organization)
+        || unavailable('Nenhuma base interna autorizada está configurada nesta implantação.');
     }
 
     let stats;
     try {
       stats = fs.statSync(filePath);
     } catch {
-      return unavailable(`Base funcional não encontrada em ${path.basename(filePath)}.`);
+      // Caminho configurado mas ausente do deploy: a base embutida assume,
+      // em vez de deixar a comparação sem fonte por detalhe de empacotamento.
+      return loadBundledDataset(organization)
+        || unavailable(`Base funcional não encontrada em ${path.basename(filePath)}.`);
     }
 
     const cacheKey = `${filePath}:${stats.mtimeMs}:${stats.size}`;

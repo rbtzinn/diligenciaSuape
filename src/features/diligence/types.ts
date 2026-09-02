@@ -16,6 +16,7 @@ export * from './types/officialGazette.types';
 export * from './types/corporateNetwork.types';
 export * from './types/offshore.types';
 export * from './types/fundNetwork.types';
+export * from './types/aiAnalysis.types';
 
 export interface Shareholder {
   nome_socio: string;

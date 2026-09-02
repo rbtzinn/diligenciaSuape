@@ -170,3 +170,23 @@ test('base minimizada descarta linha sem CPF mascarado', () => {
   assert.equal(parsed.people.length, 1);
   assert.equal(parsed.people[0].name, 'PESSOA VALIDA');
 });
+
+test('base embutida como módulo preserva o conteúdo e escapa interpolação', () => {
+  const { wrapAsModule, readFunctionalDataset } = require('../src/egos/adapters/internal-suape/functional-dataset');
+
+  const csv = [
+    'nome,chapa,cpf_mascarado,tipo_vinculo,competencia,origem',
+    'PESSOA `COM` ${CRASE},0009,***.777.888-**,Efetivo,07/2026,FOLHA',
+  ].join('\n');
+
+  const moduleSource = wrapAsModule(csv, { referencePeriod: '07/2026', people: 1 });
+  const sandboxModule = { exports: {} };
+  new Function('module', 'exports', moduleSource)(sandboxModule, sandboxModule.exports);
+
+  assert.equal(sandboxModule.exports.referencePeriod, '07/2026');
+  assert.equal(sandboxModule.exports.csv, csv);
+
+  const parsed = readFunctionalDataset(sandboxModule.exports.csv, { sourceName: 'Base de teste' });
+  assert.equal(parsed.people.length, 1);
+  assert.equal(parsed.people[0].name, 'PESSOA `COM` ${CRASE}');
+});

@@ -1,0 +1,236 @@
+/* ==========================================================
+   DILIGÊNCIA 360 — Leitura consolidada por IA
+   ========================================================== */
+
+.ai-analysis-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ai-analysis-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-analysis-section h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.ai-analysis-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ai-analysis-meta,
+.ai-evidence-source {
+  font-size: 0.72rem;
+  color: #6b7a8d;
+}
+
+.ai-analysis-paragraph {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.ai-analysis-hint {
+  margin: 0;
+  font-size: 0.76rem;
+  color: #6b7a8d;
+}
+
+.ai-analysis-notice {
+  border-radius: 10px;
+  border: 1px solid #d7dee7;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.82rem;
+}
+
+.ai-analysis-notice p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.ai-analysis-notice code {
+  background: rgba(15, 23, 42, 0.06);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.78rem;
+}
+
+.ai-analysis-notice-warning {
+  border-color: #e6c98a;
+  background: #fdf7e8;
+}
+
+.ai-analysis-notice-error {
+  border-color: #e3a9a9;
+  background: #fdeeee;
+}
+
+.ai-finding-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-finding-card {
+  border: 1px solid #dde4ec;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #fff;
+}
+
+.ai-finding-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ai-finding-axis {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7a8d;
+}
+
+.ai-finding-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.ai-finding-body,
+.ai-finding-action {
+  margin: 0;
+  font-size: 0.83rem;
+  line-height: 1.55;
+}
+
+.ai-finding-action {
+  color: #1f3d5c;
+}
+
+.ai-evidence-list,
+.ai-coverage-list,
+.ai-evidence-full-list,
+.ai-provider-list,
+.ai-analysis-bullets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-analysis-bullets {
+  padding-left: 18px;
+  list-style: disc;
+  gap: 6px;
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+
+.ai-evidence-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.78rem;
+  border-top: 1px dashed #e2e8f0;
+  padding-top: 8px;
+}
+
+.ai-evidence-id {
+  flex: none;
+  font-weight: 700;
+  font-size: 0.72rem;
+  background: #eef2f7;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.ai-evidence-list a,
+.ai-evidence-full-list a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #1d4ed8;
+}
+
+.ai-coverage-list li,
+.ai-evidence-full-list li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border-bottom: 1px solid #eef2f7;
+  padding-bottom: 8px;
+}
+
+.ai-coverage-list strong,
+.ai-evidence-full-list strong {
+  font-size: 0.83rem;
+}
+
+.ai-coverage-list p,
+.ai-evidence-full-list p {
+  margin: 2px 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #47566a;
+}
+
+.ai-provider-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+}
+
+.ai-provider-list em {
+  width: 100%;
+  color: #7a5a1f;
+  font-style: normal;
+  font-size: 0.74rem;
+}
+
+.ai-analysis-details summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 0;
+}
+
+.ai-analysis-details ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 0.79rem;
+  line-height: 1.5;
+}
+
+.ai-analysis-disclaimer {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: #55637a;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 12px;
+}
