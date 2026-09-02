@@ -84,11 +84,12 @@ depender de uma API de verdade. O DuckDuckGo segue registrado como reserva.
 
 ### Configurar o Google Programmable Search
 
-1. Crie o mecanismo em ,
-   marcando **Pesquisar em toda a web**. Copie o **ID do mecanismo** para .
-2. Ative a **Custom Search API** em .
+1. Crie o mecanismo em <https://programmablesearchengine.google.com/controlpanel/create>,
+   marcando **Pesquisar em toda a web**. Copie o **ID do mecanismo** para `GOOGLE_CSE_CX`.
+2. Ative a **Custom Search API** em
+   <https://console.cloud.google.com/apis/library/customsearch.googleapis.com>.
 3. Gere uma chave em **APIs e serviços > Credenciais > Criar credenciais > Chave de API**
-   e copie para .
+   e copie para `GOOGLE_CSE_API_KEY`.
 
 O plano gratuito dá 100 consultas por dia, sem cartão de crédito. Como uma
 diligência completa gasta cerca de 14 consultas no canal web, o teto equivale a
