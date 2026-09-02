@@ -627,6 +627,94 @@ export function ensureEgosSnapshot(diligence: DiligenceItem): EgosSnapshot {
     consultedAt: diligence.federalExposure?.consultadoEm,
   });
 
+  const tceProcesses = diligence.tcePe?.processos || [];
+  tceProcesses.forEach((process) => {
+    const identity = process.rawProcessNumber || process.processNumber;
+    const caseKey = `court-case:tce-pe:${stableHash(identity)}`;
+    const caseEntity = registerEntity({
+      key: caseKey,
+      type: 'CourtCase',
+      name: `TCE-PE ${process.processNumber}`,
+      normalizedName: normalizeName(process.processNumber),
+      role: 'external_control_case',
+      depth: 1,
+      confidence: process.confidence,
+      properties: {
+        provider: 'TCE_PE_DADOS_ABERTOS',
+        modality: process.modality || null,
+        organization: process.organization || null,
+        municipality: process.municipality || null,
+        exercise: process.exercise || null,
+        status: process.status || null,
+        outcome: process.outcome || null,
+        description: process.description || null,
+        decisionNumber: process.decisionNumber || null,
+        contractsMentioned: process.contractsMentioned,
+        processUrl: process.processUrl || null,
+        decisionUrl: process.decisionUrl || null,
+        nameMatchOnly: true,
+        projectedLocally: true,
+      },
+      identifiers: [{ type: 'TCE_PE_PROCESS', value: process.processNumber, provider: 'TCE_PE_DADOS_ABERTOS', confidence: 100 }],
+    });
+    const key = `rel:tce-pe:${stableHash(`${rootKey}|${identity}`)}`;
+    const relationship = registerRelationship({
+      key,
+      sourceKey: rootKey,
+      targetKey: caseKey,
+      type: 'NAMED_AS_INTERESTED_IN_EXTERNAL_CONTROL',
+      label: 'Consta como interessada em',
+      status: 'PROBABLE',
+      confidence: process.confidence,
+      properties: {
+        provider: 'TCE_PE_DADOS_ABERTOS',
+        matchStrength: process.matchStrength,
+        matchBasis: process.matchBasis,
+        requiresHumanReview: true,
+        outcomeBelongsToProceeding: true,
+        projectedLocally: true,
+      },
+    });
+    if (!relationship) return;
+    registerEvidence(`${key}|evidence`, {
+      entityId: caseEntity.id,
+      relationshipId: relationship.id,
+      provider: 'TCE_PE_DADOS_ABERTOS',
+      sourceName: 'TCE-PE — API de Dados Abertos',
+      sourceUrl: process.decisionUrl || process.processUrl || diligence.tcePe?.sourceUrl || null,
+      query: process.interestedName || diligence.razaoSocial,
+      identifier: process.processNumber,
+      excerpt: `${process.interestedName} consta como interessado; resultado do processo: ${process.outcome || 'não informado'}. ${process.attributionWarning}`,
+      confidence: process.confidence,
+      retrievedAt: diligence.tcePe?.consultadoEm || generatedAt,
+    });
+    if (process.relevance === 'high') {
+      findings.push({
+        id: stableId('fallback-finding', `${key}|external-control`),
+        entityId: root.id,
+        relationshipId: relationship.id,
+        axis: 'EXTERNAL_CONTROL',
+        status: 'REVIEW',
+        severity: 'HIGH',
+        title: `${process.modality || 'Processo de controle externo'} no TCE-PE — ${process.processNumber}`,
+        explanation: `O nome empresarial aparece como interessado no processo${process.outcome ? `, cujo resultado processual é “${process.outcome}”` : ''}. A decisão exige leitura humana e não comprova automaticamente conduta da empresa.`,
+        confidence: process.confidence,
+        reviewStatus: 'pending',
+      });
+    }
+  });
+  coverage.push({
+    id: stableId('fallback-coverage', `${root.key}|tce-pe`),
+    axis: 'EXTERNAL_CONTROL',
+    provider: 'TCE_PE_DADOS_ABERTOS',
+    status: diligence.tcePe?.ok ? (diligence.tcePe.consultaParcial ? 'PARTIAL' : 'CONSULTED') : 'UNAVAILABLE',
+    message: diligence.tcePe?.ok
+      ? `${tceProcesses.length} processo(s) oficial(is) do TCE-PE foram localizado(s) pelo nome empresarial.`
+      : (diligence.tcePe?.erro || 'A API de processos do TCE-PE não foi consultada.'),
+    resultCount: tceProcesses.length,
+    consultedAt: diligence.tcePe?.consultadoEm,
+  });
+
   (diligence.risco?.detalhes || [])
     .filter((detail) => detail.requerRevisao)
     .forEach((detail, index) => {

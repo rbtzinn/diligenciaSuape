@@ -27,6 +27,7 @@ const AXIS_LABELS: Record<string, string> = {
   FUND_RELATIONSHIPS: 'Gestor, administrador e prestadores do fundo',
   PUBLIC_CONTRACTS: 'Contratos públicos confirmados',
   PUBLIC_PAYMENTS: 'Pagamentos públicos confirmados',
+  EXTERNAL_CONTROL: 'Controle externo — TCE-PE',
   ENTITY_RESOLUTION: 'Resolução de identidade',
   RELATIONSHIPS: 'Rede de relacionamentos',
 };

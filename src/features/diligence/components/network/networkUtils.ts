@@ -42,6 +42,7 @@ export const RELATION_TYPE_LABELS: Record<string, string> = {
   CO_MENTIONED_WITH: 'Co-menções em fontes públicas',
   CONTRACTED_BY: 'Contratos públicos confirmados',
   RECEIVED_PUBLIC_RESOURCES_FROM: 'Pagamentos públicos confirmados',
+  NAMED_AS_INTERESTED_IN_EXTERNAL_CONTROL: 'Processos de controle externo',
 };
 
 export const CHAIN_ENTITY_ORDER: Record<string, number> = {
@@ -76,6 +77,7 @@ const CORE_RELATIONAL_ENTITY_TYPES = new Set([
   'InvestmentFund',
   'InvestmentFundClass',
   'Organization',
+  'CourtCase',
 ]);
 
 const CORE_RELATIONSHIP_TYPES = new Set([
@@ -91,6 +93,7 @@ const CORE_RELATIONSHIP_TYPES = new Set([
   'QSA_MEMBER_OF',
   'CONTRACTED_BY',
   'RECEIVED_PUBLIC_RESOURCES_FROM',
+  'NAMED_AS_INTERESTED_IN_EXTERNAL_CONTROL',
 ]);
 
 export function normalizeText(value: string) {

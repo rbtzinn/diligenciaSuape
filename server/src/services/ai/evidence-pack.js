@@ -480,6 +480,55 @@ function collectGazettes(collector, dossier) {
   );
 }
 
+function collectTcePe(collector, dossier) {
+  const summary = dossier.tcePe;
+  const eixo = 'CONTROLE_EXTERNO_TCE_PE';
+  const fonte = text(summary?.provider) || 'TCE-PE — API de Dados Abertos';
+  if (!summary) {
+    collector.cover(eixo, 'NAO_CONSULTADO', 'Pesquisa nominal de processos do TCE-PE não executada.', fonte);
+    return;
+  }
+
+  const processes = Array.isArray(summary.processos) ? summary.processos : [];
+  for (const process of processes) {
+    collector.add({
+      eixo,
+      titulo: `${text(process.modality) || 'Processo de controle externo'} — ${text(process.processNumber)}`,
+      detalhe: joinParts([
+        process.interestedName && `Interessado localizado: ${process.interestedName}`,
+        process.organization && `Órgão fiscalizado: ${process.organization}`,
+        process.status && `Situação: ${process.status}`,
+        process.outcome && `Resultado do processo: ${process.outcome}`,
+        process.description,
+        Array.isArray(process.contractsMentioned) && process.contractsMentioned.length > 0
+          && `Contratos citados: ${process.contractsMentioned.join(', ')}`,
+        process.matchBasis,
+        process.attributionWarning,
+      ]),
+      fonte,
+      url: text(process.decisionUrl) || text(process.processUrl),
+      data: text(process.judgmentDate),
+    });
+  }
+
+  collector.cover(
+    eixo,
+    !summary.ok
+      ? 'INDISPONIVEL'
+      : summary.consultaParcial
+        ? 'PARCIAL'
+        : processes.length > 0
+          ? 'CONSULTADO_COM_ACHADOS'
+          : 'CONSULTADO_SEM_ACHADOS',
+    joinParts([
+      `${processes.length} processo(s) localizado(s) pelo nome empresarial.`,
+      `${summary.resumo?.altaRelevancia || 0} exige(m) revisão prioritária.`,
+      summary.limitacao,
+    ]),
+    fonte,
+  );
+}
+
 function collectCorporateNetwork(collector, dossier) {
   const summary = dossier.corporateNetwork;
   const eixo = 'REDE_SOCIETARIA';
@@ -658,6 +707,7 @@ function buildEvidencePack(dossier = {}) {
   collectJudicial(collector, dossier);
   collectAdverseMedia(collector, dossier);
   collectGazettes(collector, dossier);
+  collectTcePe(collector, dossier);
   collectCorporateNetwork(collector, dossier);
   collectOffshore(collector, dossier);
   collectInternalEgos(collector, dossier);

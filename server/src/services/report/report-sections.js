@@ -47,6 +47,7 @@ const COVERAGE_LABELS = Object.freeze({
   FUND_NETWORK: 'Prestadores e rede de fundos',
   PUBLIC_CONTRACTS: 'Contratos públicos confirmados',
   PUBLIC_PAYMENTS: 'Pagamentos públicos confirmados',
+  EXTERNAL_CONTROL: 'Controle externo — TCE-PE',
 });
 
 function asArray(value) {
@@ -493,6 +494,8 @@ function drawIntegrityPage(doc, diligence) {
   const activeCeis = Number(diligence.ceis?.vigentes || 0);
   const activeCnep = Number(diligence.cnep?.vigentes || 0);
   const processes = asArray(diligence.processosDescobertos);
+  const tceProcesses = asArray(diligence.tcePe?.processos);
+  const totalProcesses = processes.length + tceProcesses.length;
   let y = beginSectionPage(doc, { number: 4, eyebrow: 'Pessoas e integridade', title: 'Hipóteses separadas de fatos', subtitle: 'PEP, sanções e processos são apresentados em categorias distintas para evitar conclusões indevidas.' });
   y = drawCallout(doc, {
     y,
@@ -529,15 +532,20 @@ function drawIntegrityPage(doc, diligence) {
   y = drawMetricRow(doc, [
     { value: String(activeCeis), label: 'CEIS vigentes', caption: `${diligence.ceis?.quantidade || 0} registro(s)`, palette: activeCeis ? { foreground: COLORS.red, background: COLORS.redSoft } : { foreground: COLORS.green, background: COLORS.greenSoft } },
     { value: String(activeCnep), label: 'CNEP vigentes', caption: `${diligence.cnep?.quantidade || 0} registro(s)`, palette: activeCnep ? { foreground: COLORS.red, background: COLORS.redSoft } : { foreground: COLORS.green, background: COLORS.greenSoft } },
-    { value: String(processes.length), label: 'Processos descobertos', caption: 'Números associados', palette: { foreground: COLORS.blue, background: COLORS.blueSoft } },
+    { value: String(totalProcesses), label: 'Processos encontrados', caption: `${tceProcesses.length} no TCE-PE`, palette: { foreground: COLORS.blue, background: COLORS.blueSoft } },
   ], y, { height: 59 }) + 13;
-  if (processes.length > 0) {
+  if (tceProcesses.length > 0) {
+    tceProcesses.slice(0, 3).forEach((process, index) => {
+      doc.fillColor(COLORS.navy).font('Courier-Bold').fontSize(6.8).text(`TCE-PE ${process.processNumber}`, PAGE.left, y + index * 24, { width: 180 });
+      doc.fillColor(COLORS.slate).font('Helvetica').fontSize(6.7).text(`${cleanText(process.modality, 'Controle externo')} | ${cleanText(process.outcome, process.status || 'Em consulta')}`, PAGE.left + 190, y + index * 24, { width: 300 });
+    });
+  } else if (processes.length > 0) {
     processes.slice(0, 3).forEach((process, index) => {
       doc.fillColor(COLORS.navy).font('Courier-Bold').fontSize(6.8).text(process.formattedProcessNumber || process.processNumber, PAGE.left, y + index * 24, { width: 180 });
       doc.fillColor(COLORS.slate).font('Helvetica').fontSize(6.7).text(`${cleanText(process.tribunal, 'Tribunal não identificado')} | ${cleanText(process.status, 'Candidato')}`, PAGE.left + 190, y + index * 24, { width: 300 });
     });
   } else {
-    doc.fillColor(COLORS.slate).font('Helvetica').fontSize(7.2).text('Nenhum número processual foi descoberto ou vinculado nesta diligência.', PAGE.left, y, { width: PAGE.contentWidth });
+    doc.fillColor(COLORS.slate).font('Helvetica').fontSize(7.2).text('Nenhum processo de controle externo ou número judicial foi localizado nesta diligência.', PAGE.left, y, { width: PAGE.contentWidth });
   }
 }
 

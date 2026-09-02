@@ -21,6 +21,7 @@ import {
   PersonSanctionsSummary,
   PncpSummary,
   FederalExposureSummary,
+  TcePeSummary,
 } from '../types';
 
 interface CompanyApiResponse {
@@ -361,6 +362,24 @@ export const DiligenceService = {
         recursos: null,
         consultadoEm: new Date().toISOString(),
       };
+    }
+  },
+
+  /** Processos oficiais do TCE-PE em que o nome empresarial consta como interessado. */
+  async searchTcePe(params: { cnpj: string; razaoSocial?: string; nomeFantasia?: string }): Promise<TcePeSummary> {
+    try {
+      return await request<TcePeSummary>('/api/judicial/tce-pe', {
+        method: 'POST',
+        body: JSON.stringify({
+          cnpj: CNPJ.clean(params.cnpj),
+          razaoSocial: params.razaoSocial,
+          nomeFantasia: params.nomeFantasia,
+        }),
+        timeoutMs: 90_000,
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Falha na consulta ao TCE-PE';
+      return { ok: false, erro: message, processos: [], consultadoEm: new Date().toISOString() };
     }
   },
 };

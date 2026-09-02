@@ -11,6 +11,7 @@ import { OffshoreSummary } from './types/offshore.types';
 import { FundNetworkSummary } from './types/fundNetwork.types';
 import { PncpSummary } from './types/pncp.types';
 import { FederalExposureSummary } from './types/federalExposure.types';
+import { TcePeSummary } from './types/tcePe.types';
 
 export * from './types/judicial.types';
 export * from './types/adverseMedia.types';
@@ -21,6 +22,7 @@ export * from './types/fundNetwork.types';
 export * from './types/aiAnalysis.types';
 export * from './types/pncp.types';
 export * from './types/federalExposure.types';
+export * from './types/tcePe.types';
 
 export interface Shareholder {
   nome_socio: string;
@@ -251,6 +253,7 @@ export interface RiskDetail {
     | 'JUDICIAL'
     | 'OFFSHORE'
     | 'CONTRATOS_PUBLICOS'
+    | 'CONTROLE_EXTERNO'
     | 'GOVERNANCA'
     | 'COBERTURA'
     | 'DECISAO_HUMANA';
@@ -483,6 +486,7 @@ export interface DiligenceItem {
   egos?: EgosSnapshot;
   pncp?: PncpSummary;
   federalExposure?: FederalExposureSummary;
+  tcePe?: TcePeSummary;
 }
 
 export interface DiligenceStepConfig {

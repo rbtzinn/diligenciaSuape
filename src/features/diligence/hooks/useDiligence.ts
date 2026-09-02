@@ -277,12 +277,19 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
 
         // 6B. Diários Oficiais municipais — fonte pública e gratuita
         updateStep('gazettes', 'loading');
-        const officialGazettes = await DiligenceService.searchOfficialGazettes({
-          cnpj: clean,
-          razaoSocial: empresa.razao_social || '',
-          nomeFantasia: empresa.nome_fantasia || '',
-          shareholders: socios,
-        });
+        const [officialGazettes, tcePe] = await Promise.all([
+          DiligenceService.searchOfficialGazettes({
+            cnpj: clean,
+            razaoSocial: empresa.razao_social || '',
+            nomeFantasia: empresa.nome_fantasia || '',
+            shareholders: socios,
+          }),
+          DiligenceService.searchTcePe({
+            cnpj: clean,
+            razaoSocial: empresa.razao_social || '',
+            nomeFantasia: empresa.nome_fantasia || '',
+          }),
+        ]);
         if (officialGazettes.ok) {
           updateStep('gazettes', 'done', `${officialGazettes.totalFound} edição(ões); ${officialGazettes.returned} amostra(s)`);
           log(`Diários Oficiais: ${officialGazettes.totalFound} edição(ões) localizada(s); ${officialGazettes.returned} evidência(s) estruturada(s), incluindo ${officialGazettes.peopleSearched || 0} pessoa(s) física(s) pesquisada(s) pelo nome.`);
@@ -306,6 +313,15 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
         } else {
           updateStep('gazettes', 'error', 'Fonte indisponível');
           log(`Diários Oficiais: ${officialGazettes.erro || 'fonte indisponível'}.`, 'warning');
+        }
+        if (tcePe.ok) {
+          const highRelevance = tcePe.resumo?.altaRelevancia || 0;
+          log(`TCE-PE: ${tcePe.processos.length} processo(s) oficial(is) localizado(s) pelo nome empresarial; ${highRelevance} exige(m) revisão prioritária.`);
+          for (const process of tcePe.processos.filter((item) => item.relevance === 'high')) {
+            log(`TCE-PE ${process.processNumber}: ${process.modality || 'processo'} em ${process.organization || 'órgão não informado'}, resultado do processo “${process.outcome || 'não informado'}”. A atribuição à empresa exige leitura da decisão.`, 'warning');
+          }
+        } else {
+          log(`TCE-PE: ${tcePe.erro || 'fonte indisponível'}.`, 'warning');
         }
 
 
@@ -396,6 +412,7 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           fundNetwork,
           offshore,
           officialGazettes,
+          tcePe,
           discoveries: discoveredProcesses,
           governanceHistory,
         });
@@ -421,10 +438,15 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           personSanctions,
           pepResults,
           processosDescobertos: discoveredProcesses,
-          processDiscoveryExecuted: officialGazettes.ok || mediaRes.ok,
-          processDiscoverySources: [mediaRes.ok ? 'MEDIA_SEARCH' : null, officialGazettes.ok ? 'QUERIDO_DIARIO' : null].filter((item): item is string => Boolean(item)),
+          processDiscoveryExecuted: officialGazettes.ok || mediaRes.ok || tcePe.ok,
+          processDiscoverySources: [
+            mediaRes.ok ? 'MEDIA_SEARCH' : null,
+            officialGazettes.ok ? 'QUERIDO_DIARIO' : null,
+            tcePe.ok ? 'TCE_PE_DADOS_ABERTOS' : null,
+          ].filter((item): item is string => Boolean(item)),
           adverseMedia: mediaRes,
           officialGazettes,
+          tcePe,
           corporateNetwork,
           fundNetwork,
           offshore,

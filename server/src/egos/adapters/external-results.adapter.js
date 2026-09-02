@@ -315,6 +315,99 @@ function adaptProcesses(builder, context, payload) {
   }
 }
 
+function adaptTcePe(builder, context, payload) {
+  const summary = payload.tcePe;
+  const processes = Array.isArray(summary?.processos) ? summary.processos : [];
+  builder.addCoverage({
+    axis: 'EXTERNAL_CONTROL',
+    provider: 'TCE_PE_DADOS_ABERTOS',
+    status: summary?.ok ? (summary.consultaParcial ? 'PARTIAL' : 'CONSULTED') : 'UNAVAILABLE',
+    message: summary?.ok
+      ? `${processes.length} processo(s) oficial(is) do TCE-PE foram localizado(s) pelo nome empresarial; a base não expõe CNPJ do interessado.`
+      : (summary?.erro || 'A API de processos do TCE-PE não foi consultada.'),
+    resultCount: processes.length,
+    consultedAt: summary?.consultadoEm ? safeDate(summary.consultadoEm) : null,
+  });
+  if (!summary?.ok) return;
+
+  for (const process of processes) {
+    const processIdentity = String(process.rawProcessNumber || process.processNumber || '').replace(/[^A-Za-z0-9]/g, '');
+    if (!processIdentity) continue;
+    const caseKey = `court-case:tce-pe:${stableHash(processIdentity)}`;
+    builder.addEntity({
+      key: caseKey,
+      type: 'CourtCase',
+      name: `TCE-PE ${process.processNumber}`,
+      normalizedName: normalizeName(process.processNumber),
+      role: 'external_control_case',
+      depth: 1,
+      confidence: process.confidence || 78,
+      properties: {
+        provider: 'TCE_PE_DADOS_ABERTOS',
+        modality: process.modality || null,
+        organization: process.organization || null,
+        municipality: process.municipality || null,
+        exercise: process.exercise || null,
+        status: process.status || null,
+        outcome: process.outcome || null,
+        description: process.description || null,
+        judgmentDate: process.judgmentDate || null,
+        decisionNumber: process.decisionNumber || null,
+        contractsMentioned: process.contractsMentioned || [],
+        processUrl: process.processUrl || null,
+        decisionUrl: process.decisionUrl || null,
+        interestedName: process.interestedName || null,
+        nameMatchOnly: true,
+      },
+      identifiers: [{ type: 'TCE_PE_PROCESS', value: process.processNumber, provider: 'TCE_PE_DADOS_ABERTOS', confidence: 100 }],
+    });
+    const relationshipKey = builder.addRelationship({
+      key: `rel:tce-pe:${stableHash(context.companyKey, processIdentity)}`,
+      sourceKey: context.companyKey,
+      targetKey: caseKey,
+      type: 'NAMED_AS_INTERESTED_IN_EXTERNAL_CONTROL',
+      label: 'Consta como interessada em',
+      status: 'PROBABLE',
+      confidence: process.confidence || 78,
+      properties: {
+        provider: 'TCE_PE_DADOS_ABERTOS',
+        matchStrength: process.matchStrength,
+        matchBasis: process.matchBasis,
+        requiresHumanReview: true,
+        outcomeBelongsToProceeding: true,
+      },
+    });
+    builder.addEvidence({
+      entityKey: caseKey,
+      relationshipKey,
+      provider: 'TCE_PE_DADOS_ABERTOS',
+      sourceName: 'TCE-PE — API de Dados Abertos',
+      sourceUrl: process.decisionUrl || process.processUrl || summary.sourceUrl || null,
+      query: process.interestedName || payload.razaoSocial,
+      identifier: process.processNumber,
+      excerpt: `${process.interestedName || 'Nome empresarial'} consta como interessado. ${process.modality || 'Processo'} — ${process.organization || 'órgão não informado'}${process.outcome ? `; resultado do processo: ${process.outcome}` : ''}. ${process.attributionWarning || ''}`,
+      confidence: process.confidence || 78,
+      retrievedAt: summary.consultadoEm ? safeDate(summary.consultadoEm) : new Date(),
+    });
+    if (process.relevance === 'high') {
+      builder.addFinding({
+        entityKey: context.companyKey,
+        relationshipKey,
+        axis: 'EXTERNAL_CONTROL',
+        status: 'REVIEW',
+        severity: 'HIGH',
+        title: `${process.modality || 'Processo de controle externo'} no TCE-PE — ${process.processNumber}`,
+        explanation: `O nome empresarial aparece como interessado em processo oficial do TCE-PE${process.outcome ? ` cujo resultado processual é “${process.outcome}”` : ''}. Isso exige leitura prioritária da decisão, mas não autoriza atribuir automaticamente fraude, dolo ou sanção à empresa.`,
+        confidence: process.confidence || 78,
+      });
+    }
+  }
+
+  if (processes.length > 0) {
+    builder.addInsight(`${processes.length} processo(s) do TCE-PE foram ligados nominalmente à empresa; ${processes.filter((item) => item.relevance === 'high').length} requer(em) revisão prioritária.`);
+  }
+}
+
 function adaptOfficialGazettes(builder, companyKey, payload) {
   const gazettes = payload.officialGazettes;
   const results = Array.isArray(gazettes?.results) ? gazettes.results : [];
@@ -906,6 +999,7 @@ function adaptOffshore(builder, context, payload) {
 function adaptExternalResults(builder, context, payload) {
   adaptMedia(builder, context, payload);
   adaptProcesses(builder, context, payload);
+  adaptTcePe(builder, context, payload);
   adaptOfficialGazettes(builder, context.companyKey, payload);
   adaptPublicContracts(builder, context, payload);
   adaptCorporateNetwork(builder, context, payload);

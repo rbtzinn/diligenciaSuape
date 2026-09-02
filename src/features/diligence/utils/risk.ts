@@ -17,6 +17,7 @@ import {
   RiskAssessment,
   RiskDetail,
   SanctionsResult,
+  TcePeSummary,
 } from '../types';
 
 export interface RiskInput {
@@ -32,6 +33,7 @@ export interface RiskInput {
   officialGazettes?: OfficialGazetteSummary;
   discoveries?: ProcessDiscovery[];
   governanceHistory?: GovernanceHistoryResult;
+  tcePe?: TcePeSummary;
 }
 
 const COMPANY_NAME_PATTERN = /\b(LTDA|LIMITADA|S\.?A\.?|EIRELI|FUNDO|FIP|HOLDING|PARTICIPA(?:C|Ç)(?:AO|ÕES|OES))\b/i;
@@ -375,6 +377,22 @@ export function calculateRisk(dados: RiskInput): RiskAssessment {
       return Math.min(25, total + points);
     }, 0);
     add('Processos ou referências judiciais descobertos', processPoints, `${discoveries.length} referência(s) exigem classificação de polo, matéria, fase e materialidade.`, 'JUDICIAL', 'uncertainty', 'media');
+  }
+
+  const tceProcesses = dados.tcePe?.processos || [];
+  const relevantExternalControl = tceProcesses.filter((item) => item.relevance === 'high');
+  if (relevantExternalControl.length > 0) {
+    const irregularOutcomes = relevantExternalControl.filter((item) => /irregular/i.test(item.outcome || '')).length;
+    add(
+      'Processos relevantes de controle externo no TCE-PE',
+      Math.min(18, 8 + Math.max(0, irregularOutcomes - 1) * 4),
+      `${relevantExternalControl.length} processo(s) de controle externo de alta relevância foram localizado(s) pelo nome empresarial; ${irregularOutcomes} possui(em) resultado processual “Irregular”. O resultado pertence ao processo e não comprova automaticamente fraude, dolo ou sanção contra a empresa.`,
+      'CONTROLE_EXTERNO',
+      'uncertainty',
+      'alta',
+    );
+  } else if (dados.tcePe && !dados.tcePe.ok) {
+    add('Consulta ao TCE-PE indisponível', 4, dados.tcePe.erro || 'A fonte de controle externo não respondeu.', 'COBERTURA', 'coverage', 'alta');
   }
 
   const offshore = dados.offshore;
