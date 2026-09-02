@@ -187,6 +187,44 @@ const OfficialGazetteService = {
       });
     }
 
+    // O diário oficial cita a empresa pelo nome curto, não pela razão social
+    // completa: "Contrato 21/2022, firmado com a SOLIMP (Motoristas)". Como a
+    // consulta é por frase exata, procurar apenas
+    // "SOLIMP TERCEIRIZACOES DE MAO DE OBRA LTDA" não casa com nada, e o dossiê
+    // conclui que não há publicação quando o contrato está publicado.
+    const simplifiedName = String(company.razaoSocial)
+      .replace(/\b(LTDA|LIMITADA|EIRELI|S\.?\s*A\.?|SOCIEDADE ANONIMA|ME|EPP)\b\.?/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const alreadySearched = new Set(subjects.map((subject) => normalizeText(subject.name)));
+
+    if (
+      simplifiedName
+      && significantTokens(simplifiedName).length >= 1
+      && !alreadySearched.has(normalizeText(simplifiedName))
+    ) {
+      subjects.push({
+        type: 'company',
+        name: simplifiedName,
+        qualification: 'Razão social sem o tipo societário',
+        strength: (excerpts) => correlation(company, excerpts),
+      });
+      alreadySearched.add(normalizeText(simplifiedName));
+    }
+
+    // Última variante: o primeiro termo distintivo da razão social, que costuma
+    // ser a marca usada nas publicações. Só entra quando é palavra própria, com
+    // ao menos quatro letras, para não pesquisar termo genérico do ramo.
+    const [firstToken] = significantTokens(simplifiedName || company.razaoSocial);
+    if (firstToken && firstToken.length >= 4 && !alreadySearched.has(normalizeText(firstToken))) {
+      subjects.push({
+        type: 'company',
+        name: firstToken.toUpperCase(),
+        qualification: 'Termo distintivo da razão social',
+        strength: (excerpts) => correlation(company, excerpts),
+      });
+    }
+
     const seenPeople = new Set();
     for (const shareholder of Array.isArray(options.shareholders) ? options.shareholders : []) {
       if (subjects.length >= MAX_PEOPLE + 2) break;
