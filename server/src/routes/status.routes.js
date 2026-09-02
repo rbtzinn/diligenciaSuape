@@ -9,6 +9,7 @@ const { checkGoogleSheetsHealth } = require('../config/google-sheets');
 const { CompositeSearchProvider } = require('../services/search/composite-search.provider');
 const { InternalSuapeProvider } = require('../egos/adapters/internal-suape/internal-suape.provider');
 const LlmProvider = require('../services/ai/llm.provider');
+const { describeCollectionLimits } = require('../services/adverse-media.service');
 
 const router = express.Router();
 const mediaSearchProvider = new CompositeSearchProvider({ persistentUse: true });
@@ -45,6 +46,7 @@ router.get('/', async (_req, res) => {
       }),
     },
     datajudConfigurada: DatajudService.isConfigured(),
+    coletaMidia: describeCollectionLimits(),
     analiseIa: {
       configured: LlmProvider.isConfigured(),
       providers: LlmProvider.listProviders(),

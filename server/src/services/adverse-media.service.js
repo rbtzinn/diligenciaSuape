@@ -1013,10 +1013,30 @@ class AdverseMediaService {
   }
 }
 
+/**
+ * Limites em vigor nesta instância. Publicado no /api/status porque a variável
+ * de ambiente vence o padrão do código: sem isso não há como saber, olhando de
+ * fora, se a implantação está varrendo o plano inteiro ou uma fração dele.
+ */
+function describeCollectionLimits() {
+  return {
+    planoDeConsultas: QUERY_PLAN_VERSION,
+    consultasPorEmpresa: MAX_COMPANY_QUERIES,
+    pessoasPesquisadas: MAX_PERSON_SUBJECTS,
+    resultadosPorConsulta: RESULTS_PER_QUERY,
+    resultadosAgregados: MAX_TOTAL_RESULTS,
+    prazoGlobalMs: GLOBAL_DEADLINE_MS,
+    dominiosInstitucionais: INSTITUTIONAL_SITES.length,
+    consultasInstitucionais: INSTITUTIONAL_SITE_FILTERS.length,
+    varreduraInstitucionalGarantida: true,
+  };
+}
+
 module.exports = {
   AdverseMediaService,
   SEARCH_DICTIONARY,
   QUERY_PLAN_VERSION,
+  describeCollectionLimits,
   detectCoMentionedSubjects,
   normalizeUrl,
   sanitizePersonDocument,
