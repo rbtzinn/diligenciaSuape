@@ -176,8 +176,6 @@ test('busca composta registra os provedores na ordem de preferência', () => {
 
   assert.deepEqual(
     provider.providers.map((source) => source.id),
-    // O Google PSE precede o DuckDuckGo no canal web: é API oficial, enquanto
-    // o DuckDuckGo é scraping sujeito a bloqueio por detecção de automação.
-    ['brave', 'google-news-rss', 'gdelt-doc', 'searxng', 'google-cse', 'duckduckgo-lite'],
+    ['brave', 'google-news-rss', 'gdelt-doc', 'searxng', 'duckduckgo-lite'],
   );
 });

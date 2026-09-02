@@ -73,28 +73,26 @@ A busca não depende de provedor pago. Sem chave Brave, o sistema opera com quat
 fontes gratuitas, divididas em dois canais:
 
 - Canal de notícias: Google News RSS e GDELT DOC.
-- Canal web: Google Programmable Search (API oficial, 100 consultas/dia grátis),
-  com SearXNG e DuckDuckGo Lite como reserva.
+- Canal web: SearXNG (metabusca própria) e DuckDuckGo Lite.
+
+### O canal web está degradado
 
 O DuckDuckGo Lite não é API: é página HTML consumida por scraping. Ele passou a
-responder HTTP 202 com página de desafio quando detecta automação — IP de
-datacenter, rajada de consultas e ausência de impressão digital de navegador.
-Não há ajuste de volume que torne isso confiável, então o canal web passou a
-depender de uma API de verdade. O DuckDuckGo segue registrado como reserva.
+responder HTTP 202 com página de desafio ao detectar automação — IP de datacenter,
+rajada de consultas e ausência de impressão digital de navegador. Não existe ajuste
+de volume que torne isso confiável.
 
-### Configurar o Google Programmable Search
+Com o SearXNG não configurado e o Brave impedido de persistir resultados, o canal
+web fica sem provedor utilizável, e as consultas institucionais — tribunal de contas,
+PNCP, CNJ, diários oficiais — não são respondidas. O dossiê marca essas consultas
+como falha, nunca como ausência de achado.
 
-1. Crie o mecanismo em <https://programmablesearchengine.google.com/controlpanel/create>,
-   marcando **Pesquisar em toda a web**. Copie o **ID do mecanismo** para `GOOGLE_CSE_CX`.
-2. Ative a **Custom Search API** em
-   <https://console.cloud.google.com/apis/library/customsearch.googleapis.com>.
-3. Gere uma chave em **APIs e serviços > Credenciais > Criar credenciais > Chave de API**
-   e copie para `GOOGLE_CSE_API_KEY`.
+O Google Programmable Search foi avaliado e descartado: a Custom Search JSON API está
+fechada para novos clientes e será descontinuada em 1º de janeiro de 2027. Não vale
+construir sobre ela.
 
-O plano gratuito dá 100 consultas por dia, sem cartão de crédito. Como uma
-diligência completa gasta cerca de 14 consultas no canal web, o teto equivale a
-aproximadamente 7 diligências por dia. Esgotada a cota, a API responde 429 e o
-dossiê registra a fonte como indisponível — nunca como ausência de achado.
+A direção adotada é substituir a busca por operadores `site:` por integração direta
+com os dados abertos de cada órgão, que é mais confiável e não depende de buscador.
 
 O canal web existe porque índice de notícia não alcança documento. É ele que traz
 portaria, ata, edital, contrato, acórdão e PDF institucional. Para cada pessoa
