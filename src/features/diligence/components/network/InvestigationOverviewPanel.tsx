@@ -24,6 +24,7 @@ interface InvestigationOverviewPanelProps {
   onOpenProcesses: () => void;
   onOpenQuestionnaire: () => void;
   onOpenAudit: () => void;
+  onOpenEvidence: () => void;
   onOpenAiAnalysis: () => void;
   onOpenPncp: () => void;
 }
@@ -57,6 +58,7 @@ export const InvestigationOverviewPanel: React.FC<InvestigationOverviewPanelProp
   onOpenProcesses,
   onOpenQuestionnaire,
   onOpenAudit,
+  onOpenEvidence,
   onOpenAiAnalysis,
   onOpenPncp,
 }) => {
@@ -64,6 +66,7 @@ export const InvestigationOverviewPanel: React.FC<InvestigationOverviewPanelProp
   const tone = riskTone(score);
   const sanctions = (diligence.ceis?.quantidade || 0) + (diligence.cnep?.quantidade || 0);
   const mediaResults = adverseMedia?.results?.filter((item) => item.status !== 'discarded').length || 0;
+  const assistedEvidence = diligence.evidenceCenter?.items?.length || 0;
   const attentionItems = useMemo(() => {
     const riskDetails = Array.isArray(diligence.risco?.detalhes) ? diligence.risco.detalhes : [];
     const fromRisk = riskDetails
@@ -98,6 +101,7 @@ export const InvestigationOverviewPanel: React.FC<InvestigationOverviewPanelProp
     { id: 'people', label: 'Pessoas e sócios', count: diligence.socios?.length || 0, icon: <Icons.Users size={16} />, action: onOpenPeople },
     { id: 'sanctions', label: 'Sanções oficiais', count: sanctions, icon: <Icons.ShieldAlert size={16} />, action: onOpenSanctions },
     { id: 'media', label: 'Notícias e documentos', count: mediaResults, icon: <Icons.FileText size={16} />, action: onOpenMedia },
+    { id: 'evidence', label: 'Central de evidências', count: assistedEvidence, icon: <Icons.Paperclip size={16} />, action: onOpenEvidence },
     { id: 'processes', label: 'Processos encontrados', count: discoveries.length + (diligence.tcePe?.resumo?.total || 0), icon: <Icons.Scale size={16} />, action: onOpenProcesses },
     { id: 'questionnaire', label: 'Checagens da política', count: undefined, icon: <Icons.CheckCircle size={16} />, action: onOpenQuestionnaire },
     { id: 'audit', label: 'Fontes e auditoria', count: evidenceCount, icon: <Icons.Database size={16} />, action: onOpenAudit },

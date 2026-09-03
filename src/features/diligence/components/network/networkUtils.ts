@@ -43,6 +43,15 @@ export const RELATION_TYPE_LABELS: Record<string, string> = {
   CONTRACTED_BY: 'Contratos públicos confirmados',
   RECEIVED_PUBLIC_RESOURCES_FROM: 'Pagamentos públicos confirmados',
   NAMED_AS_INTERESTED_IN_EXTERNAL_CONTROL: 'Processos de controle externo',
+  MENCIONADA_EM: 'Menções validadas pelo analista',
+  INTERESSADA_EM: 'Interesse processual validado',
+  CONTRATADA_POR: 'Contratos validados pelo analista',
+  SANCIONADA_POR: 'Sanções validadas pelo analista',
+  RESPONSABILIZADA_EM: 'Responsabilizações validadas',
+  SOCIA_DE: 'Participações societárias validadas',
+  ADMINISTRADA_POR: 'Administração validada',
+  CITADA_COM: 'Citações conjuntas validadas',
+  DOCUMENTO_RELACIONADO: 'Documentos relacionados validados',
 };
 
 export const CHAIN_ENTITY_ORDER: Record<string, number> = {

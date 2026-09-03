@@ -447,6 +447,110 @@ export interface EgosSnapshot {
   resolutions: EgosResolution[];
 }
 
+export type EvidenceType =
+  | 'LINK_OFICIAL'
+  | 'NOTICIA'
+  | 'DECISAO'
+  | 'DIARIO_OFICIAL'
+  | 'CERTIDAO'
+  | 'CONTRATO_EDITAL'
+  | 'PROCESSO'
+  | 'TEXTO_ANALISTA'
+  | 'PDF';
+
+export type EvidenceValidationStatus = 'PENDENTE_REVISAO' | 'CONFIRMADA' | 'DESCARTADA';
+export type EvidenceCoverageStatus =
+  | 'CONSULTADO_COM_ACHADOS'
+  | 'CONSULTADO_SEM_ACHADOS'
+  | 'PARCIAL'
+  | 'INDISPONIVEL'
+  | 'NAO_CONSULTADO'
+  | 'EXIGE_REVISAO_MANUAL';
+export type EvidenceRelationType =
+  | 'MENCIONADA_EM'
+  | 'INTERESSADA_EM'
+  | 'CONTRATADA_POR'
+  | 'SANCIONADA_POR'
+  | 'RESPONSABILIZADA_EM'
+  | 'SOCIA_DE'
+  | 'ADMINISTRADA_POR'
+  | 'CITADA_COM'
+  | 'DOCUMENTO_RELACIONADO';
+
+export interface EvidenceDecisionSheet {
+  agency: string;
+  processNumber: string;
+  decisionNumber: string;
+  date: string;
+  rapporteur: string;
+  interestedParties: string;
+  object: string;
+  companyRole: 'MENCIONADA' | 'INTERESSADA' | 'RESPONSABILIZADA';
+  responsiblePerson: string;
+  recognizedIrregularity: string;
+  penalty: string;
+  debt: string;
+  amount: number | null;
+  referredToProsecutor: boolean;
+  debarment: boolean;
+  contractingImpediment: boolean;
+  appealStatus: string;
+  dispositive: string;
+  conclusion: string;
+}
+
+export interface AssistedEvidence {
+  id: string;
+  diligenceId: string;
+  type: EvidenceType;
+  title: string;
+  source: string;
+  domain: string;
+  url: string;
+  originReference: string;
+  documentDate: string;
+  consultedAt: string;
+  excerpt: string;
+  relevantPages: number[];
+  hash: string;
+  relatedEntity: string;
+  relatedEntityType: 'company' | 'person' | 'organization';
+  relatedCnpj: string;
+  relatedProcess: string;
+  sourceQuality: 'OFICIAL_PRIMARIA' | 'OFICIAL_SECUNDARIA' | 'JORNALISTICA' | 'ANALISTA' | 'DESCONHECIDA';
+  matchStrength: 'FORTE' | 'MEDIA' | 'FRACA';
+  relationType: EvidenceRelationType;
+  validationStatus: EvidenceValidationStatus;
+  coverageStatus: EvidenceCoverageStatus;
+  validationIssues: string[];
+  analystNote: string;
+  decision: EvidenceDecisionSheet;
+  file: {
+    name: string;
+    sizeBytes: number | null;
+    pageCount: number | null;
+    extractionStatus: 'EXTRAIDO' | 'FALHOU' | 'NAO_TENTADO' | 'OCR_NECESSARIO';
+  };
+  createdBy?: { id: string; name: string; email?: string } | null;
+  reviewedBy?: { id: string; name: string; email?: string } | null;
+  createdAt: string;
+  updatedAt: string;
+  history: Array<{
+    at: string;
+    action: 'CRIADA' | 'CORRIGIDA' | 'APROVADA' | 'DESCARTADA';
+    status: EvidenceValidationStatus;
+    by?: { id: string; name: string; email?: string } | null;
+    note?: string;
+  }>;
+}
+
+export interface EvidenceCenter {
+  version: 'evidence-center-v1';
+  items: AssistedEvidence[];
+  updatedAt: string | null;
+  counts?: Partial<Record<EvidenceValidationStatus, number>>;
+}
+
 export interface DiligenceItem {
   id: string;
   cnpj: string;
@@ -487,6 +591,7 @@ export interface DiligenceItem {
   pncp?: PncpSummary;
   federalExposure?: FederalExposureSummary;
   tcePe?: TcePeSummary;
+  evidenceCenter?: EvidenceCenter;
 }
 
 export interface DiligenceStepConfig {

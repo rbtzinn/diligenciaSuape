@@ -65,7 +65,7 @@ class EvidenceCollector {
     return id;
   }
 
-  // status: CONSULTADO_COM_ACHADOS | CONSULTADO_SEM_ACHADOS | PARCIAL | INDISPONIVEL | NAO_CONSULTADO
+  // status: CONSULTADO_COM_ACHADOS | CONSULTADO_SEM_ACHADOS | PARCIAL | INDISPONIVEL | NAO_CONSULTADO | EXIGE_REVISAO_MANUAL
   cover(eixo, status, detalhe, fonte) {
     this.coverage.push({
       eixo,
@@ -692,6 +692,47 @@ function collectRisk(collector, dossier) {
   );
 }
 
+function collectAssistedEvidence(collector, dossier) {
+  const center = dossier.evidenceCenter;
+  const items = Array.isArray(center?.items) ? center.items : [];
+  const confirmed = items.filter((item) => item.validationStatus === 'CONFIRMADA');
+  const pending = items.filter((item) => item.validationStatus === 'PENDENTE_REVISAO');
+  const unavailable = items.filter((item) => item.coverageStatus === 'INDISPONIVEL');
+
+  for (const item of confirmed) {
+    if (!item.source || !(item.url || item.originReference)) continue;
+    collector.add({
+      eixo: 'EVIDENCIA_ASSISTIDA',
+      titulo: item.title,
+      detalhe: joinParts([
+        item.excerpt,
+        item.relatedEntity && `Entidade relacionada: ${item.relatedEntity}`,
+        item.relatedProcess && `Processo: ${item.relatedProcess}`,
+        item.relevantPages?.length && `Páginas: ${item.relevantPages.join(', ')}`,
+        `Relação revisada: ${item.relationType}`,
+        'Classificação validada por analista; a fonte integral ainda deve ser consultada.',
+      ]),
+      fonte: item.source,
+      url: item.url,
+      data: item.documentDate || item.consultedAt,
+    });
+  }
+
+  const status = unavailable.length > 0
+    ? 'PARCIAL'
+    : pending.length > 0
+      ? 'EXIGE_REVISAO_MANUAL'
+      : confirmed.length > 0
+        ? 'CONSULTADO_COM_ACHADOS'
+        : items.length > 0 ? 'CONSULTADO_SEM_ACHADOS' : 'NAO_CONSULTADO';
+  collector.cover(
+    'EVIDENCIA_ASSISTIDA',
+    status,
+    `${confirmed.length} confirmada(s), ${pending.length} pendente(s) e ${unavailable.length} fonte(s) indisponível(is). Somente registros confirmados e com origem verificável entram no pacote da IA.`,
+    'Central de Evidências Assistidas',
+  );
+}
+
 /**
  * Monta a lista numerada de evidências e o mapa de cobertura das fontes.
  */
@@ -711,6 +752,7 @@ function buildEvidencePack(dossier = {}) {
   collectCorporateNetwork(collector, dossier);
   collectOffshore(collector, dossier);
   collectInternalEgos(collector, dossier);
+  collectAssistedEvidence(collector, dossier);
   collectRisk(collector, dossier);
 
   return {

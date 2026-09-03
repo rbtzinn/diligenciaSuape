@@ -29,6 +29,7 @@ const COVERAGE_LABELS = Object.freeze({
   MEDIA: 'Mídia e ocorrências públicas',
   PROCESS_DISCOVERY: 'Descoberta processual',
   JUDICIAL_DISCOVERY: 'Descoberta processual',
+  ASSISTED_EVIDENCE: 'Central de evidências',
   CNJ_DATAJUD: 'Enriquecimento DataJud',
   DATAJUD: 'Enriquecimento DataJud',
   ICIJ_OFFSHORE: 'Relações offshore',
@@ -553,7 +554,11 @@ function drawMediaRow(doc, item, y, index) {
   const palette = statusPalette(item.status || 'REVIEW');
   const rowHeight = 49;
   doc.roundedRect(PAGE.left, y, PAGE.contentWidth, rowHeight, 7).fillAndStroke(index % 2 ? '#FAFBFC' : COLORS.white, COLORS.line);
-  doc.fillColor(COLORS.navy).font('Helvetica-Bold').fontSize(7.4).text(clampText(item.title, 98), PAGE.left + 12, y + 9, { width: 365, height: 18 });
+  doc.fillColor(COLORS.navy).font('Helvetica-Bold').fontSize(7.4).text(clampText(item.title, 98), PAGE.left + 12, y + 9, {
+    width: 365,
+    height: 18,
+    ...(item.url ? { link: item.url, underline: true } : {}),
+  });
   const subject = item.subjectType === 'person' ? cleanText(item.subjectName, 'Pessoa pesquisada') : 'Empresa analisada';
   doc.fillColor(COLORS.slate).font('Helvetica').fontSize(6.4).text(`${cleanText(item.domain, 'Fonte pública')} | ${subject}`, PAGE.left + 12, y + 28, { width: 365 });
   drawPill(doc, palette.label, PAGE.left + 398, y + 14, palette, { width: 77, height: 20, fontSize: 5.9 });
@@ -564,11 +569,24 @@ function drawEvidencePage(doc, diligence) {
   const media = diligence.adverseMedia || {};
   const mediaResults = asArray(media.results).sort((a, b) => ({ high: 3, medium: 2, low: 1 }[b.matchStrength] || 0) - ({ high: 3, medium: 2, low: 1 }[a.matchStrength] || 0));
   const egos = diligence.egos || {};
+  const assistedEvidence = asArray(diligence.evidenceCenter?.items)
+    .filter((item) => item.validationStatus === 'CONFIRMADA' && item.source && (item.url || item.originReference));
+  const reviewItems = [
+    ...assistedEvidence.map((item) => ({
+      title: item.title,
+      domain: `${item.source} | ${String(item.relationType || 'DOCUMENTO_RELACIONADO').replaceAll('_', ' ').toLowerCase()}${item.relevantPages?.length ? ` | p. ${item.relevantPages.join(', ')}` : ''}`,
+      status: 'CONFIRMED',
+      subjectType: item.relatedEntityType === 'person' ? 'person' : 'company',
+      subjectName: item.relatedEntity,
+      url: item.url,
+    })),
+    ...mediaResults,
+  ];
   let y = beginSectionPage(doc, { number: 5, eyebrow: 'Mídia e proveniência', title: 'Onde a informação pode ser conferida', subtitle: 'Resultados públicos são pistas rastreáveis. Título, fonte e vínculo permanecem sujeitos à leitura humana.' });
   y = drawMetricRow(doc, [
     { value: String(media.companyResultsCount || 0), label: 'Conteúdos da empresa', caption: 'Pesquisa institucional', palette: { foreground: COLORS.blue, background: COLORS.blueSoft } },
     { value: String(media.personResultsCount || 0), label: 'Conteúdos de pessoas', caption: `${media.peopleSearched || 0} pesquisada(s)`, palette: { foreground: COLORS.blue, background: COLORS.blueSoft } },
-    { value: String(media.candidatesCount || 0), label: 'Candidatos', caption: 'Exigem conferência', palette: media.candidatesCount ? { foreground: COLORS.amber, background: COLORS.amberSoft } : { foreground: COLORS.green, background: COLORS.greenSoft } },
+    { value: String(assistedEvidence.length), label: 'Evidências confirmadas', caption: 'Revisão humana', palette: assistedEvidence.length ? { foreground: COLORS.green, background: COLORS.greenSoft } : { foreground: COLORS.navy, background: COLORS.cloud } },
     { value: String(media.strongMatches || 0), label: 'Sinais fortes', caption: 'Não confirmam ocorrência', palette: media.strongMatches ? { foreground: COLORS.amber, background: COLORS.amberSoft } : { foreground: COLORS.green, background: COLORS.greenSoft } },
   ], y) + 16;
   y = drawCallout(doc, {
@@ -580,11 +598,11 @@ function drawEvidencePage(doc, diligence) {
     titleSize: 9.2,
     bodySize: 7.2,
   }) + 16;
-  y = drawSubheading(doc, 'Amostra dos resultados que exigem conferência', y, `Exibindo até 5 de ${mediaResults.length} resultado(s) preservados no dossiê digital.`);
-  if (mediaResults.length === 0) {
+  y = drawSubheading(doc, 'Amostra de evidências e resultados públicos', y, `Exibindo até 5 de ${reviewItems.length} registro(s) preservados no dossiê digital.`);
+  if (reviewItems.length === 0) {
     y = drawEmptyState(doc, 'Nenhum resultado de mídia disponível', media.aviso || 'A pesquisa não retornou conteúdo ou não pôde ser executada.', y, 70) + 18;
   } else {
-    mediaResults.slice(0, 5).forEach((item, index) => {
+    reviewItems.slice(0, 5).forEach((item, index) => {
       y = drawMediaRow(doc, item, y, index) + 6;
     });
   }

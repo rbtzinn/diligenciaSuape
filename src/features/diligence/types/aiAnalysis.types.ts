@@ -9,7 +9,8 @@ export type AiCoverageStatus =
   | 'CONSULTADO_SEM_ACHADOS'
   | 'PARCIAL'
   | 'INDISPONIVEL'
-  | 'NAO_CONSULTADO';
+  | 'NAO_CONSULTADO'
+  | 'EXIGE_REVISAO_MANUAL';
 
 export interface AiEvidence {
   id: string;

@@ -452,6 +452,11 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           offshore,
           pncp,
           federalExposure,
+          evidenceCenter: {
+            version: 'evidence-center-v1',
+            items: [],
+            updatedAt: null,
+          },
           risco,
           analise,
           timeline,
