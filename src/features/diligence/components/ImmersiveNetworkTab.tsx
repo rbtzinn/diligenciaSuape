@@ -82,6 +82,7 @@ interface ImmersiveNetworkTabProps {
   onOpenProcesses: () => void;
   onOpenQuestionnaire: () => void;
   onOpenAudit: () => void;
+  onOpenEvidence: () => void;
   onOpenAiAnalysis: () => void;
   onOpenPncp: () => void;
   onDrillCompany?: (cnpj: string, name: string) => void;
@@ -104,6 +105,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   onOpenProcesses,
   onOpenQuestionnaire,
   onOpenAudit,
+  onOpenEvidence,
   onOpenAiAnalysis,
   onOpenPncp,
   onDrillCompany,
@@ -854,6 +856,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
                   onOpenProcesses={onOpenProcesses}
                   onOpenQuestionnaire={onOpenQuestionnaire}
                   onOpenAudit={onOpenAudit}
+                  onOpenEvidence={onOpenEvidence}
                   onOpenAiAnalysis={onOpenAiAnalysis}
                   onOpenPncp={onOpenPncp}
                 />

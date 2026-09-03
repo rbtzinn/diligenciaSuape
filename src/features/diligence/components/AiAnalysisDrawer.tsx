@@ -43,6 +43,7 @@ const COVERAGE_LABEL: Record<AiCoverageStatus, string> = {
   PARCIAL: 'Consulta parcial',
   INDISPONIVEL: 'Fonte indisponível',
   NAO_CONSULTADO: 'Não consultado',
+  EXIGE_REVISAO_MANUAL: 'Exige revisão manual',
 };
 
 const COVERAGE_VARIANT: Record<AiCoverageStatus, StatusVariant> = {
@@ -51,6 +52,7 @@ const COVERAGE_VARIANT: Record<AiCoverageStatus, StatusVariant> = {
   PARCIAL: 'medium',
   INDISPONIVEL: 'critical',
   NAO_CONSULTADO: 'neutral',
+  EXIGE_REVISAO_MANUAL: 'medium',
 };
 
 const AXIS_LABEL: Record<string, string> = {

@@ -4,6 +4,7 @@
 
 const express = require('express');
 const { DiligenceHistoryService } = require('../services/diligence-history.service');
+const { EvidenceCenterService } = require('../services/evidence-center.service');
 const { authenticate } = require('../middlewares/auth.middleware');
 const { isScoreWithinLevel } = require('../services/risk-assessment.service');
 
@@ -82,6 +83,43 @@ router.get('/:id', async (req, res) => {
   } catch (err) {
     console.error('[DiligenceRoutes] Erro ao recuperar dossiê:', err.message);
     return res.status(500).json({ ok: false, erro: err.message });
+  }
+});
+
+router.post('/:id/evidences', async (req, res) => {
+  try {
+    const result = await EvidenceCenterService.addEvidence(req.params.id, req.body || {}, req.user);
+    DiligenceHistoryService.cacheSnapshot(result.snapshot);
+    return res.status(201).json({
+      ok: true,
+      data: result.evidence,
+      evidenceCenter: result.snapshot.evidenceCenter,
+      egos: result.snapshot.egos,
+    });
+  } catch (err) {
+    console.error('[DiligenceRoutes] Erro ao adicionar evidência:', err.message);
+    return res.status(err.status || 400).json({ ok: false, erro: err.message });
+  }
+});
+
+router.patch('/:id/evidences/:evidenceId', async (req, res) => {
+  try {
+    const result = await EvidenceCenterService.updateEvidence(
+      req.params.id,
+      req.params.evidenceId,
+      req.body || {},
+      req.user,
+    );
+    DiligenceHistoryService.cacheSnapshot(result.snapshot);
+    return res.json({
+      ok: true,
+      data: result.evidence,
+      evidenceCenter: result.snapshot.evidenceCenter,
+      egos: result.snapshot.egos,
+    });
+  } catch (err) {
+    console.error('[DiligenceRoutes] Erro ao revisar evidência:', err.message);
+    return res.status(err.status || 400).json({ ok: false, erro: err.message });
   }
 });
 
