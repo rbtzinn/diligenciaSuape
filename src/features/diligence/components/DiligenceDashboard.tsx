@@ -12,7 +12,7 @@ import { InvestigationQuestionnaireDrawer } from './InvestigationQuestionnaireDr
 import { InvestigationAuditDrawer } from './InvestigationAuditDrawer';
 import { AiAnalysisDrawer } from './AiAnalysisDrawer';
 import { PncpContractsDrawer } from './PncpContractsDrawer';
-import { DossierOverview } from './dossier/DossierOverview';
+import { DossierView } from './dossier/DossierView';
 import { RiskOverrideModal } from './RiskOverrideModal';
 import { ReportService } from '../../report/services/report.service';
 
@@ -40,7 +40,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const [mediaRefreshNotice, setMediaRefreshNotice] = useState<string | null>(null);
   // Achados abrem primeiro: o conteúdo do dossiê deixa de depender de
   // descobrir um painel lateral. O grafo continua disponível na outra aba.
-  const [activeTab, setActiveTab] = useState<'achados' | 'rede'>('achados');
+  const [activeTab, setActiveTab] = useState<'dossie' | 'mapa'>('dossie');
   const [riskModalOpen, setRiskModalOpen] = useState(false);
   const [riskSaving, setRiskSaving] = useState(false);
   const [localRisk, setLocalRisk] = useState<{ diligenceId: string; risk: RiskAssessment } | null>(null);
@@ -164,32 +164,27 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         Nova consulta
       </button>
 
-      <nav className="dossier-tabs" aria-label="Seções do dossiê">
-        <button
-          type="button"
-          className={'dossier-tab ' + (activeTab === 'achados' ? 'is-active' : '')}
-          onClick={() => setActiveTab('achados')}
-        >
-          Achados
-        </button>
-        <button
-          type="button"
-          className={'dossier-tab ' + (activeTab === 'rede' ? 'is-active' : '')}
-          onClick={() => setActiveTab('rede')}
-        >
-          Rede e evidências
-        </button>
-      </nav>
-
-      {activeTab === 'achados' ? (
-        <DossierOverview
+      {activeTab === 'dossie' ? (
+        <DossierView
           diligence={displayDiligence}
-          onOpenDrawer={setActiveDrawer}
-          onOpenNetwork={() => setActiveTab('rede')}
+          isExportingPdf={isExportingPdf}
+          onBack={onBack}
+          onExportPdf={handleExportPdf}
+          onOpenNetwork={() => setActiveTab('mapa')}
+          onOpenAudit={() => setActiveDrawer('audit')}
         />
       ) : null}
-
-      <div className="dossier-network-panel" hidden={activeTab !== 'rede'}>
+      <div className="dossier-network-panel" hidden={activeTab !== 'mapa'}>
+        <div className="flex items-center gap-3 border-b border-line bg-surface px-4 py-2.5">
+          <button
+            type="button"
+            onClick={() => setActiveTab('dossie')}
+            className="cursor-pointer rounded-chip border border-line bg-surface-subtle px-3 py-1.5 text-[13px] text-brand hover:bg-surface-hover"
+          >
+            ← Voltar ao dossiê
+          </button>
+          <span className="truncate text-[13px] text-ink-3">Mapa de vínculos · {displayDiligence.razaoSocial}</span>
+        </div>
       <ImmersiveNetworkTab
         diligence={displayDiligence}
         adverseMedia={adverseMedia}

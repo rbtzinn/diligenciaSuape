@@ -1,10 +1,11 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   // A lógica coberta por teste é pura: normalização de documento, motor de
   // risco e orquestração do pipeline. Nada precisa de DOM, então o ambiente
   // é `node` — mais rápido e sem dependência de jsdom.

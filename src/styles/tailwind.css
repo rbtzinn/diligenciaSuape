@@ -1,0 +1,64 @@
+/* ==========================================================
+   DILIGÊNCIA 360 — Tailwind com os tokens do projeto
+   ==========================================================
+   Adoção incremental: as telas já existentes continuam com o CSS
+   próprio e as telas refeitas usam utilitários.
+
+   O preflight do Tailwind fica de fora de propósito. Ele é um reset
+   global que zera margem de título, estilo de lista e aparência de
+   botão; com 35 arquivos de CSS escritos sobre os padrões do
+   navegador, ligá-lo mudaria telas que ninguém pediu para mudar.
+
+   O tema abaixo não inventa cor nenhuma: reexporta os tokens de
+   tokens.css, que continua sendo a fonte única da identidade.
+   ========================================================== */
+
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme {
+  /* Superfícies */
+  --color-canvas: var(--bg-canvas);
+  --color-surface: var(--bg-surface);
+  --color-surface-subtle: var(--bg-surface-subtle);
+  --color-surface-hover: var(--bg-surface-hover);
+
+  /* Traços */
+  --color-line: var(--border-default);
+  --color-line-soft: var(--border-subtle);
+  --color-line-strong: var(--border-strong);
+
+  /* Texto */
+  --color-ink: var(--text-primary);
+  --color-ink-2: var(--text-secondary);
+  --color-ink-3: var(--text-tertiary);
+  --color-ink-muted: var(--text-muted);
+
+  /* Marca */
+  --color-brand: var(--brand-blue);
+  --color-brand-hover: var(--brand-blue-hover);
+  --color-brand-deep: var(--brand-blue-deep);
+  --color-brand-soft: var(--brand-blue-subtle);
+  --color-brand-line: var(--brand-blue-border);
+  --color-gold: var(--brand-gold);
+
+  /* Situação */
+  --color-ok: var(--status-low);
+  --color-ok-bg: var(--status-low-bg);
+  --color-warn: var(--status-medium);
+  --color-warn-bg: var(--status-medium-bg);
+  --color-high: var(--status-high);
+  --color-high-bg: var(--status-high-bg);
+  --color-bad: var(--status-critical);
+  --color-bad-bg: var(--status-critical-bg);
+
+  /* Raios */
+  --radius-card: var(--radius-lg);
+  --radius-chip: var(--radius-full);
+
+  /* Dado tabular pede monoespaçado: número de processo, CNPJ e valor
+     ficam legíveis e alinhados na coluna. */
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}

@@ -9,6 +9,7 @@ import { App } from './app/App';
 
 // Tokens primeiro: todo o resto os consome.
 import './styles/tokens.css';
+import './styles/tailwind.css';
 import './styles/index.css';
 
 // Primitivos de UI, na mesma posição de cascata que ocupavam dentro do index.css.
