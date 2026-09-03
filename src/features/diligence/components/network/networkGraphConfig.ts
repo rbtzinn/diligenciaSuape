@@ -55,6 +55,21 @@ export function syncGraphVisualScale(cy: cytoscape.Core) {
   });
 }
 
+/**
+ * Entidade que representa uma ocorrência, e não apenas um vínculo.
+ *
+ * O sinal vem das propriedades que os adaptadores já gravam: resultado do
+ * processo de controle externo e situação de sanção. Nome de órgão não conta
+ * — a Prefeitura não é o risco, o processo é.
+ */
+function carriesRisk(entity: EgosEntity): boolean {
+  const props = entity.properties || {};
+  const outcome = String(props.outcome || '');
+  if (/IRREGULAR/i.test(outcome)) return true;
+  if (props.sanctionActive === true) return true;
+  return false;
+}
+
 export function buildCytoscapeElements(
   entities: EgosEntity[],
   relationships: EgosRelationship[],
@@ -88,6 +103,10 @@ export function buildCytoscapeElements(
         `type-${entity.type.toLowerCase()}`,
         isRoot ? 'is-root' : '',
         matches ? 'is-search-match' : '',
+        // Entidade ligada a controle externo ou sanção é o que o mapa
+        // precisa destacar: sem isso, o grafo mostra com quem a empresa
+        // se relaciona, mas não onde está o risco.
+        carriesRisk(entity) ? 'has-risk' : '',
       ].filter(Boolean).join(' '),
     };
   });
@@ -281,95 +300,99 @@ export function arrangeChain(cy: cytoscape.Core, rootId?: string) {
 }
 
 export const CYTOSCAPE_STYLESHEET: cytoscape.StylesheetStyle[] = [
+  /* ==========================================================
+     Nós em cartão sobre tela clara.
+
+     O grafo era escuro e usava formas geométricas com o rótulo por
+     fora, o que obrigava a consultar a legenda para saber o que cada
+     forma significava e deixava a tela do mapa incoerente com o resto
+     do sistema. Agora cada nó é um cartão branco com o texto dentro e
+     a cor da borda indicando o tipo, no mesmo vocabulário visual do
+     dossiê.
+     ========================================================== */
   {
     selector: 'node',
     style: {
       label: 'data(label)',
-      color: '#ffffff',
-      'font-family': 'Plus Jakarta Sans',
+      shape: 'roundrectangle',
+      'background-color': '#FFFFFF',
+      'border-width': 2,
+      'border-color': '#2D60AD',
+      color: '#142630',
+      'font-family': 'system-ui, -apple-system, Segoe UI, sans-serif',
       'font-size': '10px',
       'font-weight': 600,
-      'text-valign': 'bottom',
+      'text-valign': 'center',
       'text-halign': 'center',
-      'text-margin-y': 10,
-      'text-max-width': '120px',
-      'text-wrap': 'ellipsis',
-      'text-background-color': '#031426',
-      'text-background-opacity': 0.88,
-      'text-background-padding': '4px',
-      'text-background-shape': 'roundrectangle',
-      'background-color': '#1d4ed8',
-      'border-width': 2,
-      'border-color': '#3b82f6',
-      width: 52,
+      'text-max-width': '128px',
+      'text-wrap': 'wrap',
+      width: 150,
       height: 52,
-      'transition-property': 'background-color, border-color, width, height, opacity',
+      padding: '6px',
+      'transition-property': 'border-color, width, height, opacity',
       'transition-duration': 180,
     } as unknown as cytoscape.Css.Node,
   },
   {
     selector: 'node.type-company',
-    style: {
-      shape: 'roundrectangle',
-      'background-color': '#1e40af',
-      'border-color': '#60a5fa',
-    } as cytoscape.Css.Node,
+    style: { 'border-color': '#2D60AD' } as cytoscape.Css.Node,
   },
   {
     selector: 'node.type-person',
-    style: {
-      shape: 'ellipse',
-      'background-color': '#0e7490',
-      'border-color': '#38bdf8',
-    } as cytoscape.Css.Node,
+    style: { 'border-color': '#7C4DBE' } as cytoscape.Css.Node,
   },
   {
     selector: 'node.type-publicoffice',
-    style: {
-      shape: 'diamond',
-      'background-color': '#d97706',
-      'border-color': '#fbbf24',
-    } as cytoscape.Css.Node,
+    style: { 'border-color': '#0E7490' } as cytoscape.Css.Node,
   },
   {
     selector: 'node.type-document',
     style: {
-      shape: 'rectangle',
-      width: 32,
-      height: 32,
-      'background-color': '#475569',
-      'border-color': '#94a3b8',
+      'border-color': '#8FA3AE',
+      color: '#465B67',
+      width: 128,
+      height: 42,
       'font-size': '9px',
     } as cytoscape.Css.Node,
   },
   {
+    /* A empresa investigada usa o dourado institucional, o mesmo que a
+       marca o cartão de identificação do dossiê. */
     selector: 'node.is-root',
     style: {
-      width: 84,
-      height: 62,
-      shape: 'roundrectangle',
-      'background-color': '#2563eb',
+      width: 176,
+      height: 60,
       'border-width': 3,
-      'border-color': '#93c5fd',
-      'font-size': '12px',
+      'border-color': '#FCB315',
+      'font-size': '11px',
       'font-weight': 700,
+    } as cytoscape.Css.Node,
+  },
+  {
+    /* Ocorrência de controle externo é o único nó que o mapa pinta de
+       vermelho: é onde está o risco, e precisa saltar. */
+    selector: 'node.has-risk',
+    style: {
+      'border-color': '#DC2626',
+      color: '#DC2626',
     } as cytoscape.Css.Node,
   },
   {
     selector: 'node.is-search-match',
     style: {
-      'border-color': '#f59e0b',
-      'border-width': 4,
-      'background-color': '#b45309',
+      'border-color': '#D97706',
+      'border-width': 3,
+      'underlay-color': '#FCB315',
+      'underlay-opacity': 0.18,
+      'underlay-padding': 8,
     } as cytoscape.Css.Node,
   },
   {
     selector: 'node.is-mobile-focus',
     style: {
-      'border-color': '#d7f4ff',
-      'border-width': 4,
-      'underlay-color': '#38bdf8',
-      'underlay-opacity': 0.2,
+      'border-width': 3,
+      'underlay-color': '#2D60AD',
+      'underlay-opacity': 0.16,
       'underlay-padding': 12,
       'z-index': 10,
     } as cytoscape.Css.Node,
@@ -377,11 +400,10 @@ export const CYTOSCAPE_STYLESHEET: cytoscape.StylesheetStyle[] = [
   {
     selector: 'node:selected',
     style: {
-      'border-color': '#ffffff',
-      'border-width': 4,
-      'underlay-color': '#ffffff',
-      'underlay-opacity': 0.18,
-      'underlay-padding': 8,
+      'border-width': 3,
+      'underlay-color': '#2D60AD',
+      'underlay-opacity': 0.22,
+      'underlay-padding': 10,
     } as cytoscape.Css.Node,
   },
   {
@@ -389,18 +411,18 @@ export const CYTOSCAPE_STYLESHEET: cytoscape.StylesheetStyle[] = [
     style: {
       width: 2,
       'curve-style': 'bezier',
-      'line-color': '#334155',
-      'target-arrow-color': '#334155',
+      'line-color': '#A9BCC6',
+      'target-arrow-color': '#A9BCC6',
       'target-arrow-shape': 'triangle',
       'arrow-scale': 0.85,
       label: 'data(label)',
-      color: '#94a3b8',
-      'font-family': 'Plus Jakarta Sans',
+      color: '#667A85',
+      'font-family': 'system-ui, -apple-system, Segoe UI, sans-serif',
       'font-size': '9px',
       'text-rotation': 'autorotate',
       'text-margin-y': -8,
-      'text-background-color': '#031426',
-      'text-background-opacity': 0.85,
+      'text-background-color': '#FBFCFD',
+      'text-background-opacity': 0.95,
       'text-background-padding': '3px',
       'transition-property': 'line-color, target-arrow-color, width, opacity',
       'transition-duration': 180,
@@ -409,8 +431,8 @@ export const CYTOSCAPE_STYLESHEET: cytoscape.StylesheetStyle[] = [
   {
     selector: 'edge.is-confirmed',
     style: {
-      'line-color': '#38bdf8',
-      'target-arrow-color': '#38bdf8',
+      'line-color': '#2D60AD',
+      'target-arrow-color': '#2D60AD',
       width: 2.5,
     } as cytoscape.Css.Edge,
   },
@@ -427,10 +449,10 @@ export const CYTOSCAPE_STYLESHEET: cytoscape.StylesheetStyle[] = [
     style: {
       label: '',
       'line-style': 'dotted',
-      'line-color': '#475569',
-      'target-arrow-color': '#475569',
+      'line-color': '#8FA3AE',
+      'target-arrow-color': '#8FA3AE',
       width: 1.5,
-      opacity: 0.5,
+      opacity: 0.6,
     } as cytoscape.Css.Edge,
   },
   {

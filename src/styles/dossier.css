@@ -28,7 +28,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--network-canvas, #041526);
+  background: #FBFCFD;
 }
 
 /* O atributo hidden precisa vencer o display:flex acima. */

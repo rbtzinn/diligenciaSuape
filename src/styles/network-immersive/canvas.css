@@ -26,14 +26,17 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  background-color: #05182b;
+  /* Tela clara com grade de pontos: os nós passaram a ser cartões
+     brancos com o texto dentro, e sobre fundo escuro eles perdiam o
+     contraste da borda, que é o que indica o tipo da entidade. */
+  background-color: #FBFCFD;
   background-image:
-    radial-gradient(circle at 50% 50%, rgba(45, 96, 173, 0.14), transparent 37%),
-    radial-gradient(rgba(106, 157, 201, 0.2) 0.8px, transparent 0.8px),
-    linear-gradient(rgba(63, 104, 142, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(63, 104, 142, 0.06) 1px, transparent 1px);
+    radial-gradient(circle at 50% 50%, rgba(45, 96, 173, 0.05), transparent 42%),
+    radial-gradient(#DCE5EA 1px, transparent 1px),
+    linear-gradient(rgba(45, 96, 173, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 96, 173, 0.04) 1px, transparent 1px);
   background-position: center, 0 0, 0 0, 0 0;
-  background-size: auto, 24px 24px, 120px 120px, 120px 120px;
+  background-size: auto, 22px 22px, 132px 132px, 132px 132px;
   position: relative;
 }
 
@@ -43,7 +46,7 @@
   width: 360px;
   height: 360px;
   pointer-events: none;
-  border: 1px solid rgba(93, 146, 192, 0.09);
+  border: 1px solid rgba(45, 96, 173, 0.08);
   border-radius: 50%;
   content: '';
 }
