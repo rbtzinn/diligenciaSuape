@@ -103,7 +103,18 @@ describe('cobertura declarada', () => {
       ceis: { ok: true, quantidade: 0, registros: [] } as never,
       cnep: { ok: true, quantidade: 0, registros: [] } as never,
     }));
-    expect(s.coverage.map((c) => c.axis).sort()).toEqual(['CADASTRO', 'QSA', 'RELATIONSHIPS']);
+    // PUBLIC_CONTRACTS aparece duas vezes de propósito: PNCP e contratos
+    // federais da CGU são provedores distintos no mesmo eixo, cada um com a
+    // própria situação de cobertura.
+    expect([...new Set(s.coverage.map((c) => c.axis))].sort()).toEqual([
+      'CADASTRO',
+      'EXTERNAL_CONTROL',
+      'PUBLIC_CONTRACTS',
+      'QSA',
+      'RELATIONSHIPS',
+    ]);
+    expect(s.coverage.filter((c) => c.axis === 'PUBLIC_CONTRACTS').map((c) => c.provider).sort())
+      .toEqual(['CGU_FEDERAL_CONTRACTS', 'PNCP']);
   });
 
   // A projeção local não consulta fonte nenhuma: se inventasse um eixo de
