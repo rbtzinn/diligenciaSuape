@@ -159,7 +159,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const safePepResults = Array.isArray(diligence.pepResults) ? diligence.pepResults : [];
 
   return (
-    <main className="investigation-dossier">
+    <main className="investigation-dossier has-dossier-tabs">
       <button type="button" className="investigation-back-sr" onClick={onBack}>
         Nova consulta
       </button>
@@ -182,10 +182,14 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
       </nav>
 
       {activeTab === 'achados' ? (
-        <DossierOverview diligence={displayDiligence} onOpenDrawer={setActiveDrawer} />
+        <DossierOverview
+          diligence={displayDiligence}
+          onOpenDrawer={setActiveDrawer}
+          onOpenNetwork={() => setActiveTab('rede')}
+        />
       ) : null}
 
-      <div hidden={activeTab !== 'rede'}>
+      <div className="dossier-network-panel" hidden={activeTab !== 'rede'}>
       <ImmersiveNetworkTab
         diligence={displayDiligence}
         adverseMedia={adverseMedia}
