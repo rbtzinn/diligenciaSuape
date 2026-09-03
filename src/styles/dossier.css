@@ -1,0 +1,395 @@
+/* ==========================================================
+   DILIGÊNCIA 360 — Visão de achados do dossiê
+   Mobile first. Nenhuma cor literal: tudo vem de tokens.css,
+   para que a identidade visual continue tendo fonte única.
+   ========================================================== */
+
+.dossier-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ---------- Cabeçalho de decisão ---------- */
+
+.dossier-header {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-radius: var(--radius-lg, 12px);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-left: 4px solid var(--border-strong);
+}
+
+.dossier-header.tone-low { border-left-color: var(--status-low); }
+.dossier-header.tone-medium { border-left-color: var(--status-medium); }
+.dossier-header.tone-high { border-left-color: var(--status-high); }
+.dossier-header.tone-critical { border-left-color: var(--status-critical); }
+
+.dossier-header-identity h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.35;
+  color: var(--text-primary);
+}
+
+.dossier-header-identity p {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.dossier-header-risk {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.dossier-header-level {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+}
+
+.dossier-header-decision {
+  font-size: 0.98rem;
+  color: var(--text-primary);
+}
+
+.dossier-header-note {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.dossier-header-date {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* ---------- Cobertura das fontes ---------- */
+
+.dossier-coverage {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--radius-lg, 12px);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+}
+
+.dossier-coverage-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dossier-coverage-head h3,
+.dossier-findings-head h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.dossier-coverage-badge {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+}
+
+.dossier-coverage-badge.is-complete {
+  background: var(--status-low-bg);
+  border-color: var(--status-low-border);
+  color: var(--status-low);
+}
+
+.dossier-coverage-badge.is-partial {
+  background: var(--status-medium-bg);
+  border-color: var(--status-medium-border);
+  color: var(--status-medium);
+}
+
+.dossier-coverage-warning {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.dossier-coverage-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.dossier-coverage-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-surface-subtle);
+  font-size: 0.78rem;
+}
+
+.dossier-coverage-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.status-com-achado .dossier-coverage-dot { background: var(--status-high); }
+.status-sem-achado .dossier-coverage-dot { background: var(--status-low); }
+.status-falhou .dossier-coverage-dot { background: var(--status-critical); }
+.status-nao-consultada .dossier-coverage-dot { background: var(--text-muted); }
+
+.dossier-coverage-label {
+  color: var(--text-primary);
+  min-width: 0;
+}
+
+.dossier-coverage-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  color: var(--text-tertiary);
+  font-size: 0.72rem;
+  text-align: right;
+}
+
+.status-falhou .dossier-coverage-status { color: var(--status-critical); font-weight: 700; }
+
+.dossier-coverage-status em {
+  font-style: normal;
+  color: var(--text-muted);
+}
+
+/* ---------- Achados ---------- */
+
+.dossier-findings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dossier-findings-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dossier-findings-head span {
+  font-size: 0.74rem;
+  color: var(--text-tertiary);
+}
+
+.dossier-findings-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dossier-finding {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border-radius: var(--radius-lg, 12px);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-left: 4px solid var(--border-strong);
+}
+
+.dossier-finding.severity-critico { border-left-color: var(--status-critical); }
+.dossier-finding.severity-alto { border-left-color: var(--status-critical); }
+.dossier-finding.severity-moderado { border-left-color: var(--status-high); }
+.dossier-finding.severity-atencao { border-left-color: var(--status-medium); }
+.dossier-finding.severity-informativo { border-left-color: var(--border-strong); }
+.dossier-finding.severity-positivo { border-left-color: var(--status-low); }
+
+.dossier-finding-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dossier-finding-severity {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-surface-subtle);
+  color: var(--text-secondary);
+}
+
+.severity-critico .dossier-finding-severity,
+.severity-alto .dossier-finding-severity {
+  background: var(--status-critical-bg);
+  color: var(--status-critical);
+}
+
+.severity-moderado .dossier-finding-severity {
+  background: var(--status-high-bg);
+  color: var(--status-high);
+}
+
+.severity-atencao .dossier-finding-severity {
+  background: var(--status-medium-bg);
+  color: var(--status-medium);
+}
+
+.severity-positivo .dossier-finding-severity {
+  background: var(--status-low-bg);
+  color: var(--status-low);
+}
+
+.dossier-finding-source {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+}
+
+.dossier-finding-title {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.dossier-finding-highlight {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dossier-finding-description {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.dossier-finding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.dossier-finding-actions button,
+.dossier-finding-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--brand-blue);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.dossier-finding-actions button:hover,
+.dossier-finding-actions a:hover {
+  color: var(--brand-blue-hover);
+  text-decoration: underline;
+}
+
+.dossier-findings-empty {
+  display: flex;
+  gap: 10px;
+  padding: 18px;
+  border-radius: var(--radius-lg, 12px);
+  background: var(--bg-surface-subtle);
+  border: 1px dashed var(--border-strong);
+  color: var(--text-secondary);
+}
+
+.dossier-findings-empty p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+/* ---------- Abas ---------- */
+
+.dossier-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 16px 0;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dossier-tab {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.dossier-tab.is-active {
+  color: var(--brand-blue);
+  border-bottom-color: var(--brand-blue);
+}
+
+/* ---------- Desktop ---------- */
+
+@media (min-width: 768px) {
+  .dossier-overview { padding: 24px; gap: 20px; }
+
+  .dossier-header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .dossier-header-risk {
+    padding-top: 0;
+    border-top: none;
+    border-left: 1px solid var(--border-subtle);
+    padding-left: 20px;
+    max-width: 46%;
+    align-items: flex-start;
+  }
+
+  .dossier-coverage-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .dossier-tabs { justify-content: flex-start; }
+  .dossier-tab { flex: none; min-width: 140px; }
+}

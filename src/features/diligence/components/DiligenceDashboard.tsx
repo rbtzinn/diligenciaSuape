@@ -12,6 +12,7 @@ import { InvestigationQuestionnaireDrawer } from './InvestigationQuestionnaireDr
 import { InvestigationAuditDrawer } from './InvestigationAuditDrawer';
 import { AiAnalysisDrawer } from './AiAnalysisDrawer';
 import { PncpContractsDrawer } from './PncpContractsDrawer';
+import { DossierOverview } from './dossier/DossierOverview';
 import { RiskOverrideModal } from './RiskOverrideModal';
 import { ReportService } from '../../report/services/report.service';
 
@@ -37,6 +38,9 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isRefreshingMedia, setIsRefreshingMedia] = useState(false);
   const [mediaRefreshNotice, setMediaRefreshNotice] = useState<string | null>(null);
+  // Achados abrem primeiro: o conteúdo do dossiê deixa de depender de
+  // descobrir um painel lateral. O grafo continua disponível na outra aba.
+  const [activeTab, setActiveTab] = useState<'achados' | 'rede'>('achados');
   const [riskModalOpen, setRiskModalOpen] = useState(false);
   const [riskSaving, setRiskSaving] = useState(false);
   const [localRisk, setLocalRisk] = useState<{ diligenceId: string; risk: RiskAssessment } | null>(null);
@@ -160,6 +164,28 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         Nova consulta
       </button>
 
+      <nav className="dossier-tabs" aria-label="Seções do dossiê">
+        <button
+          type="button"
+          className={'dossier-tab ' + (activeTab === 'achados' ? 'is-active' : '')}
+          onClick={() => setActiveTab('achados')}
+        >
+          Achados
+        </button>
+        <button
+          type="button"
+          className={'dossier-tab ' + (activeTab === 'rede' ? 'is-active' : '')}
+          onClick={() => setActiveTab('rede')}
+        >
+          Rede e evidências
+        </button>
+      </nav>
+
+      {activeTab === 'achados' ? (
+        <DossierOverview diligence={displayDiligence} onOpenDrawer={setActiveDrawer} />
+      ) : null}
+
+      <div hidden={activeTab !== 'rede'}>
       <ImmersiveNetworkTab
         diligence={displayDiligence}
         adverseMedia={adverseMedia}
@@ -179,6 +205,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         onOpenPncp={() => setActiveDrawer('pncp')}
         onDrillCompany={onDrillCompany}
       />
+      </div>
 
       <ShareholdersDrawer
         isOpen={activeDrawer === 'shareholders'}
