@@ -1,361 +1,324 @@
 /* ==========================================================
-   DILIGÊNCIA 360 — Visão de achados do dossiê
-   Mobile first. Nenhuma cor literal: tudo vem de tokens.css,
-   para que a identidade visual continue tendo fonte única.
+   DILIGÊNCIA 360 — Visão de decisão do dossiê
+
+   Uma grade só, um espaçamento só, um cartão só. Todo bloco usa a mesma
+   borda, o mesmo raio e o mesmo preenchimento; a altura igual entre
+   cartões vizinhos vem do grid, nunca de altura fixa.
+
+   Nenhuma cor literal: tudo vem de tokens.css.
    ========================================================== */
 
-.dossier-overview {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 16px;
-  max-width: 960px;
+.dossier-grid {
+  --dossier-gap: 12px;
+  --dossier-pad: 16px;
+
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--dossier-gap);
+  padding: var(--dossier-gap);
+  max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+  align-items: stretch;
   box-sizing: border-box;
 }
 
-/* ---------- Cabeçalho de decisão ---------- */
+.dossier-grid *,
+.dossier-grid *::before,
+.dossier-grid *::after { box-sizing: border-box; }
 
-.dossier-header {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 18px;
-  border-radius: var(--radius-lg, 12px);
+/* ---------- Cartão base ---------- */
+
+.dossier-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
-  border-left: 4px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  padding: var(--dossier-pad);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
 }
 
-.dossier-header.tone-low { border-left-color: var(--status-low); }
-.dossier-header.tone-medium { border-left-color: var(--status-medium); }
-.dossier-header.tone-high { border-left-color: var(--status-high); }
-.dossier-header.tone-critical { border-left-color: var(--status-critical); }
+.dossier-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
 
-.dossier-header-identity h2 {
+.dossier-card-head h3 {
   margin: 0;
-  font-size: 1.05rem;
-  line-height: 1.35;
+  font-size: 0.84rem;
+  font-weight: 700;
   color: var(--text-primary);
 }
 
-.dossier-header-identity p {
-  margin: 4px 0 0;
-  font-size: 0.8rem;
+.dossier-card-head span {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.dossier-card-body { flex: 1; display: flex; flex-direction: column; }
+
+.dossier-card-empty {
+  margin: 0;
+  font-size: 0.79rem;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+
+/* O rodapé colado embaixo mantém os botões alinhados entre cartões. */
+.dossier-card-foot { margin-top: auto; padding-top: 10px; }
+
+.dossier-card-foot button {
+  width: 100%;
+  height: 36px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface-subtle);
+  border-radius: var(--radius-md);
+  font-size: 0.78rem;
+  color: var(--brand-blue);
+  cursor: pointer;
+}
+
+.dossier-card-foot button:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-strong);
+}
+
+.span-all { grid-column: 1 / -1; }
+
+.dossier-eyebrow {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-tertiary);
+}
+
+/* ---------- Resposta ---------- */
+
+.dossier-verdict { gap: 14px; border-left: 4px solid var(--border-strong); }
+.dossier-verdict.tone-low { border-left-color: var(--status-low); }
+.dossier-verdict.tone-medium { border-left-color: var(--status-medium); }
+.dossier-verdict.tone-high { border-left-color: var(--status-high); }
+.dossier-verdict.tone-critical { border-left-color: var(--status-critical); }
+
+.dossier-verdict-top { display: flex; align-items: flex-start; gap: 14px; }
+
+.dossier-verdict-mark {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  flex: none;
+  display: grid;
+  place-items: center;
+  font-size: 1.3rem;
+  background: var(--bg-surface-subtle);
+}
+
+.tone-low .dossier-verdict-mark { background: var(--status-low-bg); }
+.tone-medium .dossier-verdict-mark { background: var(--status-medium-bg); }
+.tone-high .dossier-verdict-mark { background: var(--status-high-bg); }
+.tone-critical .dossier-verdict-mark { background: var(--status-critical-bg); }
+
+.dossier-verdict-copy { min-width: 0; }
+
+.dossier-verdict-copy h2 {
+  margin: 3px 0 5px;
+  font-size: 1.1rem;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.dossier-verdict-copy p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
   color: var(--text-secondary);
 }
 
-.dossier-header-risk {
+.dossier-blockers {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
   padding-top: 12px;
   border-top: 1px solid var(--border-subtle);
 }
 
-.dossier-header-level {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-tertiary);
-}
+.dossier-blocker { display: grid; grid-template-columns: 8px 1fr; gap: 10px; align-items: start; }
+.dossier-blocker i { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; }
+.dossier-blocker.tone-high i { background: var(--status-high); }
+.dossier-blocker.tone-medium i { background: var(--status-medium); }
+.dossier-blocker strong { display: block; font-size: 0.84rem; line-height: 1.4; color: var(--text-primary); }
+.dossier-blocker span { font-size: 0.78rem; line-height: 1.45; color: var(--text-secondary); }
 
-.dossier-header-decision {
-  font-size: 0.98rem;
-  color: var(--text-primary);
-}
+.dossier-blocker-empty { margin: 0; font-size: 0.8rem; color: var(--text-secondary); }
 
-.dossier-header-note {
-  margin: 2px 0 0;
-  font-size: 0.8rem;
-  line-height: 1.5;
-  color: var(--text-secondary);
-}
+/* ---------- Indicadores ---------- */
 
-.dossier-header-date {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-
-/* ---------- Cobertura das fontes ---------- */
-
-.dossier-coverage {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 16px;
-  border-radius: var(--radius-lg, 12px);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-default);
-}
-
-.dossier-coverage-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.dossier-coverage-head h3,
-.dossier-findings-head h3 {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--text-primary);
-}
-
-.dossier-coverage-badge {
-  font-size: 0.72rem;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--border-default);
-  color: var(--text-secondary);
-}
-
-.dossier-coverage-badge.is-complete {
-  background: var(--status-low-bg);
-  border-color: var(--status-low-border);
-  color: var(--status-low);
-}
-
-.dossier-coverage-badge.is-partial {
-  background: var(--status-medium-bg);
-  border-color: var(--status-medium-border);
-  color: var(--status-medium);
-}
-
-.dossier-coverage-warning {
-  margin: 0;
-  font-size: 0.76rem;
-  line-height: 1.5;
-  color: var(--text-secondary);
-}
-
-.dossier-coverage-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.dossier-kpis {
+  grid-column: 1 / -1;
   display: grid;
-  gap: 6px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--dossier-gap);
 }
 
-.dossier-coverage-item {
+.dossier-kpi { gap: 2px; justify-content: center; }
+.dossier-kpi-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); }
+.dossier-kpi-value { font-size: 1.3rem; font-weight: 700; line-height: 1.15; color: var(--text-primary); }
+.dossier-kpi-note { font-size: 0.7rem; color: var(--text-muted); }
+
+/* ---------- Linhas ---------- */
+
+.dossier-row {
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  border-radius: var(--radius-md, 8px);
-  background: var(--bg-surface-subtle);
-  font-size: 0.78rem;
-}
-
-.dossier-coverage-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--text-muted);
-  flex-shrink: 0;
-}
-
-/* "Com achado" significa conteúdo encontrado, não problema: um contrato
-   público é exposição, não irregularidade. Vermelho fica reservado para a
-   fonte que não respondeu, que é a única leitura realmente ruim aqui. */
-.status-com-achado .dossier-coverage-dot { background: var(--brand-blue); }
-.status-sem-achado .dossier-coverage-dot { background: var(--status-low); }
-.status-falhou .dossier-coverage-dot { background: var(--status-critical); }
-.status-nao-consultada .dossier-coverage-dot { background: var(--text-muted); }
-
-.dossier-coverage-label {
-  color: var(--text-primary);
-  min-width: 0;
-}
-
-.dossier-coverage-status {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  color: var(--text-tertiary);
-  font-size: 0.72rem;
-  text-align: right;
-}
-
-.status-falhou .dossier-coverage-status { color: var(--status-critical); font-weight: 700; }
-
-.dossier-coverage-status em {
-  font-style: normal;
-  color: var(--text-muted);
-}
-
-/* ---------- Achados ---------- */
-
-.dossier-findings {
-  display: flex;
-  flex-direction: column;
+  grid-template-columns: 1fr auto;
   gap: 10px;
-}
-
-.dossier-findings-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.dossier-findings-head span {
-  font-size: 0.74rem;
-  color: var(--text-tertiary);
-}
-
-.dossier-findings-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.dossier-finding {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 14px;
-  border-radius: var(--radius-lg, 12px);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-default);
-  border-left: 4px solid var(--border-strong);
-}
-
-.dossier-finding.severity-critico { border-left-color: var(--status-critical); }
-.dossier-finding.severity-alto { border-left-color: var(--status-critical); }
-.dossier-finding.severity-moderado { border-left-color: var(--status-high); }
-.dossier-finding.severity-atencao { border-left-color: var(--status-medium); }
-.dossier-finding.severity-informativo { border-left-color: var(--border-strong); }
-.dossier-finding.severity-positivo { border-left-color: var(--status-low); }
-
-.dossier-finding-head {
-  display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.dossier-finding-severity {
+.dossier-row:first-child { padding-top: 2px; }
+.dossier-row:last-child { border-bottom: none; padding-bottom: 2px; }
+
+.dossier-row-main { min-width: 0; }
+.dossier-row-main strong { display: block; font-size: 0.82rem; font-weight: 600; line-height: 1.35; color: var(--text-primary); }
+.dossier-row-main em { font-style: normal; font-size: 0.73rem; color: var(--text-tertiary); }
+.dossier-row-value { font-size: 0.86rem; font-weight: 700; white-space: nowrap; color: var(--text-primary); }
+
+.dossier-tag {
   font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 2px 8px;
-  border-radius: 999px;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
   background: var(--bg-surface-subtle);
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 
-.severity-critico .dossier-finding-severity,
-.severity-alto .dossier-finding-severity {
-  background: var(--status-critical-bg);
-  color: var(--status-critical);
-}
+.dossier-tag.tone-red { background: var(--status-high-bg); color: var(--status-high); }
+.dossier-tag.tone-green { background: var(--status-low-bg); color: var(--status-low); }
 
-.severity-moderado .dossier-finding-severity {
-  background: var(--status-high-bg);
-  color: var(--status-high);
-}
+/* ---------- Fontes ---------- */
 
-.severity-atencao .dossier-finding-severity {
-  background: var(--status-medium-bg);
-  color: var(--status-medium);
-}
+.dossier-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 
-.severity-positivo .dossier-finding-severity {
-  background: var(--status-low-bg);
-  color: var(--status-low);
-}
-
-.dossier-finding-source {
-  font-size: 0.7rem;
-  color: var(--text-tertiary);
-}
-
-.dossier-finding-title {
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  color: var(--text-primary);
-}
-
-.dossier-finding-highlight {
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.dossier-finding-description {
-  margin: 0;
-  font-size: 0.8rem;
-  line-height: 1.5;
-  color: var(--text-secondary);
-}
-
-.dossier-finding-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding-top: 4px;
-}
-
-.dossier-finding-actions button,
-.dossier-finding-actions a {
+.dossier-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.78rem;
-  color: var(--brand-blue);
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-}
-
-.dossier-finding-actions button:hover,
-.dossier-finding-actions a:hover {
-  color: var(--brand-blue-hover);
-  text-decoration: underline;
-}
-
-.dossier-findings-empty {
-  display: flex;
-  gap: 10px;
-  padding: 18px;
-  border-radius: var(--radius-lg, 12px);
+  gap: 6px;
+  font-size: 0.72rem;
+  padding: 5px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-default);
   background: var(--bg-surface-subtle);
-  border: 1px dashed var(--border-strong);
   color: var(--text-secondary);
 }
 
-.dossier-findings-empty p {
-  margin: 0;
-  font-size: 0.82rem;
-  line-height: 1.55;
+.dossier-chip i { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+
+/* Azul é conteúdo encontrado, não problema: contrato público é exposição.
+   O vermelho fica reservado para a fonte que não respondeu. */
+.dossier-chip.ok i { background: var(--brand-blue); }
+.dossier-chip.clean i { background: var(--status-low); }
+.dossier-chip.fail {
+  border-color: var(--status-high-border);
+  background: var(--status-high-bg);
+  color: var(--status-high);
+  font-weight: 600;
+}
+.dossier-chip.fail i { background: var(--status-high); }
+.dossier-chip.none { color: var(--text-muted); }
+.dossier-chip.none i { background: var(--text-muted); }
+
+/* ---------- Rede ---------- */
+
+.dossier-network { padding: 0; overflow: hidden; gap: 0; }
+
+.dossier-network-preview {
+  position: relative;
+  flex: 1;
+  min-height: 190px;
+  background: var(--network-canvas, #041526);
 }
 
-/* ---------- Abas ---------- */
+.dossier-network-node {
+  position: absolute;
+  border-radius: 50%;
+  width: 11px;
+  height: 11px;
+  background: var(--brand-blue);
+  box-shadow: 0 0 0 4px rgba(45, 96, 173, 0.25);
+}
 
-.dossier-tabs {
+.dossier-network-node.root {
+  width: 18px;
+  height: 18px;
+  background: var(--brand-gold);
+  box-shadow: 0 0 0 6px rgba(252, 179, 21, 0.2);
+  left: calc(50% - 9px);
+  top: calc(50% - 9px);
+}
+
+.dossier-network-node.n1 { left: calc(50% + 62px); top: calc(50% - 56px); }
+.dossier-network-node.n2 { left: calc(50% + 78px); top: calc(50% + 36px); }
+.dossier-network-node.n3 { left: calc(50% - 74px); top: calc(50% + 32px); }
+.dossier-network-node.n4 { left: calc(50% - 86px); top: calc(50% - 58px); }
+
+.dossier-network-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 13px var(--dossier-pad);
+  border: none;
+  background: var(--bg-surface);
+  cursor: pointer;
+  text-align: left;
+}
+
+.dossier-network-foot:hover { background: var(--bg-surface-hover); }
+.dossier-network-foot strong { font-size: 0.82rem; color: var(--text-primary); }
+.dossier-network-foot span { font-size: 0.74rem; color: var(--brand-blue); white-space: nowrap; }
+
+/* ---------- Desktop ---------- */
+
+@media (min-width: 900px) {
+  .dossier-grid { --dossier-gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dossier-kpis { grid-template-columns: repeat(4, 1fr); }
+  .dossier-verdict-copy h2 { font-size: 1.22rem; }
+  .dossier-network-preview { min-height: 240px; }
+}
+
+/* ==========================================================
+   Encaixe no container do dossiê
+
+   `.investigation-dossier` foi desenhado para um conteúdo único de tela
+   cheia: height 100% com overflow hidden. Com abas, o grafo reivindicava
+   a altura inteira e empurrava esta visão para fora da área recortada.
+   ========================================================== */
+
+.investigation-dossier.has-dossier-tabs {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-canvas);
+}
+
+.has-dossier-tabs .dossier-tabs {
+  flex: 0 0 auto;
   display: flex;
   gap: 4px;
-  padding: 8px 16px 0;
-  max-width: 960px;
-  margin: 0 auto;
-  width: 100%;
-  box-sizing: border-box;
+  padding: 0 16px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
 }
 
 .dossier-tab {
   flex: 1;
-  padding: 10px 12px;
+  padding: 12px;
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-secondary);
@@ -365,66 +328,9 @@
   cursor: pointer;
 }
 
-.dossier-tab.is-active {
-  color: var(--brand-blue);
-  border-bottom-color: var(--brand-blue);
-}
+.dossier-tab.is-active { color: var(--brand-blue); border-bottom-color: var(--brand-blue); }
 
-/* ---------- Desktop ---------- */
-
-@media (min-width: 768px) {
-  .dossier-overview { padding: 24px; gap: 20px; }
-
-  .dossier-header {
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 24px;
-  }
-
-  .dossier-header-risk {
-    padding-top: 0;
-    border-top: none;
-    border-left: 1px solid var(--border-subtle);
-    padding-left: 20px;
-    max-width: 46%;
-    align-items: flex-start;
-  }
-
-  .dossier-coverage-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
-  .dossier-tabs { justify-content: flex-start; }
-  .dossier-tab { flex: none; min-width: 140px; }
-}
-
-/* ==========================================================
-   Encaixe no container do dossiê
-
-   `.investigation-dossier` foi desenhado para um conteúdo único de tela
-   cheia: `height: 100%` com `overflow: hidden`. Ao ganhar abas, o grafo
-   continuava reivindicando a altura inteira e empurrava a aba de achados
-   para fora da área recortada — o conteúdo existia e não aparecia.
-
-   A coluna abaixo dá altura fixa à barra de abas e deixa o painel ativo
-   ocupar o resto, com rolagem própria na aba de achados.
-   ========================================================== */
-
-.investigation-dossier.has-dossier-tabs {
-  display: flex;
-  flex-direction: column;
-  /* O fundo escuro pertence ao grafo, não ao dossiê inteiro. */
-  background: var(--bg-canvas);
-}
-
-.has-dossier-tabs .dossier-tabs {
-  flex: 0 0 auto;
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border-default);
-  padding: 0 16px;
-  max-width: none;
-}
-
-.has-dossier-tabs .dossier-overview {
+.has-dossier-tabs .dossier-grid {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -439,11 +345,9 @@
   background: var(--network-canvas, #041526);
 }
 
-/* O atributo hidden precisa vencer o display:flex acima. */
-.has-dossier-tabs .dossier-network-panel[hidden] {
-  display: none !important;
-}
+.has-dossier-tabs .dossier-network-panel[hidden] { display: none !important; }
 
 @media (min-width: 768px) {
   .has-dossier-tabs .dossier-tabs { padding: 0 24px; }
+  .dossier-tab { flex: none; min-width: 150px; }
 }

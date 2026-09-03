@@ -182,7 +182,11 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
       </nav>
 
       {activeTab === 'achados' ? (
-        <DossierOverview diligence={displayDiligence} onOpenDrawer={setActiveDrawer} />
+        <DossierOverview
+          diligence={displayDiligence}
+          onOpenDrawer={setActiveDrawer}
+          onOpenNetwork={() => setActiveTab('rede')}
+        />
       ) : null}
 
       <div className="dossier-network-panel" hidden={activeTab !== 'rede'}>
