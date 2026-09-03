@@ -1,5 +1,15 @@
 // ==========================================================
-// DILIGÊNCIA 360 — AppShell (Layout Principal com Suporte a Dark Mode)
+// DILIGÊNCIA 360 — AppShell
+// ==========================================================
+// A casca tinha dois caminhos que não se pareciam: o normal, com
+// menu lateral e cabeçalho, e o imersivo, que descartava os dois e
+// dava à tela o controle do layout. O imersivo é legítimo — o mapa
+// de vínculos e a busca precisam da tela inteira — mas ele herdava
+// `.app-content` com respiro e largura máxima, e então cada tela
+// imersiva desfazia isso por conta própria.
+//
+// Agora os dois caminhos partilham o mesmo contêiner de rolagem e a
+// diferença é só o que aparece nele.
 // ==========================================================
 
 import React, { useState } from 'react';
@@ -15,7 +25,7 @@ interface AppShellProps {
   onNavigate: (view: ViewType) => void;
   historyCount: number;
   onSelectRecent?: (item: DiligenceItem) => void;
-  isDarkMode?: boolean;
+  /** A tela ocupa tudo e traz o próprio cabeçalho (busca e mapa). */
   immersive?: boolean;
   children: React.ReactNode;
 }
@@ -25,45 +35,35 @@ export const AppShell: React.FC<AppShellProps> = ({
   onNavigate,
   historyCount,
   onSelectRecent,
-  isDarkMode = false,
   immersive = false,
   children,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   if (immersive) {
-    return (
-      <div className="app-shell app-shell-immersive">
-        <div className="app-main">
-          <main className="app-content">{children}</main>
-        </div>
-      </div>
-    );
+    return <div className="flex h-dvh min-h-0 w-full min-w-0 flex-col bg-canvas">{children}</div>;
   }
 
   return (
-    <div className={`app-shell ${isDarkMode ? 'app-dark-mode' : ''}`}>
+    <div className="flex h-dvh min-h-0 w-full min-w-0 bg-canvas">
       <Sidebar
         currentView={currentView}
         onNavigate={onNavigate}
         historyCount={historyCount}
         isMobileOpen={mobileMenuOpen}
         onCloseMobile={() => setMobileMenuOpen(false)}
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+        isCollapsed={collapsed}
+        onToggleCollapse={() => setCollapsed((prev) => !prev)}
         onSelectRecent={onSelectRecent}
-        isDarkMode={isDarkMode}
       />
 
-      <div className="app-main">
-        <WorkspaceHeader
-          currentView={currentView}
-          onOpenMenu={() => setMobileMenuOpen(true)}
-        />
+      {/* `min-w-0` é o que impede uma tabela larga de esticar a coluna
+          principal e empurrar a página para o lado. */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <WorkspaceHeader currentView={currentView} onOpenMenu={() => setMobileMenuOpen(true)} />
         <DisclaimerBar />
-
-        <main className="app-content">{children}</main>
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">{children}</main>
       </div>
 
       <HelpCenter />

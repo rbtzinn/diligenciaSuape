@@ -1,6 +1,6 @@
 // ==========================================================
 // DILIGÊNCIA 360 — Aba da Rede Imersiva Relacional EGOS
-// 100% alinhada a styles/network-immersive/
+// Mapa relacional sobre os primitivos de layout do projeto.
 // ==========================================================
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -34,7 +34,6 @@ import {
   CYTOSCAPE_STYLESHEET,
   focusNeighborhood,
   pulseRoute,
-  syncGraphVisualScale,
 } from './network/networkGraphConfig';
 import { NetworkToolbar } from './network/NetworkToolbar';
 import { NetworkInspector } from './network/NetworkInspector';
@@ -44,9 +43,10 @@ import { InvestigationOverviewPanel } from './network/InvestigationOverviewPanel
 import { Icons } from '../../../components/ui/Icons';
 import { ReportService } from '../../report/services/report.service';
 import { ensureEgosSnapshot } from '../utils/fallbackEgos';
-import '../../../styles/network-immersive/layout.css';
-import '../../../styles/network-immersive/canvas.css';
-import '../../../styles/network-immersive/connections.css';
+import { cn } from '../../../lib/cn';
+import { PageHeader } from '../../../components/layout/Page';
+import { Button } from '../../../components/ui/Button';
+import { Chip } from '../../../components/ui/Chip';
 
 const MOBILE_NETWORK_BREAKPOINT = '(max-width: 760px)';
 const MOBILE_NEIGHBOR_PAGE_SIZE = 8;
@@ -86,6 +86,8 @@ interface ImmersiveNetworkTabProps {
   onOpenAiAnalysis: () => void;
   onOpenPncp: () => void;
   onDrillCompany?: (cnpj: string, name: string) => void;
+  /** Volta para a aba do dossiê. O mapa é uma aba, não uma tela solta. */
+  onBackToDossier?: () => void;
 }
 
 export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
@@ -107,6 +109,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   onOpenAiAnalysis,
   onOpenPncp,
   onDrillCompany,
+  onBackToDossier,
 }) => {
   const { id: diligenceId } = diligence;
   const isCompactViewport = useCompactNetworkViewport();
@@ -406,8 +409,6 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
         }
       });
 
-      cy.on('zoom pan', () => syncGraphVisualScale(cy));
-
       cyRef.current = cy;
       setIsGraphReady(true);
     } else {
@@ -416,7 +417,6 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
         cy.elements().remove();
         cy.add(elements);
       });
-      syncGraphVisualScale(cy);
     }
 
     const cy = cyRef.current;
@@ -454,7 +454,6 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
         if (!cy || cy.destroyed()) return;
         cy.resize();
         cy.fit(cy.elements(), isCompactViewport ? 76 : 60);
-        syncGraphVisualScale(cy);
       });
     };
     const observer = new ResizeObserver(resizeGraph);
@@ -643,35 +642,38 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   return (
     <section
       ref={wrapperRef}
-      className={`network-investigation ${isFullscreen ? 'is-fullscreen' : ''} ${isCompactViewport ? 'is-mobile-network' : ''} ${isMobileFullNetwork ? 'is-mobile-full-network' : ''}`}
-      aria-label="Ambiente de Exploração Relacional EGOS"
+      aria-label="Ambiente de exploração relacional EGOS"
+      className={cn(
+        'flex min-h-0 min-w-0 flex-1 flex-col bg-canvas',
+        // Em tela cheia a seção sai do fluxo e cobre a janela. Antes
+        // isso era uma classe de CSS com `position: fixed` e um
+        // z-index literal de 9000, acima de qualquer gaveta.
+        isFullscreen && 'z-modal fixed inset-0',
+      )}
     >
-      {/* Header oficial do ambiente investigativo */}
-      <header className="network-investigation-header">
-        <div className="network-workspace-mark" aria-hidden="true">
-          <Icons.Network size={22} />
-        </div>
-        <div className="network-title-block">
-          <span>Mapa Relacional · Ambiente Investigativo</span>
-          <h2>Quem se liga a quem</h2>
-          <p>
-            <strong>{targetCompanyName}</strong> · Selecione uma pessoa ou empresa para entender a ligação.
-          </p>
-        </div>
-        <div className="mobile-network-heading">
-          <span>{isMobileFullNetwork ? 'Visão completa' : 'Exploração por ramos'}</span>
-          <strong title={targetCompanyName}>{targetCompanyName}</strong>
-        </div>
-        <div className="network-facts">
-          <span><strong>{displayedEntities.length}</strong> entidades visíveis</span>
-          <span><strong>{displayedRelationshipCount}</strong> ligações</span>
-          <span className={reviewCount > 0 ? 'has-review' : ''}>
-            <strong>{reviewCount}</strong> em revisão
-          </span>
-        </div>
-      </header>
+      <PageHeader
+        width="wide"
+        sticky={false}
+        onBack={onBackToDossier}
+        backLabel="Voltar ao dossiê"
+        eyebrow={isMobileFullNetwork ? 'Rede completa' : 'Exploração por ramos'}
+        title="Mapa de vínculos"
+        subtitle={targetCompanyName}
+        actions={
+          <>
+            <Chip tone="neutral" size="sm">
+              {displayedEntities.length} entidades
+            </Chip>
+            <Chip tone="neutral" size="sm">
+              {displayedRelationshipCount} ligações
+            </Chip>
+            <Chip tone={reviewCount > 0 ? 'warn' : 'ok'} size="sm" dot>
+              {reviewCount} em revisão
+            </Chip>
+          </>
+        }
+      />
 
-      {/* Barra de ferramentas */}
       <NetworkToolbar
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange}
@@ -697,76 +699,122 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
         } : undefined}
       />
 
-      {/* Palco do grafo e painel lateral */}
-      <div className={`network-canvas-grid ${isInspectorOpen ? 'panel-open' : ''}`}>
-        <div className="network-canvas-wrap">
-          <div className="network-canvas" ref={graphRef} />
+      {/* Palco do grafo e painel de leitura.
+          No desktop são duas colunas; no celular o painel é uma
+          folha que sobe da base. Antes as duas formas conviviam no
+          mesmo grid de CSS, e em larguras intermediárias o painel
+          aparecia como coluna e como folha ao mesmo tempo. */}
+      <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="relative min-h-[320px] min-w-0 overflow-hidden bg-surface-subtle">
+          {/* Malha de fundo: dá noção de deslocamento ao arrastar. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 opacity-[0.55] [background-image:radial-gradient(var(--border-default)_1px,transparent_1px)] [background-size:22px_22px]"
+          />
+
+          <div className="absolute inset-0" ref={graphRef} />
+
           {isCompactViewport ? (
-            <div className="mobile-network-focus-bar" aria-live="polite">
-              <div>
-                <span>{isMobileFullNetwork ? 'Rede completa' : 'Nó em foco'}</span>
-                <strong>{isMobileFullNetwork ? targetCompanyName : mobileFocusEntity?.name}</strong>
-              </div>
-              <small>{graphEntities.length} nós · {graphRelationships.length} ligações</small>
+            <div
+              aria-live="polite"
+              className="pointer-events-none absolute inset-x-3 top-3 flex min-w-0 items-center gap-2 rounded-lg border border-line bg-surface/95 px-3 py-2 shadow-sm backdrop-blur-sm"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block text-2xs font-semibold uppercase tracking-wide text-ink-3">
+                  {isMobileFullNetwork ? 'Rede completa' : 'Nó em foco'}
+                </span>
+                <strong className="block truncate text-sm font-bold text-ink">
+                  {isMobileFullNetwork ? targetCompanyName : mobileFocusEntity?.name}
+                </strong>
+              </span>
+              <span className="num shrink-0 text-2xs text-ink-3">
+                {graphEntities.length} nós · {graphRelationships.length} ligações
+              </span>
             </div>
           ) : null}
+
           {isCompactViewport && !isMobileFullNetwork && remainingMobileNeighbors > 0 ? (
-            <button
-              type="button"
-              className="mobile-network-more"
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => setMobileNeighborLimit((current) => current + MOBILE_NEIGHBOR_PAGE_SIZE)}
+              icon={<Icons.Plus size={15} aria-hidden="true" />}
+              className="absolute bottom-3 left-3 shadow-md"
             >
-              <Icons.Plus size={15} aria-hidden="true" />
-              <span>Mostrar mais {Math.min(MOBILE_NEIGHBOR_PAGE_SIZE, remainingMobileNeighbors)}</span>
-              <small>{remainingMobileNeighbors} restantes</small>
-            </button>
+              Mostrar mais {Math.min(MOBILE_NEIGHBOR_PAGE_SIZE, remainingMobileNeighbors)}
+              <span className="ml-1 text-2xs font-normal opacity-70">
+                ({remainingMobileNeighbors} restantes)
+              </span>
+            </Button>
           ) : null}
+
           {isCompactViewport
             && !isMobileFullNetwork
             && remainingMobileNeighbors === 0
             && mobileTrail.length <= 1
             && !selection ? (
-            <div className="mobile-network-hint">
+            <p className="absolute inset-x-3 bottom-3 rounded-lg border border-line bg-surface/95 px-3 py-2 text-center text-xs text-ink-2 shadow-sm backdrop-blur-sm">
               Toque numa pessoa ou empresa para abrir somente aquele ramo.
+            </p>
+          ) : null}
+
+          {!isGraphReady ? (
+            <div className="absolute inset-0 grid place-items-center bg-surface-subtle/80">
+              <span className="flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink-2 shadow-sm">
+                <Icons.Loader size={16} aria-hidden="true" />
+                Carregando topologia relacional…
+              </span>
             </div>
           ) : null}
-          {!isGraphReady && (
-            <div className="network-loading">
-              <Icons.Loader size={18} />
-              <span>Carregando topologia relacional...</span>
-            </div>
-          )}
-          <NetworkLegend
-            visibleCount={displayedEntities.length}
-            totalCount={entities.length}
-          />
+
+          <NetworkLegend visibleCount={displayedEntities.length} totalCount={entities.length} />
+
           {!isInspectorOpen ? (
-            <button
-              type="button"
-              className="network-open-overview"
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => setIsInspectorOpen(true)}
+              icon={<Icons.Info size={15} aria-hidden="true" />}
+              className="absolute right-3 top-3 shadow-md"
             >
-              <Icons.Info size={15} aria-hidden="true" />
-              <span>Abrir resumo</span>
-            </button>
+              Abrir resumo
+            </Button>
           ) : null}
         </div>
 
         {isInspectorOpen ? (
-          <div className={`network-panel-slot ${isMobileSheetExpanded ? 'is-expanded' : 'is-peek'}`}>
+          <aside
+            className={cn(
+              'flex min-w-0 flex-col overflow-hidden border-line bg-surface',
+              // Desktop: coluna à direita, com traço à esquerda.
+              'lg:min-h-0 lg:border-l',
+              // Celular: folha ancorada na base, em duas alturas.
+              isCompactViewport
+                ? cn(
+                    'z-sticky fixed inset-x-0 bottom-0 rounded-t-xl border-t shadow-overlay transition-[max-height] duration-300',
+                    isMobileSheetExpanded ? 'max-h-[82dvh]' : 'max-h-[132px]',
+                  )
+                : 'max-h-none',
+            )}
+          >
             {isCompactViewport ? (
               <button
                 type="button"
-                className="mobile-network-sheet-handle"
                 onClick={() => setIsMobileSheetExpanded((current) => !current)}
                 aria-expanded={isMobileSheetExpanded}
                 aria-controls="mobile-network-sheet-content"
+                className="relative flex min-w-0 shrink-0 items-center gap-2.5 border-b border-line-soft px-4 py-2.5 text-left"
               >
-                <span className="mobile-network-sheet-grip" aria-hidden="true" />
-                <span className="mobile-network-sheet-copy">
-                  <small>{selectedEntity || selectedRelationship ? 'Seleção atual' : 'Resumo da diligência'}</small>
-                  <strong>{selectedEntity?.name || selectedRelationship?.label || targetCompanyName}</strong>
-                  <span>
+                <span aria-hidden="true" className="absolute inset-x-0 top-1.5 mx-auto h-1 w-9 rounded-full bg-line-strong" />
+
+                <span className="min-w-0 flex-1 pt-1">
+                  <span className="block text-2xs font-semibold uppercase tracking-wide text-ink-3">
+                    {selectedEntity || selectedRelationship ? 'Seleção atual' : 'Resumo da diligência'}
+                  </span>
+                  <strong className="block truncate text-sm font-bold text-ink">
+                    {selectedEntity?.name || selectedRelationship?.label || targetCompanyName}
+                  </strong>
+                  <span className="block truncate text-2xs text-ink-3">
                     {selectedEntity
                       ? `${selectedConnections.length} conexões · toque para ver fontes`
                       : selectedRelationship
@@ -774,13 +822,16 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
                         : `${reviewCount} ponto(s) em revisão · toque para abrir`}
                   </span>
                 </span>
-                {isMobileSheetExpanded
-                  ? <Icons.ChevronDown size={17} aria-hidden="true" />
-                  : <Icons.ChevronUp size={17} aria-hidden="true" />}
+
+                {isMobileSheetExpanded ? (
+                  <Icons.ChevronDown size={17} aria-hidden="true" className="shrink-0 text-ink-3" />
+                ) : (
+                  <Icons.ChevronUp size={17} aria-hidden="true" className="shrink-0 text-ink-3" />
+                )}
               </button>
             ) : null}
 
-            <div className="mobile-network-sheet-content" id="mobile-network-sheet-content">
+            <div className="min-h-0 min-w-0 flex-1 overflow-y-auto" id="mobile-network-sheet-content">
               {!selectedEntity && !selectedRelationship ? (
                 <InvestigationOverviewPanel
                   diligence={diligence}
@@ -836,7 +887,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
                 />
               ) : null}
             </div>
-          </div>
+          </aside>
         ) : null}
       </div>
     </section>

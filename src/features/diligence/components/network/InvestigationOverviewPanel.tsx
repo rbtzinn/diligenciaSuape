@@ -1,8 +1,27 @@
+// ==========================================================
+// DILIGÊNCIA 360 — Resumo da diligência no mapa
+// ==========================================================
+// O painel era desenhado por investigation-experience/summary.css
+// para viver sobre fundo azul-escuro: texto branco, números em
+// 'Cascadia Mono' (fonte que o projeto não carrega) e corpos de 9 e
+// 10px. Depois que o grafo passou a ser claro, o painel ficou sendo
+// a única superfície escura da tela.
+//
+// Agora ele usa as seções, os selos e os botões do projeto, com os
+// mesmos corpos de texto do dossiê.
+// ==========================================================
+
 import React, { useMemo } from 'react';
 import { Icons } from '../../../../components/ui/Icons';
 import { WorkflowControlBar } from '../../../workflow/components/WorkflowControlBar';
 import type { AdverseMediaSummary, DiligenceItem, ProcessDiscovery } from '../../types';
-import { buildRiskNarrative } from '../../utils/riskNarrative';
+import { buildRiskNarrative, type NarrativeTone } from '../../utils/riskNarrative';
+import { Section } from '../../../../components/ui/Section';
+import { Button } from '../../../../components/ui/Button';
+import { Chip } from '../../../../components/ui/Chip';
+import { Note } from '../../../../components/ui/Note';
+import { Stat, FactTone } from '../../../../components/ui/Facts';
+import { cn } from '../../../../lib/cn';
 
 interface InvestigationOverviewPanelProps {
   diligence: DiligenceItem;
@@ -29,14 +48,22 @@ interface InvestigationOverviewPanelProps {
   onOpenPncp: () => void;
 }
 
-type Tone = 'low' | 'medium' | 'high' | 'critical';
-
-function riskTone(score: number): Tone {
+/** Faixas do motor de risco, traduzidas para o tom visual. */
+function riskTone(score: number): FactTone {
   if (score >= 60) return 'critical';
   if (score >= 35) return 'high';
-  if (score >= 15) return 'medium';
-  return 'low';
+  if (score >= 15) return 'warn';
+  return 'ok';
 }
+
+/** Tom da narrativa → tom do aviso. Exaustivo sobre a união, de modo
+    que um nível novo em riskNarrative quebre o build em vez de cair
+    silenciosamente num padrão. */
+const NARRATIVE_TONE: Record<NarrativeTone, 'ok' | 'warn' | 'high'> = {
+  clear: 'ok',
+  attention: 'warn',
+  critical: 'high',
+};
 
 export const InvestigationOverviewPanel: React.FC<InvestigationOverviewPanelProps> = ({
   diligence,
@@ -87,22 +114,35 @@ export const InvestigationOverviewPanel: React.FC<InvestigationOverviewPanelProp
     [adverseMedia, diligence, discoveries],
   );
 
-  const decisionCopy = sanctions > 0
-    ? 'Existe registro em base oficial que precisa ser examinado antes de qualquer decisão.'
-    : score >= 60
-      ? 'O conjunto de sinais atingiu atenção crítica e precisa de revisão antes da decisão.'
-      : score >= 35
-        ? 'O conjunto de sinais exige atenção elevada e leitura das evidências prioritárias.'
-        : reviewCount > 0
-          ? `${reviewCount} apontamento(s) dependem de confirmação ou descarte por uma pessoa.`
-          : 'Nenhum impedimento oficial ativo foi identificado nas fontes que responderam.';
+  const decisionCopy =
+    sanctions > 0
+      ? 'Existe registro em base oficial que precisa ser examinado antes de qualquer decisão.'
+      : score >= 60
+        ? 'O conjunto de sinais atingiu atenção crítica e precisa de revisão antes da decisão.'
+        : score >= 35
+          ? 'O conjunto de sinais exige atenção elevada e leitura das evidências prioritárias.'
+          : reviewCount > 0
+            ? `${reviewCount} apontamento(s) dependem de confirmação ou descarte por uma pessoa.`
+            : 'Nenhum impedimento oficial ativo foi identificado nas fontes que responderam.';
 
   const quickActions = [
     { id: 'people', label: 'Pessoas e sócios', count: diligence.socios?.length || 0, icon: <Icons.Users size={16} />, action: onOpenPeople },
     { id: 'sanctions', label: 'Sanções oficiais', count: sanctions, icon: <Icons.ShieldAlert size={16} />, action: onOpenSanctions },
     { id: 'media', label: 'Notícias e documentos', count: mediaResults, icon: <Icons.FileText size={16} />, action: onOpenMedia },
-    { id: 'evidence', label: 'Central de evidências', count: assistedEvidence, icon: <Icons.Paperclip size={16} />, action: onOpenEvidence },
-    { id: 'processes', label: 'Processos encontrados', count: discoveries.length + (diligence.tcePe?.resumo?.total || 0), icon: <Icons.Scale size={16} />, action: onOpenProcesses },
+    {
+      id: 'evidence',
+      label: 'Central de evidências',
+      count: assistedEvidence,
+      icon: <Icons.Paperclip size={16} />,
+      action: onOpenEvidence,
+    },
+    {
+      id: 'processes',
+      label: 'Processos encontrados',
+      count: discoveries.length + (diligence.tcePe?.resumo?.total || 0),
+      icon: <Icons.Scale size={16} />,
+      action: onOpenProcesses,
+    },
     { id: 'questionnaire', label: 'Checagens da política', count: undefined, icon: <Icons.CheckCircle size={16} />, action: onOpenQuestionnaire },
     { id: 'audit', label: 'Fontes e auditoria', count: evidenceCount, icon: <Icons.Database size={16} />, action: onOpenAudit },
     {
@@ -116,140 +156,185 @@ export const InvestigationOverviewPanel: React.FC<InvestigationOverviewPanelProp
   ];
 
   return (
-    <aside className="network-inspector investigation-overview-panel" aria-label="Resumo da diligência">
-      <div className="investigation-overview-scroll">
-        <header className="investigation-overview-head">
-          <div>
-            <span className="network-panel-kicker">Visão da diligência</span>
-            <h3>{diligence.razaoSocial}</h3>
-            <p translate="no">CNPJ {diligence.cnpjFmt}</p>
-          </div>
-          <button type="button" onClick={onClose} aria-label="Recolher painel de resumo" title="Recolher painel">
-            <Icons.X size={16} aria-hidden="true" />
-          </button>
-        </header>
+    <aside aria-label="Resumo da diligência" className="flex min-w-0 flex-col gap-3 p-3">
+      <header className="flex min-w-0 items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <span className="block text-2xs font-bold uppercase tracking-wider text-ink-3">Visão da diligência</span>
+          <h3 className="text-md font-bold leading-snug text-ink">{diligence.razaoSocial}</h3>
+          <p className="font-mono text-xs text-ink-3" translate="no">
+            {diligence.cnpjFmt}
+          </p>
+        </div>
 
-        <section className={`investigation-risk-card tone-${tone}`}>
-          <div className="investigation-risk-score" aria-label={`Índice de atenção ${score} de 100`}>
-            <span className="investigation-risk-score-value">
-              <strong>{score}</strong>
-              <small>/100</small>
-            </span>
-          </div>
-          <div>
-            <span>Índice de atenção</span>
-            <strong>{diligence.risco?.nivel || 'Atenção baixa'}</strong>
-            <p>{decisionCopy}</p>
-          </div>
-          <button
-            type="button"
+        <Button
+          variant="ghost"
+          size="sm"
+          iconOnly
+          onClick={onClose}
+          aria-label="Recolher painel de resumo"
+          title="Recolher painel"
+          icon={<Icons.X size={16} aria-hidden="true" />}
+        />
+      </header>
+
+      {/* ---- Índice de atenção ---- */}
+      <Section
+        title="Índice de atenção"
+        subtitle={diligence.risco?.nivel || 'Atenção baixa'}
+        trailing={
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onEditRisk}
             disabled={diligence.persisted === false}
-            title={diligence.persisted === false ? 'Sincronize a diligência para ajustar o índice.' : 'Revisar índice'}
+            title={
+              diligence.persisted === false
+                ? 'Sincronize a diligência para ajustar o índice.'
+                : 'Revisar índice'
+            }
           >
             Revisar
-          </button>
-        </section>
+          </Button>
+        }
+      >
+        <Stat value={score} caption="de 100" decision={decisionCopy} tone={tone} />
+      </Section>
 
-        <section className={`investigation-plain-read tone-${narrative.tone}`} aria-label="Leitura simples do risco">
-          <div className="investigation-plain-read-head">
-            <Icons.FileText size={15} aria-hidden="true" />
-            <div>
-              <span className="network-panel-kicker">Em poucas palavras</span>
-              <strong>{narrative.headline}</strong>
-            </div>
-          </div>
-          <p className="investigation-plain-read-verdict">{narrative.verdict}</p>
+      {/* ---- Leitura simples ---- */}
+      <Section mark={<Icons.FileText size={12} />} title="Em poucas palavras" subtitle={narrative.headline}>
+        <div className="flex flex-col gap-2.5">
+          <p className="text-sm leading-relaxed text-ink-2">{narrative.verdict}</p>
 
           {narrative.supports.length > 0 ? (
-            <div className="investigation-plain-read-block">
-              <span>O que foi encontrado</span>
-              <ul>
-                {narrative.supports.map((item) => <li key={item}>{item}</li>)}
+            <Note tone={NARRATIVE_TONE[narrative.tone]} title="O que foi encontrado">
+              <ul className="flex list-disc flex-col gap-1 pl-4">
+                {narrative.supports.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
               </ul>
-            </div>
+            </Note>
           ) : null}
 
           {narrative.gaps.length > 0 ? (
-            <div className="investigation-plain-read-block is-gap">
-              <span>O que ficou sem verificar</span>
-              <ul>
-                {narrative.gaps.map((item) => <li key={item}>{item}</li>)}
+            <Note tone="warn" title="O que ficou sem verificar">
+              <ul className="flex list-disc flex-col gap-1 pl-4">
+                {narrative.gaps.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
               </ul>
-            </div>
+            </Note>
           ) : null}
 
-          <p className="investigation-plain-read-next">
-            <Icons.ArrowRight size={14} aria-hidden="true" />
+          <p className="flex items-start gap-1.5 text-sm font-semibold leading-snug text-brand">
+            <Icons.ArrowRight size={14} aria-hidden="true" className="mt-0.5 shrink-0" />
             {narrative.nextStep}
           </p>
-        </section>
-
-        <div className="investigation-overview-metrics" aria-label="Tamanho do mapa">
-          <span><strong>{entityCount}</strong> entidades</span>
-          <span><strong>{relationshipCount}</strong> ligações</span>
-          <span><strong>{reviewCount}</strong> em revisão</span>
         </div>
+      </Section>
 
-        <section className="investigation-next-step">
-          <span className="network-panel-kicker">Comece por aqui</span>
-          <strong>Selecione uma pessoa ou empresa no mapa</strong>
-          <p>O painel mostrará por que ela aparece, quem está ligado a ela e quais fontes sustentam a conexão.</p>
-        </section>
+      {/* ---- Tamanho do mapa ---- */}
+      <div aria-label="Tamanho do mapa" className="flex flex-wrap gap-1.5">
+        <Chip tone="neutral" size="sm">
+          {entityCount} entidades
+        </Chip>
+        <Chip tone="neutral" size="sm">
+          {relationshipCount} ligações
+        </Chip>
+        <Chip tone={reviewCount > 0 ? 'warn' : 'ok'} size="sm" dot>
+          {reviewCount} em revisão
+        </Chip>
+      </div>
 
-        {attentionItems.length > 0 ? (
-          <section className="investigation-attention-list">
-            <div className="investigation-panel-section-title">
-              <span className="network-panel-kicker">O que merece atenção</span>
-              <strong>{attentionItems.length}</strong>
-            </div>
+      <Note tone="info" icon={<Icons.Compass size={16} aria-hidden="true" />} title="Comece por aqui">
+        Selecione uma pessoa ou empresa no mapa. O painel mostrará por que ela aparece, quem está ligado a ela e quais
+        fontes sustentam a conexão.
+      </Note>
+
+      {/* ---- Atenção ---- */}
+      {attentionItems.length > 0 ? (
+        <Section
+          title="O que merece atenção"
+          trailing={
+            <Chip tone="warn" size="sm">
+              {attentionItems.length}
+            </Chip>
+          }
+          flush
+        >
+          <ul className="divide-y divide-line-soft">
             {attentionItems.map((item) => (
-              <article key={item.title}>
-                <Icons.AlertTriangle size={15} aria-hidden="true" />
-                <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.copy}</p>
+              <li key={item.title} className="flex min-w-0 items-start gap-2 px-4 py-2.5">
+                <Icons.AlertTriangle size={15} aria-hidden="true" className="mt-0.5 shrink-0 text-warn" />
+                <div className="min-w-0">
+                  <strong className="block text-sm font-bold leading-snug text-ink">{item.title}</strong>
+                  <p className="text-xs leading-relaxed text-ink-2">{item.copy}</p>
                 </div>
-              </article>
+              </li>
             ))}
-          </section>
-        ) : (
-          <div className="investigation-clear-state">
-            <Icons.ShieldCheck size={18} aria-hidden="true" />
-            <span>Nenhum ponto prioritário aberto nas verificações concluídas.</span>
-          </div>
-        )}
+          </ul>
+        </Section>
+      ) : (
+        <Note tone="ok" icon={<Icons.ShieldCheck size={16} aria-hidden="true" />}>
+          Nenhum ponto prioritário aberto nas verificações concluídas.
+        </Note>
+      )}
 
-        <section className="investigation-quick-actions">
-          <span className="network-panel-kicker">Abrir detalhes</span>
-          <div>
-            {quickActions.map((item) => (
-              <button type="button" onClick={item.action} key={item.id}>
-                <span aria-hidden="true">{item.icon}</span>
-                <strong>{item.label}</strong>
-                {typeof item.count === 'number' ? <small>{item.count}</small> : <Icons.ArrowRight size={13} aria-hidden="true" />}
+      {/* ---- Atalhos ---- */}
+      <Section title="Abrir detalhes" flush>
+        <ul className="divide-y divide-line-soft">
+          {quickActions.map((item) => (
+            <li key={item.id}>
+              <button
+                type="button"
+                onClick={item.action}
+                className="flex w-full min-w-0 items-center gap-2.5 px-4 py-2.5 text-left transition-colors hover:bg-surface-hover"
+              >
+                <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-md bg-brand-soft text-brand">
+                  {item.icon}
+                </span>
+                <strong className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{item.label}</strong>
+                {typeof item.count === 'number' ? (
+                  <span
+                    className={cn(
+                      'num shrink-0 rounded-chip px-2 py-0.5 text-2xs font-bold',
+                      item.count > 0 ? 'bg-brand-soft text-brand' : 'bg-surface-active text-ink-3',
+                    )}
+                  >
+                    {item.count}
+                  </span>
+                ) : (
+                  <Icons.ArrowRight size={14} aria-hidden="true" className="shrink-0 text-ink-3" />
+                )}
               </button>
-            ))}
-          </div>
-        </section>
+            </li>
+          ))}
+        </ul>
+      </Section>
 
-        <button type="button" className="investigation-download-report" onClick={onExportPdf} disabled={isExportingPdf}>
-          {isExportingPdf ? <Icons.Loader size={16} aria-hidden="true" /> : <Icons.Download size={16} aria-hidden="true" />}
-          <span>{isExportingPdf ? 'Gerando dossiê…' : 'Baixar dossiê completo'}</span>
-        </button>
+      <Button
+        variant="primary"
+        block
+        onClick={onExportPdf}
+        isLoading={isExportingPdf}
+        loadingLabel="Gerando dossiê…"
+        icon={<Icons.Download size={16} aria-hidden="true" />}
+      >
+        Baixar dossiê completo
+      </Button>
 
-        <details className="investigation-workflow-details">
-          <summary>
-            <span>Revisão e aprovação</span>
-            <Icons.ChevronDown size={14} aria-hidden="true" />
-          </summary>
+      <details className="overflow-hidden rounded-card border border-line bg-surface shadow-xs">
+        <summary className="flex min-w-0 cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-semibold text-ink-2 transition-colors hover:bg-surface-hover">
+          <span className="min-w-0 flex-1">Revisão e aprovação</span>
+          <Icons.ChevronDown size={14} aria-hidden="true" className="shrink-0 text-ink-3" />
+        </summary>
+        <div className="border-t border-line-soft p-3">
           <WorkflowControlBar
             diligence={{ ...diligence, status: workflowStatus }}
             onStatusChange={onWorkflowStatusChange}
             showPdf={false}
           />
-        </details>
-      </div>
+        </div>
+      </details>
     </aside>
   );
 };

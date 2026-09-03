@@ -1,5 +1,17 @@
+// ==========================================================
+// DILIGÊNCIA 360 — Central de ajuda
+// ==========================================================
+// O tutorial tinha overlay, diálogo e botões próprios em
+// components/help.css, com um botão flutuante que no celular ficava
+// por cima do rodapé das telas. Agora usa o Modal do projeto, e o
+// botão flutuante respeita a área segura do aparelho.
+// ==========================================================
+
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Icons } from '../ui/Icons';
+import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
+import { cn } from '../../lib/cn';
 
 const TOUR_STORAGE_KEY = 'diligencia360:onboarding:v1';
 
@@ -7,34 +19,41 @@ export const HelpCenter: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(0);
 
-  const steps = useMemo(() => [
-    {
-      eyebrow: 'Comece por aqui',
-      title: 'Informe o CNPJ da empresa',
-      description: 'Na tela Nova diligência, digite ou cole o CNPJ. O sistema organiza as consultas e mostra o andamento de cada fonte.',
-      icon: <Icons.Search size={24} aria-hidden="true" />,
-    },
-    {
-      eyebrow: 'Leia primeiro',
-      title: 'Confira a recomendação executiva',
-      description: 'O resumo destaca cadastro, bloqueios, cobertura e pontos que precisam de revisão. Comece pela decisão antes de abrir os detalhes.',
-      icon: <Icons.Compass size={24} aria-hidden="true" />,
-    },
-    {
-      eyebrow: 'Aprofunde quando necessário',
-      title: 'Explore vínculos e hipóteses',
-      description: 'A Rede de vínculos ajuda a entender relações societárias. Uma ligação é evidência de relacionamento, não conclusão automática de irregularidade.',
-      icon: <Icons.Network size={24} aria-hidden="true" />,
-    },
-    {
-      eyebrow: 'Feche a análise',
-      title: 'Valide as evidências',
-      description: 'Use a aba Evidências para conferir fonte, data, cobertura e documentos antes de registrar a decisão ou baixar o dossiê.',
-      icon: <Icons.Database size={24} aria-hidden="true" />,
-    },
-  ], []);
+  const steps = useMemo(
+    () => [
+      {
+        eyebrow: 'Comece por aqui',
+        title: 'Informe o CNPJ da empresa',
+        description:
+          'Na tela Nova diligência, digite ou cole o CNPJ. O sistema organiza as consultas e mostra o andamento de cada fonte.',
+        icon: <Icons.Search size={22} aria-hidden="true" />,
+      },
+      {
+        eyebrow: 'Leia primeiro',
+        title: 'Confira a recomendação executiva',
+        description:
+          'O resumo destaca cadastro, bloqueios, cobertura e pontos que precisam de revisão. Comece pela decisão antes de abrir os detalhes.',
+        icon: <Icons.Compass size={22} aria-hidden="true" />,
+      },
+      {
+        eyebrow: 'Aprofunde quando necessário',
+        title: 'Explore vínculos e hipóteses',
+        description:
+          'A rede de vínculos ajuda a entender relações societárias. Uma ligação é evidência de relacionamento, não conclusão automática de irregularidade.',
+        icon: <Icons.Network size={22} aria-hidden="true" />,
+      },
+      {
+        eyebrow: 'Feche a análise',
+        title: 'Valide as evidências',
+        description:
+          'Use a aba Evidências para conferir fonte, data, cobertura e documentos antes de registrar a decisão ou baixar o dossiê.',
+        icon: <Icons.Database size={22} aria-hidden="true" />,
+      },
+    ],
+    [],
+  );
 
-  const rememberTour = useCallback(() => {
+  const remember = useCallback(() => {
     try {
       window.localStorage.setItem(TOUR_STORAGE_KEY, 'seen');
     } catch {
@@ -42,11 +61,11 @@ export const HelpCenter: React.FC = () => {
     }
   }, []);
 
-  const closeTour = useCallback(() => {
-    rememberTour();
+  const close = useCallback(() => {
+    remember();
     setIsOpen(false);
     setStep(0);
-  }, [rememberTour]);
+  }, [remember]);
 
   useEffect(() => {
     try {
@@ -56,65 +75,66 @@ export const HelpCenter: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeTour();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [closeTour, isOpen]);
-
-  const openTour = () => {
-    setStep(0);
-    setIsOpen(true);
-  };
-
-  const currentStep = steps[step];
+  const current = steps[step];
+  const last = step === steps.length - 1;
 
   return (
     <>
-      <button type="button" className="help-fab" onClick={openTour} aria-label="Abrir central de ajuda">
-        <Icons.Info size={19} aria-hidden="true" />
-        <span>Ajuda</span>
+      <button
+        type="button"
+        onClick={() => {
+          setStep(0);
+          setIsOpen(true);
+        }}
+        aria-label="Abrir central de ajuda"
+        className={cn(
+          'z-toast fixed bottom-4 right-4 inline-flex items-center gap-2 rounded-chip border border-line bg-surface px-3.5 shadow-md transition-colors hover:bg-surface-hover',
+          'min-h-[var(--control-height-md)] text-xs font-semibold text-ink-2',
+          // Respeita a barra de gestos do aparelho.
+          'mb-[env(safe-area-inset-bottom)]',
+        )}
+      >
+        <Icons.Info size={16} aria-hidden="true" className="text-brand" />
+        Ajuda
       </button>
 
-      {isOpen ? (
-        <div className="help-overlay" role="presentation" onMouseDown={(event) => {
-          if (event.target === event.currentTarget) closeTour();
-        }}>
-          <section className="help-dialog" role="dialog" aria-modal="true" aria-labelledby="help-title">
-            <button type="button" className="help-close" onClick={closeTour} aria-label="Fechar tutorial">
-              <Icons.X size={18} aria-hidden="true" />
-            </button>
-
-            <div className="help-step-visual">{currentStep.icon}</div>
-            <span className="help-eyebrow">{currentStep.eyebrow}</span>
-            <h2 id="help-title">{currentStep.title}</h2>
-            <p>{currentStep.description}</p>
-
-            <div className="help-progress" aria-label={`Etapa ${step + 1} de ${steps.length}`}>
+      <Modal
+        isOpen={isOpen}
+        onClose={close}
+        size="sm"
+        title={current.title}
+        subtitle={current.eyebrow}
+        icon={current.icon}
+        footer={
+          <>
+            <span className="mr-auto flex items-center gap-1.5" aria-label={`Etapa ${step + 1} de ${steps.length}`}>
               {steps.map((item, index) => (
-                <span key={item.title} className={index <= step ? 'active' : ''} />
+                <span
+                  key={item.title}
+                  aria-hidden="true"
+                  className={cn(
+                    'h-1.5 rounded-full transition-all',
+                    index === step ? 'w-5 bg-brand' : index < step ? 'w-1.5 bg-brand-line' : 'w-1.5 bg-line',
+                  )}
+                />
               ))}
-            </div>
+            </span>
 
-            <div className="help-actions">
-              <button type="button" className="help-button-secondary" onClick={() => setStep((value) => Math.max(0, value - 1))} disabled={step === 0}>
-                Voltar
-              </button>
-              <button
-                type="button"
-                className="help-button-primary"
-                onClick={() => step === steps.length - 1 ? closeTour() : setStep((value) => value + 1)}
-              >
-                {step === steps.length - 1 ? 'Concluir' : 'Próximo'}
-                {step < steps.length - 1 ? <Icons.ArrowRight size={15} aria-hidden="true" /> : null}
-              </button>
-            </div>
-          </section>
-        </div>
-      ) : null}
+            <Button variant="ghost" onClick={() => setStep((v) => Math.max(0, v - 1))} disabled={step === 0}>
+              Voltar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => (last ? close() : setStep((v) => v + 1))}
+              rightIcon={last ? undefined : <Icons.ArrowRight size={15} aria-hidden="true" />}
+            >
+              {last ? 'Concluir' : 'Próximo'}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-base leading-relaxed text-ink-2">{current.description}</p>
+      </Modal>
     </>
   );
 };

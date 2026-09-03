@@ -82,24 +82,24 @@ function formatDateTime(value?: string) {
 }
 
 const FindingCard: React.FC<{ finding: AiFinding }> = ({ finding }) => (
-  <article className="ai-finding-card">
-    <header className="ai-finding-head">
+  <article className="flex min-w-0 flex-col gap-2 rounded-lg border border-line bg-surface p-3.5">
+    <header className="flex min-w-0 flex-wrap items-center gap-2">
       <Badge variant={SEVERITY_VARIANT[finding.severidade] || 'neutral'} size="sm">
         {finding.emoji} {finding.severidadeRotulo}
       </Badge>
-      <span className="ai-finding-axis">{axisLabel(finding.eixo)}</span>
+      <span className="shrink-0 rounded-chip bg-brand-soft px-2 py-0.5 text-2xs font-bold uppercase tracking-wide text-brand">{axisLabel(finding.eixo)}</span>
     </header>
-    <h4 className="ai-finding-title">{finding.titulo}</h4>
-    <p className="ai-finding-body">{finding.analise}</p>
+    <h4 className="min-w-0 flex-1 text-sm font-bold leading-snug text-ink">{finding.titulo}</h4>
+    <p className="text-sm leading-relaxed text-ink-2">{finding.analise}</p>
     {finding.recomendacao ? (
-      <p className="ai-finding-action">
+      <p className="text-sm leading-relaxed text-ink-2">
         <strong>Encaminhamento sugerido:</strong> {finding.recomendacao}
       </p>
     ) : null}
-    <ul className="ai-evidence-list">
+    <ul className="flex min-w-0 flex-col gap-2 [&>li]:flex [&>li]:min-w-0 [&>li]:flex-wrap [&>li]:items-baseline [&>li]:gap-x-2 [&>li]:gap-y-0.5 [&>li]:text-sm [&>li]:text-ink-2 [&_a]:font-semibold [&_a]:text-brand [&_a]:hover:underline">
       {finding.evidencias.map((evidence) => (
         <li key={evidence.id}>
-          <span className="ai-evidence-id">{evidence.id}</span>
+          <span className="shrink-0 rounded-sm bg-surface-active px-1.5 font-mono text-2xs font-semibold text-ink-2">{evidence.id}</span>
           {evidence.url ? (
             <a href={evidence.url} target="_blank" rel="noopener noreferrer">
               {evidence.titulo}
@@ -108,7 +108,7 @@ const FindingCard: React.FC<{ finding: AiFinding }> = ({ finding }) => (
           ) : (
             <span>{evidence.titulo}</span>
           )}
-          <span className="ai-evidence-source">
+          <span className="text-xs text-ink-3">
             {evidence.fonte}
             {evidence.data ? ` · ${evidence.data}` : ''}
           </span>
@@ -119,7 +119,7 @@ const FindingCard: React.FC<{ finding: AiFinding }> = ({ finding }) => (
 );
 
 const ProviderList: React.FC<{ providers: AiProviderStatus[] }> = ({ providers }) => (
-  <ul className="ai-provider-list">
+  <ul className="flex min-w-0 flex-col gap-1.5 [&>li]:min-w-0 [&>li]:text-sm [&>li]:text-ink-2 [&_em]:not-italic [&_em]:text-xs [&_em]:text-ink-3">
     {providers.map((provider) => (
       <li key={provider.id}>
         <Badge variant={provider.configured ? 'success' : 'neutral'} size="sm">
@@ -233,9 +233,9 @@ export const AiAnalysisDrawer: React.FC<AiAnalysisDrawerProps> = ({ isOpen, onCl
         </>
       }
     >
-      <div className="ai-analysis-stack">
+      <div className="flex min-w-0 flex-col gap-5">
         {isConfigured === false ? (
-          <div className="ai-analysis-notice ai-analysis-notice-warning">
+          <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-warn-line bg-warn-bg px-3.5 py-2.5 text-sm text-warn-text [&>p]:leading-relaxed [&>strong]:font-bold [&_code]:rounded-sm [&_code]:bg-surface/60 [&_code]:px-1.5 [&_code]:font-mono [&_code]:text-xs">
             <strong>Nenhum provedor de IA gratuito configurado.</strong>
             <p>
               Preencha ao menos uma das chaves no arquivo <code>.env</code>: <code>GROQ_API_KEY</code>,{' '}
@@ -247,7 +247,7 @@ export const AiAnalysisDrawer: React.FC<AiAnalysisDrawerProps> = ({ isOpen, onCl
         ) : null}
 
         {error ? (
-          <div className="ai-analysis-notice ai-analysis-notice-error">
+          <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-high-line bg-high-bg px-3.5 py-2.5 text-sm text-high-text [&>p]:leading-relaxed [&>strong]:font-bold [&_code]:rounded-sm [&_code]:bg-surface/60 [&_code]:px-1.5 [&_code]:font-mono [&_code]:text-xs">
             <strong>Não foi possível concluir.</strong>
             <p>{error}</p>
           </div>
@@ -263,36 +263,36 @@ export const AiAnalysisDrawer: React.FC<AiAnalysisDrawerProps> = ({ isOpen, onCl
 
         {analysis ? (
           <>
-            <section className="ai-analysis-section">
-              <header className="ai-analysis-section-head">
+            <section className="flex min-w-0 flex-col gap-2.5 [&>h3]:text-md [&>h3]:font-bold [&>h3]:text-ink">
+              <header className="flex min-w-0 flex-wrap items-baseline justify-between gap-2">
                 <h3>Resumo executivo</h3>
-                <span className="ai-analysis-meta">
+                <span className="text-xs text-ink-3">
                   {analysis.provedor} · {analysis.modelo}
                   {formatDateTime(analysis.geradoEm) ? ` · ${formatDateTime(analysis.geradoEm)}` : ''}
                 </span>
               </header>
-              <p className="ai-analysis-paragraph">{analysis.resumoExecutivo || 'O modelo não devolveu resumo.'}</p>
+              <p className="text-sm leading-relaxed text-ink-2">{analysis.resumoExecutivo || 'O modelo não devolveu resumo.'}</p>
               {analysis.leituraDeExposicao ? (
-                <p className="ai-analysis-paragraph">{analysis.leituraDeExposicao}</p>
+                <p className="text-sm leading-relaxed text-ink-2">{analysis.leituraDeExposicao}</p>
               ) : null}
             </section>
 
-            <section className="ai-analysis-section">
+            <section className="flex min-w-0 flex-col gap-2.5 [&>h3]:text-md [&>h3]:font-bold [&>h3]:text-ink">
               <h3>Achados por severidade ({analysis.achados?.length || 0})</h3>
               {analysis.achados && analysis.achados.length > 0 ? (
-                <div className="ai-finding-stack">
+                <div className="flex min-w-0 flex-col gap-3">
                   {analysis.achados.map((finding, index) => (
                     <FindingCard key={`${finding.titulo}-${index}`} finding={finding} />
                   ))}
                 </div>
               ) : (
-                <p className="ai-analysis-paragraph">
+                <p className="text-sm leading-relaxed text-ink-2">
                   Nenhum achado sobreviveu à checagem de evidências. Isso não significa ausência de risco: significa que o
                   modelo não sustentou nenhuma afirmação nas evidências disponíveis.
                 </p>
               )}
               {analysis.achadosDescartados && analysis.achadosDescartados.length > 0 ? (
-                <details className="ai-analysis-details">
+                <details className="overflow-hidden rounded-lg border border-line bg-surface [&>summary]:cursor-pointer [&>summary]:list-none [&>summary]:px-3.5 [&>summary]:py-2.5 [&>summary]:text-sm [&>summary]:font-semibold [&>summary]:text-ink-2 [&>summary:hover]:bg-surface-hover">
                   <summary>
                     {analysis.achadosDescartados.length} afirmação(ões) descartada(s) por falta de evidência
                   </summary>
@@ -307,12 +307,12 @@ export const AiAnalysisDrawer: React.FC<AiAnalysisDrawerProps> = ({ isOpen, onCl
               ) : null}
             </section>
 
-            <section className="ai-analysis-section">
+            <section className="flex min-w-0 flex-col gap-2.5 [&>h3]:text-md [&>h3]:font-bold [&>h3]:text-ink">
               <h3>Cobertura das fontes ({coverage.length})</h3>
-              <p className="ai-analysis-hint">
+              <p className="text-xs leading-relaxed text-ink-3">
                 Ausência de achado não é atestado de idoneidade. Esta tabela mostra o que cada fonte respondeu.
               </p>
-              <ul className="ai-coverage-list">
+              <ul className="flex min-w-0 flex-col gap-2 [&>li]:min-w-0 [&>li]:border-b [&>li]:border-line-soft [&>li]:pb-2 [&>li]:text-sm [&>li]:text-ink-2 [&>li>strong]:block [&>li>strong]:font-bold [&>li>strong]:text-ink [&>li>p]:text-xs [&>li>p]:leading-relaxed [&>li>p]:text-ink-3">
                 {coverage.map((item) => (
                   <li key={`${item.eixo}-${item.status}`}>
                     <Badge variant={COVERAGE_VARIANT[item.status] || 'neutral'} size="sm">
@@ -321,7 +321,7 @@ export const AiAnalysisDrawer: React.FC<AiAnalysisDrawerProps> = ({ isOpen, onCl
                     <div>
                       <strong>{axisLabel(item.eixo)}</strong>
                       {item.detalhe ? <p>{item.detalhe}</p> : null}
-                      {item.fonte ? <span className="ai-evidence-source">{item.fonte}</span> : null}
+                      {item.fonte ? <span className="text-xs text-ink-3">{item.fonte}</span> : null}
                     </div>
                   </li>
                 ))}
@@ -329,9 +329,9 @@ export const AiAnalysisDrawer: React.FC<AiAnalysisDrawerProps> = ({ isOpen, onCl
             </section>
 
             {analysis.lacunas && analysis.lacunas.length > 0 ? (
-              <section className="ai-analysis-section">
+              <section className="flex min-w-0 flex-col gap-2.5 [&>h3]:text-md [&>h3]:font-bold [&>h3]:text-ink">
                 <h3>Lacunas apontadas</h3>
-                <ul className="ai-analysis-bullets">
+                <ul className="flex min-w-0 list-disc flex-col gap-1.5 pl-5 text-sm leading-relaxed text-ink-2">
                   {analysis.lacunas.map((item, index) => (
                     <li key={`lacuna-${index}`}>{item}</li>
                   ))}
@@ -340,9 +340,9 @@ export const AiAnalysisDrawer: React.FC<AiAnalysisDrawerProps> = ({ isOpen, onCl
             ) : null}
 
             {analysis.perguntasAoFornecedor && analysis.perguntasAoFornecedor.length > 0 ? (
-              <section className="ai-analysis-section">
+              <section className="flex min-w-0 flex-col gap-2.5 [&>h3]:text-md [&>h3]:font-bold [&>h3]:text-ink">
                 <h3>Perguntas sugeridas ao fornecedor</h3>
-                <ul className="ai-analysis-bullets">
+                <ul className="flex min-w-0 list-disc flex-col gap-1.5 pl-5 text-sm leading-relaxed text-ink-2">
                   {analysis.perguntasAoFornecedor.map((item, index) => (
                     <li key={`pergunta-${index}`}>{item}</li>
                   ))}
@@ -350,17 +350,17 @@ export const AiAnalysisDrawer: React.FC<AiAnalysisDrawerProps> = ({ isOpen, onCl
               </section>
             ) : null}
 
-            <section className="ai-analysis-section">
-              <details className="ai-analysis-details">
+            <section className="flex min-w-0 flex-col gap-2.5 [&>h3]:text-md [&>h3]:font-bold [&>h3]:text-ink">
+              <details className="overflow-hidden rounded-lg border border-line bg-surface [&>summary]:cursor-pointer [&>summary]:list-none [&>summary]:px-3.5 [&>summary]:py-2.5 [&>summary]:text-sm [&>summary]:font-semibold [&>summary]:text-ink-2 [&>summary:hover]:bg-surface-hover">
                 <summary>Evidências enviadas ao modelo ({analysis.evidencias?.length || 0})</summary>
-                <ul className="ai-evidence-full-list">
+                <ul className="flex min-w-0 flex-col gap-2 [&>li]:min-w-0 [&>li]:border-b [&>li]:border-line-soft [&>li]:pb-2 [&>li]:text-sm [&>li]:text-ink-2 [&>li>strong]:block [&>li>strong]:font-bold [&>li>strong]:text-ink [&>li>p]:text-xs [&>li>p]:leading-relaxed [&>li>p]:text-ink-3 [&_a]:font-semibold [&_a]:text-brand [&_a]:hover:underline">
                   {(analysis.evidencias || []).map((evidence) => (
                     <li key={evidence.id}>
-                      <span className="ai-evidence-id">{evidence.id}</span>
+                      <span className="shrink-0 rounded-sm bg-surface-active px-1.5 font-mono text-2xs font-semibold text-ink-2">{evidence.id}</span>
                       <div>
                         <strong>{evidence.titulo}</strong>
                         {evidence.detalhe ? <p>{evidence.detalhe}</p> : null}
-                        <span className="ai-evidence-source">
+                        <span className="text-xs text-ink-3">
                           {axisLabel(evidence.eixo)} · {evidence.fonte}
                           {evidence.data ? ` · ${evidence.data}` : ''}
                         </span>
@@ -377,8 +377,8 @@ export const AiAnalysisDrawer: React.FC<AiAnalysisDrawerProps> = ({ isOpen, onCl
               </details>
             </section>
 
-            <section className="ai-analysis-section">
-              <header className="ai-analysis-section-head">
+            <section className="flex min-w-0 flex-col gap-2.5 [&>h3]:text-md [&>h3]:font-bold [&>h3]:text-ink">
+              <header className="flex min-w-0 flex-wrap items-baseline justify-between gap-2">
                 <h3>Busca assistida por IA</h3>
                 <Button
                   variant="outline"
@@ -391,21 +391,21 @@ export const AiAnalysisDrawer: React.FC<AiAnalysisDrawerProps> = ({ isOpen, onCl
                   {leads ? 'Pesquisar de novo' : 'Procurar mais'}
                 </Button>
               </header>
-              <p className="ai-analysis-hint">
+              <p className="text-xs leading-relaxed text-ink-3">
                 Use quando as fontes acima terminarem sem achado. O modelo não responde o que existe sobre a empresa — ele
                 propõe <strong>onde procurar</strong>, e os buscadores reais executam. Consulta que não cite a empresa, o
                 CNPJ ou um sócio é rejeitada antes de rodar, para não trazer homônimo.
               </p>
 
               {leadsError ? (
-                <div className="ai-analysis-notice ai-analysis-notice-error">
+                <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-high-line bg-high-bg px-3.5 py-2.5 text-sm text-high-text [&>p]:leading-relaxed [&>strong]:font-bold [&_code]:rounded-sm [&_code]:bg-surface/60 [&_code]:px-1.5 [&_code]:font-mono [&_code]:text-xs">
                   <p>{leadsError}</p>
                 </div>
               ) : null}
 
               {leads ? (
                 <>
-                  <p className="ai-analysis-hint">
+                  <p className="text-xs leading-relaxed text-ink-3">
                     {leads.consultasExecutadas?.length || 0} consulta(s) executada(s) ·{' '}
                     {leads.resultados?.length || 0} página(s) encontrada(s)
                     {leads.consultasDescartadas && leads.consultasDescartadas.length > 0
@@ -414,13 +414,13 @@ export const AiAnalysisDrawer: React.FC<AiAnalysisDrawerProps> = ({ isOpen, onCl
                   </p>
 
                   {leads.resultados && leads.resultados.length > 0 ? (
-                    <ul className="ai-evidence-full-list">
+                    <ul className="flex min-w-0 flex-col gap-2 [&>li]:min-w-0 [&>li]:border-b [&>li]:border-line-soft [&>li]:pb-2 [&>li]:text-sm [&>li]:text-ink-2 [&>li>strong]:block [&>li>strong]:font-bold [&>li>strong]:text-ink [&>li>p]:text-xs [&>li>p]:leading-relaxed [&>li>p]:text-ink-3 [&_a]:font-semibold [&_a]:text-brand [&_a]:hover:underline">
                       {leads.resultados.map((item) => (
                         <li key={item.url}>
                           <div>
                             <strong>{item.title}</strong>
                             {item.snippet ? <p>{item.snippet}</p> : null}
-                            <span className="ai-evidence-source">
+                            <span className="text-xs text-ink-3">
                               {item.domain}
                               {item.publishedAt ? ` · ${item.publishedAt}` : ''} · veio de: {item.origemConsulta}
                             </span>
@@ -433,32 +433,32 @@ export const AiAnalysisDrawer: React.FC<AiAnalysisDrawerProps> = ({ isOpen, onCl
                       ))}
                     </ul>
                   ) : (
-                    <p className="ai-analysis-paragraph">
+                    <p className="text-sm leading-relaxed text-ink-2">
                       As consultas sugeridas rodaram e não retornaram página nova. Isso é um resultado, não uma falha.
                     </p>
                   )}
 
-                  <details className="ai-analysis-details">
+                  <details className="overflow-hidden rounded-lg border border-line bg-surface [&>summary]:cursor-pointer [&>summary]:list-none [&>summary]:px-3.5 [&>summary]:py-2.5 [&>summary]:text-sm [&>summary]:font-semibold [&>summary]:text-ink-2 [&>summary:hover]:bg-surface-hover">
                     <summary>Consultas executadas ({leads.consultasExecutadas?.length || 0})</summary>
                     <ul>
                       {(leads.consultasExecutadas || []).map((item, index) => (
                         <li key={`${item.termo}-${index}`}>
                           <code>{item.termo}</code> — {item.ok === false ? `falhou: ${item.erro}` : `${item.resultCount ?? 0} resultado(s)`}
-                          {item.motivo ? <div className="ai-evidence-source">{item.motivo}</div> : null}
+                          {item.motivo ? <div className="text-xs text-ink-3">{item.motivo}</div> : null}
                         </li>
                       ))}
                     </ul>
                   </details>
 
                   {leads.hipoteses && leads.hipoteses.length > 0 ? (
-                    <div className="ai-analysis-notice ai-analysis-notice-warning ai-quarantine">
+                    <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-warn-line bg-warn-bg px-3.5 py-2.5 text-sm text-warn-text [&>p]:leading-relaxed [&>strong]:font-bold [&_code]:rounded-sm [&_code]:bg-surface/60 [&_code]:px-1.5 [&_code]:font-mono [&_code]:text-xs">
                       <strong>⚠️ Quarentena: {leads.hipoteses.length} hipótese(s) sem nenhuma fonte</strong>
                       <p>
                         O que segue é <strong>lembrança do modelo</strong>, não registro público. Nenhuma busca confirmou.
                         Não vale como evidência, não entra no cálculo de risco e não pode ir para relatório enviado a
                         terceiros sem verificação humana. Trate cada linha como pista a investigar, nunca como fato.
                       </p>
-                      <ul className="ai-analysis-bullets">
+                      <ul className="flex min-w-0 list-disc flex-col gap-1.5 pl-5 text-sm leading-relaxed text-ink-2">
                         {leads.hipoteses.map((item, index) => (
                           <li key={`hipotese-${index}`}>
                             <Badge variant="neutral" size="sm">
@@ -466,14 +466,14 @@ export const AiAnalysisDrawer: React.FC<AiAnalysisDrawerProps> = ({ isOpen, onCl
                             </Badge>{' '}
                             {item.afirmacao}
                             {item.comoVerificar ? (
-                              <div className="ai-evidence-source">Verificar em: {item.comoVerificar}</div>
+                              <div className="text-xs text-ink-3">Verificar em: {item.comoVerificar}</div>
                             ) : null}
                           </li>
                         ))}
                       </ul>
                     </div>
                   ) : (
-                    <p className="ai-analysis-hint">
+                    <p className="text-xs leading-relaxed text-ink-3">
                       O modelo não declarou nenhuma hipótese sobre esta empresa — resposta honesta e preferível a
                       inventar registro.
                     </p>
@@ -482,7 +482,7 @@ export const AiAnalysisDrawer: React.FC<AiAnalysisDrawerProps> = ({ isOpen, onCl
               ) : null}
             </section>
 
-            <p className="ai-analysis-disclaimer">
+            <p className="border-t border-line-soft pt-3 text-2xs leading-relaxed text-ink-3">
               {analysis.aviso}
               {missingCoverage.length > 0
                 ? ` Eixos sem cobertura completa: ${missingCoverage.map((item) => axisLabel(item.eixo)).join(', ')}.`

@@ -1,0 +1,330 @@
+/* ==========================================================
+   DILIGÊNCIA 360 — Camada base
+   ==========================================================
+   O preflight do Tailwind ficava de fora porque havia trinta e
+   poucos arquivos de CSS escritos sobre os padrões do navegador.
+   O problema é que sem ele nada normaliza os elementos de
+   formulário: `button`, `input`, `select` e `textarea` não herdam
+   font-family, então toda aba, todo botão de cabeçalho e todo
+   campo do app apareciam na fonte padrão do sistema ao lado de
+   texto em Plus Jakarta Sans. Era daí que vinha a mistura de
+   fontes no dossiê.
+
+   Este arquivo é o reset que o projeto assume como seu: cobre o
+   mesmo terreno do preflight, mas escrito aqui, onde dá para ler
+   e revisar. Mora na camada `base`, abaixo de `utilities`, de modo
+   que qualquer utilitário do Tailwind continua vencendo.
+   ========================================================== */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    border-width: 0;
+    border-style: solid;
+    border-color: var(--border-default);
+  }
+
+  /* Margem zero em tudo que o navegador margeia por conta própria.
+     Espaçamento é decisão de layout, não herança do user agent. */
+  html,
+  body,
+  h1, h2, h3, h4, h5, h6,
+  p, figure, blockquote,
+  dl, dd, ol, ul,
+  fieldset, legend,
+  pre {
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    height: 100%;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Rolagem suave só para quem não pediu menos movimento. */
+    scroll-behavior: smooth;
+    tab-size: 4;
+  }
+
+  body {
+    min-height: 100%;
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    font-weight: var(--font-normal);
+    line-height: var(--leading-normal);
+    color: var(--text-primary);
+    background-color: var(--bg-canvas);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv11', 'ss01';
+    font-variant-ligatures: contextual;
+    /* Razão social longa, URL de fonte oficial e número de processo
+       não podem empurrar a página para o lado. Era o que produzia a
+       barra de rolagem horizontal no celular. */
+    overflow-wrap: break-word;
+    text-wrap: pretty;
+  }
+
+  /* Título herda tamanho e peso: quem manda é o utilitário aplicado
+     no componente, não o `1.17em bold` do navegador. */
+  h1, h2, h3, h4, h5, h6 {
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: var(--leading-snug);
+    text-wrap: balance;
+  }
+
+  ol, ul, menu {
+    list-style: none;
+  }
+
+  /* ----------------------------------------------------------
+     FORMULÁRIO — o ponto do reset que mais faltava.
+     ---------------------------------------------------------- */
+  button,
+  input,
+  optgroup,
+  select,
+  textarea {
+    font-family: inherit;
+    font-size: 100%;
+    font-weight: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    background-image: none;
+  }
+
+  button,
+  [type='button'],
+  [type='reset'],
+  [type='submit'] {
+    appearance: button;
+    -webkit-appearance: button;
+    cursor: pointer;
+    text-align: inherit;
+  }
+
+  button:disabled,
+  [type='button']:disabled,
+  [type='submit']:disabled,
+  select:disabled,
+  input:disabled,
+  textarea:disabled {
+    cursor: not-allowed;
+  }
+
+  :where(select) {
+    text-transform: none;
+  }
+
+  textarea {
+    resize: vertical;
+    /* Sem isto o textarea nasce com a linha de base do inline e
+       desalinha do rótulo ao lado. */
+    vertical-align: top;
+  }
+
+  ::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
+  }
+
+  /* O contorno pontilhado padrão do Firefox em campo inválido cria
+     um segundo anel por cima do nosso foco. */
+  :-moz-ui-invalid {
+    box-shadow: none;
+  }
+
+  /* Spinner de número não serve a nada aqui: todo campo numérico do
+     app é documento mascarado. */
+  ::-webkit-inner-spin-button,
+  ::-webkit-outer-spin-button {
+    height: auto;
+  }
+  ::-webkit-search-decoration {
+    -webkit-appearance: none;
+  }
+
+  /* ----------------------------------------------------------
+     MÍDIA — bloco e nunca maior que o contêiner.
+     ---------------------------------------------------------- */
+  img,
+  svg,
+  video,
+  canvas,
+  audio,
+  iframe,
+  embed,
+  object {
+    display: block;
+    vertical-align: middle;
+  }
+
+  img,
+  video,
+  canvas {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* SVG de ícone recebe tamanho por atributo; `height: auto` acima
+     não vale para ele, senão o ícone estica. */
+  svg {
+    height: revert-layer;
+    flex-shrink: 0;
+  }
+
+  /* ----------------------------------------------------------
+     TABELA — a estrutura, não a pele. A aparência vem do
+     componente DataTable.
+     ---------------------------------------------------------- */
+  table {
+    border-collapse: collapse;
+    border-spacing: 0;
+    text-indent: 0;
+    width: 100%;
+  }
+
+  th {
+    font-weight: var(--font-semibold);
+    text-align: left;
+  }
+
+  /* ----------------------------------------------------------
+     TEXTO
+     ---------------------------------------------------------- */
+  a {
+    color: inherit;
+    text-decoration: inherit;
+  }
+
+  b,
+  strong {
+    font-weight: var(--font-bold);
+  }
+
+  small {
+    font-size: var(--text-xs);
+  }
+
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(--font-mono);
+    font-size: 0.9375em;
+    font-feature-settings: normal;
+    font-variation-settings: normal;
+  }
+
+  sub,
+  sup {
+    font-size: 0.75em;
+    line-height: 0;
+    position: relative;
+  }
+  sub { bottom: -0.25em; }
+  sup { top: -0.5em; }
+
+  hr {
+    height: 0;
+    color: inherit;
+    border-top-width: 1px;
+  }
+
+  abbr:where([title]) {
+    text-decoration: underline dotted;
+  }
+
+  summary {
+    display: list-item;
+    cursor: pointer;
+  }
+
+  [hidden]:where(:not([hidden='until-found'])) {
+    display: none !important;
+  }
+
+  /* ----------------------------------------------------------
+     FOCO — um anel só, o mesmo em toda a interface, e apenas para
+     quem navega por teclado.
+     ---------------------------------------------------------- */
+  :focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+  }
+
+  /* No fundo escuro o azul do foco desaparece; ali o anel é claro. */
+  .on-deep :focus-visible,
+  .on-deep:focus-visible {
+    outline-color: var(--text-on-deep);
+  }
+
+  ::selection {
+    background-color: var(--brand-blue-subtle);
+    color: var(--brand-blue-text);
+  }
+
+  /* ----------------------------------------------------------
+     ROLAGEM — barra fina e discreta, igual em toda a aplicação.
+     ---------------------------------------------------------- */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: var(--radius-full);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+  }
+
+  .on-deep ::-webkit-scrollbar-thumb {
+    background: var(--border-deep);
+  }
+
+  /* ----------------------------------------------------------
+     RAIZ DA APLICAÇÃO
+     ---------------------------------------------------------- */
+  #root {
+    display: flex;
+    min-height: 100dvh;
+    width: 100%;
+    min-width: 0;
+    flex-direction: column;
+    isolation: isolate;
+  }
+
+  /* ----------------------------------------------------------
+     MENOS MOVIMENTO — respeitado globalmente, uma vez, em vez de
+     repetido em cada animação.
+     ---------------------------------------------------------- */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

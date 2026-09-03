@@ -1,6 +1,16 @@
 // ==========================================================
-// DILIGÊNCIA 360 — Painel Lateral de Inspeção da Rede Imersiva
-// Header limpo com X integrado, sem sobreposições
+// DILIGÊNCIA 360 — Painel de inspeção do mapa
+// ==========================================================
+// Era o arquivo mais fora do sistema de todo o projeto: ~640 linhas
+// em que praticamente cada nó tinha `style` em linha, com dezenas de
+// cores literais do tema escuro (#0a2845, #9fb5ca, #f7d995…) e
+// corpos de texto de 8, 9, 9.5, 10 e 11px — nenhum deles na escala
+// tipográfica. Havia até dois manipuladores de mouse para simular
+// `:hover` no botão de fechar.
+//
+// Depois que o grafo passou a ser desenhado sobre tela clara, esse
+// painel ficou escuro no meio de uma tela clara. Agora ele usa as
+// mesmas seções, selos e avisos do dossiê, e o texto está na escala.
 // ==========================================================
 
 import React from 'react';
@@ -23,11 +33,17 @@ import { extractEntityCnpj, formatCnpj, isDrillableCompany } from '../../utils/e
 import {
   confidencePercent,
   formatGeneratedAt,
-  humanizeProperty, humanizePropertyValue,
+  humanizeProperty,
+  humanizePropertyValue,
   isConfirmed,
   safeExternalUrl,
   TYPE_LABELS,
 } from './networkUtils';
+import { Section } from '../../../../components/ui/Section';
+import { Button } from '../../../../components/ui/Button';
+import { Chip } from '../../../../components/ui/Chip';
+import { Note } from '../../../../components/ui/Note';
+import { DataTable, TableRow } from '../../../../components/ui/DataTable';
 
 interface NetworkInspectorProps {
   selectedEntity?: EgosEntity;
@@ -51,6 +67,67 @@ interface NetworkInspectorProps {
   selectedKinshipLinks: KinshipContext[];
   selectedPersonOccurrences: PersonOccurrenceContext[];
 }
+
+/** Cabeçalho do painel: título da seleção e o botão de fechar. */
+const InspectorHeader: React.FC<{
+  eyebrow: string;
+  title: string;
+  meta?: React.ReactNode;
+  onClose: () => void;
+}> = ({ eyebrow, title, meta, onClose }) => (
+  <header className="flex min-w-0 items-start gap-2 border-b border-line-soft pb-3">
+    <div className="min-w-0 flex-1">
+      <span className="block text-2xs font-bold uppercase tracking-wider text-ink-3">{eyebrow}</span>
+      <h3 className="mt-0.5 text-lg font-bold leading-tight text-ink [overflow-wrap:anywhere]">{title}</h3>
+      {meta ? <div className="mt-1.5 flex flex-wrap gap-1.5">{meta}</div> : null}
+    </div>
+
+    <Button
+      variant="ghost"
+      size="sm"
+      iconOnly
+      onClick={onClose}
+      aria-label="Fechar painel"
+      title="Fechar painel"
+      icon={<Icons.X size={16} aria-hidden="true" />}
+    />
+  </header>
+);
+
+/** Cartão de pessoa ou entidade ligada, clicável para navegar no mapa. */
+const LinkedCard: React.FC<{
+  title: string;
+  caption?: string;
+  onClick?: () => void;
+}> = ({ title, caption, onClick }) => {
+  const content = (
+    <>
+      <span className="min-w-0 flex-1">
+        {caption ? <span className="block text-2xs font-medium uppercase tracking-wide text-ink-3">{caption}</span> : null}
+        <strong className="block text-sm font-semibold leading-snug text-ink [overflow-wrap:anywhere]">{title}</strong>
+      </span>
+      {onClick ? <Icons.ArrowRight size={14} aria-hidden="true" className="shrink-0 text-ink-3" /> : null}
+    </>
+  );
+
+  if (!onClick) {
+    return (
+      <div className="flex min-w-0 items-center gap-2 rounded-md border border-line-soft bg-surface-subtle px-3 py-2">
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full min-w-0 items-center gap-2 rounded-md border border-line-soft bg-surface-subtle px-3 py-2 text-left transition-colors hover:border-brand-line hover:bg-brand-soft"
+    >
+      {content}
+    </button>
+  );
+};
 
 export const NetworkInspector: React.FC<NetworkInspectorProps> = ({
   selectedEntity,
@@ -80,564 +157,346 @@ export const NetworkInspector: React.FC<NetworkInspectorProps> = ({
     ? extractEntityCnpj(selectedEntity)
     : null;
 
+  const propertyRows: TableRow[] = selectedEntity?.properties
+    ? Object.entries(selectedEntity.properties)
+        .filter(([, value]) => value !== null && value !== undefined && value !== '')
+        .map(([key, value]) => ({
+          id: key,
+          cells: { campo: humanizeProperty(key), valor: humanizePropertyValue(value) },
+        }))
+    : [];
+
   return (
-    <aside
-      className="network-inspector"
-      aria-label="Detalhes da seleção"
-      style={{
-        boxSizing: 'border-box',
-        overflowX: 'hidden',
-      }}
-    >
-      <div
-        className="network-inspector-content"
-        style={{
-          boxSizing: 'border-box',
-          padding: '20px 18px 28px 18px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '16px',
-          width: '100%',
-        }}
-      >
-        {selectedEntity && (
-          <>
-            {/* Header Integrado com Título e Botão Fechar no mesmo alinhamento */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'space-between',
-                gap: '12px',
-                width: '100%',
-                boxSizing: 'border-box',
-                borderBottom: '1px solid rgba(41, 77, 107, 0.45)',
-                paddingBottom: '14px',
-              }}
+    <aside aria-label="Detalhes da seleção" className="flex min-w-0 flex-col gap-3 p-3">
+      {selectedEntity ? (
+        <>
+          <InspectorHeader
+            eyebrow="Entidade selecionada"
+            title={selectedEntity.name}
+            onClose={onClearSelection}
+            meta={
+              <>
+                <Chip tone="brand" size="sm">
+                  {TYPE_LABELS[selectedEntity.type] || selectedEntity.type}
+                </Chip>
+                <Chip tone="neutral" size="sm">
+                  Grau {selectedEntity.depth}
+                </Chip>
+                {confidencePercent(selectedEntity.confidence) !== null ? (
+                  <Chip tone="muted" size="sm">
+                    {confidencePercent(selectedEntity.confidence)}% de confiança
+                  </Chip>
+                ) : null}
+              </>
+            }
+          />
+
+          {selectedEntity.role !== 'ROOT' ? (
+            <Button
+              variant="secondary"
+              block
+              onClick={onTraceRoute}
+              icon={<Icons.Compass size={16} aria-hidden="true" />}
+              rightIcon={<Icons.ArrowRight size={14} aria-hidden="true" />}
             >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span className="network-panel-kicker">Entidade selecionada</span>
-                <h3
-                  style={{
-                    fontSize: '19px',
-                    fontWeight: 700,
-                    margin: '4px 0 8px 0',
-                    color: '#ffffff',
-                    wordBreak: 'break-word',
-                    lineHeight: 1.25,
-                    letterSpacing: '-0.01em',
-                  }}
-                >
-                  {selectedEntity.name}
-                </h3>
+              Traçar caminho até aqui
+            </Button>
+          ) : null}
 
-                <div className="network-selection-meta" style={{ marginTop: 0 }}>
-                  <span>{TYPE_LABELS[selectedEntity.type] || selectedEntity.type}</span>
-                  <span>Grau {selectedEntity.depth}</span>
-                  {confidencePercent(selectedEntity.confidence) !== null && (
-                    <span>{confidencePercent(selectedEntity.confidence)}% de confiança</span>
-                  )}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={onClearSelection}
-                aria-label="Fechar painel"
-                title="Fechar painel"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '8px',
-                  background: '#0d2843',
-                  border: '1px solid #2a4e70',
-                  color: '#9fb5ca',
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                  transition: 'all 0.15s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#173c60';
-                  e.currentTarget.style.color = '#ffffff';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#0d2843';
-                  e.currentTarget.style.color = '#9fb5ca';
-                }}
-              >
-                <Icons.X size={16} />
-              </button>
-            </div>
-
-            {selectedEntity.role !== 'ROOT' && (
-              <button
-                type="button"
-                className="network-trace-button"
-                onClick={onTraceRoute}
-                style={{ width: '100%', boxSizing: 'border-box', marginTop: '4px' }}
-              >
-                <Icons.Compass size={16} />
-                <span>Traçar caminho até aqui</span>
-                <Icons.ArrowRight size={14} />
-              </button>
-            )}
-
-            {/* Atalho para investigar uma empresa vinculada sem redigitar o CNPJ */}
-            {drillCnpj && onDrillCompany && (
-              <button
-                type="button"
-                className="network-drill-button"
-                onClick={() => onDrillCompany(drillCnpj, selectedEntity.name)}
-                style={{ width: '100%', boxSizing: 'border-box' }}
-              >
-                <Icons.Search size={16} />
-                <span>
-                  <strong>Fazer a diligência desta empresa</strong>
-                  <small translate="no">CNPJ {formatCnpj(drillCnpj)}</small>
-                </span>
-                <Icons.ArrowRight size={14} />
-              </button>
-            )}
-
-            {route && route.targetId === selectedEntity.id && (
-              <div className="network-route-metrics">
-                <span><strong>{route.hops}</strong> saltos</span>
-                <span><strong>{route.confirmed ? '100%' : '50%'}</strong> certeza</span>
-                <span><strong>{route.evidenceCount}</strong> provas</span>
-              </div>
-            )}
-
-            {/* Emissão de PDF contextual da entidade */}
-            <div className="network-entity-report-card" style={{ boxSizing: 'border-box', width: '100%' }}>
-              <span className="network-entity-report-icon">
-                <Icons.FileText size={16} />
+          {/* Atalho para investigar uma empresa vinculada sem redigitar o CNPJ. */}
+          {drillCnpj && onDrillCompany ? (
+            <Button
+              variant="primary"
+              block
+              onClick={() => onDrillCompany(drillCnpj, selectedEntity.name)}
+              icon={<Icons.Search size={16} aria-hidden="true" />}
+              rightIcon={<Icons.ArrowRight size={14} aria-hidden="true" />}
+              className="h-auto flex-col items-start gap-0.5 py-2"
+            >
+              <span className="block">Fazer a diligência desta empresa</span>
+              <span className="block font-mono text-2xs font-normal opacity-80" translate="no">
+                {formatCnpj(drillCnpj)}
               </span>
-              <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                <strong style={{ display: 'block', wordBreak: 'break-word' }}>Relatório desta entidade</strong>
-                <small style={{ display: 'block', wordBreak: 'break-word', marginTop: '2px' }}>
-                  Vínculos, achados, notícias e fontes com links clicáveis.
-                </small>
-              </div>
-              <button
-                type="button"
-                onClick={onExportEntityPdf}
-                disabled={isExportingPdf}
-                style={{ flexShrink: 0 }}
-              >
-                {isExportingPdf ? (
-                  <>
-                    <Icons.Loader size={12} />
-                    <span>Gerando...</span>
-                  </>
-                ) : (
-                  <>
-                    <Icons.Download size={12} />
-                    <span>Baixar PDF</span>
-                  </>
-                )}
-              </button>
-              {exportError && <p style={{ gridColumn: '1 / -1', color: '#f87171', margin: 0 }}>{exportError}</p>}
+            </Button>
+          ) : null}
+
+          {route && route.targetId === selectedEntity.id ? (
+            <div className="flex flex-wrap gap-1.5">
+              <Chip tone="info" size="sm">
+                {route.hops} saltos
+              </Chip>
+              <Chip tone={route.confirmed ? 'ok' : 'warn'} size="sm">
+                {route.confirmed ? '100%' : '50%'} de certeza
+              </Chip>
+              <Chip tone="neutral" size="sm">
+                {route.evidenceCount} provas
+              </Chip>
             </div>
+          ) : null}
 
-            {/* Conexões Diretas / Vizinhança */}
-            {selectedConnections.length > 0 && (
-              <div className="network-direct-connections" style={{ width: '100%', boxSizing: 'border-box' }}>
-                <header>
-                  <div>
-                    <span>Vizinhança desta entidade</span>
-                    <h4>Conexões diretas</h4>
-                  </div>
-                  <strong>{selectedConnections.length}</strong>
-                </header>
+          {/* ---- Relatório da entidade ---- */}
+          <Section
+            mark={<Icons.FileText size={12} />}
+            title="Relatório desta entidade"
+            subtitle="Vínculos, achados, notícias e fontes com links clicáveis."
+            footer={
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onExportEntityPdf}
+                isLoading={isExportingPdf}
+                loadingLabel="Gerando…"
+                icon={<Icons.Download size={14} aria-hidden="true" />}
+              >
+                Baixar PDF
+              </Button>
+            }
+          >
+            {exportError ? (
+              <Note tone="high" role="alert" icon={<Icons.AlertCircle size={15} aria-hidden="true" />}>
+                {exportError}
+              </Note>
+            ) : (
+              <p className="text-sm leading-relaxed text-ink-2">
+                O relatório reúne o que esta entidade tem no mapa, com a fonte de cada item.
+              </p>
+            )}
+          </Section>
 
-                <div className="network-connection-list" style={{ maxHeight: '280px' }}>
-                  {selectedConnections.map(({ relationship, entity, direction }) => (
+          {/* ---- Conexões diretas ---- */}
+          {selectedConnections.length > 0 ? (
+            <Section
+              title="Conexões diretas"
+              subtitle="Vizinhança desta entidade"
+              trailing={
+                <Chip tone="neutral" size="sm">
+                  {selectedConnections.length}
+                </Chip>
+              }
+              flush
+            >
+              <ul className="max-h-[320px] divide-y divide-line-soft overflow-y-auto">
+                {selectedConnections.map(({ relationship, entity, direction }) => (
+                  <li key={relationship.id}>
                     <button
-                      key={relationship.id}
                       type="button"
                       onClick={() => onSelectNode(entity.id)}
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '10px minmax(0, 1fr) auto',
-                        alignItems: 'center',
-                        gap: '12px',
-                        padding: '10px 10px',
-                        textAlign: 'left',
-                        boxSizing: 'border-box',
-                        width: '100%',
-                      }}
+                      className="flex w-full min-w-0 items-center gap-2.5 px-4 py-2.5 text-left transition-colors hover:bg-surface-hover"
                     >
                       <span
-                        style={{
-                          display: 'inline-block',
-                          width: 8,
-                          height: 8,
-                          borderRadius: '50%',
-                          backgroundColor: isConfirmed(relationship.status) ? '#20a77c' : '#f59e0b',
-                          flexShrink: 0,
-                        }}
+                        aria-hidden="true"
+                        className={`size-2 shrink-0 rounded-full ${isConfirmed(relationship.status) ? 'bg-ok' : 'bg-warn'}`}
                       />
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0 }}>
-                        <span
-                          style={{
-                            color: '#72b8f1',
-                            fontSize: '8px',
-                            fontWeight: 700,
-                            letterSpacing: '0.04em',
-                            textTransform: 'uppercase',
-                            lineHeight: 1.2,
-                          }}
-                        >
-                          {relationship.label} ({direction === 'outgoing' ? 'Saída' : 'Entrada'})
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-2xs font-bold uppercase tracking-wide text-brand">
+                          {relationship.label} ({direction === 'outgoing' ? 'saída' : 'entrada'})
                         </span>
-                        <strong
-                          style={{
-                            color: '#ffffff',
-                            fontSize: '11px',
-                            lineHeight: 1.35,
-                            wordBreak: 'break-word',
-                            fontWeight: 600,
-                          }}
-                        >
+                        <strong className="block text-sm font-semibold leading-snug text-ink [overflow-wrap:anywhere]">
                           {entity.name}
                         </strong>
-                      </div>
-                      <Icons.ArrowRight size={13} style={{ color: '#6aa6dc', flexShrink: 0, marginLeft: '6px' }} />
+                      </span>
+                      <Icons.ArrowRight size={14} aria-hidden="true" className="shrink-0 text-ink-3" />
                     </button>
-                  ))}
-                </div>
-              </div>
-            )}
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          ) : null}
 
-            {/* PEP Alerts */}
-            {selectedPepMatches.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <span className="network-panel-kicker">Cargo Público / PEP</span>
+          {/* ---- PEP ---- */}
+          {selectedPepMatches.length > 0 ? (
+            <Section title="Cargo público / PEP" mark="P">
+              <div className="flex flex-col gap-2">
                 {selectedPepMatches.map(({ resolution, counterpart }) => (
-                  <div
-                    key={resolution.id}
-                    style={{
-                      padding: '12px 14px',
-                      background: 'rgba(126, 84, 10, 0.22)',
-                      border: '1px solid rgba(252, 179, 21, 0.4)',
-                      borderRadius: '10px',
-                      boxSizing: 'border-box',
-                    }}
-                  >
-                    <strong style={{ color: '#f7d995', fontSize: '11px', display: 'block', wordBreak: 'break-word' }}>
-                      {counterpart?.name || 'Vínculo PEP'}
-                    </strong>
-                    <p style={{ color: '#d9e6f3', fontSize: '10px', marginTop: '4px', margin: 0, lineHeight: 1.4, wordBreak: 'break-word' }}>
-                      {resolution.signals?.find((s) => s.matched)?.detail || 'Apontamento em base oficial de PEP.'}
-                    </p>
-                  </div>
+                  <Note key={resolution.id} tone="warn" title={counterpart?.name || 'Vínculo PEP'}>
+                    {resolution.signals?.find((signal) => signal.matched)?.detail
+                      || 'Apontamento em base oficial de PEP.'}
+                  </Note>
                 ))}
               </div>
-            )}
+            </Section>
+          ) : null}
 
-            {/* SUAPE Links */}
-            {selectedSuapeLinks.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <span className="network-panel-kicker">Vínculo Interno SUAPE</span>
+          {/* ---- Vínculo interno ---- */}
+          {selectedSuapeLinks.length > 0 ? (
+            <Section title="Vínculo interno SUAPE" mark="S">
+              <div className="flex flex-col gap-2">
                 {selectedSuapeLinks.map(({ internalPerson, resolution }) => (
-                  <div
-                    key={internalPerson.id}
-                    style={{
-                      padding: '12px 14px',
-                      background: 'rgba(45, 96, 173, 0.22)',
-                      border: '1px solid #4e7ca8',
-                      borderRadius: '10px',
-                      boxSizing: 'border-box',
-                    }}
-                  >
-                    <strong style={{ color: '#9bd6ff', fontSize: '11px', display: 'block', wordBreak: 'break-word' }}>
-                      {internalPerson.name}
-                    </strong>
-                    <p style={{ color: '#d9e6f3', fontSize: '10px', marginTop: '4px', margin: 0, lineHeight: 1.4, wordBreak: 'break-word' }}>
-                      {resolution?.signals?.find((s) => s.matched)?.detail || 'Possível coincidência com registros internos.'}
-                    </p>
-                  </div>
+                  <Note key={internalPerson.id} tone="info" title={internalPerson.name}>
+                    {resolution?.signals?.find((signal) => signal.matched)?.detail
+                      || 'Possível coincidência com registros internos.'}
+                  </Note>
                 ))}
               </div>
-            )}
+            </Section>
+          ) : null}
 
-            {/* Parentesco */}
-            {selectedKinshipLinks.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <span className="network-panel-kicker">Parentesco e Relações Familiares</span>
+          {/* ---- Parentesco ---- */}
+          {selectedKinshipLinks.length > 0 ? (
+            <Section title="Parentesco e relações familiares" mark="F">
+              <div className="flex flex-col gap-2">
                 {selectedKinshipLinks.map(({ relationship, relative }) => (
-                  <div
+                  <LinkedCard
                     key={relationship.id}
-                    style={{
-                      padding: '10px 12px',
-                      background: '#0a2845',
-                      border: '1px solid #294c69',
-                      borderRadius: '9px',
-                      cursor: 'pointer',
-                      boxSizing: 'border-box',
-                    }}
-                    onClick={() => relative && onSelectNode(relative.id)}
-                  >
-                    <strong style={{ color: '#fff', fontSize: '11px', display: 'block', wordBreak: 'break-word' }}>
-                      {relative?.name}
-                    </strong>
-                    <small style={{ color: '#91abc3', display: 'block', fontSize: '9.5px', marginTop: '3px' }}>
-                      {relationship.label}
-                    </small>
-                  </div>
+                    title={relative?.name || 'Pessoa relacionada'}
+                    caption={relationship.label}
+                    onClick={relative ? () => onSelectNode(relative.id) : undefined}
+                  />
                 ))}
               </div>
-            )}
+            </Section>
+          ) : null}
 
-            {/* Fontes documentais e publicações */}
-            {selectedPersonOccurrences.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <span className="network-panel-kicker">Fontes documentais e publicações ({selectedPersonOccurrences.length})</span>
+          {/* ---- Publicações ---- */}
+          {selectedPersonOccurrences.length > 0 ? (
+            <Section
+              title="Fontes documentais e publicações"
+              mark="D"
+              trailing={
+                <Chip tone="neutral" size="sm">
+                  {selectedPersonOccurrences.length}
+                </Chip>
+              }
+            >
+              <ul className="flex flex-col gap-2">
                 {selectedPersonOccurrences.map(({ relationship, document, evidence }) => (
-                  <div
+                  <li
                     key={relationship.id}
-                    style={{
-                      padding: '12px 14px',
-                      background: '#08213b',
-                      border: '1px solid #234768',
-                      borderRadius: '10px',
-                      boxSizing: 'border-box',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px',
-                    }}
+                    className="flex min-w-0 flex-col gap-2 rounded-md border border-line-soft bg-surface-subtle px-3 py-2.5"
                   >
-                    <strong
-                      style={{
-                        color: '#ffffff',
-                        fontSize: '11px',
-                        lineHeight: 1.4,
-                        wordBreak: 'break-word',
-                        display: 'block',
-                      }}
-                    >
+                    <strong className="text-sm font-semibold leading-snug text-ink [overflow-wrap:anywhere]">
                       {document?.name || relationship.label}
                     </strong>
 
-                    {evidence?.sourceUrl && (
-                      <div style={{ paddingTop: '2px' }}>
-                        <a
-                          href={safeExternalUrl(evidence.sourceUrl) || '#'}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            padding: '4px 8px',
-                            background: 'rgba(45, 96, 173, 0.35)',
-                            border: '1px solid #3c6d9d',
-                            borderRadius: '6px',
-                            color: '#93cbfb',
-                            fontSize: '9px',
-                            fontWeight: 600,
-                            textDecoration: 'none',
-                            transition: 'all 0.15s ease',
-                          }}
-                        >
-                          <span>Abrir fonte original</span>
-                          <Icons.ExternalLink size={10} />
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Dados Cadastrais */}
-            {selectedEntity.properties && Object.keys(selectedEntity.properties).length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <span className="network-panel-kicker">Dados Cadastrais</span>
-                <div style={{ display: 'grid', gap: '6px' }}>
-                  {Object.entries(selectedEntity.properties).map(([key, value]) => {
-                    if (value === null || value === undefined || value === '') return null;
-                    return (
-                      <div
-                        key={key}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          padding: '7px 10px',
-                          background: '#0a2845',
-                          borderRadius: '6px',
-                          fontSize: '10px',
-                          boxSizing: 'border-box',
-                          gap: '8px',
-                        }}
+                    {evidence?.sourceUrl ? (
+                      <a
+                        href={safeExternalUrl(evidence.sourceUrl) || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex w-fit items-center gap-1.5 rounded-sm border border-brand-line bg-brand-soft px-2 py-1 text-2xs font-semibold text-brand transition-colors hover:bg-surface"
                       >
-                        <span style={{ color: '#7f98b1', flexShrink: 0 }}>{humanizeProperty(key)}</span>
-                        <strong style={{ color: '#fff', wordBreak: 'break-word', textAlign: 'right' }}>
-                          {humanizePropertyValue(value)}
-                        </strong>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </>
-        )}
+                        Abrir fonte original
+                        <Icons.ExternalLink size={11} aria-hidden="true" />
+                      </a>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          ) : null}
 
-        {/* Selected Relationship */}
-        {selectedRelationship && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'space-between',
-                gap: '12px',
-                width: '100%',
-                borderBottom: '1px solid rgba(41, 77, 107, 0.45)',
-                paddingBottom: '14px',
-              }}
-            >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span className="network-panel-kicker">Relação Selecionada</span>
-                <h3 style={{ wordBreak: 'break-word', margin: '4px 0 0 0', fontSize: '19px', color: '#fff' }}>
-                  {selectedRelationship.label}
-                </h3>
+          {/* ---- Dados cadastrais ---- */}
+          {propertyRows.length > 0 ? (
+            <Section title="Dados cadastrais" mark="C" flush>
+              <div className="px-4 py-3">
+                <DataTable
+                  columns={[
+                    { key: 'campo', header: 'Campo', strong: true },
+                    { key: 'valor', header: 'Valor', align: 'right' },
+                  ]}
+                  rows={propertyRows}
+                />
               </div>
-              <button
-                type="button"
-                onClick={onClearSelection}
-                aria-label="Fechar painel"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '8px',
-                  background: '#0d2843',
-                  border: '1px solid #2a4e70',
-                  color: '#9fb5ca',
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                }}
-              >
-                <Icons.X size={16} />
-              </button>
-            </div>
+            </Section>
+          ) : null}
+        </>
+      ) : null}
 
-            <div className="network-selection-meta">
-              <span>{isConfirmed(selectedRelationship.status) ? 'Confirmada' : 'Hipótese'}</span>
-              <span>{selectedRelationship.type}</span>
-            </div>
+      {/* ---- Relação selecionada ---- */}
+      {selectedRelationship ? (
+        <>
+          <InspectorHeader
+            eyebrow="Relação selecionada"
+            title={selectedRelationship.label}
+            onClose={onClearSelection}
+            meta={
+              <>
+                <Chip tone={isConfirmed(selectedRelationship.status) ? 'ok' : 'warn'} size="sm" dot>
+                  {isConfirmed(selectedRelationship.status) ? 'Confirmada' : 'Hipótese'}
+                </Chip>
+                <Chip tone="neutral" size="sm">
+                  {selectedRelationship.type}
+                </Chip>
+              </>
+            }
+          />
 
-            <div style={{ display: 'grid', gap: '8px', marginTop: '6px' }}>
-              <div
-                style={{ padding: '10px 12px', background: '#0a2845', borderRadius: '9px', cursor: 'pointer' }}
-                onClick={() => sourceEntity && onSelectNode(sourceEntity.id)}
-              >
-                <small style={{ color: '#7f98b1', fontSize: '9px', display: 'block', marginBottom: '2px' }}>Origem</small>
-                <strong style={{ color: '#fff', display: 'block', fontSize: '11px', wordBreak: 'break-word' }}>
-                  {sourceEntity?.name || 'Origem'}
-                </strong>
-              </div>
-
-              <div style={{ textAlign: 'center', color: '#79c8ff' }}>
-                <Icons.ChevronDown size={16} />
-              </div>
-
-              <div
-                style={{ padding: '10px 12px', background: '#0a2845', borderRadius: '9px', cursor: 'pointer' }}
-                onClick={() => targetEntity && onSelectNode(targetEntity.id)}
-              >
-                <small style={{ color: '#7f98b1', fontSize: '9px', display: 'block', marginBottom: '2px' }}>Destino</small>
-                <strong style={{ color: '#fff', display: 'block', fontSize: '11px', wordBreak: 'break-word' }}>
-                  {targetEntity?.name || 'Destino'}
-                </strong>
-              </div>
-            </div>
+          <div className="flex flex-col gap-1.5">
+            <LinkedCard
+              caption="Origem"
+              title={sourceEntity?.name || 'Origem'}
+              onClick={sourceEntity ? () => onSelectNode(sourceEntity.id) : undefined}
+            />
+            <Icons.ChevronDown size={16} aria-hidden="true" className="mx-auto text-ink-3" />
+            <LinkedCard
+              caption="Destino"
+              title={targetEntity?.name || 'Destino'}
+              onClick={targetEntity ? () => onSelectNode(targetEntity.id) : undefined}
+            />
           </div>
-        )}
+        </>
+      ) : null}
 
-        {/* Achados e Apontamentos */}
-        {selectedFindings.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <span className="network-panel-kicker">Achados ({selectedFindings.length})</span>
+      {/* ---- Achados ---- */}
+      {selectedFindings.length > 0 ? (
+        <Section
+          title="Achados"
+          mark="!"
+          trailing={
+            <Chip tone="warn" size="sm">
+              {selectedFindings.length}
+            </Chip>
+          }
+        >
+          <div className="flex flex-col gap-2">
             {selectedFindings.map((finding) => (
-              <div
-                key={finding.id}
-                style={{
-                  padding: '12px',
-                  background: '#0a2845',
-                  border: '1px solid #294c69',
-                  borderRadius: '9px',
-                  boxSizing: 'border-box',
-                }}
-              >
-                <strong style={{ color: '#f7d995', fontSize: '11px', display: 'block', wordBreak: 'break-word' }}>
-                  {finding.title}
-                </strong>
-                <p style={{ color: '#d9e6f3', fontSize: '10px', marginTop: '4px', margin: 0, lineHeight: 1.4, wordBreak: 'break-word' }}>
-                  {finding.explanation}
-                </p>
-              </div>
+              <Note key={finding.id} tone="warn" title={finding.title}>
+                {finding.explanation}
+              </Note>
             ))}
           </div>
-        )}
+        </Section>
+      ) : null}
 
-        {/* Fontes e Evidências */}
-        {selectedEvidence.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <span className="network-panel-kicker">Evidências ({selectedEvidence.length})</span>
+      {/* ---- Evidências ---- */}
+      {selectedEvidence.length > 0 ? (
+        <Section
+          title="Evidências"
+          mark="E"
+          trailing={
+            <Chip tone="neutral" size="sm">
+              {selectedEvidence.length}
+            </Chip>
+          }
+          flush
+        >
+          <ul className="divide-y divide-line-soft">
             {selectedEvidence.map((evidence) => (
-              <div
-                key={evidence.id}
-                style={{
-                  padding: '12px',
-                  background: '#0a2845',
-                  border: '1px solid #294c69',
-                  borderRadius: '9px',
-                  boxSizing: 'border-box',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '6px',
-                }}
-              >
-                <strong style={{ color: '#fff', fontSize: '11px', display: 'block', wordBreak: 'break-word' }}>
+              <li key={evidence.id} className="flex min-w-0 flex-col gap-1 px-4 py-2.5">
+                <strong className="text-sm font-semibold leading-snug text-ink [overflow-wrap:anywhere]">
                   {evidence.sourceName || evidence.provider}
                 </strong>
-                <p style={{ color: '#a9bed3', fontSize: '9.5px', margin: 0, lineHeight: 1.4, wordBreak: 'break-word' }}>
-                  {evidence.excerpt}
-                </p>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', fontSize: '9px', color: '#718ba6' }}>
+                <p className="text-xs leading-relaxed text-ink-2 [overflow-wrap:anywhere]">{evidence.excerpt}</p>
+
+                <div className="mt-0.5 flex min-w-0 items-center justify-between gap-2 text-2xs text-ink-3">
                   <span>{formatGeneratedAt(evidence.retrievedAt)}</span>
-                  {evidence.sourceUrl && (
+                  {evidence.sourceUrl ? (
                     <a
                       href={safeExternalUrl(evidence.sourceUrl) || '#'}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{
-                        color: '#79c8ff',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '3px',
-                        textDecoration: 'none',
-                        fontWeight: 600,
-                      }}
+                      className="inline-flex shrink-0 items-center gap-1 font-semibold text-brand hover:underline"
                     >
-                      <span>Fonte</span> <Icons.ExternalLink size={10} />
+                      Fonte
+                      <Icons.ExternalLink size={11} aria-hidden="true" />
                     </a>
-                  )}
+                  ) : null}
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
-        )}
-      </div>
+          </ul>
+        </Section>
+      ) : null}
     </aside>
   );
 };

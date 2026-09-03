@@ -167,11 +167,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const safePepResults = Array.isArray(diligence.pepResults) ? diligence.pepResults : [];
 
   return (
-    <main className="investigation-dossier has-dossier-tabs">
-      <button type="button" className="investigation-back-sr" onClick={onBack}>
-        Nova consulta
-      </button>
-
+    <main className="flex min-h-0 min-w-0 flex-1 flex-col">
       {activeTab === 'dossie' ? (
         <DossierView
           diligence={displayDiligence}
@@ -182,17 +178,11 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           onOpenAudit={() => setActiveDrawer('audit')}
         />
       ) : null}
-      <div className="dossier-network-panel" hidden={activeTab !== 'mapa'}>
-        <div className="flex items-center gap-3 border-b border-line bg-surface px-4 py-2.5">
-          <button
-            type="button"
-            onClick={() => setActiveTab('dossie')}
-            className="cursor-pointer rounded-chip border border-line bg-surface-subtle px-3 py-1.5 text-[13px] text-brand hover:bg-surface-hover"
-          >
-            ← Voltar ao dossiê
-          </button>
-          <span className="truncate text-[13px] text-ink-3">Mapa de vínculos · {displayDiligence.razaoSocial}</span>
-        </div>
+
+      {/* O painel do mapa fica montado e apenas oculto: remontar o
+          grafo a cada troca de aba refazia o layout do Cytoscape e
+          perdia o enquadramento em que o analista estava. */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col" hidden={activeTab !== 'mapa'}>
       <ImmersiveNetworkTab
         diligence={displayDiligence}
         adverseMedia={adverseMedia}
@@ -212,6 +202,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         onOpenAiAnalysis={() => setActiveDrawer('ai')}
         onOpenPncp={() => setActiveDrawer('pncp')}
         onDrillCompany={onDrillCompany}
+        onBackToDossier={() => setActiveTab('dossie')}
       />
       </div>
 

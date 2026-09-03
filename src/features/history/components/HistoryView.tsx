@@ -1,5 +1,12 @@
 // ==========================================================
-// DILIGÊNCIA 360 — Tela de Histórico e Filas de Diligências
+// DILIGÊNCIA 360 — Histórico e filas de diligências
+// ==========================================================
+// A tela dependia de `.history-page`, `.section-page-heading`,
+// `.history-tabs`, `.history-filters` e `.history-list`, sem nenhuma
+// relação com o cabeçalho das outras telas: título em corpo
+// diferente, calha diferente, e as abas quebravam em duas fileiras
+// no celular. Agora usa a casca de página e a fita de abas do
+// projeto, como o dossiê.
 // ==========================================================
 
 import React, { useState } from 'react';
@@ -11,16 +18,26 @@ import { HistoryEmptyState } from './HistoryEmptyState';
 import { Button } from '../../../components/ui/Button';
 import { Icons } from '../../../components/ui/Icons';
 import { Modal } from '../../../components/ui/Modal';
+import { Note } from '../../../components/ui/Note';
+import { Page, PageBody, PageHeader } from '../../../components/layout/Page';
+import { TabStrip } from '../../../components/ui/TabStrip';
+import { TextField, Select } from '../../../components/ui/Field';
+
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'Todos os status' },
+  { value: 'in_progress', label: 'Em execução' },
+  { value: 'pending_review', label: 'Aguardando revisão' },
+  { value: 'in_review', label: 'Em revisão' },
+  { value: 'returned_for_adjustments', label: 'Devolvida para ajustes' },
+  { value: 'completed', label: 'Concluída' },
+] as const;
 
 interface HistoryViewProps {
   onOpenDiligence: (item: DiligenceItem) => void;
   onNewDiligence: () => void;
 }
 
-export const HistoryView: React.FC<HistoryViewProps> = ({
-  onOpenDiligence,
-  onNewDiligence,
-}) => {
+export const HistoryView: React.FC<HistoryViewProps> = ({ onOpenDiligence, onNewDiligence }) => {
   const {
     items,
     totalCount,
@@ -43,13 +60,8 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       onOpenDiligence(summaryItem);
       return;
     }
-
     const full = await HistoryStorage.getById(summaryItem.id);
-    if (full) {
-      onOpenDiligence(full);
-    } else {
-      onOpenDiligence(summaryItem);
-    }
+    onOpenDiligence(full || summaryItem);
   };
 
   const handleConfirmDelete = async () => {
@@ -63,134 +75,109 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
     }
   };
 
-  const tabs: { id: HistoryTab; label: string; count: number }[] = [
-    { id: 'all', label: 'Todas as Diligências', count: queueCounts.total },
-    { id: 'mine', label: 'Minhas Diligências', count: queueCounts.mine },
-    { id: 'review', label: 'Aguardando Revisão', count: queueCounts.pendingReview },
+  const tabs = [
+    { id: 'all' as HistoryTab, label: 'Todas as diligências', count: queueCounts.total },
+    { id: 'mine' as HistoryTab, label: 'Minhas diligências', count: queueCounts.mine },
+    { id: 'review' as HistoryTab, label: 'Aguardando revisão', count: queueCounts.pendingReview },
   ];
 
   return (
-    <div className="history-page">
-      <div className="section-page-heading">
-        <div>
-          <span className="section-page-eyebrow">Gestão das análises</span>
-          <h1>
-            Dossiês & Fila de Diligências
-          </h1>
-          <p>
-            Encontre uma empresa, acompanhe a revisão e retome dossiês sem perder o contexto.
-          </p>
+    <Page>
+      <PageHeader
+        eyebrow="Gestão das análises"
+        title="Dossiês e fila de diligências"
+        subtitle="Encontre uma empresa, acompanhe a revisão e retome dossiês sem perder o contexto."
+        actions={
+          <Button variant="primary" size="sm" icon={<Icons.Search size={15} aria-hidden="true" />} onClick={onNewDiligence}>
+            Nova diligência
+          </Button>
+        }
+        tabs={
+          <TabStrip
+            items={tabs}
+            activeId={activeTab}
+            onSelect={(id) => setActiveTab(id as HistoryTab)}
+            label="Filas de diligências"
+          />
+        }
+      />
+
+      <PageBody gap="sm">
+        {/* Rótulo visível em vez de `aria-label`: atributo com hífen
+            não é checado pelo TypeScript em componente, então um
+            `aria-label` passado a um componente que não o repassa
+            desaparece sem erro — e o campo fica sem nome acessível. */}
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px]">
+          <TextField
+            label="Buscar empresa"
+            controlSize="sm"
+            type="search"
+            placeholder="Razão social ou CNPJ…"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            leading={<Icons.Search size={15} />}
+          />
+
+          <Select
+            label="Status"
+            controlSize="sm"
+            value={statusFilter}
+            options={STATUS_OPTIONS}
+            onChange={setStatusFilter}
+          />
         </div>
 
-        <Button variant="primary" size="sm" icon={<Icons.Search size={14} />} onClick={onNewDiligence}>
-          Nova Diligência
-        </Button>
-      </div>
+        {isLoading ? (
+          <Note tone="neutral" icon={<Icons.Loader size={15} aria-hidden="true" />}>
+            Carregando histórico…
+          </Note>
+        ) : totalCount === 0 ? (
+          <HistoryEmptyState onNewDiligence={onNewDiligence} />
+        ) : items.length === 0 ? (
+          <Note tone="neutral" icon={<Icons.Filter size={15} aria-hidden="true" />}>
+            Nenhuma diligência encontrada para os filtros selecionados.
+          </Note>
+        ) : (
+          <div className="flex animate-fade-in flex-col gap-2">
+            {items.map((item) => (
+              <HistoryCard key={item.id} item={item} onOpen={handleOpenItem} onDelete={() => setItemToDelete(item)} />
+            ))}
+          </div>
+        )}
+      </PageBody>
 
-      {/* Abas de Fila */}
-      <div className="history-tabs" role="tablist" aria-label="Filas de diligências">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setActiveTab(t.id)}
-            className={activeTab === t.id ? 'active' : ''}
-            role="tab"
-            aria-selected={activeTab === t.id}
-          >
-            <span>{t.label}</span>
-            <strong>{t.count}</strong>
-          </button>
-        ))}
-      </div>
-
-      {/* Barra de Filtros */}
-      <div className="history-filters">
-        <input
-          type="text"
-          className="input-control"
-          placeholder="Filtrar por razão social ou CNPJ..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          aria-label="Filtrar por razão social ou CNPJ"
-        />
-
-        <select
-          className="input-control"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          aria-label="Filtrar por status"
-        >
-          <option value="all">Todos os Status</option>
-          <option value="in_progress">Em Execução</option>
-          <option value="pending_review">Aguardando Revisão</option>
-          <option value="in_review">Em Revisão</option>
-          <option value="returned_for_adjustments">Devolvida p/ Ajustes</option>
-          <option value="completed">Concluída</option>
-        </select>
-      </div>
-
-      {isLoading ? (
-        <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-tertiary)' }}>
-          Carregando histórico...
-        </div>
-      ) : totalCount === 0 ? (
-        <HistoryEmptyState onNewDiligence={onNewDiligence} />
-      ) : items.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-tertiary)' }}>
-          Nenhuma diligência encontrada para os filtros selecionados.
-        </div>
-      ) : (
-        <div className="history-list animate-fade-in">
-          {items.map((item) => (
-            <HistoryCard
-              key={item.id}
-              item={item}
-              onOpen={handleOpenItem}
-              onDelete={() => setItemToDelete(item)}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Modal de Confirmação de Exclusão de Dossiê */}
       <Modal
         isOpen={Boolean(itemToDelete)}
         onClose={() => setItemToDelete(null)}
-        title="Remover Dossiê da Visualização"
-        icon={<Icons.Trash size={18} />}
+        role="alertdialog"
+        title="Remover dossiê da visualização"
+        icon={<Icons.Trash size={17} />}
         size="sm"
         footer={
           <>
-            <Button
-              variant="ghost"
-              size="md"
-              onClick={() => setItemToDelete(null)}
-              disabled={isDeleting}
-            >
+            <Button variant="ghost" onClick={() => setItemToDelete(null)} disabled={isDeleting}>
               Cancelar
             </Button>
-            <Button
-              variant="danger"
-              size="md"
-              onClick={handleConfirmDelete}
-              isLoading={isDeleting}
-            >
-              Remover Dossiê
+            <Button variant="danger" onClick={handleConfirmDelete} isLoading={isDeleting} loadingLabel="Removendo…">
+              Remover dossiê
             </Button>
           </>
         }
       >
-        {itemToDelete && (
+        {itemToDelete ? (
           <>
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
-              Tem certeza que deseja remover o dossiê da empresa <strong>{itemToDelete.razaoSocial}</strong> (CNPJ: {itemToDelete.cnpjFmt || itemToDelete.cnpj || 'Não informado'}) da lista ativa?
+            <p className="text-base leading-relaxed text-ink-2">
+              Tem certeza que deseja remover o dossiê da empresa <strong className="text-ink">{itemToDelete.razaoSocial}</strong>{' '}
+              (<span className="font-mono">{itemToDelete.cnpjFmt || itemToDelete.cnpj || 'CNPJ não informado'}</span>) da
+              lista ativa?
             </p>
-            <p style={{ fontSize: 'var(--text-2xs)', color: 'var(--status-critical-text)', margin: 0 }}>
+
+            <Note tone="info" icon={<Icons.ShieldCheck size={15} aria-hidden="true" />}>
               O conteúdo, as versões, os relatórios e a auditoria continuarão preservados na planilha.
-            </p>
+            </Note>
           </>
-        )}
+        ) : null}
       </Modal>
-    </div>
+    </Page>
   );
 };

@@ -1,11 +1,20 @@
 // ==========================================================
-// DILIGÊNCIA 360 — Tela de Fontes de Dados
+// DILIGÊNCIA 360 — Fontes de dados e evidências
+// ==========================================================
+// A tela usava `.sources-page`, `.sources-summary` e
+// `.source-catalog-card`, com um cabeçalho próprio que não batia com
+// o do histórico nem com o do dossiê. O endpoint em monoespaçado
+// estourava a largura do cartão no celular, porque nada o autorizava
+// a quebrar. Agora usa a casca de página e as seções do projeto, e o
+// endereço quebra dentro do cartão.
 // ==========================================================
 
 import React, { useEffect, useState } from 'react';
-import { Card } from '../../../components/ui/Card';
-import { Badge } from '../../../components/ui/Badge';
+import { Section } from '../../../components/ui/Section';
+import { Chip } from '../../../components/ui/Chip';
 import { Icons } from '../../../components/ui/Icons';
+import { Fact, FactGrid } from '../../../components/ui/Facts';
+import { Page, PageBody, PageHeader } from '../../../components/layout/Page';
 import { DiligenceService } from '../../diligence/services/diligence.service';
 
 interface SourceInfo {
@@ -137,55 +146,63 @@ export const DataSourcesView: React.FC = () => {
   const attentionCount = sources.length - onlineCount;
 
   return (
-    <div className="sources-page">
-      <div className="section-page-heading">
-        <div>
-          <span className="section-page-eyebrow">Rastreabilidade da análise</span>
-          <h1>
-          Fontes de dados e evidências
-          </h1>
-          <p>Veja a cobertura, a disponibilidade e os limites de cada consulta.</p>
-        </div>
-      </div>
+    <Page>
+      <PageHeader
+        eyebrow="Rastreabilidade da análise"
+        title="Fontes de dados e evidências"
+        subtitle="Veja a cobertura, a disponibilidade e os limites de cada consulta."
+      />
 
-      <div className="sources-summary" aria-label="Resumo das fontes">
-        <article><Icons.Database size={18} /><div><strong>{sources.length}</strong><span>fontes mapeadas</span></div></article>
-        <article className="is-success"><Icons.CheckCircle size={18} /><div><strong>{onlineCount}</strong><span>operacionais agora</span></div></article>
-        <article className="is-attention"><Icons.AlertTriangle size={18} /><div><strong>{attentionCount}</strong><span>sob demanda ou configuração</span></div></article>
-      </div>
+      <PageBody>
+        <section
+          aria-label="Resumo das fontes"
+          className="rounded-card border border-line bg-surface p-4 shadow-xs"
+        >
+          <FactGrid columns={3}>
+            <Fact label="Fontes mapeadas" value={sources.length} />
+            <Fact label="Operacionais agora" value={onlineCount} tone="ok" />
+            <Fact
+              label="Sob demanda ou configuração"
+              value={attentionCount}
+              tone={attentionCount > 0 ? 'warn' : 'muted'}
+            />
+          </FactGrid>
+        </section>
 
-      <div className="sources-list">
         {sources.map((src) => (
-          <Card
+          <Section
             key={src.name}
-            className="source-catalog-card"
+            mark={<Icons.Database size={12} />}
             title={src.name}
-            icon={<Icons.Database size={16} />}
-            action={
-              <Badge variant={src.status === 'online' ? 'success' : 'medium'}>
+            subtitle={src.type}
+            trailing={
+              <Chip tone={src.status === 'online' ? 'ok' : 'warn'} size="sm" dot>
                 {src.statusLabel}
-              </Badge>
+              </Chip>
             }
           >
-            <div className="source-catalog-body">
-              <p>
-                {src.description}
-              </p>
-              <div className="source-catalog-meta">
-                <div>
-                  <strong>Provedor:</strong> {src.provider}
-                </div>
-                <div>
-                  <strong>Categoria:</strong> {src.type}
-                </div>
-                <div className="font-mono">
-                  <strong>API:</strong> {src.endpoint}
-                </div>
+            <p className="text-sm leading-relaxed text-ink-2">{src.description}</p>
+
+            <dl className="mt-3 grid gap-2 border-t border-line-soft pt-3 sm:grid-cols-2">
+              <div className="min-w-0">
+                <dt className="text-2xs font-semibold uppercase tracking-wide text-ink-3">Provedor</dt>
+                <dd className="text-sm text-ink">{src.provider}</dd>
               </div>
-            </div>
-          </Card>
+              <div className="min-w-0">
+                <dt className="text-2xs font-semibold uppercase tracking-wide text-ink-3">Categoria</dt>
+                <dd className="text-sm text-ink">{src.type}</dd>
+              </div>
+              <div className="min-w-0 sm:col-span-2">
+                <dt className="text-2xs font-semibold uppercase tracking-wide text-ink-3">Endereço da API</dt>
+                {/* URL longa em monoespaçado precisa de autorização
+                    explícita para quebrar; sem isto ela empurrava o
+                    cartão para fora da tela. */}
+                <dd className="font-mono text-xs text-ink-2 [overflow-wrap:anywhere]">{src.endpoint}</dd>
+              </div>
+            </dl>
+          </Section>
         ))}
-      </div>
-    </div>
+      </PageBody>
+    </Page>
   );
 };

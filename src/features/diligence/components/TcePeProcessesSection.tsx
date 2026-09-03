@@ -1,5 +1,21 @@
+// ==========================================================
+// DILIGÊNCIA 360 — Controle externo (TCE-PE)
+// ==========================================================
+// Vinha de pncp.css, que declarava as suas próprias cores em
+// hexadecimal (#cfe0d4, #dde4ec, #6b7a8d) e corpos em rem soltos
+// (0.95, 0.83, 0.74) — nenhum deles na escala do projeto. Agora usa
+// as seções, os fatos e os avisos do sistema.
+//
+// O texto que separa vínculo nominal de vínculo por documento fica
+// preservado: esta base do TCE-PE não informa o CNPJ da parte, e
+// essa ressalva é o que impede o achado de virar acusação.
+// ==========================================================
+
 import React from 'react';
-import { Badge } from '../../../components/ui/Badge';
+import { Chip } from '../../../components/ui/Chip';
+import { Section } from '../../../components/ui/Section';
+import { Note } from '../../../components/ui/Note';
+import { Fact, FactGrid } from '../../../components/ui/Facts';
 import { Icons } from '../../../components/ui/Icons';
 import type { TcePeSummary } from '../types';
 
@@ -13,102 +29,135 @@ function formatDate(value?: string) {
   return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString('pt-BR');
 }
 
+const SourceLink: React.FC<{ href: string; children: React.ReactNode }> = ({ href, children }) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline"
+  >
+    {children}
+    <Icons.ExternalLink size={12} aria-hidden="true" />
+  </a>
+);
+
 export const TcePeProcessesSection: React.FC<TcePeProcessesSectionProps> = ({ summary }) => {
   if (!summary) return null;
 
   return (
-    <section className="pncp-section" aria-labelledby="tce-pe-processes-title">
-      <h3 id="tce-pe-processes-title">Controle externo — TCE-PE ({summary.processos.length})</h3>
-      <p className="pncp-hint">
-        Processos oficiais em que o nome empresarial aparece na lista de interessados. O vínculo é nominal porque essa
-        base do TCE-PE não informa o CNPJ da parte.
-      </p>
+    <Section
+      mark="T"
+      title={`Controle externo — TCE-PE (${summary.processos.length})`}
+      subtitle="Vínculo nominal: esta base não informa o CNPJ da parte"
+    >
+      <div className="flex min-w-0 flex-col gap-3">
+        <p className="text-sm leading-relaxed text-ink-2">
+          Processos oficiais em que o nome empresarial aparece na lista de interessados. O vínculo é nominal porque essa
+          base do TCE-PE não informa o CNPJ da parte.
+        </p>
 
-      {!summary.ok ? (
-        <div className="pncp-notice pncp-notice-error">
-          <strong>Consulta ao TCE-PE indisponível.</strong>
-          <p>{summary.erro}</p>
-        </div>
-      ) : null}
+        {!summary.ok ? (
+          <Note tone="high" title="Consulta ao TCE-PE indisponível." role="alert">
+            {summary.erro}
+          </Note>
+        ) : null}
 
-      {summary.consultaParcial ? (
-        <div className="pncp-notice pncp-notice-warning">
-          <strong>Cobertura parcial.</strong>
-          <p>Uma parte da pesquisa ou dos detalhes processuais não respondeu.</p>
-        </div>
-      ) : null}
+        {summary.consultaParcial ? (
+          <Note tone="warn" title="Cobertura parcial.">
+            Uma parte da pesquisa ou dos detalhes processuais não respondeu.
+          </Note>
+        ) : null}
 
-      {summary.ok && summary.processos.length === 0 ? (
-        <p className="pncp-hint">Nenhum processo foi localizado pelos nomes empresariais pesquisados.</p>
-      ) : null}
+        {summary.ok && summary.processos.length === 0 ? (
+          <Note tone="ok" icon={<Icons.Check size={15} aria-hidden="true" />}>
+            Nenhum processo foi localizado pelos nomes empresariais pesquisados.
+          </Note>
+        ) : null}
 
-      {summary.processos.map((process) => (
-        <article className="pncp-card" key={process.rawProcessNumber || process.processNumber}>
-          <header className="pncp-card-head">
-            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-              <Badge variant={process.relevance === 'high' ? 'high' : process.relevance === 'medium' ? 'medium' : 'neutral'} size="sm">
+        {summary.processos.map((process) => (
+          <article
+            key={process.rawProcessNumber || process.processNumber}
+            className="flex min-w-0 flex-col gap-2.5 rounded-lg border border-line bg-surface-subtle p-3.5"
+          >
+            <header className="flex min-w-0 flex-wrap items-center gap-2">
+              <Chip
+                tone={process.relevance === 'high' ? 'high' : process.relevance === 'medium' ? 'warn' : 'neutral'}
+                size="sm"
+              >
                 {process.modality || 'Processo TCE-PE'}
-              </Badge>
+              </Chip>
+
               {process.outcome ? (
-                <Badge variant={/irregular/i.test(process.outcome) ? 'high' : 'neutral'} size="sm">
-                  Resultado do processo: {process.outcome}
-                </Badge>
+                <Chip tone={/irregular/i.test(process.outcome) ? 'high' : 'neutral'} size="sm">
+                  Resultado: {process.outcome}
+                </Chip>
               ) : null}
-            </div>
-            <strong>{process.processNumber}</strong>
-          </header>
 
-          <p className="pncp-card-object">{process.description || 'Descrição não disponibilizada pela fonte.'}</p>
+              <strong className="ml-auto font-mono text-sm font-bold text-ink">{process.processNumber}</strong>
+            </header>
 
-          <dl className="pncp-card-grid">
-            <div><dt>Órgão fiscalizado</dt><dd>{process.organization || '—'}</dd></div>
-            <div><dt>Município / exercício</dt><dd>{[process.municipality, process.exercise].filter(Boolean).join(' · ') || '—'}</dd></div>
-            <div><dt>Situação</dt><dd>{process.status || '—'}</dd></div>
-            <div><dt>Julgamento</dt><dd>{formatDate(process.judgmentDate)}</dd></div>
-            <div><dt>Relator</dt><dd>{process.rapporteur || '—'}</dd></div>
-            <div><dt>Acórdão</dt><dd>{process.decisionNumber || '—'}</dd></div>
-            <div><dt>Nome encontrado</dt><dd>{process.interestedName || '—'}</dd></div>
-            <div><dt>Correspondência</dt><dd>{process.matchBasis}</dd></div>
-          </dl>
+            <p className="text-sm leading-relaxed text-ink-2">
+              {process.description || 'Descrição não disponibilizada pela fonte.'}
+            </p>
 
-          {process.contractsMentioned.length > 0 ? (
-            <p className="pncp-hint"><strong>Contratos citados:</strong> {process.contractsMentioned.join(', ')}</p>
-          ) : null}
+            <FactGrid columns={3}>
+              <Fact label="Órgão fiscalizado" value={process.organization || '—'} />
+              <Fact
+                label="Município / exercício"
+                value={[process.municipality, process.exercise].filter(Boolean).join(' · ') || '—'}
+              />
+              <Fact label="Situação" value={process.status || '—'} />
+              <Fact label="Julgamento" value={formatDate(process.judgmentDate)} />
+              <Fact label="Relator" value={process.rapporteur || '—'} />
+              <Fact label="Acórdão" value={process.decisionNumber || '—'} />
+              <Fact label="Nome encontrado" value={process.interestedName || '—'} />
+              <Fact label="Correspondência" value={process.matchBasis} />
+            </FactGrid>
 
-          {process.considerations.length > 0 ? (
-            <details className="pncp-details">
-              <summary>Fundamentos publicados ({process.considerations.length})</summary>
-              <ul>{process.considerations.map((item, index) => <li key={index}>{item}</li>)}</ul>
-            </details>
-          ) : null}
-
-          {process.determinations.length > 0 ? (
-            <details className="pncp-details">
-              <summary>Determinações publicadas ({process.determinations.length})</summary>
-              <ul>{process.determinations.map((item, index) => <li key={index}>{item}</li>)}</ul>
-            </details>
-          ) : null}
-
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            {process.processUrl ? (
-              <a className="pncp-card-link" href={process.processUrl} target="_blank" rel="noopener noreferrer">
-                Abrir processo <Icons.ExternalLink size={12} aria-hidden="true" />
-              </a>
+            {process.contractsMentioned.length > 0 ? (
+              <p className="text-xs leading-relaxed text-ink-3">
+                <strong className="font-semibold text-ink-2">Contratos citados:</strong>{' '}
+                {process.contractsMentioned.join(', ')}
+              </p>
             ) : null}
-            {process.decisionUrl ? (
-              <a className="pncp-card-link" href={process.decisionUrl} target="_blank" rel="noopener noreferrer">
-                Abrir decisão <Icons.ExternalLink size={12} aria-hidden="true" />
-              </a>
+
+            {process.considerations.length > 0 ? (
+              <PublishedList title="Fundamentos publicados" items={process.considerations} />
             ) : null}
-          </div>
 
-          <div className="pncp-notice pncp-notice-warning">
-            <p>{process.attributionWarning}</p>
-          </div>
-        </article>
-      ))}
+            {process.determinations.length > 0 ? (
+              <PublishedList title="Determinações publicadas" items={process.determinations} />
+            ) : null}
 
-      {summary.limitacao ? <p className="pncp-disclaimer">{summary.limitacao}</p> : null}
-    </section>
+            {process.processUrl || process.decisionUrl ? (
+              <div className="flex min-w-0 flex-wrap gap-3">
+                {process.processUrl ? <SourceLink href={process.processUrl}>Abrir processo</SourceLink> : null}
+                {process.decisionUrl ? <SourceLink href={process.decisionUrl}>Abrir decisão</SourceLink> : null}
+              </div>
+            ) : null}
+
+            <Note tone="warn">{process.attributionWarning}</Note>
+          </article>
+        ))}
+
+        {summary.limitacao ? (
+          <p className="border-t border-line-soft pt-3 text-2xs leading-relaxed text-ink-3">{summary.limitacao}</p>
+        ) : null}
+      </div>
+    </Section>
   );
 };
+
+/** Lista recolhível de trechos publicados pela fonte. */
+const PublishedList: React.FC<{ title: string; items: string[] }> = ({ title, items }) => (
+  <details className="overflow-hidden rounded-md border border-line bg-surface">
+    <summary className="cursor-pointer list-none px-3 py-2 text-xs font-semibold text-ink-2 transition-colors hover:bg-surface-hover">
+      {title} ({items.length})
+    </summary>
+    <ul className="flex list-disc flex-col gap-1.5 border-t border-line-soft px-3 py-2.5 pl-7 text-xs leading-relaxed text-ink-2">
+      {items.map((item, index) => (
+        <li key={index}>{item}</li>
+      ))}
+    </ul>
+  </details>
+);

@@ -92,11 +92,11 @@ export const ContentAnalyzerModal: React.FC<ContentAnalyzerModalProps> = ({
       {/* Seleção de Tipo de Fonte */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
         <div>
-          <label className="company-cell-label" style={{ marginBottom: '0.35rem', display: 'block', fontSize: 'var(--text-xs)', fontWeight: 600 }}>
+          <label className="mb-1.5 block text-2xs font-semibold uppercase tracking-wide text-ink-3">
             TIPO DE ORIGEM
           </label>
           <select
-            className="input-control"
+            className="min-h-[var(--control-height-md)] w-full min-w-0 rounded-[var(--control-radius-md)] border border-line bg-surface px-[var(--control-pad-x-md)] py-[var(--control-pad-y-md)] text-base text-ink transition-colors placeholder:text-ink-muted hover:border-line-strong focus:border-brand focus:outline-none focus:shadow-[var(--ring-focus)] disabled:cursor-not-allowed disabled:bg-surface-subtle"
             value={sourceType}
             onChange={(e) => handleSourceTypeChange(e.target.value as DiscoverySourceType)}
           >
@@ -109,12 +109,12 @@ export const ContentAnalyzerModal: React.FC<ContentAnalyzerModalProps> = ({
         </div>
 
         <div>
-          <label className="company-cell-label" style={{ marginBottom: '0.35rem', display: 'block', fontSize: 'var(--text-xs)', fontWeight: 600 }}>
+          <label className="mb-1.5 block text-2xs font-semibold uppercase tracking-wide text-ink-3">
             IDENTIFICAÇÃO DA FONTE
           </label>
           <input
             type="text"
-            className="input-control"
+            className="min-h-[var(--control-height-md)] w-full min-w-0 rounded-[var(--control-radius-md)] border border-line bg-surface px-[var(--control-pad-x-md)] py-[var(--control-pad-y-md)] text-base text-ink transition-colors placeholder:text-ink-muted hover:border-line-strong focus:border-brand focus:outline-none focus:shadow-[var(--ring-focus)] disabled:cursor-not-allowed disabled:bg-surface-subtle"
             value={sourceName}
             onChange={(e) => setSourceName(e.target.value)}
             placeholder="Ex: DJEN Edição 142 / Certidão TJPE"
@@ -123,12 +123,12 @@ export const ContentAnalyzerModal: React.FC<ContentAnalyzerModalProps> = ({
       </div>
 
       <div>
-        <label className="company-cell-label" style={{ marginBottom: '0.35rem', display: 'block', fontSize: 'var(--text-xs)', fontWeight: 600 }}>
+        <label className="mb-1.5 block text-2xs font-semibold uppercase tracking-wide text-ink-3">
           LINK / REFERÊNCIA (OPCIONAL)
         </label>
         <input
           type="text"
-          className="input-control"
+          className="min-h-[var(--control-height-md)] w-full min-w-0 rounded-[var(--control-radius-md)] border border-line bg-surface px-[var(--control-pad-x-md)] py-[var(--control-pad-y-md)] text-base text-ink transition-colors placeholder:text-ink-muted hover:border-line-strong focus:border-brand focus:outline-none focus:shadow-[var(--ring-focus)] disabled:cursor-not-allowed disabled:bg-surface-subtle"
           value={sourceUrl}
           onChange={(e) => setSourceUrl(e.target.value)}
           placeholder="https://..."
@@ -138,7 +138,7 @@ export const ContentAnalyzerModal: React.FC<ContentAnalyzerModalProps> = ({
       {/* Textarea para Conteúdo */}
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
-          <label className="company-cell-label" style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>
+          <label className="text-2xs font-semibold uppercase tracking-wide text-ink-3">
             TEXTO DO CONTEÚDO
           </label>
           <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)' }}>
@@ -146,7 +146,7 @@ export const ContentAnalyzerModal: React.FC<ContentAnalyzerModalProps> = ({
           </span>
         </div>
         <textarea
-          className="input-control font-mono"
+          className="font-mono min-h-[var(--control-height-md)] w-full min-w-0 rounded-[var(--control-radius-md)] border border-line bg-surface px-[var(--control-pad-x-md)] py-[var(--control-pad-y-md)] text-base text-ink transition-colors placeholder:text-ink-muted hover:border-line-strong focus:border-brand focus:outline-none focus:shadow-[var(--ring-focus)] disabled:cursor-not-allowed disabled:bg-surface-subtle"
           rows={6}
           placeholder="Cole aqui o texto da publicação, despacho judicial, intimação ou certidão..."
           value={content}
@@ -176,7 +176,7 @@ export const ContentAnalyzerModal: React.FC<ContentAnalyzerModalProps> = ({
             {extracted.map((ext) => (
               <span
                 key={ext.normalized}
-                className="font-mono badge badge-neutral"
+                className="font-mono inline-flex max-w-full items-center gap-1.5 rounded-chip border px-2 py-0.5 text-2xs font-semibold leading-tight border-neutral-line bg-neutral-soft text-neutral-text"
                 style={{ fontSize: 'var(--text-xs)' }}
               >
                 {ext.formatted}

@@ -1,6 +1,31 @@
+// ==========================================================
+// DILIGÊNCIA 360 — Central de evidências assistidas
+// ==========================================================
+// A regra que a tela existe para sustentar não muda: vínculo,
+// menção, processo ou classificação PEP não representam culpa, e só
+// evidência confirmada por uma pessoa alimenta o EGOS e a IA. A fila
+// de revisão, a ficha de decisão e o histórico de alterações seguem
+// exatamente como estavam.
+//
+// O que muda é a pele. A tela nasceu com o mesmo problema que o
+// resto do app tinha: 83 linhas próprias em dossier-v3/evidence.css,
+// com paleta em hexadecimal fora da identidade, um token que não
+// existe (`--suape-ink`) e corpos de texto de 8, 8.5, 9, 9.5, 10 e
+// 10.5px — abaixo do menor degrau da escala e, nos dois primeiros,
+// no limite do ilegível. Agora ela usa as seções, os campos e os
+// selos do projeto.
+// ==========================================================
+
 import React, { useMemo, useState } from 'react';
 import { Drawer } from '../../../components/ui/Drawer';
 import { Icons } from '../../../components/ui/Icons';
+import { Section } from '../../../components/ui/Section';
+import { Chip, ChipTone } from '../../../components/ui/Chip';
+import { Note } from '../../../components/ui/Note';
+import { Button } from '../../../components/ui/Button';
+import { Toolbar } from '../../../components/ui/Toolbar';
+import { TextField, TextArea, Select } from '../../../components/ui/Field';
+import { cn } from '../../../lib/cn';
 import { EvidenceCenterApi, type EvidenceMutationInput } from '../services/evidence-center.service';
 import type {
   AssistedEvidence,
@@ -48,6 +73,27 @@ const RELATION_LABELS: Record<EvidenceRelationType, string> = {
   CITADA_COM: 'Citada com',
   DOCUMENTO_RELACIONADO: 'Documento relacionado',
 };
+
+/** Situação da evidência → tom visual. Pendente nunca é verde. */
+const STATUS_TONE: Record<EvidenceValidationStatus, ChipTone> = {
+  PENDENTE_REVISAO: 'warn',
+  CONFIRMADA: 'ok',
+  DESCARTADA: 'muted',
+};
+
+/** Traço à esquerda do cartão, repetindo o tom do selo. */
+const STATUS_EDGE: Record<EvidenceValidationStatus, string> = {
+  PENDENTE_REVISAO: 'border-l-warn',
+  CONFIRMADA: 'border-l-ok',
+  DESCARTADA: 'border-l-line-strong opacity-80',
+};
+
+const TYPE_OPTIONS = (Object.entries(TYPE_LABELS) as [EvidenceType, string][])
+  .map(([value, label]) => ({ value, label }));
+const RELATION_OPTIONS = (Object.entries(RELATION_LABELS) as [EvidenceRelationType, string][])
+  .map(([value, label]) => ({ value, label }));
+const STATUS_OPTIONS = (Object.entries(STATUS_LABELS) as [EvidenceValidationStatus, string][])
+  .map(([value, label]) => ({ value, label }));
 
 const MAX_PDF_BYTES = 25 * 1024 * 1024;
 
@@ -243,49 +289,116 @@ function EvidenceCard({
   onReview: (item: AssistedEvidence, status: EvidenceValidationStatus) => void;
   onEdit: (item: AssistedEvidence) => void;
 }) {
+  // Uma evidência com pendência de validação não pode ser aprovada:
+  // é o ponto em que a revisão humana deixa de ser opcional.
+  const blocked = item.validationIssues.length > 0;
+
   return (
-    <article className={`assisted-evidence-card status-${item.validationStatus.toLowerCase()}`}>
-      <header>
-        <div>
-          <span>{TYPE_LABELS[item.type]} · {RELATION_LABELS[item.relationType]}</span>
-          <strong>{item.title}</strong>
+    <article
+      className={cn(
+        'flex min-w-0 flex-col gap-2.5 rounded-lg border border-l-4 border-line bg-surface p-3.5 shadow-xs',
+        STATUS_EDGE[item.validationStatus],
+      )}
+    >
+      <header className="flex min-w-0 items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <span className="block text-2xs font-semibold uppercase tracking-wide text-ink-3">
+            {TYPE_LABELS[item.type]} · {RELATION_LABELS[item.relationType]}
+          </span>
+          <strong className="block text-sm font-bold leading-snug text-ink">{item.title}</strong>
         </div>
-        <span className="assisted-evidence-status">{STATUS_LABELS[item.validationStatus]}</span>
+
+        <Chip tone={STATUS_TONE[item.validationStatus]} size="sm" dot>
+          {STATUS_LABELS[item.validationStatus]}
+        </Chip>
       </header>
-      <p>{item.excerpt || item.analystNote || 'Sem trecho registrado.'}</p>
-      <dl>
-        <div><dt>Fonte</dt><dd>{item.source || 'Não informada'}</dd></div>
-        <div><dt>Entidade</dt><dd>{item.relatedEntity || 'Empresa investigada'}</dd></div>
-        <div><dt>Consulta</dt><dd>{new Date(item.consultedAt).toLocaleDateString('pt-BR')}</dd></div>
-        {item.relevantPages.length > 0 ? <div><dt>Páginas</dt><dd>{item.relevantPages.join(', ')}</dd></div> : null}
+
+      <p className="text-sm leading-relaxed text-ink-2">
+        {item.excerpt || item.analystNote || 'Sem trecho registrado.'}
+      </p>
+
+      <dl className="flex min-w-0 flex-wrap gap-x-4 gap-y-1.5">
+        <Meta label="Fonte" value={item.source || 'Não informada'} />
+        <Meta label="Entidade" value={item.relatedEntity || 'Empresa investigada'} />
+        <Meta label="Consulta" value={new Date(item.consultedAt).toLocaleDateString('pt-BR')} />
+        {item.relevantPages.length > 0 ? <Meta label="Páginas" value={item.relevantPages.join(', ')} /> : null}
       </dl>
-      {item.validationIssues.length > 0 ? (
-        <div className="assisted-evidence-issues">
-          <Icons.AlertTriangle size={14} aria-hidden="true" />
-          <span>{item.validationIssues.join(' ')}</span>
-        </div>
+
+      {blocked ? (
+        <Note tone="warn" icon={<Icons.AlertTriangle size={14} aria-hidden="true" />}>
+          {item.validationIssues.join(' ')}
+        </Note>
       ) : null}
-      <div className="assisted-evidence-actions">
-        {item.url ? <a href={item.url} target="_blank" rel="noreferrer">Abrir fonte <Icons.ExternalLink size={12} /></a> : null}
-        <button type="button" onClick={() => onEdit(item)} disabled={busy}>Corrigir</button>
+
+      <Toolbar>
+        {item.url ? (
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-brand hover:underline"
+          >
+            Abrir fonte
+            <Icons.ExternalLink size={12} aria-hidden="true" />
+          </a>
+        ) : null}
+
+        <Button variant="secondary" size="sm" onClick={() => onEdit(item)} disabled={busy}>
+          Corrigir
+        </Button>
+
         {item.validationStatus !== 'CONFIRMADA' ? (
-          <button type="button" onClick={() => onReview(item, 'CONFIRMADA')} disabled={busy || item.validationIssues.length > 0}>Aprovar</button>
+          <Button
+            variant="success"
+            size="sm"
+            onClick={() => onReview(item, 'CONFIRMADA')}
+            disabled={busy || blocked}
+            title={blocked ? 'Resolva as pendências de validação antes de aprovar.' : undefined}
+            icon={<Icons.Check size={14} aria-hidden="true" />}
+          >
+            Aprovar
+          </Button>
         ) : null}
+
         {item.validationStatus !== 'DESCARTADA' ? (
-          <button type="button" className="is-danger" onClick={() => onReview(item, 'DESCARTADA')} disabled={busy}>Descartar</button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => onReview(item, 'DESCARTADA')}
+            disabled={busy}
+            className="text-high-text hover:bg-high-bg"
+          >
+            Descartar
+          </Button>
         ) : null}
-      </div>
+      </Toolbar>
+
       {item.history.length > 0 ? (
-        <details>
-          <summary>Histórico de alterações ({item.history.length})</summary>
-          <ul>{item.history.map((event, index) => (
-            <li key={`${event.at}-${index}`}><strong>{event.action}</strong> · {new Date(event.at).toLocaleString('pt-BR')} · {event.by?.name || 'Sistema'}</li>
-          ))}</ul>
+        <details className="overflow-hidden rounded-md border border-line-soft bg-surface-subtle">
+          <summary className="cursor-pointer list-none px-3 py-2 text-xs font-semibold text-ink-2 transition-colors hover:bg-surface-hover">
+            Histórico de alterações ({item.history.length})
+          </summary>
+          <ul className="flex flex-col gap-1 border-t border-line-soft px-3 py-2.5">
+            {item.history.map((event, index) => (
+              <li key={`${event.at}-${index}`} className="text-2xs text-ink-2">
+                <strong className="font-bold text-ink">{event.action}</strong> ·{' '}
+                {new Date(event.at).toLocaleString('pt-BR')} · {event.by?.name || 'Sistema'}
+              </li>
+            ))}
+          </ul>
         </details>
       ) : null}
     </article>
   );
 }
+
+/** Par rótulo/valor curto do rodapé do cartão. */
+const Meta: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
+  <div className="flex min-w-0 items-baseline gap-1.5 text-2xs">
+    <dt className="shrink-0 text-ink-3">{label}</dt>
+    <dd className="min-w-0 font-semibold text-ink-2">{value}</dd>
+  </div>
+);
 
 export const EvidenceCenterDrawer: React.FC<EvidenceCenterDrawerProps> = ({
   isOpen,
@@ -394,124 +507,495 @@ export const EvidenceCenterDrawer: React.FC<EvidenceCenterDrawerProps> = ({
     <Drawer
       isOpen={isOpen}
       onClose={onClose}
-      title="Central de Evidências Assistidas"
+      title="Central de evidências assistidas"
       subtitle="Organize documentos e interpretações com rastreabilidade e validação humana."
-      panelClassName="investigation-wide-drawer evidence-center-drawer"
+      width="xl"
     >
-      <div className="evidence-center-disclaimer" role="note">
-        <Icons.Info size={16} aria-hidden="true" />
-        <span>Vínculo, menção, processo ou classificação PEP não representam culpa. Só evidências confirmadas alimentam o EGOS e a IA.</span>
+      {/* A ressalva vem antes de tudo: é ela que separa evidência de
+          acusação, e some se virar rodapé. */}
+      <Note tone="info" role="status" icon={<Icons.Info size={16} aria-hidden="true" />}>
+        Vínculo, menção, processo ou classificação PEP não representam culpa. Só evidências confirmadas alimentam o
+        EGOS e a IA.
+      </Note>
+
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+        <span className="flex items-baseline gap-1.5">
+          <strong className="num text-xl font-extrabold text-ink">{items.length}</strong>
+          <span className="text-xs text-ink-3">registro(s)</span>
+        </span>
+
+        <Button
+          variant="primary"
+          size="sm"
+          icon={<Icons.Plus size={15} aria-hidden="true" />}
+          onClick={() => {
+            setDraft(emptyDraft(diligence));
+            setEditingId(null);
+            setShowForm((current) => !current);
+          }}
+        >
+          Nova evidência
+        </Button>
       </div>
 
-      <div className="evidence-center-toolbar">
-        <div><strong>{items.length}</strong><span>registro(s)</span></div>
-        <button type="button" onClick={() => { setDraft(emptyDraft(diligence)); setEditingId(null); setShowForm((current) => !current); }}>
-          <Icons.Plus size={15} aria-hidden="true" /> Nova evidência
-        </button>
-      </div>
+      {notice ? (
+        <Note tone="neutral" role="status">
+          {notice}
+        </Note>
+      ) : null}
 
-      {notice ? <div className="evidence-center-notice" role="status">{notice}</div> : null}
-
+      {/* ---- Formulário ---- */}
       {showForm ? (
-        <form className="evidence-center-form" onSubmit={saveDraft}>
-          <header><strong>{editingId ? 'Corrigir evidência' : 'Adicionar à fila de revisão'}</strong><span>Campos sensíveis permanecem pendentes até validação.</span></header>
-          <div className="evidence-form-grid">
-            <label>Tipo<select value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value as EvidenceType })}>{Object.entries(TYPE_LABELS).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
-            <label>Título<input required value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} /></label>
-            <label>Fonte ou órgão<input required value={draft.source} onChange={(event) => setDraft({ ...draft, source: event.target.value })} /></label>
-            <label>URL original<input type="url" value={draft.url} onChange={(event) => setDraft({ ...draft, url: event.target.value })} /></label>
-            <label>Referência de origem<input value={draft.originReference} onChange={(event) => setDraft({ ...draft, originReference: event.target.value })} placeholder="Protocolo, arquivo ou localização" /></label>
-            <label>Data do documento<input type="date" value={draft.documentDate} onChange={(event) => setDraft({ ...draft, documentDate: event.target.value })} /></label>
-            <label>Entidade relacionada<input value={draft.relatedEntity} onChange={(event) => setDraft({ ...draft, relatedEntity: event.target.value })} /></label>
-            <label>Tipo da entidade<select value={draft.relatedEntityType} onChange={(event) => setDraft({ ...draft, relatedEntityType: event.target.value as Draft['relatedEntityType'] })}><option value="company">Empresa</option><option value="person">Pessoa</option><option value="organization">Órgão/organização</option></select></label>
-            <label>CNPJ relacionado<input value={draft.relatedCnpj} onChange={(event) => setDraft({ ...draft, relatedCnpj: event.target.value })} /></label>
-            <label>Processo relacionado<input value={draft.relatedProcess} onChange={(event) => setDraft({ ...draft, relatedProcess: event.target.value })} /></label>
-            <label>Relação no EGOS<select value={draft.relationType} onChange={(event) => setDraft({ ...draft, relationType: event.target.value as EvidenceRelationType })}>{Object.entries(RELATION_LABELS).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
-            <label>Páginas relevantes<input value={draft.relevantPages} onChange={(event) => setDraft({ ...draft, relevantPages: event.target.value })} placeholder="Ex.: 2, 4, 9" /></label>
-            <label>Qualidade da fonte<select value={draft.sourceQuality} onChange={(event) => setDraft({ ...draft, sourceQuality: event.target.value as Draft['sourceQuality'] })}><option value="OFICIAL_PRIMARIA">Oficial primária</option><option value="OFICIAL_SECUNDARIA">Oficial secundária</option><option value="JORNALISTICA">Jornalística</option><option value="ANALISTA">Adicionada pelo analista</option><option value="DESCONHECIDA">Desconhecida</option></select></label>
-            <label>Força da correspondência<select value={draft.matchStrength} onChange={(event) => setDraft({ ...draft, matchStrength: event.target.value as Draft['matchStrength'] })}><option value="FORTE">Forte</option><option value="MEDIA">Média</option><option value="FRACA">Fraca</option></select></label>
-          </div>
-          <label className="evidence-form-wide">Trecho relevante<textarea value={draft.excerpt} onChange={(event) => setDraft({ ...draft, excerpt: event.target.value })} rows={4} /></label>
-          <label className="evidence-form-wide">Observação do analista<textarea value={draft.analystNote} onChange={(event) => setDraft({ ...draft, analystNote: event.target.value })} rows={3} /></label>
+        <Section
+          mark={<Icons.FileText size={12} />}
+          title={editingId ? 'Corrigir evidência' : 'Adicionar à fila de revisão'}
+          subtitle="Campos sensíveis permanecem pendentes até validação."
+        >
+          <form onSubmit={saveDraft} className="flex min-w-0 flex-col gap-3">
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+              <Select
+                label="Tipo"
+                controlSize="sm"
+                value={draft.type}
+                options={TYPE_OPTIONS}
+                onChange={(value) => setDraft({ ...draft, type: value })}
+              />
+              <TextField
+                label="Título"
+                controlSize="sm"
+                required
+                value={draft.title}
+                onChange={(event) => setDraft({ ...draft, title: event.target.value })}
+              />
+              <TextField
+                label="Fonte ou órgão"
+                controlSize="sm"
+                required
+                value={draft.source}
+                onChange={(event) => setDraft({ ...draft, source: event.target.value })}
+              />
+              <TextField
+                label="URL original"
+                controlSize="sm"
+                type="url"
+                value={draft.url}
+                onChange={(event) => setDraft({ ...draft, url: event.target.value })}
+              />
+              <TextField
+                label="Referência de origem"
+                controlSize="sm"
+                placeholder="Protocolo, arquivo ou localização"
+                value={draft.originReference}
+                onChange={(event) => setDraft({ ...draft, originReference: event.target.value })}
+              />
+              <TextField
+                label="Data do documento"
+                controlSize="sm"
+                type="date"
+                value={draft.documentDate}
+                onChange={(event) => setDraft({ ...draft, documentDate: event.target.value })}
+              />
+              <TextField
+                label="Entidade relacionada"
+                controlSize="sm"
+                value={draft.relatedEntity}
+                onChange={(event) => setDraft({ ...draft, relatedEntity: event.target.value })}
+              />
+              <Select
+                label="Tipo da entidade"
+                controlSize="sm"
+                value={draft.relatedEntityType}
+                options={[
+                  { value: 'company', label: 'Empresa' },
+                  { value: 'person', label: 'Pessoa' },
+                  { value: 'organization', label: 'Órgão/organização' },
+                ]}
+                onChange={(value) => setDraft({ ...draft, relatedEntityType: value })}
+              />
+              <TextField
+                label="CNPJ relacionado"
+                controlSize="sm"
+                mono
+                value={draft.relatedCnpj}
+                onChange={(event) => setDraft({ ...draft, relatedCnpj: event.target.value })}
+              />
+              <TextField
+                label="Processo relacionado"
+                controlSize="sm"
+                mono
+                value={draft.relatedProcess}
+                onChange={(event) => setDraft({ ...draft, relatedProcess: event.target.value })}
+              />
+              <Select
+                label="Relação no EGOS"
+                controlSize="sm"
+                value={draft.relationType}
+                options={RELATION_OPTIONS}
+                onChange={(value) => setDraft({ ...draft, relationType: value })}
+              />
+              <TextField
+                label="Páginas relevantes"
+                controlSize="sm"
+                placeholder="Ex.: 2, 4, 9"
+                value={draft.relevantPages}
+                onChange={(event) => setDraft({ ...draft, relevantPages: event.target.value })}
+              />
+              <Select
+                label="Qualidade da fonte"
+                controlSize="sm"
+                value={draft.sourceQuality}
+                options={[
+                  { value: 'OFICIAL_PRIMARIA', label: 'Oficial primária' },
+                  { value: 'OFICIAL_SECUNDARIA', label: 'Oficial secundária' },
+                  { value: 'JORNALISTICA', label: 'Jornalística' },
+                  { value: 'ANALISTA', label: 'Adicionada pelo analista' },
+                  { value: 'DESCONHECIDA', label: 'Desconhecida' },
+                ]}
+                onChange={(value) => setDraft({ ...draft, sourceQuality: value })}
+              />
+              <Select
+                label="Força da correspondência"
+                controlSize="sm"
+                value={draft.matchStrength}
+                options={[
+                  { value: 'FORTE', label: 'Forte' },
+                  { value: 'MEDIA', label: 'Média' },
+                  { value: 'FRACA', label: 'Fraca' },
+                ]}
+                onChange={(value) => setDraft({ ...draft, matchStrength: value })}
+              />
+            </div>
 
-          {draft.type === 'PDF' ? (
-            <section className="evidence-pdf-box">
-              <label>Selecionar PDF<input type="file" accept="application/pdf" onChange={(event) => selectPdf(event.target.files?.[0])} /></label>
-              <label>Páginas do arquivo<input type="number" min="1" value={draft.pageCount} onChange={(event) => setDraft({ ...draft, pageCount: event.target.value })} /></label>
-              <div><strong>{draft.fileName || 'Nenhum arquivo selecionado'}</strong><span>{draft.fileSize ? `${(draft.fileSize / 1024).toFixed(1)} KB` : 'O binário não será enviado.'}</span>{draft.hash ? <code>{draft.hash}</code> : null}</div>
-              <p>Sem extrator textual seguro instalado, o PDF permanece como “Exige revisão manual”. Informe as páginas e o trecho conferido.</p>
-            </section>
-          ) : null}
+            <TextArea
+              label="Trecho relevante"
+              rows={4}
+              value={draft.excerpt}
+              onChange={(event) => setDraft({ ...draft, excerpt: event.target.value })}
+            />
+            <TextArea
+              label="Observação do analista"
+              rows={3}
+              value={draft.analystNote}
+              onChange={(event) => setDraft({ ...draft, analystNote: event.target.value })}
+            />
 
-          {draft.type === 'DECISAO' ? (
-            <section className="evidence-decision-sheet">
-              <header><strong>Ficha de interpretação da decisão</strong><span>Dispositivo e páginas são obrigatórios para confirmação.</span></header>
-              <div className="evidence-form-grid">
-                <label>Órgão<input value={draft.decisionAgency} onChange={(event) => setDraft({ ...draft, decisionAgency: event.target.value })} /></label>
-                <label>Número da decisão/acórdão<input value={draft.decisionNumber} onChange={(event) => setDraft({ ...draft, decisionNumber: event.target.value })} /></label>
-                <label>Relator<input value={draft.decisionRapporteur} onChange={(event) => setDraft({ ...draft, decisionRapporteur: event.target.value })} /></label>
-                <label>Interessados<input value={draft.decisionInterestedParties} onChange={(event) => setDraft({ ...draft, decisionInterestedParties: event.target.value })} /></label>
-                <label>Objeto<input value={draft.decisionObject} onChange={(event) => setDraft({ ...draft, decisionObject: event.target.value })} /></label>
-                <label>Papel da empresa<select value={draft.decisionCompanyRole} onChange={(event) => setDraft({ ...draft, decisionCompanyRole: event.target.value as Draft['decisionCompanyRole'] })}><option value="MENCIONADA">Apenas mencionada</option><option value="INTERESSADA">Interessada</option><option value="RESPONSABILIZADA">Responsabilizada</option></select></label>
-                <label>Pessoa responsabilizada<input value={draft.decisionResponsiblePerson} onChange={(event) => setDraft({ ...draft, decisionResponsiblePerson: event.target.value })} /></label>
-                <label>Débito<input value={draft.decisionDebt} onChange={(event) => setDraft({ ...draft, decisionDebt: event.target.value })} /></label>
-                <label>Valor<input inputMode="decimal" value={draft.decisionAmount} onChange={(event) => setDraft({ ...draft, decisionAmount: event.target.value })} placeholder="0,00" /></label>
-                <label>Situação recursal<input value={draft.decisionAppealStatus} onChange={(event) => setDraft({ ...draft, decisionAppealStatus: event.target.value })} /></label>
-              </div>
-              <label>Irregularidade reconhecida<textarea value={draft.decisionIrregularity} onChange={(event) => setDraft({ ...draft, decisionIrregularity: event.target.value })} rows={2} /></label>
-              <label>Multa ou penalidade<textarea value={draft.decisionPenalty} onChange={(event) => setDraft({ ...draft, decisionPenalty: event.target.value })} rows={2} /></label>
-              <div className="evidence-decision-flags">
-                <label><input type="checkbox" checked={draft.decisionReferredToProsecutor} onChange={(event) => setDraft({ ...draft, decisionReferredToProsecutor: event.target.checked })} /> Encaminhamento ao Ministério Público</label>
-                <label><input type="checkbox" checked={draft.decisionDebarment} onChange={(event) => setDraft({ ...draft, decisionDebarment: event.target.checked })} /> Inidoneidade</label>
-                <label><input type="checkbox" checked={draft.decisionContractingImpediment} onChange={(event) => setDraft({ ...draft, decisionContractingImpediment: event.target.checked })} /> Impedimento de contratar</label>
-              </div>
-              <label>Dispositivo<textarea value={draft.decisionDispositive} onChange={(event) => setDraft({ ...draft, decisionDispositive: event.target.value })} rows={3} /></label>
-              <label>Conclusão revisada<textarea value={draft.decisionConclusion} onChange={(event) => setDraft({ ...draft, decisionConclusion: event.target.value })} rows={3} /></label>
-            </section>
-          ) : null}
+            {/* ---- PDF ---- */}
+            {draft.type === 'PDF' ? (
+              <section className="flex min-w-0 flex-col gap-3 rounded-lg border border-line bg-surface-subtle p-3">
+                <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                  <TextField
+                    label="Selecionar PDF"
+                    controlSize="sm"
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(event) => selectPdf(event.target.files?.[0])}
+                  />
+                  <TextField
+                    label="Páginas do arquivo"
+                    controlSize="sm"
+                    type="number"
+                    min="1"
+                    value={draft.pageCount}
+                    onChange={(event) => setDraft({ ...draft, pageCount: event.target.value })}
+                  />
+                </div>
 
-          <div className="evidence-form-actions"><button type="button" onClick={() => { setShowForm(false); setEditingId(null); }}>Cancelar</button><button type="submit" disabled={Boolean(busyId)}>{busyId ? 'Salvando…' : editingId ? 'Salvar correção' : 'Adicionar à fila'}</button></div>
-        </form>
-      ) : null}
+                <div className="min-w-0">
+                  <strong className="block text-sm font-bold text-ink">
+                    {draft.fileName || 'Nenhum arquivo selecionado'}
+                  </strong>
+                  <span className="block text-xs text-ink-3">
+                    {draft.fileSize ? `${(draft.fileSize / 1024).toFixed(1)} KB` : 'O binário não será enviado.'}
+                  </span>
+                  {draft.hash ? (
+                    <code className="mt-1 block truncate font-mono text-2xs text-ink-3">{draft.hash}</code>
+                  ) : null}
+                </div>
 
-      <details className="evidence-center-filters">
-        <summary><Icons.Filter size={14} aria-hidden="true" /> Filtrar evidências</summary>
-        <div>
-          <label>Entidade<input value={filters.entity} onChange={(event) => setFilters({ ...filters, entity: event.target.value })} /></label>
-          <label>Tipo<select value={filters.type} onChange={(event) => setFilters({ ...filters, type: event.target.value })}><option value="">Todos</option>{Object.entries(TYPE_LABELS).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
-          <label>Órgão/fonte<input value={filters.source} onChange={(event) => setFilters({ ...filters, source: event.target.value })} /></label>
-          <label>De<input type="date" value={filters.start} onChange={(event) => setFilters({ ...filters, start: event.target.value })} /></label>
-          <label>Até<input type="date" value={filters.end} onChange={(event) => setFilters({ ...filters, end: event.target.value })} /></label>
-          <label>Status<select value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value })}><option value="">Todos</option>{Object.entries(STATUS_LABELS).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
-        </div>
-      </details>
+                <Note tone="warn" icon={<Icons.AlertTriangle size={14} aria-hidden="true" />}>
+                  Sem extrator textual seguro instalado, o PDF permanece como “Exige revisão manual”. Informe as
+                  páginas e o trecho conferido.
+                </Note>
+              </section>
+            ) : null}
 
-      {unavailableSources.length > 0 ? (
-        <details className="evidence-unavailable-sources">
-          <summary><Icons.AlertTriangle size={14} aria-hidden="true" /> Fontes indisponíveis ({unavailableSources.length})</summary>
-          <ul>{unavailableSources.map((source) => <li key={`${source.axis}-${source.provider}`}><strong>{source.provider}</strong><span>{source.message}</span></li>)}</ul>
-        </details>
-      ) : null}
+            {/* ---- Ficha de decisão ---- */}
+            {draft.type === 'DECISAO' ? (
+              <section className="flex min-w-0 flex-col gap-3 rounded-lg border border-line bg-surface-subtle p-3">
+                <header className="min-w-0">
+                  <strong className="block text-sm font-bold text-ink">Ficha de interpretação da decisão</strong>
+                  <span className="block text-xs text-ink-3">
+                    Dispositivo e páginas são obrigatórios para confirmação.
+                  </span>
+                </header>
 
-      <div className="evidence-center-groups">
-        {groups.map((group) => {
-          const groupItems = filtered.filter((item) => item.validationStatus === group.status);
-          return (
-            <section key={group.status}>
-              <header><strong>{group.title}</strong><span>{groupItems.length}</span></header>
-              {groupItems.length > 0 ? groupItems.map((item) => (
-                <EvidenceCard
-                  key={item.id}
-                  item={item}
-                  busy={busyId === item.id}
-                  onReview={review}
-                  onEdit={(selected) => { setDraft(draftFrom(selected)); setEditingId(selected.id); setShowForm(true); }}
+                <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                  <TextField
+                    label="Órgão"
+                    controlSize="sm"
+                    value={draft.decisionAgency}
+                    onChange={(event) => setDraft({ ...draft, decisionAgency: event.target.value })}
+                  />
+                  <TextField
+                    label="Número da decisão/acórdão"
+                    controlSize="sm"
+                    mono
+                    value={draft.decisionNumber}
+                    onChange={(event) => setDraft({ ...draft, decisionNumber: event.target.value })}
+                  />
+                  <TextField
+                    label="Relator"
+                    controlSize="sm"
+                    value={draft.decisionRapporteur}
+                    onChange={(event) => setDraft({ ...draft, decisionRapporteur: event.target.value })}
+                  />
+                  <TextField
+                    label="Interessados"
+                    controlSize="sm"
+                    value={draft.decisionInterestedParties}
+                    onChange={(event) => setDraft({ ...draft, decisionInterestedParties: event.target.value })}
+                  />
+                  <TextField
+                    label="Objeto"
+                    controlSize="sm"
+                    value={draft.decisionObject}
+                    onChange={(event) => setDraft({ ...draft, decisionObject: event.target.value })}
+                  />
+                  <Select
+                    label="Papel da empresa"
+                    controlSize="sm"
+                    value={draft.decisionCompanyRole}
+                    options={[
+                      { value: 'MENCIONADA', label: 'Apenas mencionada' },
+                      { value: 'INTERESSADA', label: 'Interessada' },
+                      { value: 'RESPONSABILIZADA', label: 'Responsabilizada' },
+                    ]}
+                    onChange={(value) => setDraft({ ...draft, decisionCompanyRole: value })}
+                  />
+                  <TextField
+                    label="Pessoa responsabilizada"
+                    controlSize="sm"
+                    value={draft.decisionResponsiblePerson}
+                    onChange={(event) => setDraft({ ...draft, decisionResponsiblePerson: event.target.value })}
+                  />
+                  <TextField
+                    label="Débito"
+                    controlSize="sm"
+                    value={draft.decisionDebt}
+                    onChange={(event) => setDraft({ ...draft, decisionDebt: event.target.value })}
+                  />
+                  <TextField
+                    label="Valor"
+                    controlSize="sm"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={draft.decisionAmount}
+                    onChange={(event) => setDraft({ ...draft, decisionAmount: event.target.value })}
+                  />
+                  <TextField
+                    label="Situação recursal"
+                    controlSize="sm"
+                    value={draft.decisionAppealStatus}
+                    onChange={(event) => setDraft({ ...draft, decisionAppealStatus: event.target.value })}
+                  />
+                </div>
+
+                <TextArea
+                  label="Irregularidade reconhecida"
+                  rows={2}
+                  value={draft.decisionIrregularity}
+                  onChange={(event) => setDraft({ ...draft, decisionIrregularity: event.target.value })}
                 />
-              )) : <p className="evidence-group-empty">Nenhum registro nesta fila.</p>}
-            </section>
-          );
-        })}
-      </div>
+                <TextArea
+                  label="Multa ou penalidade"
+                  rows={2}
+                  value={draft.decisionPenalty}
+                  onChange={(event) => setDraft({ ...draft, decisionPenalty: event.target.value })}
+                />
+
+                <fieldset className="flex min-w-0 flex-wrap gap-x-5 gap-y-2">
+                  <legend className="mb-1 text-xs font-semibold text-ink-2">Consequências registradas</legend>
+                  <Flag
+                    label="Encaminhamento ao Ministério Público"
+                    checked={draft.decisionReferredToProsecutor}
+                    onChange={(checked) => setDraft({ ...draft, decisionReferredToProsecutor: checked })}
+                  />
+                  <Flag
+                    label="Inidoneidade"
+                    checked={draft.decisionDebarment}
+                    onChange={(checked) => setDraft({ ...draft, decisionDebarment: checked })}
+                  />
+                  <Flag
+                    label="Impedimento de contratar"
+                    checked={draft.decisionContractingImpediment}
+                    onChange={(checked) => setDraft({ ...draft, decisionContractingImpediment: checked })}
+                  />
+                </fieldset>
+
+                <TextArea
+                  label="Dispositivo"
+                  rows={3}
+                  value={draft.decisionDispositive}
+                  onChange={(event) => setDraft({ ...draft, decisionDispositive: event.target.value })}
+                />
+                <TextArea
+                  label="Conclusão revisada"
+                  rows={3}
+                  value={draft.decisionConclusion}
+                  onChange={(event) => setDraft({ ...draft, decisionConclusion: event.target.value })}
+                />
+              </section>
+            ) : null}
+
+            <div className="flex min-w-0 flex-wrap justify-end gap-2 border-t border-line-soft pt-3">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingId(null);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" variant="primary" isLoading={Boolean(busyId)} loadingLabel="Salvando…">
+                {editingId ? 'Salvar correção' : 'Adicionar à fila'}
+              </Button>
+            </div>
+          </form>
+        </Section>
+      ) : null}
+
+      {/* ---- Filtros ---- */}
+      <Section
+        collapsible
+        defaultOpen={false}
+        mark={<Icons.Filter size={12} />}
+        title="Filtrar evidências"
+      >
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <TextField
+            label="Entidade"
+            controlSize="sm"
+            value={filters.entity}
+            onChange={(event) => setFilters({ ...filters, entity: event.target.value })}
+          />
+          <Select
+            label="Tipo"
+            controlSize="sm"
+            value={filters.type}
+            options={[{ value: '', label: 'Todos' }, ...TYPE_OPTIONS]}
+            onChange={(value) => setFilters({ ...filters, type: value })}
+          />
+          <TextField
+            label="Órgão ou fonte"
+            controlSize="sm"
+            value={filters.source}
+            onChange={(event) => setFilters({ ...filters, source: event.target.value })}
+          />
+          <TextField
+            label="De"
+            controlSize="sm"
+            type="date"
+            value={filters.start}
+            onChange={(event) => setFilters({ ...filters, start: event.target.value })}
+          />
+          <TextField
+            label="Até"
+            controlSize="sm"
+            type="date"
+            value={filters.end}
+            onChange={(event) => setFilters({ ...filters, end: event.target.value })}
+          />
+          <Select
+            label="Situação"
+            controlSize="sm"
+            value={filters.status}
+            options={[{ value: '', label: 'Todas' }, ...STATUS_OPTIONS]}
+            onChange={(value) => setFilters({ ...filters, status: value })}
+          />
+        </div>
+      </Section>
+
+      {/* ---- Fontes indisponíveis ----
+          Fonte que não respondeu é lacuna de cobertura, e precisa ser
+          lida junto da fila: ausência de evidência aqui não é
+          ausência de ocorrência. */}
+      {unavailableSources.length > 0 ? (
+        <Section
+          collapsible
+          defaultOpen={false}
+          mark={<Icons.AlertTriangle size={12} />}
+          title="Fontes indisponíveis"
+          trailing={
+            <Chip tone="warn" size="sm">
+              {unavailableSources.length}
+            </Chip>
+          }
+          flush
+        >
+          <ul className="divide-y divide-line-soft">
+            {unavailableSources.map((source) => (
+              <li key={`${source.axis}-${source.provider}`} className="min-w-0 px-4 py-2.5">
+                <strong className="block text-sm font-bold text-ink">{source.provider}</strong>
+                <span className="block text-xs leading-relaxed text-ink-2">{source.message}</span>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
+
+      {/* ---- Filas ---- */}
+      {groups.map((group) => {
+        const groupItems = filtered.filter((item) => item.validationStatus === group.status);
+        return (
+          <Section
+            key={group.status}
+            title={group.title}
+            trailing={
+              <Chip tone={STATUS_TONE[group.status]} size="sm">
+                {groupItems.length}
+              </Chip>
+            }
+          >
+            {groupItems.length > 0 ? (
+              <div className="flex min-w-0 flex-col gap-2.5">
+                {groupItems.map((item) => (
+                  <EvidenceCard
+                    key={item.id}
+                    item={item}
+                    busy={busyId === item.id}
+                    onReview={review}
+                    onEdit={(selected) => {
+                      setDraft(draftFrom(selected));
+                      setEditingId(selected.id);
+                      setShowForm(true);
+                    }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="py-2 text-center text-sm text-ink-3">Nenhum registro nesta fila.</p>
+            )}
+          </Section>
+        );
+      })}
     </Drawer>
   );
 };
+
+/** Caixa de marcação com rótulo, na escala de controle do projeto. */
+const Flag: React.FC<{ label: string; checked: boolean; onChange: (checked: boolean) => void }> = ({
+  label,
+  checked,
+  onChange,
+}) => (
+  <label className="inline-flex min-w-0 cursor-pointer items-center gap-2 text-sm text-ink-2">
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={(event) => onChange(event.target.checked)}
+      className="size-4 shrink-0 cursor-pointer rounded-sm accent-[color:var(--brand-blue)]"
+    />
+    {label}
+  </label>
+);
