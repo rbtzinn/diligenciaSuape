@@ -29,6 +29,7 @@ import './styles/dossier-v3/evidence.css';
 import './styles/drawer.css';
 import './styles/ai-analysis.css';
 import './styles/pncp.css';
+import './styles/dossier.css';
 import './styles/governance-history/coverage.css';
 import './styles/governance-history/people.css';
 // Telas que só tinham estilo dentro do responsive-overrides.
