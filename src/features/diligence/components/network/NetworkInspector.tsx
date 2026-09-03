@@ -23,7 +23,7 @@ import { extractEntityCnpj, formatCnpj, isDrillableCompany } from '../../utils/e
 import {
   confidencePercent,
   formatGeneratedAt,
-  humanizeProperty,
+  humanizeProperty, humanizePropertyValue,
   isConfirmed,
   safeExternalUrl,
   TYPE_LABELS,
@@ -477,7 +477,7 @@ export const NetworkInspector: React.FC<NetworkInspectorProps> = ({
                       >
                         <span style={{ color: '#7f98b1', flexShrink: 0 }}>{humanizeProperty(key)}</span>
                         <strong style={{ color: '#fff', wordBreak: 'break-word', textAlign: 'right' }}>
-                          {String(value)}
+                          {humanizePropertyValue(value)}
                         </strong>
                       </div>
                     );

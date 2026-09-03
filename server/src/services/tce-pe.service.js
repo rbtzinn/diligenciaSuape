@@ -19,6 +19,24 @@ function rowsFromResponse(payload, method) {
   return Array.isArray(response.conteudo) ? response.conteudo : [response.conteudo];
 }
 
+/**
+ * O TCE-PE responde `application/json;charset=ISO-8859-1`, mas `response.json()`
+ * decodifica sempre como UTF-8. Lido assim, todo acento vira caractere de
+ * substituição: "Embargos de Declaração" chega como "Embargos de Declara??o", e
+ * o defeito segue para o dossiê, para o PDF assinado e para o pacote enviado à
+ * IA — inclusive em nome de município e de órgão.
+ *
+ * A leitura passa pelo buffer bruto, decodificando conforme o charset declarado
+ * na resposta. Só ISO-8859-1 e UTF-8 aparecem nesta API; qualquer outro valor
+ * cai em UTF-8, que é o padrão de JSON.
+ */
+function decodeByCharset(buffer, contentType) {
+  const declared = /charset=([\w-]+)/i.exec(String(contentType || ''));
+  const charset = (declared?.[1] || 'utf-8').toLowerCase();
+  const isLatin1 = charset === 'iso-8859-1' || charset === 'latin1' || charset === 'windows-1252';
+  return buffer.toString(isLatin1 ? 'latin1' : 'utf8');
+}
+
 async function query(method, params) {
   const search = new URLSearchParams(params);
   const response = await safeFetch(`${BASE_URL}/${method}!json?${search}`, {
@@ -26,7 +44,18 @@ async function query(method, params) {
     timeoutMs: 20_000,
   });
   if (!response.ok) throw new Error(`TCE-PE retornou HTTP ${response.status}.`);
-  return rowsFromResponse(await response.json(), method);
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+  const text = decodeByCharset(buffer, response.headers?.get?.('content-type'));
+
+  let payload;
+  try {
+    payload = JSON.parse(text);
+  } catch {
+    throw new Error(`TCE-PE retornou conteúdo ilegível em ${method}.`);
+  }
+
+  return rowsFromResponse(payload, method);
 }
 
 function formatProcessNumber(value) {
@@ -190,4 +219,4 @@ const TcePeService = {
   },
 };
 
-module.exports = { TcePeService, formatProcessNumber, matchCompanyName, mapProcess, rowsFromResponse };
+module.exports = { TcePeService, decodeByCharset, formatProcessNumber, matchCompanyName, mapProcess, rowsFromResponse };
