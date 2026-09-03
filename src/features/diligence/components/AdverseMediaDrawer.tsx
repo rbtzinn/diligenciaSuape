@@ -1,5 +1,14 @@
 // ==========================================================
-// DILIGÊNCIA 360 — Drawer de Todas as Ocorrências de Mídia Web
+// DILIGÊNCIA 360 — Gaveta de publicações e ocorrências
+// ==========================================================
+// A barra de filtros eram oito botões numa `div` com `flex-wrap`:
+// no celular ela ocupava quatro fileiras e mais da metade da altura
+// útil da gaveta antes do primeiro resultado. Agora é a mesma fita de
+// abas do dossiê, que rola em vez de quebrar, e cada filtro leva a
+// sua contagem.
+//
+// Saíram também as classes `.btn` do CSS e os blocos
+// `clean-state-block`/`warn-state-block`.
 // ==========================================================
 
 import React, { useState } from 'react';
@@ -8,6 +17,13 @@ import { Drawer } from '../../../components/ui/Drawer';
 import { AdverseMediaCard } from './AdverseMediaCard';
 import { Formatters } from '../../../lib/formatters';
 import { formatMediaPlan, formatMediaProviders } from '../utils/mediaSources';
+import { Button } from '../../../components/ui/Button';
+import { Note } from '../../../components/ui/Note';
+import { Section } from '../../../components/ui/Section';
+import { TabStrip, TabItem } from '../../../components/ui/TabStrip';
+import { Icons } from '../../../components/ui/Icons';
+
+type MediaFilter = 'all' | 'person' | 'company' | 'adverse' | 'general' | 'high' | 'validated' | 'discarded';
 
 interface AdverseMediaDrawerProps {
   isOpen: boolean;
@@ -28,199 +44,150 @@ export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
   isRefreshing = false,
   refreshNotice,
 }) => {
-  const [filter, setFilter] = useState<'all' | 'person' | 'company' | 'adverse' | 'general' | 'high' | 'validated' | 'discarded'>('all');
-  const [showQueries, setShowQueries] = useState(false);
+  const [filter, setFilter] = useState<MediaFilter>('all');
 
   if (!adverseMedia) return null;
 
   const results = adverseMedia.results || [];
-  const failedQueryCount = (adverseMedia.queriesExecuted || []).filter((item) => item.ok === false).length;
+  const queries = adverseMedia.queriesExecuted || [];
+  const failedQueryCount = queries.filter((item) => item.ok === false).length;
   const companyCount = adverseMedia.companyResultsCount ?? results.filter((item) => item.subjectType !== 'person').length;
   const personCount = adverseMedia.personResultsCount ?? results.filter((item) => item.subjectType === 'person').length;
-  const filtered = results.filter((r) => {
-    if (filter === 'person') return r.subjectType === 'person';
-    if (filter === 'company') return r.subjectType !== 'person';
-    if (filter === 'adverse') return r.riskRelevant !== false;
-    if (filter === 'general') return r.riskRelevant === false;
-    if (filter === 'high') return r.matchStrength === 'high';
-    if (filter === 'validated') return r.status === 'validated';
-    if (filter === 'discarded') return r.status === 'discarded';
+  const adverseCount = adverseMedia.riskRelevantCount ?? results.filter((item) => item.riskRelevant !== false).length;
+  const generalCount = adverseMedia.generalMentionsCount ?? results.filter((item) => item.riskRelevant === false).length;
+
+  const filtered = results.filter((item) => {
+    if (filter === 'person') return item.subjectType === 'person';
+    if (filter === 'company') return item.subjectType !== 'person';
+    if (filter === 'adverse') return item.riskRelevant !== false;
+    if (filter === 'general') return item.riskRelevant === false;
+    if (filter === 'high') return item.matchStrength === 'high';
+    if (filter === 'validated') return item.status === 'validated';
+    if (filter === 'discarded') return item.status === 'discarded';
     return true;
   });
+
+  const tabs: TabItem[] = [
+    { id: 'all', label: 'Todos', count: results.length },
+    { id: 'person', label: 'Pessoas', count: personCount },
+    { id: 'company', label: 'Empresa', count: companyCount },
+    { id: 'adverse', label: 'Com termos de atenção', count: adverseCount },
+    { id: 'general', label: 'Menções gerais', count: generalCount },
+    { id: 'high', label: 'Maior correlação', count: adverseMedia.strongMatches },
+    { id: 'validated', label: 'Validados', count: results.filter((item) => item.status === 'validated').length },
+    { id: 'discarded', label: 'Descartados', count: results.filter((item) => item.status === 'discarded').length },
+  ];
 
   return (
     <Drawer
       isOpen={isOpen}
       onClose={onClose}
-      title="Publicações e Ocorrências: Empresa e Pessoas"
-      subtitle={`${companyCount} da empresa • ${personCount} de pessoas • ${adverseMedia.peopleSearched || 0} integrante(s) pesquisado(s) • ${Formatters.dateTime(adverseMedia.consultadoEm)}`}
+      title="Publicações e ocorrências: empresa e pessoas"
+      subtitle={`${companyCount} da empresa · ${personCount} de pessoas · ${adverseMedia.peopleSearched || 0} integrante(s) pesquisado(s) · ${Formatters.dateTime(adverseMedia.consultadoEm)}`}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-        {onRefresh ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-2xs)' }}>
-                {formatMediaPlan(adverseMedia.queryPlanVersion)} · {formatMediaProviders(adverseMedia.providerSources, adverseMedia.provider)}
-              </span>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={onRefresh}
-                disabled={isRefreshing}
-              >
-                {isRefreshing ? 'Atualizando notícias…' : 'Atualizar notícias'}
-              </button>
-            </div>
-            {refreshNotice ? (
-              <div className={adverseMedia.consultaParcial ? 'warn-state-block' : 'clean-state-block'} role="status">
-                <span>{refreshNotice}</span>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
+      {/* ---- Atualização ---- */}
+      {onRefresh ? (
+        <div className="flex min-w-0 flex-col gap-2">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+            <span className="min-w-0 text-2xs text-ink-3">
+              {formatMediaPlan(adverseMedia.queryPlanVersion)} ·{' '}
+              {formatMediaProviders(adverseMedia.providerSources, adverseMedia.provider)}
+            </span>
 
-        {/* Painel de Consultas Executadas */}
-        {adverseMedia.queriesExecuted && adverseMedia.queriesExecuted.length > 0 && (
-          <div
-            style={{
-              padding: '0.75rem 1rem',
-              backgroundColor: 'var(--bg-surface-subtle)',
-              border: '1px solid var(--border-default)',
-              borderRadius: 'var(--radius-md)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.5rem',
-            }}
-          >
-            <div
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
-              onClick={() => setShowQueries(!showQueries)}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onRefresh}
+              isLoading={isRefreshing}
+              loadingLabel="Atualizando…"
+              icon={<Icons.RefreshCw size={14} aria-hidden="true" />}
             >
-              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>
-                Consultas Realizadas no Provedor ({adverseMedia.queriesExecuted.length})
-                {failedQueryCount > 0 ? (
-                  <span style={{ color: 'var(--status-critical-text)', marginLeft: '0.4rem' }}>
-                    · {failedQueryCount} sem resposta do provedor
+              Atualizar notícias
+            </Button>
+          </div>
+
+          {refreshNotice ? (
+            <Note tone={adverseMedia.consultaParcial ? 'warn' : 'ok'} role="status">
+              {refreshNotice}
+            </Note>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* ---- Consultas executadas ---- */}
+      {queries.length > 0 ? (
+        <Section
+          collapsible
+          defaultOpen={false}
+          title={`Consultas realizadas no provedor (${queries.length})`}
+          subtitle={failedQueryCount > 0 ? `${failedQueryCount} sem resposta do provedor` : undefined}
+          trailing={
+            failedQueryCount > 0 ? (
+              <Icons.AlertCircle size={15} aria-hidden="true" className="text-high" />
+            ) : undefined
+          }
+          flush
+        >
+          <ul className="divide-y divide-line-soft">
+            {queries.map((query, index) => (
+              <li key={`${query.query}-${index}`} className="flex min-w-0 items-center gap-2 px-4 py-2">
+                <span className="min-w-0 flex-1">
+                  <span
+                    className={`block text-2xs font-bold uppercase tracking-wide ${
+                      query.subjectType === 'person' ? 'text-warn-text' : 'text-brand'
+                    }`}
+                  >
+                    {query.subjectType === 'person' ? 'Pessoa' : 'Empresa'} ·{' '}
+                    {query.subjectName || 'Entidade pesquisada'}
                   </span>
-                ) : null}
-              </span>
-              <button type="button" className="btn btn-ghost btn-sm" style={{ padding: '0.1rem 0.4rem' }}>
-                {showQueries ? 'Ocultar' : 'Exibir'}
-              </button>
-            </div>
+                  <code className="block truncate font-mono text-2xs text-ink-2">{query.query}</code>
+                </span>
 
-            {showQueries && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.25rem' }}>
-                {adverseMedia.queriesExecuted.map((q, idx) => (
-                  <div key={idx} style={{ fontSize: 'var(--text-2xs)', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', alignItems: 'center', gap: '0.5rem' }}>
-                    <div style={{ minWidth: 0 }}>
-                      <span style={{ display: 'block', marginBottom: '0.15rem', color: q.subjectType === 'person' ? 'var(--status-medium-text)' : 'var(--brand-primary)', fontWeight: 'var(--font-bold)' }}>
-                        {q.subjectType === 'person' ? 'PESSOA' : 'EMPRESA'} · {q.subjectName || 'Entidade pesquisada'}
-                      </span>
-                      <code className="font-mono" style={{ display: 'block', overflow: 'hidden', color: 'var(--text-secondary)', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.query}</code>
-                    </div>
-                    {/* Consulta bloqueada e consulta sem achado são opostos.
-                        Mostrar "0 itens" nas duas esconde a falha do canal. */}
-                    <span
-                      style={{
-                        color: q.ok === false ? 'var(--status-critical-text)' : 'var(--text-tertiary)',
-                        fontWeight: q.ok === false ? 'var(--font-bold)' : undefined,
-                        flexShrink: 0,
-                      }}
-                      title={q.ok === false ? q.erro || 'A consulta não foi respondida pelo provedor.' : undefined}
-                    >
-                      {q.ok === false
-                        ? `falhou${q.status ? ` (HTTP ${q.status})` : ''}`
-                        : `${q.count} itens`}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Abas de Filtro */}
-        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.35rem' }}>
-          <button
-            type="button"
-            className={`btn btn-sm ${filter === 'all' ? 'btn-secondary' : 'btn-ghost'}`}
-            onClick={() => setFilter('all')}
-          >
-            Todos ({results.length})
-          </button>
-          <button
-            type="button"
-            className={`btn btn-sm ${filter === 'person' ? 'btn-secondary' : 'btn-ghost'}`}
-            onClick={() => setFilter('person')}
-          >
-            Pessoas ({personCount})
-          </button>
-          <button
-            type="button"
-            className={`btn btn-sm ${filter === 'company' ? 'btn-secondary' : 'btn-ghost'}`}
-            onClick={() => setFilter('company')}
-          >
-            Empresa ({companyCount})
-          </button>
-          <button
-            type="button"
-            className={'btn btn-sm ' + (filter === 'adverse' ? 'btn-secondary' : 'btn-ghost')}
-            onClick={() => setFilter('adverse')}
-          >
-            Com termos de atenção ({adverseMedia.riskRelevantCount ?? results.filter((item) => item.riskRelevant !== false).length})
-          </button>
-          <button
-            type="button"
-            className={'btn btn-sm ' + (filter === 'general' ? 'btn-secondary' : 'btn-ghost')}
-            onClick={() => setFilter('general')}
-          >
-            Menções gerais ({adverseMedia.generalMentionsCount ?? results.filter((item) => item.riskRelevant === false).length})
-          </button>
-          <button
-            type="button"
-            className={`btn btn-sm ${filter === 'high' ? 'btn-secondary' : 'btn-ghost'}`}
-            onClick={() => setFilter('high')}
-          >
-            Maior correlação ({adverseMedia.strongMatches})
-          </button>
-          <button
-            type="button"
-            className={`btn btn-sm ${filter === 'validated' ? 'btn-secondary' : 'btn-ghost'}`}
-            onClick={() => setFilter('validated')}
-          >
-            Validados
-          </button>
-          <button
-            type="button"
-            className={`btn btn-sm ${filter === 'discarded' ? 'btn-secondary' : 'btn-ghost'}`}
-            onClick={() => setFilter('discarded')}
-          >
-            Descartados
-          </button>
-        </div>
-
-        {/* Lista de Resultados */}
-        {filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)' }}>
-            Nenhum resultado para o filtro selecionado.
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {filtered.map((item) => (
-              <AdverseMediaCard
-                key={item.id}
-                item={item}
-                onStatusChange={onStatusChange}
-              />
+                {/* Consulta bloqueada e consulta sem achado são opostos.
+                    Mostrar "0 itens" nas duas esconde a falha do canal. */}
+                <span
+                  title={query.ok === false ? query.erro || 'A consulta não foi respondida pelo provedor.' : undefined}
+                  className={`shrink-0 text-2xs ${
+                    query.ok === false ? 'font-bold text-high-text' : 'text-ink-3'
+                  }`}
+                >
+                  {query.ok === false
+                    ? `falhou${query.status ? ` (HTTP ${query.status})` : ''}`
+                    : `${query.count} itens`}
+                </span>
+              </li>
             ))}
-          </div>
-        )}
+          </ul>
+        </Section>
+      ) : null}
 
-        <div style={{ padding: '0.75rem', backgroundColor: 'var(--bg-surface-subtle)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-2xs)', color: 'var(--text-muted)' }}>
-          * A busca pública apenas localiza conteúdo para leitura. Correspondência de nome não confirma identidade, fato, investigação, processo, crime ou condenação.
-        </div>
+      {/* ---- Filtros ---- */}
+      <div className="rounded-lg border border-line bg-surface px-1">
+        <TabStrip
+          items={tabs}
+          activeId={filter}
+          onSelect={(id) => setFilter(id as MediaFilter)}
+          label="Filtros de publicações"
+        />
       </div>
+
+      {/* ---- Resultados ---- */}
+      {filtered.length === 0 ? (
+        <Note tone="neutral" icon={<Icons.Filter size={15} aria-hidden="true" />}>
+          Nenhum resultado para o filtro selecionado.
+        </Note>
+      ) : (
+        <div className="flex min-w-0 flex-col gap-2.5">
+          {filtered.map((item) => (
+            <AdverseMediaCard key={item.id} item={item} onStatusChange={onStatusChange} />
+          ))}
+        </div>
+      )}
+
+      <p className="rounded-lg bg-surface-subtle p-3 text-2xs leading-relaxed text-ink-3">
+        A busca pública apenas localiza conteúdo para leitura. Correspondência de nome não confirma identidade, fato,
+        investigação, processo, crime ou condenação.
+      </p>
     </Drawer>
   );
 };

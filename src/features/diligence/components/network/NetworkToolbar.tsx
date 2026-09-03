@@ -1,11 +1,24 @@
 // ==========================================================
-// DILIGÊNCIA 360 — Barra de Ferramentas da Rede Imersiva
-// 100% alinhada aos estilos de styles/network-immersive/
+// DILIGÊNCIA 360 — Barra de ferramentas do mapa
+// ==========================================================
+// A barra tinha duas versões inteiras — uma de desktop e uma de
+// celular — com classes próprias em network-immersive/layout.css, e
+// os botões de ícone não seguiam a escala de controle do projeto: em
+// 28px de lado ficavam abaixo da área mínima de toque.
+//
+// Agora as duas versões partilham os mesmos botões e campos do resto
+// do app, e a diferença entre elas é só quais controles aparecem. Os
+// filtros ficam num painel recolhível, com a contagem de filtros
+// ativos visível no gatilho — antes era possível ter três filtros
+// ligados sem nenhum sinal disso na tela.
 // ==========================================================
 
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { Icons } from '../../../../components/ui/Icons';
-import { SelectField, type SelectOption } from '../../../../components/ui/SelectField';
+import { Select, type SelectOption } from '../../../../components/ui/Field';
+import { Button } from '../../../../components/ui/Button';
+import { Toolbar } from '../../../../components/ui/Toolbar';
+import { cn } from '../../../../lib/cn';
 import type { DepthFilter, LayoutMode } from './types';
 
 const DEPTH_OPTIONS: readonly SelectOption<DepthFilter>[] = [
@@ -58,171 +71,205 @@ export const NetworkToolbar: React.FC<NetworkToolbarProps> = ({
   mobileControls,
 }) => {
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const activeFilterCount = (depth !== '2' ? 1 : 0)
-    + (relationFilter !== 'confirmed' ? 1 : 0)
-    + (layoutMode !== 'chain' ? 1 : 0)
-    + (showDocuments ? 1 : 0);
+  const panelId = useId();
+
+  // Contagem de desvios em relação ao estado padrão do mapa.
+  const activeFilterCount =
+    (depth !== '2' ? 1 : 0) +
+    (relationFilter !== 'confirmed' ? 1 : 0) +
+    (layoutMode !== 'chain' ? 1 : 0) +
+    (showDocuments ? 1 : 0);
 
   if (mobileControls) {
     return (
-      <div className="network-toolbar network-toolbar-mobile" role="toolbar" aria-label="Controles móveis do mapa">
-        <button
-          type="button"
-          className="mobile-network-tool"
+      <Toolbar
+        aria-label="Controles móveis do mapa"
+        bleed
+        className="shrink-0 border-b border-line-soft bg-surface py-2"
+      >
+        <Button
+          variant="secondary"
+          size="sm"
+          iconOnly
           onClick={mobileControls.onBack}
           disabled={!mobileControls.canGoBack || mobileControls.isFullNetwork}
           aria-label="Voltar um ramo"
           title="Voltar um ramo"
-        >
-          <Icons.ArrowLeft size={17} aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          className={`mobile-network-mode ${mobileControls.isFullNetwork ? 'active' : ''}`}
+          icon={<Icons.ArrowLeft size={16} aria-hidden="true" />}
+        />
+
+        <Button
+          variant={mobileControls.isFullNetwork ? 'primary' : 'secondary'}
+          size="sm"
           onClick={mobileControls.onToggleFullNetwork}
           aria-pressed={mobileControls.isFullNetwork}
+          icon={<Icons.Layers size={15} aria-hidden="true" />}
         >
-          <Icons.Layers size={16} aria-hidden="true" />
-          <span>{mobileControls.isFullNetwork ? 'Explorar ramos' : 'Rede completa'}</span>
-        </button>
-        <button
-          type="button"
-          className="mobile-network-tool"
+          {mobileControls.isFullNetwork ? 'Explorar ramos' : 'Rede completa'}
+        </Button>
+
+        <Button
+          variant="secondary"
+          size="sm"
+          iconOnly
           onClick={onFit}
           aria-label="Centralizar mapa"
           title="Centralizar mapa"
-        >
-          <Icons.Maximize size={16} aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          className="mobile-network-tool"
+          icon={<Icons.Maximize size={15} aria-hidden="true" />}
+        />
+
+        <Button
+          variant="secondary"
+          size="sm"
+          iconOnly
           onClick={mobileControls.onOpenSummary}
           aria-label="Abrir resumo da diligência"
           title="Abrir resumo"
-        >
-          <Icons.Info size={16} aria-hidden="true" />
-        </button>
-      </div>
+          icon={<Icons.Info size={15} aria-hidden="true" />}
+        />
+      </Toolbar>
     );
   }
 
   return (
-    <div className="network-toolbar" role="toolbar" aria-label="Controles do mapa relacional">
-      <div className="network-toolbar-main">
-        <label className="network-search-control">
-          <Icons.Search size={15} aria-hidden="true" />
+    <div className="shrink-0 border-b border-line-soft bg-surface">
+      <div className="flex min-w-0 items-center gap-2 px-gutter py-2">
+        {/* Campo de busca: cresce, mas nunca empurra os botões para
+            fora da barra. */}
+        <label className="relative flex min-w-0 flex-1 items-center">
+          <Icons.Search size={15} aria-hidden="true" className="pointer-events-none absolute left-3 text-ink-3" />
           <input
             type="search"
             placeholder="Encontrar uma pessoa ou empresa no mapa"
             value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
+            onChange={(event) => onSearchChange(event.target.value)}
             aria-label="Buscar pessoa ou empresa no mapa"
+            className={cn(
+              'min-h-[var(--control-height-sm)] w-full min-w-0 rounded-[var(--control-radius-sm)] border border-line bg-surface-subtle pl-9 pr-9 text-xs text-ink',
+              'transition-colors hover:border-line-strong focus:border-brand focus:bg-surface focus:outline-none focus:shadow-[var(--ring-focus)]',
+              '[&::-webkit-search-cancel-button]:hidden',
+            )}
           />
           {searchTerm ? (
             <button
               type="button"
-              className="network-search-clear"
               onClick={() => onSearchChange('')}
               aria-label="Limpar busca"
+              className="absolute right-2 grid size-6 place-items-center rounded-sm text-ink-3 transition-colors hover:bg-surface-hover hover:text-ink"
             >
-              <Icons.X size={13} />
+              <Icons.X size={13} aria-hidden="true" />
             </button>
           ) : null}
         </label>
 
-        <button
-          type="button"
-          className={`network-filter-trigger ${filtersOpen || activeFilterCount > 0 ? 'active' : ''}`}
+        <Button
+          variant={filtersOpen || activeFilterCount > 0 ? 'outline' : 'secondary'}
+          size="sm"
           onClick={() => setFiltersOpen((open) => !open)}
           aria-expanded={filtersOpen}
-          aria-controls="network-filter-panel"
+          aria-controls={panelId}
+          icon={<Icons.Filter size={15} aria-hidden="true" />}
+          rightIcon={
+            activeFilterCount > 0 ? (
+              <span className="num rounded-chip bg-brand px-1.5 text-2xs font-bold text-white">
+                {activeFilterCount}
+              </span>
+            ) : undefined
+          }
         >
-          <Icons.Filter size={15} aria-hidden="true" />
-          <span>Filtros</span>
-          {activeFilterCount > 0 ? <small>{activeFilterCount}</small> : null}
-        </button>
+          <span className="hidden sm:inline">Filtros</span>
+        </Button>
 
-        <div className="network-icon-actions">
-          <button
-            type="button"
-            onClick={onFit}
-            title="Centralizar mapa"
-            aria-label="Centralizar mapa"
-          >
-            <Icons.Maximize size={15} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className={isFullscreen ? 'active' : ''}
-            onClick={onToggleFullscreen}
-            title={isFullscreen ? 'Sair da tela cheia' : 'Usar tela cheia'}
-            aria-label={isFullscreen ? 'Sair da tela cheia' : 'Usar tela cheia'}
-          >
-            <Icons.Layers size={15} aria-hidden="true" />
-          </button>
-        </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          iconOnly
+          onClick={onFit}
+          title="Centralizar mapa"
+          aria-label="Centralizar mapa"
+          icon={<Icons.Maximize size={15} aria-hidden="true" />}
+        />
+
+        <Button
+          variant={isFullscreen ? 'primary' : 'secondary'}
+          size="sm"
+          iconOnly
+          onClick={onToggleFullscreen}
+          aria-pressed={isFullscreen}
+          title={isFullscreen ? 'Sair da tela cheia' : 'Usar tela cheia'}
+          aria-label={isFullscreen ? 'Sair da tela cheia' : 'Usar tela cheia'}
+          icon={<Icons.Layers size={15} aria-hidden="true" />}
+        />
       </div>
 
-      <div
-        className={`network-filter-panel ${filtersOpen ? 'is-open' : ''}`}
-        id="network-filter-panel"
-        role="group"
-        aria-label="Filtros do mapa"
-      >
-        <div className="network-layout-switch" role="radiogroup" aria-label="Organização do mapa">
-          <span>Organização</span>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={layoutMode === 'chain'}
-            className={layoutMode === 'chain' ? 'active' : ''}
-            onClick={() => onLayoutModeChange('chain')}
-          >
-            <Icons.Network size={14} aria-hidden="true" />
-            <span>Por graus</span>
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={layoutMode === 'radar'}
-            className={layoutMode === 'radar' ? 'active' : ''}
-            onClick={() => onLayoutModeChange('radar')}
-          >
-            <Icons.Compass size={14} aria-hidden="true" />
-            <span>Radial</span>
-          </button>
-        </div>
+      {filtersOpen ? (
+        <div
+          id={panelId}
+          role="group"
+          aria-label="Filtros do mapa"
+          className="grid gap-3 border-t border-line-soft bg-surface-subtle px-gutter py-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-end"
+        >
+          <div role="radiogroup" aria-label="Organização do mapa" className="flex min-w-0 flex-col gap-1.5">
+            <span className="text-xs font-semibold text-ink-2">Organização</span>
+            <div className="flex min-w-0 rounded-[var(--control-radius-sm)] border border-line bg-surface p-0.5">
+              {(
+                [
+                  { mode: 'chain' as LayoutMode, label: 'Por graus', icon: <Icons.Network size={14} aria-hidden="true" /> },
+                  { mode: 'radar' as LayoutMode, label: 'Radial', icon: <Icons.Compass size={14} aria-hidden="true" /> },
+                ]
+              ).map((option) => (
+                <button
+                  key={option.mode}
+                  type="button"
+                  role="radio"
+                  aria-checked={layoutMode === option.mode}
+                  onClick={() => onLayoutModeChange(option.mode)}
+                  className={cn(
+                    'flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-sm px-2 py-1.5 text-xs transition-colors',
+                    layoutMode === option.mode
+                      ? 'bg-brand-soft font-bold text-brand'
+                      : 'font-medium text-ink-2 hover:bg-surface-hover',
+                  )}
+                >
+                  {option.icon}
+                  <span className="truncate">{option.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
-        <div className="network-select-control">
-          <SelectField
+          <Select
             label="Até onde mostrar"
             value={depth}
             options={DEPTH_OPTIONS}
-            onChange={(val) => onDepthChange(val as DepthFilter)}
+            onChange={(value) => onDepthChange(value as DepthFilter)}
+            controlSize="sm"
           />
-        </div>
 
-        <div className="network-select-control">
-          <SelectField
+          <Select
             label="Tipo de ligação"
             value={relationFilter}
             options={relationOptions}
             onChange={onRelationFilterChange}
+            controlSize="sm"
           />
-        </div>
 
-        <button
-          type="button"
-          className={`network-tool-button ${showDocuments ? 'active' : ''}`}
-          onClick={onToggleDocuments}
-          aria-pressed={showDocuments}
-        >
-          <Icons.FileText size={14} aria-hidden="true" />
-          <span>{showDocuments ? 'Ocultar fontes do mapa' : 'Mostrar fontes no mapa'}</span>
-          <small>{documentCount}</small>
-        </button>
-      </div>
+          <Button
+            variant={showDocuments ? 'outline' : 'secondary'}
+            size="sm"
+            onClick={onToggleDocuments}
+            aria-pressed={showDocuments}
+            icon={<Icons.FileText size={14} aria-hidden="true" />}
+            rightIcon={
+              <span className="num rounded-chip bg-surface-active px-1.5 text-2xs font-bold text-ink-2">
+                {documentCount}
+              </span>
+            }
+          >
+            {showDocuments ? 'Ocultar fontes' : 'Mostrar fontes'}
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 };

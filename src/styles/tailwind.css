@@ -1,16 +1,24 @@
 /* ==========================================================
-   DILIGÊNCIA 360 — Tailwind com os tokens do projeto
+   DILIGÊNCIA 360 — Tailwind sobre os tokens do projeto
    ==========================================================
-   Adoção incremental: as telas já existentes continuam com o CSS
-   próprio e as telas refeitas usam utilitários.
+   Duas coisas acontecem aqui, e vale saber qual é qual.
 
-   O preflight do Tailwind fica de fora de propósito. Ele é um reset
-   global que zera margem de título, estilo de lista e aparência de
-   botão; com 35 arquivos de CSS escritos sobre os padrões do
-   navegador, ligá-lo mudaria telas que ninguém pediu para mudar.
+   1. Os utilitários do Tailwind v4 leem variáveis CSS: `rounded-lg`
+      é `border-radius: var(--radius-lg)`, `text-sm` é
+      `font-size: var(--text-sm)`. Como tokens.css declara esses
+      mesmos nomes fora de qualquer `@layer`, e estilo sem camada
+      vence estilo em camada, os nossos tokens substituem a escala
+      padrão do Tailwind sem precisar redeclarar nada. A escala do
+      projeto passa a ser a escala do framework.
 
-   O tema abaixo não inventa cor nenhuma: reexporta os tokens de
-   tokens.css, que continua sendo a fonte única da identidade.
+   2. O bloco `@theme` abaixo só acrescenta o que o Tailwind não tem
+      nome para: as cores semânticas (superfície, traço, tinta,
+      marca, situação) e os poucos degraus extras de escala. Nenhuma
+      cor nova nasce aqui — tudo aponta para tokens.css, que segue
+      sendo a fonte única da identidade.
+
+   A camada `base` é nossa (styles/base.css) e entra na ordem
+   declarada abaixo, sempre debaixo de `utilities`.
    ========================================================== */
 
 @layer theme, base, components, utilities;
@@ -19,46 +27,196 @@
 @import "tailwindcss/utilities.css" layer(utilities);
 
 @theme {
-  /* Superfícies */
+  /* ----------------------------------------------------------
+     SUPERFÍCIES
+     ---------------------------------------------------------- */
   --color-canvas: var(--bg-canvas);
   --color-surface: var(--bg-surface);
   --color-surface-subtle: var(--bg-surface-subtle);
   --color-surface-hover: var(--bg-surface-hover);
+  --color-surface-active: var(--bg-surface-active);
 
-  /* Traços */
+  /* Superfície escura do mapa de vínculos e do topo imersivo. */
+  --color-deep: var(--bg-deep);
+  --color-deep-raised: var(--bg-deep-raised);
+  --color-deep-hover: var(--bg-deep-hover);
+  --color-deep-line: var(--border-deep);
+  --color-on-deep: var(--text-on-deep);
+  --color-on-deep-2: var(--text-on-deep-2);
+  --color-on-deep-3: var(--text-on-deep-3);
+
+  /* ----------------------------------------------------------
+     TRAÇOS
+     ---------------------------------------------------------- */
   --color-line: var(--border-default);
   --color-line-soft: var(--border-subtle);
   --color-line-strong: var(--border-strong);
 
-  /* Texto */
+  /* ----------------------------------------------------------
+     TINTA
+     ---------------------------------------------------------- */
   --color-ink: var(--text-primary);
   --color-ink-2: var(--text-secondary);
   --color-ink-3: var(--text-tertiary);
   --color-ink-muted: var(--text-muted);
+  --color-ink-inverse: var(--text-inverse);
 
-  /* Marca */
+  /* ----------------------------------------------------------
+     MARCA
+     ---------------------------------------------------------- */
   --color-brand: var(--brand-blue);
   --color-brand-hover: var(--brand-blue-hover);
+  --color-brand-active: var(--brand-blue-active);
   --color-brand-deep: var(--brand-blue-deep);
   --color-brand-soft: var(--brand-blue-subtle);
   --color-brand-line: var(--brand-blue-border);
+  --color-brand-text: var(--brand-blue-text);
   --color-gold: var(--brand-gold);
+  --color-gold-soft: var(--brand-gold-subtle);
 
-  /* Situação */
+  /* ----------------------------------------------------------
+     SITUAÇÃO — cada nível com traço, fundo e texto, para que o par
+     usado junto sempre passe em contraste.
+     ---------------------------------------------------------- */
   --color-ok: var(--status-low);
   --color-ok-bg: var(--status-low-bg);
+  --color-ok-line: var(--status-low-border);
+  --color-ok-text: var(--status-low-text);
+
   --color-warn: var(--status-medium);
   --color-warn-bg: var(--status-medium-bg);
+  --color-warn-line: var(--status-medium-border);
+  --color-warn-text: var(--status-medium-text);
+
   --color-high: var(--status-high);
   --color-high-bg: var(--status-high-bg);
+  --color-high-line: var(--status-high-border);
+  --color-high-text: var(--status-high-text);
+
   --color-bad: var(--status-critical);
   --color-bad-bg: var(--status-critical-bg);
+  --color-bad-line: var(--status-critical-border);
+  --color-bad-text: var(--status-critical-text);
 
-  /* Raios */
-  --radius-card: var(--radius-lg);
-  --radius-chip: var(--radius-full);
+  --color-neutral-soft: var(--status-neutral-bg);
+  --color-neutral-line: var(--status-neutral-border);
+  --color-neutral-text: var(--status-neutral-text);
 
-  /* Dado tabular pede monoespaçado: número de processo, CNPJ e valor
-     ficam legíveis e alinhados na coluna. */
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --color-info: var(--status-info);
+  --color-info-bg: var(--status-info-bg);
+  --color-info-line: var(--status-info-border);
+  --color-info-text: var(--status-info-text);
+
+  /* ----------------------------------------------------------
+     DEGRAUS EXTRAS DE ESCALA
+     Só o que a escala padrão do Tailwind não cobre. O resto vem de
+     tokens.css por sobreposição de variável.
+     ---------------------------------------------------------- */
+  --text-2xs: 0.6875rem;
+  --text-md: 0.9375rem;
+
+  --radius-card: 12px;
+  --radius-chip: 9999px;
+
+  --shadow-overlay: var(--elevation-overlay);
+
+  /* ----------------------------------------------------------
+     CALHA — a margem lateral responsiva da tela, disponível como
+     `px-gutter`. Uma tela nunca escolhe o próprio respiro; todas
+     usam este, e por isso os cabeçalhos alinham entre abas.
+     ---------------------------------------------------------- */
+  --spacing-gutter: var(--gutter);
+  --spacing-gutter-tight: var(--gutter-tight);
+
+  /* ----------------------------------------------------------
+     LARGURAS DE LEITURA — as mesmas que o layout usa, disponíveis
+     como `max-w-content` em vez de um valor mágico por tela.
+     ---------------------------------------------------------- */
+  /* ----------------------------------------------------------
+     MOVIMENTO — as duas entradas que o app usa. O `spin` já existe
+     no Tailwind; animations.css o redeclarava com o mesmo keyframe.
+     ---------------------------------------------------------- */
+  --animate-fade-in: fade-in 240ms ease-out both;
+  --animate-fade-in-up: fade-in-up 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-rise: rise 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(18px) scale(0.985); }
+    to { opacity: 1; transform: none; }
+  }
+
+  --container-content: 1200px;
+  --container-content-wide: 1440px;
+  --container-prose: 68ch;
+}
+
+/* ==========================================================
+   UTILITÁRIOS PRÓPRIOS
+   O Tailwind não tem espaço de tema para z-index, e deixar a ordem
+   de empilhamento como número solto no meio da classe foi o que
+   fez gaveta, modal e menu lateral brigarem entre si. Aqui cada
+   camada tem nome, e o valor vem de tokens.css.
+   ========================================================== */
+@utility z-sticky {
+  z-index: var(--z-sticky);
+}
+@utility z-sidebar {
+  z-index: var(--z-sidebar);
+}
+@utility z-backdrop {
+  z-index: var(--z-backdrop);
+}
+@utility z-drawer {
+  z-index: var(--z-drawer);
+}
+@utility z-modal {
+  z-index: var(--z-modal);
+}
+@utility z-toast {
+  z-index: var(--z-toast);
+}
+
+/* Fita que rola na horizontal sem mostrar barra. Usada pelas abas e
+   pelas fitas de ação, onde a barra de rolagem sobre 8px de altura
+   come o traço inferior da aba ativa.
+
+   Sem barra, porém, nada indicava que havia mais conteúdo ao lado: no
+   celular o último botão aparecia cortado e parecia defeito, não fita
+   rolável. A sombra de borda abaixo resolve isso e só aparece quando
+   existe algo além da borda — é a técnica das duas camadas: as de
+   `local` rolam junto com o conteúdo e cobrem as de `scroll`
+   exatamente quando a fita chega ao fim daquele lado.
+
+   A cor da máscara é a da superfície onde a fita se apoia; quem a usa
+   sobre outro fundo troca `--scroll-fade`. */
+@utility scroll-fita {
+  --scroll-fade: var(--bg-surface);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior-x: contain;
+  background:
+    linear-gradient(to right, var(--scroll-fade) 40%, transparent) left center / 28px 100% no-repeat local,
+    linear-gradient(to left, var(--scroll-fade) 40%, transparent) right center / 28px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgb(20 38 48 / 0.13), transparent) left center / 10px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgb(20 38 48 / 0.13), transparent) right center / 10px 100% no-repeat scroll;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Número em coluna: dígito de largura fixa, para que score, contagem
+   e valor não dancem ao atualizar. */
+@utility num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
 }

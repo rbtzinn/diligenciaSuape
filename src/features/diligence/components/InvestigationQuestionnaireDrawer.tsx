@@ -25,7 +25,7 @@ export const InvestigationQuestionnaireDrawer: React.FC<InvestigationQuestionnai
     onClose={onClose}
     title="Checagens orientadas pela política"
     subtitle="Perguntas automáticas ajudam a localizar lacunas; a conclusão continua sendo humana."
-    panelClassName="investigation-wide-drawer"
+    width="xl"
   >
     <div className="investigation-drawer-reset">
       <ComplexQuestionnairePanel

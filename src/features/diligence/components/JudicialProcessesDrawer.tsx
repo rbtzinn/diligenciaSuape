@@ -30,9 +30,9 @@ export const JudicialProcessesDrawer: React.FC<JudicialProcessesDrawerProps> = (
     onClose={onClose}
     title="Processos e publicações jurídicas"
     subtitle="Controle externo oficial e números judiciais são mostrados com a proveniência e o grau de vínculo."
-    panelClassName="investigation-wide-drawer"
+    width="xl"
   >
-    <div className="pncp-stack">
+    <div className="flex min-w-0 flex-col gap-4">
       <TcePeProcessesSection summary={tcePe} />
       <JudicialDiscoverySection
         discoveries={discoveries}

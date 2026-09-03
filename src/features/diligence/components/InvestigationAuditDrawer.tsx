@@ -28,9 +28,9 @@ export const InvestigationAuditDrawer: React.FC<InvestigationAuditDrawerProps> =
       onClose={onClose}
       title="Fontes e trilha de auditoria"
       subtitle="Cobertura, origem e horário de coleta das informações usadas nesta diligência."
-      panelClassName="investigation-wide-drawer"
+      width="xl"
     >
-      <div className="investigation-audit-stack">
+      <div className="flex min-w-0 flex-col gap-4">
         <EgosIntelligencePanel egos={diligence.egos} diligenceId={diligence.id} showGraph={false} />
         <EvidenceSection
           ceis={diligence.ceis}

@@ -70,12 +70,12 @@ export const JudicialManualAddModal: React.FC<JudicialManualAddModalProps> = ({
       }
     >
       <div>
-        <label className="company-cell-label" style={{ marginBottom: '0.35rem', display: 'block', fontSize: 'var(--text-xs)', fontWeight: 600 }}>
+        <label className="mb-1.5 block text-2xs font-semibold uppercase tracking-wide text-ink-3">
           NÚMERO DO PROCESSO (CNJ)
         </label>
         <input
           type="text"
-          className="input-control font-mono"
+          className="font-mono min-h-[var(--control-height-md)] w-full min-w-0 rounded-[var(--control-radius-md)] border border-line bg-surface px-[var(--control-pad-x-md)] py-[var(--control-pad-y-md)] text-base text-ink transition-colors placeholder:text-ink-muted hover:border-line-strong focus:border-brand focus:outline-none focus:shadow-[var(--ring-focus)] disabled:cursor-not-allowed disabled:bg-surface-subtle"
           placeholder="0000000-00.0000.0.00.0000"
           value={val}
           onChange={(e) => {
@@ -88,12 +88,12 @@ export const JudicialManualAddModal: React.FC<JudicialManualAddModalProps> = ({
       </div>
 
       <div>
-        <label className="company-cell-label" style={{ marginBottom: '0.35rem', display: 'block', fontSize: 'var(--text-xs)', fontWeight: 600 }}>
+        <label className="mb-1.5 block text-2xs font-semibold uppercase tracking-wide text-ink-3">
           ORIGEM / JUSTIFICATIVA
         </label>
         <input
           type="text"
-          className="input-control"
+          className="min-h-[var(--control-height-md)] w-full min-w-0 rounded-[var(--control-radius-md)] border border-line bg-surface px-[var(--control-pad-x-md)] py-[var(--control-pad-y-md)] text-base text-ink transition-colors placeholder:text-ink-muted hover:border-line-strong focus:border-brand focus:outline-none focus:shadow-[var(--ring-focus)] disabled:cursor-not-allowed disabled:bg-surface-subtle"
           value={desc}
           onChange={(e) => setDesc(e.target.value)}
           placeholder="Ex: Declarado na Habilitação / Certidão anexada"

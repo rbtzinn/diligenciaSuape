@@ -1,7 +1,24 @@
-import React, { FormEvent, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+// ==========================================================
+// DILIGÊNCIA 360 — Classificação final de risco
+// ==========================================================
+// O cálculo automático permanece preservado: a tela mostra os dois
+// lado a lado e registra o ajuste com autor, data e justificativa.
+// Essa é a razão de existir do modal, e não muda.
+//
+// O que muda é a casca: eram 317 linhas de CSS em
+// dossier-v3/risk-override.css mais a sexta cópia do laço de foco.
+// Agora é um Modal do projeto, e o controle de faixa usa os tokens
+// de cor do nível selecionado em vez de uma paleta própria.
+// ==========================================================
+
+import React, { FormEvent, useEffect, useId, useMemo, useState } from 'react';
 import { Button } from '../../../components/ui/Button';
 import { Icons } from '../../../components/ui/Icons';
+import { Modal } from '../../../components/ui/Modal';
+import { Note } from '../../../components/ui/Note';
+import { TextArea } from '../../../components/ui/Field';
+import { Chip, ChipTone } from '../../../components/ui/Chip';
+import { cn } from '../../../lib/cn';
 import type { RiskAssessment } from '../types';
 
 interface RiskOverrideModalProps {
@@ -12,13 +29,15 @@ interface RiskOverrideModalProps {
   onSubmit: (payload: { score: number; level: string; justification: string }) => Promise<void>;
 }
 
+const MIN_JUSTIFICATION = 10;
+
 const LEVELS = [
   {
     level: 'Atenção Baixa',
     short: 'Baixa',
     min: 0,
     max: 14,
-    tone: 'low',
+    tone: 'ok' as ChipTone,
     copy: 'Monitoramento ordinário e registro das limitações conhecidas.',
   },
   {
@@ -26,7 +45,7 @@ const LEVELS = [
     short: 'Moderada',
     min: 15,
     max: 34,
-    tone: 'moderate',
+    tone: 'warn' as ChipTone,
     copy: 'Há sinais ou lacunas que pedem análise complementar documentada.',
   },
   {
@@ -34,7 +53,7 @@ const LEVELS = [
     short: 'Elevada',
     min: 35,
     max: 59,
-    tone: 'elevated',
+    tone: 'high' as ChipTone,
     copy: 'A exposição é relevante e exige aprofundamento antes de avançar.',
   },
   {
@@ -42,19 +61,44 @@ const LEVELS = [
     short: 'Crítica',
     min: 60,
     max: 100,
-    tone: 'critical',
+    tone: 'critical' as ChipTone,
     copy: 'A exposição acumulada pede mitigação e decisão formal do comitê.',
   },
 ] as const;
 
-function getLevel(level?: string, score?: number) {
+type Level = (typeof LEVELS)[number];
+
+/** Superfície do cartão de nível quando selecionado. */
+const LEVEL_SURFACE: Record<ChipTone, string> = {
+  ok: 'border-ok-line bg-ok-bg',
+  warn: 'border-warn-line bg-warn-bg',
+  high: 'border-high-line bg-high-bg',
+  critical: 'border-bad-line bg-bad-bg',
+  brand: 'border-brand-line bg-brand-soft',
+  info: 'border-info-line bg-info-bg',
+  neutral: 'border-neutral-line bg-neutral-soft',
+  muted: 'border-line bg-surface-subtle',
+};
+
+const LEVEL_ACCENT: Record<ChipTone, string> = {
+  ok: 'accent-[color:var(--status-low)]',
+  warn: 'accent-[color:var(--status-medium)]',
+  high: 'accent-[color:var(--status-high)]',
+  critical: 'accent-[color:var(--status-critical)]',
+  brand: 'accent-[color:var(--brand-blue)]',
+  info: 'accent-[color:var(--status-info)]',
+  neutral: 'accent-[color:var(--status-neutral)]',
+  muted: 'accent-[color:var(--border-strong)]',
+};
+
+function getLevel(level?: string, score?: number): Level {
   const byName = LEVELS.find((item) => item.level === level);
   if (byName) return byName;
   const safeScore = Math.max(0, Math.min(100, Number(score) || 0));
   return LEVELS.find((item) => safeScore >= item.min && safeScore <= item.max) || LEVELS[0];
 }
 
-function clampToLevel(score: number, level: (typeof LEVELS)[number]) {
+function clampToLevel(score: number, level: Level) {
   return Math.max(level.min, Math.min(level.max, Math.round(score)));
 }
 
@@ -65,12 +109,7 @@ export const RiskOverrideModal: React.FC<RiskOverrideModalProps> = ({
   onClose,
   onSubmit,
 }) => {
-  const titleId = useId();
-  const descriptionId = useId();
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const onCloseRef = useRef(onClose);
-  const isSavingRef = useRef(isSaving);
+  const formId = useId();
   const initialLevel = getLevel(risk.nivel, risk.score);
   const [level, setLevel] = useState<string>(initialLevel.level);
   const [score, setScore] = useState(clampToLevel(risk.score, initialLevel));
@@ -79,60 +118,20 @@ export const RiskOverrideModal: React.FC<RiskOverrideModalProps> = ({
 
   const selectedLevel = useMemo(() => getLevel(level, score), [level, score]);
   const automaticScore = risk.manualOverride?.automaticScore ?? risk.automaticScore ?? risk.score ?? 0;
-  const automaticLevel = risk.manualOverride?.automaticLevel
-    || getLevel(undefined, automaticScore).level;
+  const automaticLevel = risk.manualOverride?.automaticLevel || getLevel(undefined, automaticScore).level;
   const adjustment = score - automaticScore;
 
+  // Cada abertura recomeça do cálculo automático corrente.
   useEffect(() => {
-    onCloseRef.current = onClose;
-    isSavingRef.current = isSaving;
-  }, [isSaving, onClose]);
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
+    if (!isOpen) return;
     const nextLevel = getLevel(risk.nivel, risk.score);
-    const previousActive = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const previousOverflow = document.body.style.overflow;
     setLevel(nextLevel.level);
     setScore(clampToLevel(risk.score, nextLevel));
     setJustification('');
     setError('');
-    document.body.style.overflow = 'hidden';
-    window.setTimeout(() => closeButtonRef.current?.focus(), 0);
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !isSavingRef.current) {
-        event.preventDefault();
-        onCloseRef.current();
-        return;
-      }
-      if (event.key !== 'Tab' || !dialogRef.current) return;
-      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      ));
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-      previousActive?.focus();
-    };
   }, [isOpen, risk.nivel, risk.score]);
 
-  if (!isOpen) return null;
-
-  const selectLevel = (nextLevel: (typeof LEVELS)[number]) => {
+  const selectLevel = (nextLevel: Level) => {
     setLevel(nextLevel.level);
     setScore((current) => clampToLevel(current, nextLevel));
     setError('');
@@ -141,146 +140,196 @@ export const RiskOverrideModal: React.FC<RiskOverrideModalProps> = ({
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     const reason = justification.trim();
-    if (reason.length < 10) {
-      setError('Explique em pelo menos 10 caracteres quais sinais, hipóteses ou lacunas sustentam a decisão.');
+    if (reason.length < MIN_JUSTIFICATION) {
+      setError(
+        `Explique em pelo menos ${MIN_JUSTIFICATION} caracteres quais sinais, hipóteses ou lacunas sustentam a decisão.`,
+      );
       return;
     }
     setError('');
     try {
       await onSubmit({ score, level: selectedLevel.level, justification: reason });
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Não foi possível registrar a classificação.');
+      setError(
+        submitError instanceof Error ? submitError.message : 'Não foi possível registrar a classificação.',
+      );
     }
   };
 
-  return createPortal(
-    <div
-      className="risk-override-backdrop"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !isSaving) onClose();
-      }}
-    >
-      <div
-        ref={dialogRef}
-        className="risk-override-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={descriptionId}
-      >
-        <header className="risk-override-header">
-          <div className="risk-override-emblem" aria-hidden="true"><Icons.ShieldAlert size={24} /></div>
-          <div>
-            <span>Decisão humana • Compliance SUAPE</span>
-            <h2 id={titleId}>Definir classificação final de risco</h2>
-            <p id={descriptionId}>O cálculo automático permanece preservado. Seu ajuste será registrado com autor, data e justificativa.</p>
-          </div>
-          <button
-            ref={closeButtonRef}
-            type="button"
-            className="risk-override-close"
-            aria-label="Fechar ajuste de risco"
-            onClick={onClose}
-            disabled={isSaving}
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      closeOnBackdropClick={!isSaving}
+      disableEscape={isSaving}
+      title="Definir classificação final de risco"
+      subtitle="Decisão humana · Compliance SUAPE"
+      icon={<Icons.ShieldAlert size={17} aria-hidden="true" />}
+      footer={
+        <>
+          <p className="mr-auto flex min-w-0 items-center gap-1.5 text-2xs text-ink-3">
+            <Icons.Info size={14} aria-hidden="true" className="shrink-0" />
+            Esta decisão entra na trilha de auditoria e no dossiê.
+          </p>
+
+          <Button variant="ghost" onClick={onClose} disabled={isSaving}>
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form={formId}
+            variant="primary"
+            isLoading={isSaving}
+            loadingLabel="Registrando…"
+            disabled={justification.trim().length < MIN_JUSTIFICATION}
           >
-            <Icons.X size={18} aria-hidden="true" />
-          </button>
-        </header>
+            Registrar classificação final
+          </Button>
+        </>
+      }
+    >
+      <p className="text-base leading-relaxed text-ink-2">
+        O cálculo automático permanece preservado. Seu ajuste será registrado com autor, data e justificativa.
+      </p>
 
-        <form onSubmit={handleSubmit}>
-          <section className="risk-override-comparison" aria-label="Comparação entre cálculo e decisão">
-            <div>
-              <span>Radar automático</span>
-              <strong>{automaticScore}<small>/100</small></strong>
-              <p>{automaticLevel}</p>
-            </div>
-            <Icons.ArrowRight size={19} aria-hidden="true" />
-            <div className={`risk-final-preview risk-tone-${selectedLevel.tone}`}>
-              <span>Classificação final</span>
-              <strong>{score}<small>/100</small></strong>
-              <p>{selectedLevel.level}</p>
-            </div>
-            <div className={`risk-adjustment-chip ${adjustment >= 0 ? 'increase' : 'decrease'}`}>
-              {adjustment > 0 ? '+' : ''}{adjustment} pontos
-            </div>
-          </section>
+      {/* ---- Automático x decidido ---- */}
+      <section
+        aria-label="Comparação entre cálculo e decisão"
+        className="grid min-w-0 items-center gap-2 rounded-lg border border-line bg-surface-subtle p-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto]"
+      >
+        <div className="min-w-0 rounded-md border border-line bg-surface px-3 py-2">
+          <span className="block text-2xs font-semibold uppercase tracking-wide text-ink-3">Radar automático</span>
+          <strong className="num block text-xl font-extrabold leading-none text-ink-2">
+            {automaticScore}
+            <span className="text-xs font-medium text-ink-3">/100</span>
+          </strong>
+          <span className="block text-2xs text-ink-3">{automaticLevel}</span>
+        </div>
 
-          <fieldset className="risk-level-fieldset">
-            <legend>Nível de atenção definido pelo Compliance</legend>
-            <div className="risk-level-options">
-              {LEVELS.map((item) => (
+        <Icons.ArrowRight
+          size={18}
+          aria-hidden="true"
+          className="mx-auto rotate-90 text-ink-3 sm:rotate-0"
+        />
+
+        <div className={cn('min-w-0 rounded-md border px-3 py-2', LEVEL_SURFACE[selectedLevel.tone])}>
+          <span className="block text-2xs font-semibold uppercase tracking-wide text-ink-3">
+            Classificação final
+          </span>
+          <strong className="num block text-xl font-extrabold leading-none text-ink">
+            {score}
+            <span className="text-xs font-medium text-ink-3">/100</span>
+          </strong>
+          <span className="block text-2xs text-ink-2">{selectedLevel.level}</span>
+        </div>
+
+        {/* Zero é "sem ajuste", não "agravou": tom neutro. */}
+        <Chip
+          tone={adjustment === 0 ? 'neutral' : adjustment > 0 ? 'high' : 'ok'}
+          size="sm"
+          className="num justify-self-start sm:justify-self-end"
+        >
+          {adjustment > 0 ? '+' : ''}
+          {adjustment} pontos
+        </Chip>
+      </section>
+
+      <form id={formId} onSubmit={handleSubmit} className="flex min-w-0 flex-col gap-3">
+        {/* ---- Nível ---- */}
+        <fieldset className="min-w-0">
+          <legend className="mb-1.5 text-xs font-semibold text-ink-2">
+            Nível de atenção definido pelo Compliance
+          </legend>
+
+          <div className="grid min-w-0 gap-2 sm:grid-cols-2">
+            {LEVELS.map((item) => {
+              const active = selectedLevel.level === item.level;
+              return (
                 <button
                   key={item.level}
                   type="button"
-                  className={`risk-level-option risk-tone-${item.tone} ${selectedLevel.level === item.level ? 'active' : ''}`}
-                  aria-pressed={selectedLevel.level === item.level}
+                  aria-pressed={active}
                   onClick={() => selectLevel(item)}
+                  className={cn(
+                    'flex min-w-0 flex-col gap-0.5 rounded-lg border p-2.5 text-left transition-colors',
+                    active
+                      ? cn(LEVEL_SURFACE[item.tone], 'ring-2 ring-brand/25')
+                      : 'border-line bg-surface hover:bg-surface-hover',
+                  )}
                 >
-                  <span>{item.short}</span>
-                  <strong>{item.min}–{item.max}</strong>
-                  <small>{item.copy}</small>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <strong className="text-sm font-bold text-ink">{item.short}</strong>
+                    <span className="num ml-auto text-2xs font-semibold text-ink-3">
+                      {item.min}–{item.max}
+                    </span>
+                  </span>
+                  <span className="text-2xs leading-snug text-ink-2">{item.copy}</span>
                 </button>
-              ))}
-            </div>
-          </fieldset>
+              );
+            })}
+          </div>
+        </fieldset>
 
-          <section className="risk-score-control">
-            <div className="risk-score-label">
-              <label htmlFor="risk-final-score">Pontuação dentro da faixa {selectedLevel.short.toLowerCase()}</label>
-              <output htmlFor="risk-final-score">{score}/100</output>
-            </div>
-            <input
-              id="risk-final-score"
-              type="range"
-              min={selectedLevel.min}
-              max={selectedLevel.max}
-              value={score}
-              onChange={(event) => setScore(Number(event.target.value))}
-              style={{ '--risk-progress': `${((score - selectedLevel.min) / Math.max(1, selectedLevel.max - selectedLevel.min)) * 100}%` } as React.CSSProperties}
-            />
-            <div className="risk-score-bounds"><span>{selectedLevel.min}</span><span>{selectedLevel.max}</span></div>
-          </section>
+        {/* ---- Pontuação dentro da faixa ---- */}
+        <section className="flex min-w-0 flex-col gap-1.5">
+          <div className="flex min-w-0 items-center justify-between gap-2">
+            <label htmlFor="risk-final-score" className="text-xs font-semibold text-ink-2">
+              Pontuação dentro da faixa {selectedLevel.short.toLowerCase()}
+            </label>
+            <output htmlFor="risk-final-score" className="num text-sm font-bold text-ink">
+              {score}/100
+            </output>
+          </div>
 
-          <section className="risk-justification-field">
-            <div>
-              <label htmlFor="risk-justification">Fundamentação obrigatória</label>
-              <span>{justification.trim().length}/10 mínimo</span>
-            </div>
-            <textarea
-              id="risk-justification"
-              value={justification}
-              onChange={(event) => {
-                setJustification(event.target.value);
-                if (error) setError('');
-              }}
-              rows={4}
-              maxLength={1000}
-              placeholder="Ex.: estrutura societária em camadas, coincidência de endereço e representação jurídica, notícia adversa ainda não confirmada e lacuna de beneficiário final."
-              aria-invalid={Boolean(error)}
-              aria-describedby={error ? 'risk-override-error' : undefined}
-            />
-            <p>Descreva a exposição observada. Evite afirmar irregularidade quando a evidência ainda for apenas indício ou hipótese.</p>
-          </section>
+          <input
+            id="risk-final-score"
+            type="range"
+            min={selectedLevel.min}
+            max={selectedLevel.max}
+            value={score}
+            onChange={(event) => setScore(Number(event.target.value))}
+            className={cn('h-1.5 w-full cursor-pointer appearance-none rounded-full bg-surface-active', LEVEL_ACCENT[selectedLevel.tone])}
+          />
 
-          {error ? (
-            <div id="risk-override-error" className="risk-override-error" role="alert">
-              <Icons.AlertCircle size={16} aria-hidden="true" />
-              <span>{error}</span>
-            </div>
-          ) : null}
+          <div className="num flex justify-between text-2xs text-ink-3">
+            <span>{selectedLevel.min}</span>
+            <span>{selectedLevel.max}</span>
+          </div>
+        </section>
 
-          <footer className="risk-override-footer">
-            <div><Icons.Info size={15} aria-hidden="true" /><span>Esta decisão entra na trilha de auditoria e no dossiê.</span></div>
-            <div>
-              <Button type="button" variant="ghost" onClick={onClose} disabled={isSaving}>Cancelar</Button>
-              <Button type="submit" variant="primary" isLoading={isSaving} disabled={justification.trim().length < 10}>
-                Registrar classificação final
-              </Button>
-            </div>
-          </footer>
-        </form>
-      </div>
-    </div>,
-    document.body,
+        {/* ---- Fundamentação ---- */}
+        <TextArea
+          id="risk-justification"
+          label="Fundamentação obrigatória"
+          labelAction={
+            <span
+              className={cn(
+                'num text-2xs font-semibold',
+                justification.trim().length >= MIN_JUSTIFICATION ? 'text-ok-text' : 'text-ink-3',
+              )}
+            >
+              {justification.trim().length}/{MIN_JUSTIFICATION} mínimo
+            </span>
+          }
+          hint="Descreva a exposição observada. Evite afirmar irregularidade quando a evidência ainda for apenas indício ou hipótese."
+          rows={4}
+          maxLength={1000}
+          value={justification}
+          onChange={(event) => {
+            setJustification(event.target.value);
+            if (error) setError('');
+          }}
+          placeholder="Ex.: estrutura societária em camadas, coincidência de endereço e representação jurídica, notícia adversa ainda não confirmada e lacuna de beneficiário final."
+          error={error || undefined}
+        />
+
+        {error ? (
+          <Note tone="high" role="alert" icon={<Icons.AlertCircle size={15} aria-hidden="true" />}>
+            {error}
+          </Note>
+        ) : null}
+      </form>
+    </Modal>
   );
 };
