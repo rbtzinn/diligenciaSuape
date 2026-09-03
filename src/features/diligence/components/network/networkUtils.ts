@@ -138,6 +138,13 @@ export function safeExternalUrl(value?: string | null) {
   }
 }
 
+/**
+ * Rótulo em português para cada propriedade exibida no painel da rede.
+ *
+ * O grafo carrega chaves em inglês vindas dos adaptadores. Sem tradução, a tela
+ * mostrava o nome do campo quebrado em palavras — "graph Source", "joined At" —,
+ * que não significa nada para quem lê o dossiê.
+ */
 export function humanizeProperty(key: string) {
   const known: Record<string, string> = {
     cnpj: 'CNPJ',
@@ -153,6 +160,7 @@ export function humanizeProperty(key: string) {
     roleabbreviation: 'Sigla da função',
     rolelevel: 'Nível da função',
     publicorganization: 'Órgão público',
+    publicorganizationcode: 'Código do órgão',
     publicservicestart: 'Início do exercício',
     publicserviceend: 'Fim do exercício',
     pepcoolingoffend: 'Fim da carência PEP',
@@ -164,11 +172,107 @@ export function humanizeProperty(key: string) {
     fundtype: 'Tipo de fundo',
     administrationtype: 'Tipo de administração',
     anbimaid: 'Código Anbima',
+    qualification: 'Qualificação',
+    joinedat: 'Entrada na sociedade',
+    endedat: 'Saída da sociedade',
+    graphsource: 'Fonte do grafo',
+    graphid: 'Identificador no grafo',
+    identitybasis: 'Base da identificação',
+    tradename: 'Nome fantasia',
+    legalnature: 'Natureza jurídica',
+    mainactivity: 'Atividade principal',
+    registrationstatus: 'Situação cadastral',
+    municipality: 'Município',
+    state: 'UF',
+    country: 'País',
+    postalcode: 'CEP',
+    territory: 'Território',
+    organization: 'Órgão',
+    parentorganization: 'Órgão superior',
+    authority: 'Autoridade',
+    provider: 'Provedor',
+    providersources: 'Fontes consultadas',
+    datasetsourcename: 'Base de origem',
+    historicaldataset: 'Base histórica',
+    url: 'Endereço',
+    sourceurl: 'Endereço da fonte',
+    domain: 'Domínio',
+    publishedat: 'Publicado em',
+    matchstrength: 'Força da correspondência',
+    matchscore: 'Índice de compatibilidade',
+    matchbasis: 'Base da correspondência',
+    matchedterms: 'Termos encontrados',
+    namematchonly: 'Correspondência apenas por nome',
+    identitystatus: 'Situação da identidade',
+    requireshumanreview: 'Exige revisão humana',
+    projectedlocally: 'Projetado localmente',
+    internal: 'Base interna',
+    active: 'Ativo',
+    disclaimer: 'Ressalva',
+    candidatename: 'Nome do candidato',
+    subjectname: 'Sujeito pesquisado',
+    subjecttype: 'Tipo de sujeito',
+    interestedname: 'Interessado no processo',
+    comentioncount: 'Coocorrências',
+    queriesmatched: 'Consultas que retornaram',
+    questionnairerefs: 'Questões relacionadas',
+    questionnairecandidate: 'Candidato do questionário',
+    recordtype: 'Tipo de registro',
+    category: 'Categoria',
+    categories: 'Categorias',
+    classname: 'Classe processual',
+    processnumber: 'Número do processo',
+    processurl: 'Página do processo',
+    tribunal: 'Tribunal',
+    judgmentdate: 'Data do julgamento',
+    decisionnumber: 'Número da decisão',
+    decisionurl: 'Documento da decisão',
+    outcome: 'Resultado',
+    modality: 'Modalidade',
+    exercise: 'Exercício',
+    legalbasis: 'Fundamentação legal',
+    outcomebelongstoproceeding: 'Resultado pertence ao processo',
+    discoverystatus: 'Situação da descoberta',
+    contractnumber: 'Número do contrato',
+    contractsmentioned: 'Contratos citados',
+    signedat: 'Assinatura',
+    openedat: 'Abertura',
+    periodstart: 'Início do período',
+    periodend: 'Fim do período',
+    startsat: 'Início',
+    endsat: 'Fim',
+    validfrom: 'Válido a partir de',
+    validuntil: 'Válido até',
+    sanction: 'Sanção',
+    sanctionactive: 'Sanção vigente',
+    sanctionstart: 'Início da sanção',
+    sanctionend: 'Fim da sanção',
+    sanctioningbody: 'Órgão sancionador',
+    offshoretype: 'Tipo de estrutura offshore',
+    icijid: 'Identificador ICIJ',
+    edition: 'Edição',
+    description: 'Descrição',
+    object: 'Objeto',
+    value: 'Valor',
   };
   const normalized = key.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-  return known[normalized] || key.replace(/([A-Z])/g, ' $1').trim();
+  if (known[normalized]) return known[normalized];
+
+  // Chave nova ainda não traduzida: separa o camelCase e capitaliza, para virar
+  // "Fonte Do Grafo" em vez de "graph Source". Continua sendo sinal de que falta
+  // um rótulo no dicionário acima.
+  const separado = key.replace(/([A-Z])/g, ' ').replace(/[_-]+/g, ' ').trim();
+  return separado.charAt(0).toUpperCase() + separado.slice(1);
 }
 
+/**
+ * Valor legível. Booleano cru aparecia como "false" na tela do dossiê.
+ */
+export function humanizePropertyValue(value: unknown) {
+  if (typeof value === 'boolean') return value ? 'Sim' : 'Não';
+  if (Array.isArray(value)) return value.map((item) => String(item)).join('; ');
+  return String(value);
+}
 export function touches(relationship: EgosRelationship, entityId: string) {
   return relationship.sourceEntityId === entityId || relationship.targetEntityId === entityId;
 }
