@@ -443,7 +443,7 @@ export function filterGraphEntities(
   return candidates.filter((entity) => (
     connectedIds.has(entity.id)
     || entity.id === rootEntityId
-    || entity.role.toUpperCase() === 'ROOT'
+    || String(entity.role || '').toUpperCase() === 'ROOT'
   ));
 }
 
