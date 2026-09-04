@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 // a suíte esperar. Definido antes do require porque o serviço lê o valor uma vez,
 // na carga do módulo.
 process.env.PNCP_RETRY_BASE_DELAY_MS = process.env.PNCP_RETRY_BASE_DELAY_MS || '50';
+process.env.GAZETTE_RETRY_DELAY_MS = process.env.GAZETTE_RETRY_DELAY_MS || '50';
 
 const {
   SOURCE_STATUS,
@@ -179,6 +180,49 @@ test('CNPJ do fornecedor coincidente confirma a identidade pela própria fonte',
   }
 });
 
+test('queda isolada de conexão no PNCP é recuperada, e não vira ausência de contrato', async () => {
+  const originalFetch = global.fetch;
+  // O PNCP derruba a conexão de forma aleatória. Sem retentativa, esta queda
+  // faria a busca inteira falhar e o contrato existente sumir do dossiê.
+  let quedas = 0;
+  global.fetch = async (url) => {
+    const address = String(url);
+    if (address.includes('/api/search/') && quedas < 2) {
+      quedas += 1;
+      throw new Error('fetch failed');
+    }
+    if (address.includes('/api/search/')) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          total: 1,
+          items: [{ item_url: '/contratos/11111111111111/2025/1', title: 'Contrato 10/2025' }],
+        }),
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        niFornecedor: '10811370000162',
+        nomeRazaoSocialFornecedor: 'GUERRA CONSTRUCOES LTDA',
+        objetoContrato: 'Obra de pavimentação',
+        valorGlobal: 1_000_000,
+      }),
+    };
+  };
+
+  try {
+    const result = await PncpService.search(EMPRESA);
+
+    assert.equal(quedas, 2, 'as duas quedas simuladas precisam ter ocorrido');
+    assert.equal(result.contratos.length, 1, 'o contrato existe e a queda não pode escondê-lo');
+    assert.equal(result.sourceStatus, 'SUCCESS', 'queda recuperada não é lacuna de cobertura');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
 // ==========================================================
 // Diários Oficiais
 // ==========================================================
@@ -243,11 +287,11 @@ test('palavra genérica isolada no diário oficial é descartada e fica auditáv
 test('TESTE 9 — um sujeito que falha não derruba os demais e o resultado é PARTIAL', async () => {
   OfficialGazetteService.clearCache();
   const originalFetch = global.fetch;
-  let chamada = 0;
-  global.fetch = async () => {
-    chamada += 1;
-    // A segunda consulta falha; as outras concluem.
-    if (chamada === 2) throw new Error('ECONNRESET');
+  // A falha precisa ser do sujeito, não da chamada: uma queda isolada é
+  // recuperada pela retentativa, e é para isso que ela existe. Aqui o Querido
+  // Diário recusa este sujeito em todas as tentativas.
+  global.fetch = async (url) => {
+    if (String(url).includes('MARIA+LUCIA+GUERRA')) throw new Error('ECONNRESET');
     return gazettePayload([
       'Publicação do extrato do contrato com GUERRA CONSTRUCOES LTDA, CNPJ 10.811.370/0001-62.',
     ]);
@@ -320,6 +364,36 @@ test('nenhum sujeito é consultado duas vezes', async () => {
     assert.equal(new Set(nomes).size, nomes.length, 'nenhum sujeito pode aparecer duas vezes');
     assert.equal(requisicoes, result.subjects.length, 'uma requisição por sujeito distinto');
     assert.equal(nomes.filter((nome) => nome.includes('ANA MARIA SOUZA')).length, 1);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('primeira consulta fria ao Querido Diário é repetida, e o resultado não vira indisponível', async () => {
+  OfficialGazetteService.clearCache();
+  const originalFetch = global.fetch;
+  // O servidor do Querido Diário monta a primeira consulta de um termo inédito
+  // devagar e a devolve do cache em seguida. Abortar sem tentar de novo
+  // descartava justamente o trabalho que o servidor acabou de fazer.
+  let frias = 0;
+  global.fetch = async () => {
+    if (frias < 1) {
+      frias += 1;
+      const abort = new Error('This operation was aborted');
+      abort.name = 'AbortError';
+      throw abort;
+    }
+    return gazettePayload([
+      'Extrato de contrato firmado com GUERRA CONSTRUCOES LTDA, CNPJ 10.811.370/0001-62.',
+    ]);
+  };
+
+  try {
+    const result = await OfficialGazetteService.search(EMPRESA);
+
+    assert.equal(frias, 1, 'a consulta fria precisa ter sido simulada');
+    assert.equal(result.sourceStatus, 'SUCCESS');
+    assert.ok(result.results.length > 0, 'o resultado existe e o tempo limite não pode apagá-lo');
   } finally {
     global.fetch = originalFetch;
   }

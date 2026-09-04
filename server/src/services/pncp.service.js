@@ -40,11 +40,26 @@ function envInt(name, fallback, minimum, maximum) {
 
 const RESULTS_PER_QUERY = envInt('PNCP_RESULTS_PER_QUERY', 20, 5, 50);
 const MAX_CANDIDATES_DETAILED = envInt('PNCP_MAX_CANDIDATES', 30, 5, 60);
-const REQUEST_TIMEOUT_MS = envInt('PNCP_TIMEOUT_MS', 20000, 5000, 40000);
-const CONCURRENCY = envInt('PNCP_CONCURRENCY', 4, 1, 8);
-// A API cai com frequência na primeira chamada e responde na seguinte. Sem
-// retentativa o adaptador reportaria ausência de contrato por falha de rede.
-const MAX_ATTEMPTS = envInt('PNCP_MAX_ATTEMPTS', 3, 1, 5);
+// O detalhamento de contrato responde em 7 a 17 s, medido. O limite fica acima
+// da pior medição, e nunca ultrapassa o que resta do orçamento da rota.
+const REQUEST_TIMEOUT_MS = envInt('PNCP_TIMEOUT_MS', 25_000, 5_000, 40_000);
+// O gargalo do PNCP é latência, não vazão: cada detalhamento leva mais de 10 s
+// esperando o servidor. Medido, 24 detalhamentos simultâneos terminaram em
+// 10,9 s com 24 de 24 respostas — a mesma latência de um só. Com concorrência
+// 4, os mesmos 30 candidatos não cabiam no orçamento e metade ficava sem
+// confirmação de CNPJ, que é justamente o passo que separa candidato de
+// contrato da empresa.
+const CONCURRENCY = envInt('PNCP_CONCURRENCY', 16, 1, 24);
+// O PNCP derruba a conexão com ECONNRESET de forma aleatória, e em rajadas: a
+// mesma consulta repetida alterna sucesso e queda sem padrão de horário, tipo
+// de documento ou termo. Sem retentativa o adaptador reportaria ausência de
+// contrato por falha de rede.
+//
+// Medido, 12 consultas por política: com 3 tentativas, 5 desistiram; com 6,
+// uma; com 8, nenhuma. A queda chega em ~200 ms, então tentar de novo é barato
+// — o custo médio por consulta sobe de 819 ms para 1283 ms. Insistir custa
+// menos do que declarar indisponível uma fonte que responde.
+const MAX_ATTEMPTS = envInt('PNCP_MAX_ATTEMPTS', 8, 1, 12);
 
 // Orçamento global da rota. Sem ele, uma execução ruim encadeia buscas por
 // variante e até 30 detalhamentos com três tentativas cada, e passa dos 60 s de
@@ -54,9 +69,21 @@ const MAX_ATTEMPTS = envInt('PNCP_MAX_ATTEMPTS', 3, 1, 5);
 // uma falha opaca por uma cobertura declarada.
 const GLOBAL_DEADLINE_MS = envInt('PNCP_DEADLINE_MS', 45_000, 10_000, 55_000);
 
-// Espera entre tentativas, dobrando a cada rodada, com teto. Antes o retry era
-// imediato: três tentativas numa API instável costumavam falhar as três juntas.
-const RETRY_BASE_DELAY_MS = envInt('PNCP_RETRY_BASE_DELAY_MS', 400, 50, 3_000);
+// Espera entre tentativas.
+//
+// Duas causas de falha, duas esperas. A conexão derrubada não melhora com
+// espera maior — medido: esperar 1200 ms em vez de 200 ms não reduziu a taxa
+// de queda —, então ali a espera é curta e constante, só para não repetir no
+// mesmo instante. Já o HTTP 5xx indica servidor sobrecarregado, onde recuar
+// progressivamente é o comportamento correto; o teto evita que a última
+// tentativa sozinha consuma o orçamento da rota.
+const RETRY_BASE_DELAY_MS = envInt('PNCP_RETRY_BASE_DELAY_MS', 250, 50, 3_000);
+const RETRY_MAX_DELAY_MS = envInt('PNCP_RETRY_MAX_DELAY_MS', 2_500, 250, 10_000);
+
+// Espera de servidor sobrecarregado: dobra a cada rodada, com teto.
+function backoffDelay(attempt) {
+  return Math.min(RETRY_BASE_DELAY_MS * (2 ** (attempt - 1)), RETRY_MAX_DELAY_MS);
+}
 
 function delay(ms) {
   return new Promise((resolve) => { setTimeout(resolve, ms); });
@@ -86,12 +113,19 @@ function formatCnpj(value) {
   return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
 }
 
-async function fetchJson(url, { timeoutMs = REQUEST_TIMEOUT_MS, attempts = MAX_ATTEMPTS } = {}) {
+async function fetchJson(url, { timeoutMs = REQUEST_TIMEOUT_MS, attempts = MAX_ATTEMPTS, deadlineAt } = {}) {
   let lastError;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    // Retentativa que estoura o orçamento da rota não recupera nada: só faz o
+    // cliente desistir antes de receber o parcial que já existe.
+    const restante = deadlineAt ? deadlineAt - Date.now() : Infinity;
+    if (restante <= 1_000) {
+      lastError = lastError || new Error('Orçamento de tempo da consulta ao PNCP esgotado.');
+      break;
+    }
     try {
       const response = await safeFetch(url, {
-        timeoutMs,
+        timeoutMs: Math.min(timeoutMs, Math.max(1_000, restante)),
         headers: { Accept: 'application/json' },
       });
       if (!response.ok) {
@@ -102,14 +136,14 @@ async function fetchJson(url, { timeoutMs = REQUEST_TIMEOUT_MS, attempts = MAX_A
         // 4xx não melhora com retentativa; 5xx e instabilidade melhoram.
         if (response.status < 500) throw error;
         lastError = error;
-        if (attempt < attempts) await delay(RETRY_BASE_DELAY_MS * (2 ** (attempt - 1)));
+        if (attempt < attempts) await delay(backoffDelay(attempt));
         continue;
       }
       return await response.json();
     } catch (error) {
       lastError = error;
       if (error.status && error.status < 500) break;
-      if (attempt < attempts) await delay(RETRY_BASE_DELAY_MS * (2 ** (attempt - 1)));
+      if (attempt < attempts) await delay(RETRY_BASE_DELAY_MS);
     }
   }
   throw lastError || new Error('Falha desconhecida ao consultar o PNCP.');
@@ -154,12 +188,12 @@ function parseItemUrl(itemUrl) {
   return { kind: match[1], orgaoCnpj: match[2], ano: match[3], sequencial: match[4] };
 }
 
-async function searchDocuments(query, documentType) {
+async function searchDocuments(query, documentType, options = {}) {
   const url = `${SEARCH_ENDPOINT}?q=${encodeURIComponent(query)}`
     + `&tipos_documento=${encodeURIComponent(documentType)}`
     + `&pagina=1&tam_pagina=${RESULTS_PER_QUERY}`;
 
-  const payload = await fetchJson(url);
+  const payload = await fetchJson(url, options);
 
   // O endpoint de busca não é documentado no OpenAPI: é o que o portal consome.
   // Se o formato mudar, falhar é obrigatório — devolver lista vazia viraria
@@ -173,8 +207,8 @@ async function searchDocuments(query, documentType) {
   return { total: Number(payload.total) || 0, items: payload.items };
 }
 
-async function fetchContractDetail({ orgaoCnpj, ano, sequencial }) {
-  return fetchJson(`${DETAIL_BASE}/${orgaoCnpj}/contratos/${ano}/${sequencial}`);
+async function fetchContractDetail({ orgaoCnpj, ano, sequencial }, options = {}) {
+  return fetchJson(`${DETAIL_BASE}/${orgaoCnpj}/contratos/${ano}/${sequencial}`, options);
 }
 
 async function mapWithConcurrency(items, limit, worker) {
@@ -390,8 +424,9 @@ const PncpService = {
           });
           continue;
         }
+
         try {
-          const { total, items } = await searchDocuments(variant, documentType);
+          const { total, items } = await searchDocuments(variant, documentType, { deadlineAt });
           consultas.push({ termo: variant, tipo: documentType, ok: true, total, retornados: items.length });
 
           for (const item of items) {
@@ -433,7 +468,7 @@ const PncpService = {
         };
       }
       try {
-        const detail = await fetchContractDetail(parsed);
+        const detail = await fetchContractDetail(parsed, { deadlineAt });
         return buildContract(detail, item, cnpj, profile);
       } catch (error) {
         houveFalha = true;
