@@ -3,6 +3,7 @@
 // ==========================================================
 
 import { RiskLevel, StatusVariant, StepStatus } from '../../types';
+import type { SourceQueryStatus } from './types/sourceStatus.types';
 import { JudicialProcessItem, ProcessDiscovery } from './types/judicial.types';
 import { AdverseMediaSummary } from './types/adverseMedia.types';
 import { OfficialGazetteSummary } from './types/officialGazette.types';
@@ -13,6 +14,7 @@ import { PncpSummary } from './types/pncp.types';
 import { FederalExposureSummary } from './types/federalExposure.types';
 import { TcePeSummary } from './types/tcePe.types';
 
+export * from './types/sourceStatus.types';
 export * from './types/judicial.types';
 export * from './types/adverseMedia.types';
 export * from './types/officialGazette.types';
@@ -23,6 +25,8 @@ export * from './types/aiAnalysis.types';
 export * from './types/pncp.types';
 export * from './types/federalExposure.types';
 export * from './types/tcePe.types';
+export * from './types/tcePeOpenData.types';
+export * from './types/contractIntelligence.types';
 
 export interface Shareholder {
   nome_socio: string;
@@ -115,6 +119,7 @@ export interface GovernanceHistoryResult {
   ok: boolean;
   status?: number;
   applicable: boolean;
+  sourceStatus?: SourceQueryStatus;
   provider: string;
   years: number[];
   members: GovernanceHistoryMember[];

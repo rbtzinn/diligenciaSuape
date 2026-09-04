@@ -11,7 +11,7 @@ const adverseMediaService = new AdverseMediaService();
 router.use(authenticate);
 
 router.post('/search', async (req, res) => {
-  const { cnpj, razaoSocial, nomeFantasia, shareholders, forceRefresh } = req.body || {};
+  const { cnpj, razaoSocial, nomeFantasia, municipio, uf, shareholders, forceRefresh } = req.body || {};
 
   if (!cnpj && !razaoSocial) {
     return res.status(400).json({
@@ -23,7 +23,9 @@ router.post('/search', async (req, res) => {
 
   try {
     const result = await adverseMediaService.searchAdverseMedia(
-      { cnpj, razaoSocial, nomeFantasia },
+      // Município e UF são âncoras de identidade: confirmam a empresa quando o
+      // nome, sozinho, seria ambíguo. Ausentes, a resolução apenas não pontua.
+      { cnpj, razaoSocial, nomeFantasia, municipio, uf },
       Array.isArray(shareholders) ? shareholders : [],
       { forceRefresh: forceRefresh === true }
     );

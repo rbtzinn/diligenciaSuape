@@ -5,6 +5,12 @@
 // ==========================================================
 
 const crypto = require('crypto');
+const { SOURCE_STATUS, resolveSourceStatus } = require('../domain/source-status');
+const {
+  MATCH_LEVEL,
+  buildEntityProfile,
+  resolveEntityMatch,
+} = require('../entity-resolution/entity-resolution');
 
 // O host antigo (api.queridodiario.ok.org.br) saiu do ar; queridodiario.ok.org.br/api
 // responde 302 para cá. Apontar direto evita depender do redirecionamento.
@@ -20,6 +26,21 @@ function envInt(name, fallback, minimum, maximum) {
 const RESULTS_PER_SUBJECT = envInt('GAZETTE_RESULTS_PER_SUBJECT', 25, 5, 100);
 const MAX_PEOPLE = envInt('GAZETTE_MAX_PEOPLE', 20, 0, 40);
 const CONCURRENCY = envInt('GAZETTE_CONCURRENCY', 3, 1, 6);
+
+// Orçamento global da rota. Vinte e dois sujeitos a 15 s cada, com concorrência
+// 3, levam cerca de 110 s — bem além do que o cliente e a função serverless
+// esperam. O prazo abaixo faz o endpoint devolver o que já concluiu em vez de
+// morrer inteiro: os sujeitos não iniciados viram lacuna declarada, não erro.
+const GLOBAL_DEADLINE_MS = envInt('GAZETTE_DEADLINE_MS', 40_000, 10_000, 55_000);
+// Timeout por sujeito. Precisa caber dentro do prazo global com folga.
+const SUBJECT_TIMEOUT_MS = envInt('GAZETTE_SUBJECT_TIMEOUT_MS', 12_000, 4_000, 20_000);
+const CACHE_TTL_MS = envInt('GAZETTE_CACHE_TTL_MS', 10 * 60 * 1000, 60_000, 60 * 60 * 1000);
+
+// Cache por consulta, não por diligência: o mesmo nome pesquisado em duas
+// execuções seguidas não precisa bater na API de novo, e sujeito repetido entre
+// empresa e QSA é resolvido antes de virar requisição.
+const queryCache = new Map();
+
 const PERSON_STOP_WORDS = new Set(['da', 'das', 'de', 'do', 'dos', 'e']);
 
 function normalizeText(value) {
@@ -125,7 +146,7 @@ function buildResult(item, subject, strength) {
   };
 }
 
-async function fetchGazettes({ query, territoryIds = [], since }) {
+async function fetchGazettes({ query, territoryIds = [], since, timeoutMs = REQUEST_TIMEOUT_MS }) {
   const url = new URL(API_URL);
   const params = new URLSearchParams({
     querystring: query,
@@ -138,16 +159,39 @@ async function fetchGazettes({ query, territoryIds = [], since }) {
   if (since) params.set('published_since', since);
   url.search = params.toString();
 
-  const response = await fetch(url, {
-    headers: { Accept: 'application/json', 'User-Agent': 'Diligencia360-SUAPE/2.0' },
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-  });
-  if (!response.ok) {
-    const error = new Error(`Querido Diário respondeu HTTP ${response.status}.`);
-    error.status = response.status;
+  const cacheKey = url.toString();
+  const cached = queryCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.payload;
+
+  // AbortController próprio em vez de AbortSignal.timeout: o prazo global da
+  // rota precisa poder encurtar o timeout do sujeito quando o tempo restante
+  // for menor do que o teto configurado.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), Math.max(1_000, timeoutMs));
+  try {
+    const response = await fetch(url, {
+      headers: { Accept: 'application/json', 'User-Agent': 'Diligencia360-SUAPE/2.0' },
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      const error = new Error(`Querido Diário respondeu HTTP ${response.status}.`);
+      error.status = response.status;
+      throw error;
+    }
+    const payload = await response.json();
+    queryCache.set(cacheKey, { payload, expiresAt: Date.now() + CACHE_TTL_MS });
+    return payload;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      const timeout = new Error('Tempo limite da consulta ao Querido Diário esgotado.');
+      timeout.status = 504;
+      timeout.timedOut = true;
+      throw timeout;
+    }
     throw error;
+  } finally {
+    clearTimeout(timer);
   }
-  return response.json();
 }
 
 const OfficialGazetteService = {
@@ -243,14 +287,52 @@ const OfficialGazetteService = {
       });
     }
 
+    // Deduplicação de sujeitos: razão social sem sufixo, termo distintivo e nome
+    // fantasia colidem com frequência, e cada colisão era uma requisição inteira
+    // gasta para trazer exatamente o mesmo resultado.
+    const uniqueSubjects = [];
+    const seenSubjects = new Set();
+    for (const subject of subjects) {
+      const key = normalizeText(subject.name);
+      if (!key || seenSubjects.has(key)) continue;
+      seenSubjects.add(key);
+      uniqueSubjects.push(subject);
+    }
+    const duplicateSubjects = subjects.length - uniqueSubjects.length;
+
     const consultedAt = new Date().toISOString();
-    const attempts = await mapWithConcurrency(subjects, CONCURRENCY, async (subject) => {
+    const deadlineAt = Date.now() + GLOBAL_DEADLINE_MS;
+    let deadlineExceeded = false;
+
+    const attempts = await mapWithConcurrency(uniqueSubjects, CONCURRENCY, async (subject) => {
       const query = quotedQuery(subject.name);
       if (!query) {
         return { subject, ok: false, status: 400, erro: 'Nome inválido para consulta.', query, results: [], totalFound: 0 };
       }
+
+      // Sujeito que nem chega a começar é lacuna declarada, não falha da fonte.
+      const remainingMs = deadlineAt - Date.now();
+      if (remainingMs < 1_500) {
+        deadlineExceeded = true;
+        return {
+          subject,
+          ok: false,
+          notStarted: true,
+          status: 504,
+          erro: 'Consulta não iniciada: o orçamento de tempo da rota se esgotou antes.',
+          query,
+          totalFound: 0,
+          results: [],
+        };
+      }
+
       try {
-        const payload = await fetchGazettes({ query, territoryIds, since: publishedSince });
+        const payload = await fetchGazettes({
+          query,
+          territoryIds,
+          since: publishedSince,
+          timeoutMs: Math.min(SUBJECT_TIMEOUT_MS, remainingMs),
+        });
         const gazettes = Array.isArray(payload.gazettes) ? payload.gazettes : [];
         return {
           subject,
@@ -261,9 +343,13 @@ const OfficialGazetteService = {
           results: gazettes.map((item) => buildResult(item, subject, subject.strength)),
         };
       } catch (error) {
+        if (error.timedOut) deadlineExceeded = true;
+        // A falha de um sujeito nunca derruba os demais: o resultado dele vira
+        // lacuna, e os que concluíram continuam valendo.
         return {
           subject,
           ok: false,
+          timedOut: Boolean(error.timedOut),
           status: error.status || 503,
           erro: `Falha ao consultar Querido Diário: ${error.message}`,
           query,
@@ -277,25 +363,43 @@ const OfficialGazetteService = {
     const failed = attempts.filter((attempt) => !attempt.ok);
     const companyQuery = attempts[0]?.query || quotedQuery(company.razaoSocial);
 
+    const subjectReport = (attempt) => ({
+      type: attempt.subject.type,
+      name: attempt.subject.name,
+      qualification: attempt.subject.qualification,
+      ok: attempt.ok,
+      notStarted: Boolean(attempt.notStarted),
+      timedOut: Boolean(attempt.timedOut),
+      totalFound: attempt.totalFound,
+      returned: attempt.results.length,
+      erro: attempt.erro,
+    });
+    // Três contagens distintas, porque significam coisas distintas: o que
+    // concluiu, o que a fonte recusou e o que nem chegou a ser tentado.
+    const completedSubjects = successful.length;
+    const failedSubjects = failed.filter((attempt) => !attempt.notStarted).length;
+    const unavailableSubjects = failed.filter((attempt) => attempt.notStarted).length;
+
     if (successful.length === 0) {
       return {
         ok: false,
         status: failed[0]?.status || 503,
+        sourceStatus: SOURCE_STATUS.UNAVAILABLE,
         erro: failed[0]?.erro || 'Nenhuma consulta a diários oficiais foi concluída.',
+        aviso: 'Nenhum sujeito pôde ser consultado. A lista vazia não significa ausência de publicação.',
         totalFound: 0,
         returned: 0,
         results: [],
+        discardedResults: [],
+        falsePositivesDiscarded: 0,
+        completedSubjects,
+        failedSubjects,
+        unavailableSubjects,
+        duplicateSubjects,
+        deadlineExceeded,
         query: companyQuery,
         consultadoEm: consultedAt,
-        subjects: attempts.map((attempt) => ({
-          type: attempt.subject.type,
-          name: attempt.subject.name,
-          qualification: attempt.subject.qualification,
-          ok: attempt.ok,
-          totalFound: attempt.totalFound,
-          returned: attempt.results.length,
-          erro: attempt.erro,
-        })),
+        subjects: attempts.map(subjectReport),
       };
     }
 
@@ -306,32 +410,93 @@ const OfficialGazetteService = {
         if (!deduped.has(key)) deduped.set(key, result);
       }
     }
-    const results = [...deduped.values()];
+
+    // Resolução de identidade sobre os trechos publicados. O diário cita a
+    // empresa pelo nome curto, e uma palavra isolada da razão social não a
+    // identifica: "guerra" num decreto municipal não é GUERRA CONSTRUCOES LTDA.
+    const profile = buildEntityProfile({ ...company, socios: options.shareholders });
+    const retained = [];
+    const discardedResults = [];
+    for (const result of deduped.values()) {
+      // Apenas o texto publicado. Incluir o nome do sujeito pesquisado faria a
+      // consulta confirmar a si mesma: todo resultado traria a razão social
+      // porque foi ela que perguntamos, e nada seria jamais descartado.
+      const evidenceText = (result.excerpts || []).join(' ');
+      const entityMatch = resolveEntityMatch(profile, { text: evidenceText });
+
+      // Sujeito pessoa continua julgado pelo nome da pessoa, que já é avaliado
+      // por `personCorrelation`; a camada empresarial não se aplica a ele.
+      if (result.subjectType === 'person') {
+        retained.push({ ...result, entityMatch });
+        continue;
+      }
+
+      if (entityMatch.level === MATCH_LEVEL.FALSE_POSITIVE) {
+        discardedResults.push({
+          id: result.id,
+          date: result.date,
+          territoryName: result.territoryName,
+          url: result.url,
+          subjectName: result.subjectName,
+          level: entityMatch.level,
+          score: entityMatch.score,
+          basis: entityMatch.basis,
+        });
+        continue;
+      }
+
+      retained.push({
+        ...result,
+        entityMatch,
+        // O selo textual passa a refletir a identidade resolvida, e não apenas a
+        // presença da string no trecho.
+        matchStrength: entityMatch.level === MATCH_LEVEL.CONFIRMED
+          || entityMatch.level === MATCH_LEVEL.HIGH_CONFIDENCE
+          ? 'high'
+          : 'medium',
+      });
+    }
+
+    const results = retained;
     const totalFound = successful.reduce((sum, attempt) => sum + attempt.totalFound, 0);
+    const sourceStatus = resolveSourceStatus({
+      attempted: attempts.length,
+      succeeded: successful.length,
+      resultCount: results.length,
+    });
 
     return {
       ok: true,
       status: 200,
+      sourceStatus,
       provider: 'Querido Diário / Open Knowledge Brasil',
       query: companyQuery,
       totalFound,
       returned: results.length,
       results,
+      discardedResults,
+      falsePositivesDiscarded: discardedResults.length,
+      completedSubjects,
+      failedSubjects,
+      unavailableSubjects,
+      duplicateSubjects,
+      deadlineExceeded,
       consultadoEm: consultedAt,
       partial: failed.length > 0,
       peopleSearched: subjects.filter((subject) => subject.type === 'person').length,
-      subjects: attempts.map((attempt) => ({
-        type: attempt.subject.type,
-        name: attempt.subject.name,
-        qualification: attempt.subject.qualification,
-        ok: attempt.ok,
-        totalFound: attempt.totalFound,
-        returned: attempt.results.length,
-        erro: attempt.erro,
-      })),
+      subjects: attempts.map(subjectReport),
       scope: 'Diários oficiais municipais cobertos pelo Querido Diário, pesquisados por razão social, nome fantasia e nome de cada pessoa física do quadro; não inclui DOU, DOE nem todos os municípios brasileiros.',
     };
   },
+};
+
+/**
+ * Esvazia o cache por consulta. Existe para o teste poder isolar cada cenário:
+ * sem isso, uma consulta bem-sucedida de um teste responderia pela consulta
+ * indisponível do teste seguinte, e a suíte validaria o cache em vez da regra.
+ */
+OfficialGazetteService.clearCache = function clearCache() {
+  queryCache.clear();
 };
 
 module.exports = { OfficialGazetteService, correlation, personCorrelation, isNaturalPerson };

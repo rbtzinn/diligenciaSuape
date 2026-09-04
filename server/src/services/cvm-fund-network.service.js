@@ -12,6 +12,7 @@ const { safeFetch } = require('../utils/safeFetch');
 const CompanyService = require('./company.service');
 
 const DATA_URL = 'https://dados.cvm.gov.br/dados/FI/CAD/DADOS/registro_fundo_classe.zip';
+const { SOURCE_STATUS } = require('../domain/source-status');
 const SOURCE_PAGE = 'https://dados.cvm.gov.br/dataset/fi-cad';
 const CACHE_DIR = path.join(__dirname, '..', '..', '.cache', 'cvm-funds');
 const CACHE_FILE = path.join(CACHE_DIR, 'registro_fundo_classe.zip');
@@ -355,6 +356,9 @@ async function buildFundNetwork(cnpj, indexes) {
       ok: true,
       status: 200,
       applicable: false,
+      // A fonte respondeu: este CNPJ não é fundo. Resposta correta da CVM, não
+      // falha — o que a separa do ramo de erro logo abaixo.
+      sourceStatus: SOURCE_STATUS.NOT_APPLICABLE,
       provider: 'CVM — Cadastro de Fundos',
       entities: [],
       relationships: [],
@@ -476,6 +480,9 @@ async function buildFundNetwork(cnpj, indexes) {
     ok: true,
     status: 200,
     applicable: true,
+    // Fundo confirmado no cadastro. PARTIAL quando parte do QSA relacionado não
+    // pôde ser expandida: o achado vale, a cobertura é que ficou incompleta.
+    sourceStatus: failures.length > 0 ? SOURCE_STATUS.PARTIAL : SOURCE_STATUS.SUCCESS,
     provider: 'CVM — Cadastro de Fundos',
     fund: {
       cnpj: digits(fund.CNPJ_Fundo) || cnpj,
@@ -507,21 +514,29 @@ const CvmFundNetworkService = {
   async getRelationshipNetwork({ cnpj }) {
     const targetCnpj = digits(cnpj);
     if (targetCnpj.length !== 14) {
-      return { ok: false, status: 400, applicable: false, erro: 'CNPJ inválido.', entities: [], relationships: [], evidences: [] };
+      return { ok: false, status: 400, applicable: false, sourceStatus: SOURCE_STATUS.ERROR, erro: 'CNPJ inválido.', entities: [], relationships: [], evidences: [] };
     }
     try {
       const indexes = await loadIndexes();
       return await buildFundNetwork(targetCnpj, indexes);
     } catch (error) {
+      // Uma falha ao baixar ou ler o cadastro da CVM não diz absolutamente nada
+      // sobre a estrutura societária da empresa. Marcar `applicable: true` aqui
+      // fazia o motor de risco concluir que existia fundo de investimento — e
+      // cobrar "beneficiário final não visível" — de uma LTDA com dois sócios
+      // pessoa física no QSA. Erro técnico não é achado.
       return {
         ok: false,
         status: 503,
-        applicable: true,
+        applicable: false,
+        sourceStatus: SOURCE_STATUS.UNAVAILABLE,
         provider: 'CVM — Cadastro de Fundos',
         entities: [],
         relationships: [],
         evidences: [],
         erro: error.message,
+        aviso: 'Não foi possível consultar o cadastro de fundos da CVM. '
+          + 'Não é possível afirmar, nem descartar, estrutura de fundo para este CNPJ.',
         sourceUrl: SOURCE_PAGE,
         consultadoEm: new Date().toISOString(),
       };

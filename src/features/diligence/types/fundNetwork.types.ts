@@ -1,3 +1,5 @@
+import type { SourceQueryStatus } from './sourceStatus.types';
+
 export interface FundNetworkIdentifier {
   type: string;
   value: string;
@@ -56,6 +58,8 @@ export interface FundNetworkSummary {
   ok: boolean;
   status?: number;
   applicable: boolean;
+  /** Estado canônico da consulta; ausente em dossiês anteriores a esta camada. */
+  sourceStatus?: SourceQueryStatus;
   provider: string;
   fund?: FundRegistryProfile;
   fundClass?: {

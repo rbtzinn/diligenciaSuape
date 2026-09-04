@@ -10,6 +10,7 @@
 // ==========================================================
 
 import type { DiligenceItem } from '../../types';
+import type { SourceQueryStatus } from '../../types/sourceStatus.types';
 
 export type SourceStatus = 'com-achado' | 'sem-achado' | 'falhou' | 'nao-consultada';
 
@@ -89,12 +90,32 @@ export function deriveSourceCoverage(diligence: DiligenceItem): SourceCoverageIt
       : judicialCount > 0 ? 'com-achado' : 'sem-achado',
   });
 
+  // O `sourceStatus` do backend é a resposta direta desta pergunta. Quando
+  // presente, ele vence a inferência por contagem: `EMPTY` e `UNAVAILABLE`
+  // produzem a mesma lista vazia e não podem colapsar no mesmo rótulo.
+  const fromSourceStatus = (
+    status: SourceQueryStatus | undefined,
+    detail?: string,
+  ): { status: SourceStatus; detail?: string } | null => {
+    switch (status) {
+      case 'SUCCESS': return { status: 'com-achado', detail };
+      case 'EMPTY': return { status: 'sem-achado', detail };
+      case 'PARTIAL': return { status: 'com-achado', detail: detail || 'Cobertura parcial' };
+      case 'UNAVAILABLE':
+      case 'ERROR': return { status: 'falhou', detail };
+      case 'NOT_APPLICABLE': return { status: 'nao-consultada', detail: detail || 'Não se aplica a esta entidade' };
+      default: return null;
+    }
+  };
+
   add('pncp', 'Contratos públicos (PNCP)', diligence.pncp
-    ? fromCount(true, diligence.pncp.ok, diligence.pncp.resumo?.confirmados || 0, diligence.pncp.erro)
+    ? fromSourceStatus(diligence.pncp.sourceStatus, diligence.pncp.erro)
+      ?? fromCount(true, diligence.pncp.ok, diligence.pncp.resumo?.confirmados || 0, diligence.pncp.erro)
     : { status: 'nao-consultada' });
 
   add('tce-pe', 'Controle externo (TCE-PE)', diligence.tcePe
-    ? fromCount(true, diligence.tcePe.ok, diligence.tcePe.processos?.length || 0, diligence.tcePe.erro)
+    ? fromSourceStatus(diligence.tcePe.sourceStatus, diligence.tcePe.erro)
+      ?? fromCount(true, diligence.tcePe.ok, diligence.tcePe.processos?.length || 0, diligence.tcePe.erro)
     : { status: 'nao-consultada' });
 
   const federal = diligence.federalExposure;
@@ -121,7 +142,8 @@ export function deriveSourceCoverage(diligence: DiligenceItem): SourceCoverageIt
     : { status: 'nao-consultada' });
 
   add('diarios', 'Diários oficiais', diligence.officialGazettes
-    ? fromCount(true, diligence.officialGazettes.ok, diligence.officialGazettes.results?.length || 0, diligence.officialGazettes.erro)
+    ? fromSourceStatus(diligence.officialGazettes.sourceStatus, diligence.officialGazettes.erro)
+      ?? fromCount(true, diligence.officialGazettes.ok, diligence.officialGazettes.results?.length || 0, diligence.officialGazettes.erro)
     : { status: 'nao-consultada' });
 
   add('rede', 'Rede societária', diligence.corporateNetwork

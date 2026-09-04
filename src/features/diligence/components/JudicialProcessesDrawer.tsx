@@ -1,8 +1,9 @@
 import React from 'react';
 import { Drawer } from '../../../components/ui/Drawer';
-import type { ProcessDiscovery, TcePeSummary } from '../types';
+import type { ProcessDiscovery, TcePeSummary, TceOpenDataSummary } from '../types';
 import { JudicialDiscoverySection } from './JudicialDiscoverySection';
 import { TcePeProcessesSection } from './TcePeProcessesSection';
+import { TcePeOpenDataSection } from './TcePeOpenDataSection';
 
 interface JudicialProcessesDrawerProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface JudicialProcessesDrawerProps {
   onEnrich: (item: ProcessDiscovery) => void;
   enrichingId: string | null;
   tcePe?: TcePeSummary;
+  tcePeOpenData?: TceOpenDataSummary;
 }
 
 export const JudicialProcessesDrawer: React.FC<JudicialProcessesDrawerProps> = ({
@@ -24,6 +26,7 @@ export const JudicialProcessesDrawer: React.FC<JudicialProcessesDrawerProps> = (
   onEnrich,
   enrichingId,
   tcePe,
+  tcePeOpenData,
 }) => (
   <Drawer
     isOpen={isOpen}
@@ -34,6 +37,7 @@ export const JudicialProcessesDrawer: React.FC<JudicialProcessesDrawerProps> = (
   >
     <div className="pncp-stack">
       <TcePeProcessesSection summary={tcePe} />
+      <TcePeOpenDataSection summary={tcePeOpenData} />
       <JudicialDiscoverySection
         discoveries={discoveries}
         onUpdateDiscoveries={onUpdateDiscoveries}

@@ -3,59 +3,41 @@
 // API pública, gratuita e sem chave: sistemas.tce.pe.gov.br/DadosAbertos
 // ==========================================================
 
-const { safeFetch } = require('../utils/safeFetch');
+const { queryDataset, decodeByCharset, rowsFromResponse } = require('./tce-pe/tce-pe.client');
+const { RELATIONSHIP_TYPE } = require('../domain/relationship-type');
 const { normalizeText } = require('../egos/domain/normalization');
 const { nameVariants } = require('./pncp.service');
+const { SOURCE_STATUS, resolveSourceStatus } = require('../domain/source-status');
+const {
+  MATCH_LEVEL,
+  buildEntityProfile,
+  resolveEntityMatch,
+} = require('../entity-resolution/entity-resolution');
 
-const BASE_URL = 'https://sistemas.tce.pe.gov.br/DadosAbertos';
 const MAX_PROCESSES = 10;
 
-function rowsFromResponse(payload, method) {
-  const response = payload?.resposta;
-  if (!response || response.status !== 'OK') {
-    throw new Error(`TCE-PE retornou formato inválido em ${method}.`);
-  }
-  if (!response.conteudo) return [];
-  return Array.isArray(response.conteudo) ? response.conteudo : [response.conteudo];
-}
+// Classes processuais em que a empresa quase nunca é parte: o objeto é o ato de
+// pessoal de um órgão. Quando o nome empresarial aparece num processo desses
+// sem âncora nenhuma, é coincidência nominal, não vínculo.
+const PERSONNEL_ACT_PATTERN = /APOSENTADORIA|PENS[AÃ]O|REFORMA|INATIVIDADE|ADMISS[AÃ]O DE PESSOAL|ATO DE PESSOAL/i;
+
+// Marcadores de que o processo trata de contratação, que é onde uma empresa
+// legitimamente figura.
+const CONTRACT_CONTEXT_PATTERN = /CONTRATO|CONTRATA[CÇ][AÃ]O|LICITA[CÇ][AÃ]O|PREG[AÃ]O|CONCORR[EÊ]NCIA|EDITAL|ADITIVO|DISPENSA|INEXIGIBILIDADE|OBRA|SERVI[CÇ]O/i;
 
 /**
- * O TCE-PE responde `application/json;charset=ISO-8859-1`, mas `response.json()`
- * decodifica sempre como UTF-8. Lido assim, todo acento vira caractere de
- * substituição: "Embargos de Declaração" chega como "Embargos de Declara??o", e
- * o defeito segue para o dossiê, para o PDF assinado e para o pacote enviado à
- * IA — inclusive em nome de município e de órgão.
+ * Consulta um método dos Dados Abertos e devolve apenas as linhas.
  *
- * A leitura passa pelo buffer bruto, decodificando conforme o charset declarado
- * na resposta. Só ISO-8859-1 e UTF-8 aparecem nesta API; qualquer outro valor
- * cai em UTF-8, que é o padrão de JSON.
+ * O transporte — charset, envelope, timeout e cache — mora no cliente
+ * compartilhado desde a Fase 3, quando os adaptadores de contratos, aditivos,
+ * licitações, obras e despesas passaram a precisar do mesmo tratamento. A falha
+ * continua sendo lançada aqui porque `searchCompany` já a converte em consulta
+ * parcial, e o comportamento validado na Fase 2 não muda.
  */
-function decodeByCharset(buffer, contentType) {
-  const declared = /charset=([\w-]+)/i.exec(String(contentType || ''));
-  const charset = (declared?.[1] || 'utf-8').toLowerCase();
-  const isLatin1 = charset === 'iso-8859-1' || charset === 'latin1' || charset === 'windows-1252';
-  return buffer.toString(isLatin1 ? 'latin1' : 'utf8');
-}
-
 async function query(method, params) {
-  const search = new URLSearchParams(params);
-  const response = await safeFetch(`${BASE_URL}/${method}!json?${search}`, {
-    headers: { Accept: 'application/json' },
-    timeoutMs: 20_000,
-  });
-  if (!response.ok) throw new Error(`TCE-PE retornou HTTP ${response.status}.`);
-
-  const buffer = Buffer.from(await response.arrayBuffer());
-  const text = decodeByCharset(buffer, response.headers?.get?.('content-type'));
-
-  let payload;
-  try {
-    payload = JSON.parse(text);
-  } catch {
-    throw new Error(`TCE-PE retornou conteúdo ilegível em ${method}.`);
-  }
-
-  return rowsFromResponse(payload, method);
+  const response = await queryDataset(method, params);
+  if (!response.ok) throw new Error(response.erro);
+  return response.rows;
 }
 
 function formatProcessNumber(value) {
@@ -102,13 +84,87 @@ function matchCompanyName(interested, variants) {
   return null;
 }
 
+/**
+ * Resolve identidade e papel processual de um processo do TCE-PE.
+ *
+ * O cadastro de processos do TCE-PE não traz o CNPJ do interessado, então a
+ * confirmação máxima vem do nome na lista oficial de interessados, corroborada
+ * pelo teor da decisão. Um CNPJ que apareça no corpo do documento confirma.
+ *
+ * @param {object} profile perfil da entidade investigada.
+ * @param {object} context campos textuais do processo.
+ * @returns {{entityMatch: object, relationshipType: string, relevantToEntity: boolean}}
+ */
+function resolveProcessAttribution(profile, context = {}) {
+  const interestedName = String(context.interestedName || '');
+  const bodyText = [
+    context.description,
+    ...(Array.isArray(context.considerations) ? context.considerations : []),
+    ...(Array.isArray(context.determinations) ? context.determinations : []),
+  ].filter(Boolean).join(' ');
+
+  // A lista de interessados é campo estruturado do TCE-PE: o nome ali tem
+  // valor probatório diferente do mesmo nome solto no corpo da decisão.
+  const interestedMatch = resolveEntityMatch(profile, { text: interestedName });
+  const bodyMatch = resolveEntityMatch(profile, { text: bodyText });
+  const entityMatch = interestedMatch.score >= bodyMatch.score ? interestedMatch : bodyMatch;
+
+  const modality = String(context.modality || '');
+  const type = String(context.type || '');
+  const classification = `${type} ${modality} ${String(context.description || '')}`;
+  const personnelAct = PERSONNEL_ACT_PATTERN.test(classification);
+  const contractContext = CONTRACT_CONTEXT_PATTERN.test(classification) || CONTRACT_CONTEXT_PATTERN.test(bodyText);
+
+  const identified = entityMatch.level === MATCH_LEVEL.CONFIRMED
+    || entityMatch.level === MATCH_LEVEL.HIGH_CONFIDENCE;
+
+  let relationshipType;
+  if (entityMatch.level === MATCH_LEVEL.FALSE_POSITIVE) {
+    relationshipType = RELATIONSHIP_TYPE.FALSE_POSITIVE;
+  } else if (identified && interestedMatch.level !== MATCH_LEVEL.FALSE_POSITIVE) {
+    // Nome na lista oficial de interessados: posição processual definida.
+    relationshipType = contractContext ? RELATIONSHIP_TYPE.CONTRACTOR : RELATIONSHIP_TYPE.PARTY;
+  } else if (identified) {
+    // Identificada apenas pelo corpo da decisão: citada, não necessariamente parte.
+    relationshipType = RELATIONSHIP_TYPE.MENTIONED;
+  } else if (entityMatch.level === MATCH_LEVEL.POSSIBLE) {
+    relationshipType = entityMatch.matched.partner ? RELATIONSHIP_TYPE.RELATED : RELATIONSHIP_TYPE.UNKNOWN;
+  } else {
+    relationshipType = RELATIONSHIP_TYPE.UNKNOWN;
+  }
+
+  // Ato de pessoal em que a empresa só é citada: o processo julga a
+  // aposentadoria de um servidor, não a empresa. Fica auditável na lista, mas
+  // não conta como processo relevante nem alimenta exposição.
+  const incidentalPersonnelAct = personnelAct
+    && !contractContext
+    && relationshipType !== RELATIONSHIP_TYPE.CONTRACTOR
+    && entityMatch.level !== MATCH_LEVEL.CONFIRMED;
+
+  const relevantToEntity = relationshipType !== RELATIONSHIP_TYPE.FALSE_POSITIVE
+    && relationshipType !== RELATIONSHIP_TYPE.UNKNOWN
+    && !incidentalPersonnelAct;
+
+  return {
+    entityMatch,
+    relationshipType,
+    relevantToEntity,
+    personnelAct,
+    contractContext,
+    incidentalPersonnelAct,
+    attributionBasis: incidentalPersonnelAct
+      ? 'O processo trata de ato de pessoal do órgão. O nome empresarial aparece incidentalmente e não caracteriza vínculo com o objeto julgado.'
+      : entityMatch.basis,
+  };
+}
+
 function contractsMentioned(...texts) {
   const matches = texts
     .flatMap((text) => String(text || '').match(/(?<![\d.])\d{1,4}\/20\d{2}\b/g) || []);
   return [...new Set(matches)];
 }
 
-function mapProcess(row, match, details = {}) {
+function mapProcess(row, match, details = {}, profile = null) {
   const result = details.results?.[0] || {};
   const considerations = (details.considerations || []).map((item) => decodeHtml(item.Conteudo)).filter(Boolean).slice(0, 8);
   const determinations = (details.determinations || []).map((item) => decodeHtml(item.Conteudo)).filter(Boolean).slice(0, 8);
@@ -118,8 +174,24 @@ function mapProcess(row, match, details = {}) {
   const outcome = result.Resultado || '';
   const isAudit = /AUDITORIA|CAUTELAR/i.test(modality);
   const irregular = /IRREGULAR/i.test(outcome);
+
+  const attribution = profile
+    ? resolveProcessAttribution(profile, {
+      interestedName: row.Interessado || '',
+      description,
+      considerations,
+      determinations,
+      modality,
+      type: result.Tipo || row.Tipo || '',
+    })
+    : null;
+
   return {
     processNumber,
+    entityMatch: attribution?.entityMatch || null,
+    relationshipType: attribution?.relationshipType || RELATIONSHIP_TYPE.UNKNOWN,
+    relevantToEntity: attribution ? attribution.relevantToEntity : true,
+    attributionBasis: attribution?.attributionBasis || null,
     rawProcessNumber: String(row.Processo || '').replace(/[^A-Za-z0-9]/g, ''),
     interestedName: row.Interessado || '',
     matchStrength: match.strength,
@@ -145,7 +217,12 @@ function mapProcess(row, match, details = {}) {
     considerations,
     determinations,
     contractsMentioned: contractsMentioned(description, ...determinations),
-    relevance: irregular && isAudit ? 'high' : isAudit ? 'medium' : 'low',
+    // Relevância só existe para processo cuja atribuição à empresa se sustenta.
+    // Um ato de pessoal em que o nome apareceu por acaso não é "alta relevância"
+    // ainda que a decisão tenha sido pela irregularidade da aposentadoria.
+    relevance: attribution && !attribution.relevantToEntity
+      ? 'none'
+      : irregular && isAudit ? 'high' : isAudit ? 'medium' : 'low',
     attributionWarning: 'O resultado é do processo de controle externo. A empresa aparece nominalmente como interessada; isso não prova, por si só, fraude, dolo ou sanção contra ela.',
   };
 }
@@ -155,8 +232,17 @@ const TcePeService = {
     const variants = nameVariants(company);
     const consultedAt = new Date().toISOString();
     if (variants.length === 0) {
-      return { ok: false, status: 400, erro: 'Razão social ou nome empresarial obrigatório.', processos: [], consultas: [], consultadoEm: consultedAt };
+      return {
+        ok: false,
+        status: 400,
+        sourceStatus: SOURCE_STATUS.ERROR,
+        erro: 'Razão social ou nome empresarial obrigatório.',
+        processos: [],
+        consultas: [],
+        consultadoEm: consultedAt,
+      };
     }
+    const profile = buildEntityProfile(company);
 
     const candidates = new Map();
     const consultas = [];
@@ -195,28 +281,74 @@ const TcePeService = {
       else partial = true;
       if (detailCalls[2].status === 'fulfilled') details.determinations = detailCalls[2].value;
       else partial = true;
-      return mapProcess(row, match, details);
+      return mapProcess(row, match, details, profile);
     }));
+
+    // Falso positivo e coincidência incidental saem da lista principal, mas
+    // ficam registrados: descarte silencioso não é auditável.
+    const relevantes = processos.filter((item) => item.relevantToEntity);
+    const descartados = processos
+      .filter((item) => !item.relevantToEntity)
+      .map((item) => ({
+        processNumber: item.processNumber,
+        interestedName: item.interestedName,
+        type: item.type,
+        modality: item.modality,
+        organization: item.organization,
+        exercise: item.exercise,
+        processUrl: item.processUrl,
+        relationshipType: item.relationshipType,
+        level: item.entityMatch?.level || null,
+        score: item.entityMatch?.score ?? null,
+        basis: item.attributionBasis,
+      }));
+
+    const consultasBemSucedidas = consultas.filter((item) => item.ok).length;
+    const sourceStatus = resolveSourceStatus({
+      attempted: consultas.length,
+      succeeded: consultasBemSucedidas,
+      resultCount: relevantes.length,
+    });
 
     return {
       ok: consultas.some((item) => item.ok),
+      sourceStatus,
       provider: 'TCE-PE — API de Dados Abertos',
       sourceUrl: 'https://sistemas.tce.pe.gov.br/DadosAbertos/Exemplo!listar',
       consultadoEm: consultedAt,
       consultaParcial: partial,
       variantesPesquisadas: variants,
       consultas,
-      processos: processos.sort((a, b) => (b.exercise || 0) - (a.exercise || 0)),
+      processos: relevantes.sort((a, b) => (b.exercise || 0) - (a.exercise || 0)),
+      processosDescartados: descartados,
+      falsePositivesDiscarded: descartados.length,
       resumo: {
-        total: processos.length,
-        auditorias: processos.filter((item) => /AUDITORIA/i.test(item.modality)).length,
-        julgados: processos.filter((item) => /JULGADO/i.test(item.status)).length,
-        resultadosIrregulares: processos.filter((item) => /IRREGULAR/i.test(item.outcome)).length,
-        altaRelevancia: processos.filter((item) => item.relevance === 'high').length,
+        total: relevantes.length,
+        descartados: descartados.length,
+        contratante: relevantes.filter((item) => item.relationshipType === RELATIONSHIP_TYPE.CONTRACTOR).length,
+        parte: relevantes.filter((item) => item.relationshipType === RELATIONSHIP_TYPE.PARTY).length,
+        citada: relevantes.filter((item) => item.relationshipType === RELATIONSHIP_TYPE.MENTIONED).length,
+        auditorias: relevantes.filter((item) => /AUDITORIA/i.test(item.modality)).length,
+        julgados: relevantes.filter((item) => /JULGADO/i.test(item.status)).length,
+        resultadosIrregulares: relevantes.filter((item) => /IRREGULAR/i.test(item.outcome)).length,
+        altaRelevancia: relevantes.filter((item) => item.relevance === 'high').length,
       },
-      limitacao: 'A pesquisa é nominal porque a API de processos do TCE-PE não retorna o CNPJ do interessado. O sistema preserva o grau de correspondência e não atribui automaticamente à empresa a responsabilidade decidida no processo.',
+      limitacao: 'A pesquisa é nominal porque a API de processos do TCE-PE não retorna o CNPJ do interessado. '
+        + 'A camada de resolução de identidade classifica cada processo em CONTRACTOR, PARTY, MENTIONED, RELATED, '
+        + 'UNKNOWN ou FALSE_POSITIVE, e processos de ato de pessoal em que o nome empresarial aparece '
+        + 'incidentalmente ficam fora da lista principal. O sistema não atribui automaticamente à empresa a '
+        + 'responsabilidade decidida no processo.',
     };
   },
 };
 
-module.exports = { TcePeService, decodeByCharset, formatProcessNumber, matchCompanyName, mapProcess, rowsFromResponse };
+module.exports = {
+  TcePeService,
+  RELATIONSHIP_TYPE,
+  decodeByCharset,
+  formatProcessNumber,
+  matchCompanyName,
+  mapProcess,
+  resolveProcessAttribution,
+  rowsFromResponse,
+};

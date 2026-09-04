@@ -29,7 +29,22 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
     low: { label: 'Correlação baixa', variant: 'neutral' },
   };
 
-  const currentMatch = matchConfig[item.matchStrength] || matchConfig.low;
+  // Quando a camada de resolução de identidade respondeu, o selo passa a dizer
+  // o nível dela: "CNPJ confirmado" é afirmação mais forte, e mais verificável,
+  // do que "empresa identificada".
+  const ENTITY_LEVEL_LABEL: Record<string, string> = {
+    CONFIRMED: 'CNPJ confirmado',
+    HIGH_CONFIDENCE: 'Empresa identificada',
+    POSSIBLE: 'Identificação possível',
+    FALSE_POSITIVE: 'Identificação não sustentada',
+  };
+  const entityLevel = !isPerson ? item.entityMatch?.level : undefined;
+  const currentMatch = entityLevel
+    ? {
+      label: ENTITY_LEVEL_LABEL[entityLevel] || ENTITY_LEVEL_LABEL.POSSIBLE,
+      variant: (entityLevel === 'CONFIRMED' ? 'medium' : 'neutral') as 'critical' | 'medium' | 'neutral',
+    }
+    : matchConfig[item.matchStrength] || matchConfig.low;
 
   return (
     <div
@@ -105,6 +120,13 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem', padding: '0.55rem 0.65rem', color: 'var(--text-secondary)', background: 'var(--bg-surface-subtle)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-2xs)', lineHeight: '1.45' }}>
           <Icons.Info size={13} style={{ flexShrink: 0, marginTop: '1px' }} />
           <span>O nome aparece no conteúdo, mas a identidade e o teor ainda precisam ser confirmados. Isto não é registro de crime nem de condenação.</span>
+        </div>
+      ) : item.entityMatch ? (
+        // Por que este documento é da empresa. Sem esta linha, quem revisa teria
+        // de confiar no selo sem poder conferir o que o sustenta.
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem', padding: '0.55rem 0.65rem', color: 'var(--text-secondary)', background: 'var(--bg-surface-subtle)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-2xs)', lineHeight: '1.45' }}>
+          <Icons.Info size={13} style={{ flexShrink: 0, marginTop: '1px' }} />
+          <span>Identidade: {item.entityMatch.basis}.</span>
         </div>
       ) : null}
 

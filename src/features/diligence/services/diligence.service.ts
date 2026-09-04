@@ -22,6 +22,7 @@ import {
   PncpSummary,
   FederalExposureSummary,
   TcePeSummary,
+  TceOpenDataSummary,
 } from '../types';
 
 interface CompanyApiResponse {
@@ -74,9 +75,12 @@ export const DiligenceService = {
       const message = err instanceof Error ? err.message : 'Falha na consulta histórica de governança';
       const currentYear = new Date().getFullYear();
       const years = Array.from({ length: 5 }, (_, index) => currentYear - 4 + index);
+      // Mesma regra do fundo: falha de rede não afirma que a empresa está no
+      // escopo do FRE/CVM. O que se sabe é que a consulta não foi concluída.
       return {
         ok: false,
-        applicable: true,
+        applicable: false,
+        sourceStatus: 'UNAVAILABLE',
         provider: 'CVM — Formulário de Referência (FRE)',
         years,
         members: [],
@@ -98,14 +102,21 @@ export const DiligenceService = {
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Falha no mapeamento regulatório do fundo';
+      // A consulta falhou, então nada se sabe sobre a estrutura deste CNPJ.
+      // `applicable: true` aqui afirmava existir fundo de investimento sempre
+      // que a rede caía, e o motor de risco cobrava "beneficiário final não
+      // visível" de uma LTDA com dois sócios pessoa física.
       return {
         ok: false,
-        applicable: true,
+        applicable: false,
+        sourceStatus: 'UNAVAILABLE',
         provider: 'CVM — Cadastro de Fundos',
         entities: [],
         relationships: [],
         evidences: [],
         erro: message,
+        aviso: 'Não foi possível consultar o cadastro de fundos da CVM. '
+          + 'Não é possível afirmar, nem descartar, estrutura de fundo para este CNPJ.',
       };
     }
   },
@@ -223,6 +234,9 @@ export const DiligenceService = {
     cnpj: string;
     razaoSocial: string;
     nomeFantasia?: string;
+    /** Âncoras geográficas da resolução de identidade; opcionais. */
+    municipio?: string;
+    uf?: string;
     shareholders?: Shareholder[];
     forceRefresh?: boolean;
   }): Promise<AdverseMediaSummary> {
@@ -268,10 +282,23 @@ export const DiligenceService = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
+        // O servidor tem orçamento próprio de 40 s e devolve resultado parcial
+        // ao estourá-lo. O cliente espera um pouco mais do que isso: cortar
+        // antes transformava uma consulta bem-sucedida em "timeout" na tela.
+        timeoutMs: 55_000,
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Falha na consulta de diários oficiais';
-      return { ok: false, totalFound: 0, returned: 0, results: [], erro: message, consultadoEm: new Date().toISOString() };
+      return {
+        ok: false,
+        sourceStatus: 'UNAVAILABLE',
+        totalFound: 0,
+        returned: 0,
+        results: [],
+        erro: message,
+        aviso: 'Não foi possível consultar os diários oficiais. A ausência de resultado não significa ausência de publicação.',
+        consultadoEm: new Date().toISOString(),
+      };
     }
   },
 
@@ -339,11 +366,23 @@ export const DiligenceService = {
           razaoSocial: params.razaoSocial,
           nomeFantasia: params.nomeFantasia,
         }),
-        timeoutMs: 90_000,
+        // O servidor tem orçamento de 45 s e a função serverless morre em 60 s.
+        // Esperar 90 s aqui só garantia que o cliente veria a função ser
+        // encerrada — "Failed to fetch" — em vez de uma resposta parcial.
+        timeoutMs: 55_000,
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Falha na consulta ao PNCP';
-      return { ok: false, erro: message, contratos: [], contratacoes: [], consultadoEm: new Date().toISOString() };
+      return {
+        ok: false,
+        sourceStatus: 'UNAVAILABLE',
+        erro: message,
+        aviso: 'Não foi possível consultar o PNCP. A ausência de contrato na tela não autoriza '
+          + 'concluir que a empresa não possui contrato público.',
+        contratos: [],
+        contratacoes: [],
+        consultadoEm: new Date().toISOString(),
+      };
     }
   },
 
@@ -380,6 +419,41 @@ export const DiligenceService = {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Falha na consulta ao TCE-PE';
       return { ok: false, erro: message, processos: [], consultadoEm: new Date().toISOString() };
+    }
+  },
+
+  /**
+   * Dados abertos do TCE-PE: contratos, aditivos, licitações, obras e despesas.
+   * Todos os datasets filtram por CPF/CNPJ, e a identidade de cada registro é
+   * confirmada pelo documento que a própria fonte publica.
+   */
+  async getTcePeOpenData(params: { cnpj: string; razaoSocial?: string; nomeFantasia?: string; municipio?: string; uf?: string }): Promise<TceOpenDataSummary> {
+    try {
+      return await request<TceOpenDataSummary>('/api/judicial/tce-pe/dados-abertos', {
+        method: 'POST',
+        body: JSON.stringify({ ...params, cnpj: CNPJ.clean(params.cnpj) }),
+        // O servidor tem orçamento de 45 s e devolve resultado parcial ao estourá-lo.
+        timeoutMs: 55_000,
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Falha na consulta aos dados abertos do TCE-PE';
+      return {
+        ok: false,
+        sourceStatus: 'UNAVAILABLE',
+        providers: [],
+        contratos: [],
+        aditivos: [],
+        licitacoes: [],
+        obras: [],
+        obrasContratacao: [],
+        despesas: [],
+        fornecedores: [],
+        descartados: [],
+        erro: message,
+        limitacao: 'Não foi possível consultar os dados abertos do TCE-PE. A ausência de registros na '
+          + 'tela não significa que a empresa não possua contratos, obras ou despesas no Tribunal.',
+        consultadoEm: new Date().toISOString(),
+      };
     }
   },
 };

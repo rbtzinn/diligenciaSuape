@@ -184,6 +184,86 @@ test('os domínios institucionais são divididos em blocos, não empilhados numa
   }
 });
 
+// ==========================================================
+// Resolução de identidade aplicada à mídia
+// ==========================================================
+// Caso real: o buscador devolvia conteúdo sobre a guerra na Síria para
+// GUERRA CONSTRUCOES LTDA, e o dossiê o registrava como ocorrência da empresa.
+const guerra = {
+  cnpj: '10811370000162',
+  razaoSocial: 'GUERRA CONSTRUCOES LTDA',
+  municipio: 'Recife',
+  uf: 'PE',
+};
+
+test('TESTE 1 — conteúdo sobre a guerra na Síria não entra no dossiê da GUERRA CONSTRUCOES', async () => {
+  const service = new AdverseMediaService(providerWith(async () => ({
+    ok: true,
+    status: 200,
+    provider: 'Teste',
+    results: [
+      {
+        title: 'Patrimônios da Síria foram danificados pela guerra',
+        url: 'https://noticias.example.test/siria-guerra',
+        domain: 'noticias.example.test',
+        snippet: 'O conflito destruiu sítios históricos e milhares fugiram da região.',
+      },
+      {
+        title: 'Guerra Construções Ltda assina termo aditivo em Recife',
+        url: 'https://noticias.example.test/aditivo-recife',
+        domain: 'noticias.example.test',
+        snippet: 'A Guerra Construções Ltda firmou aditivo de contrato com a Prefeitura de Recife.',
+      },
+    ],
+  })));
+
+  const result = await service.searchAdverseMedia(guerra, [], { forceRefresh: true });
+
+  const urls = result.results.map((item) => item.url);
+  assert.equal(urls.includes('https://noticias.example.test/siria-guerra'), false,
+    'uma palavra compartilhada da razão social não pode virar ocorrência da empresa');
+  assert.equal(urls.includes('https://noticias.example.test/aditivo-recife'), true,
+    'o resultado que nomeia a empresa precisa continuar visível');
+  assert.ok(result.falsePositivesDiscarded > 0, 'o descarte precisa ser contado');
+  assert.ok(
+    result.falsePositives.some((item) => item.url === 'https://noticias.example.test/siria-guerra'),
+    'o descarte precisa ser auditável, e não silencioso',
+  );
+  assert.equal(result.results[0].entityMatch.level, 'HIGH_CONFIDENCE');
+  assert.equal(result.results[0].matchStrength, 'high');
+});
+
+test('CNPJ citado no texto marca a identidade como CONFIRMED', async () => {
+  const service = new AdverseMediaService(providerWith(async () => ({
+    ok: true,
+    status: 200,
+    provider: 'Teste',
+    results: [{
+      title: 'Empenho registra fornecedor 10.811.370/0001-62',
+      url: 'https://diario.example.test/empenho',
+      domain: 'diario.example.test',
+      snippet: 'Contrato firmado com a empresa inscrita no CNPJ 10.811.370/0001-62.',
+    }],
+  })));
+
+  const result = await service.searchAdverseMedia(guerra, [], { forceRefresh: true });
+
+  assert.equal(result.totalFound, 1);
+  assert.equal(result.results[0].entityMatch.level, 'CONFIRMED');
+  assert.equal(result.confirmedMatches, 1);
+  assert.equal(result.entity.cnpj, '10.811.370/0001-62');
+});
+
+test('o dossiê declara a entidade resolvida e seus apelidos', async () => {
+  const service = new AdverseMediaService(providerWith(async () => ({ ok: true, status: 200, results: [] })));
+  const result = await service.searchAdverseMedia(guerra, [], { forceRefresh: true });
+
+  assert.equal(result.entity.razaoSocial, 'GUERRA CONSTRUCOES LTDA');
+  assert.equal(result.entity.uf, 'PE');
+  assert.ok(result.entity.aliases.includes('GUERRA CONSTRUCOES'));
+  assert.ok(result.entity.entityId);
+});
+
 test('com teto apertado, o corte preserva CNPJ e varredura institucional', () => {
   const anterior = process.env.ADVERSE_MEDIA_MAX_QUERIES;
   process.env.ADVERSE_MEDIA_MAX_QUERIES = '5';

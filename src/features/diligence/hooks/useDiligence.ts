@@ -131,9 +131,14 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           log(`Rede societária: ${corporateNetwork.erro || 'fonte indisponível'}.`, 'warning');
         }
 
-        if (!fundNetwork.applicable) {
+        // "Não se aplica" e "não conseguimos consultar" produzem a mesma tela
+        // vazia e significam o oposto. Só a resposta da CVM autoriza a primeira.
+        if (!fundNetwork.applicable && fundNetwork.ok) {
           updateStep('fund', 'done', 'Não se aplica a este CNPJ');
           log('Rede regulatória de fundos: CNPJ não consta como fundo ou classe no cadastro atual da CVM.');
+        } else if (!fundNetwork.ok) {
+          updateStep('fund', 'error', 'Cadastro CVM indisponível');
+          log(`Rede regulatória de fundos: ${fundNetwork.erro || 'fonte indisponível'}. Não é possível afirmar nem descartar estrutura de fundo.`, 'warning');
         } else if (fundNetwork.ok) {
           updateStep('fund', fundNetwork.consultaParcial ? 'error' : 'done', `${fundNetwork.directParties || 0} vínculo(s) direto(s)`);
           log(`Rede regulatória de fundos: ${fundNetwork.directParties || 0} prestador(es) ou responsável(is) direto(s), ${fundNetwork.expandedCompanies || 0} QSA(s) relacionado(s) expandido(s).`, fundNetwork.consultaParcial ? 'warning' : 'info');
@@ -225,6 +230,8 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           cnpj: clean,
           razaoSocial: empresa.razao_social || '',
           nomeFantasia: empresa.nome_fantasia || '',
+          municipio: empresa.municipio || '',
+          uf: empresa.uf || '',
           shareholders: socios,
         });
 
@@ -356,7 +363,10 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
             log('PNCP: parte das consultas falhou; a cobertura desta execucao esta incompleta.', 'warning');
           }
         } else {
-          log('PNCP: ' + (pncp.erro || 'fonte indisponivel') + '.', 'warning');
+          // Sem contrato confirmado e fonte indisponível são conclusões opostas.
+          // O texto precisa impedir que a segunda seja lida como a primeira.
+          log('PNCP indisponivel: ' + (pncp.erro || 'a fonte nao respondeu')
+            + '. Nao e possivel afirmar que a empresa nao tem contrato publico.', 'warning');
         }
         if (federalExposure.ok) {
           const recursos = federalExposure.resumo?.recursosRecebidos || 0;

@@ -299,12 +299,28 @@ export function calculateRisk(dados: RiskInput): RiskAssessment {
   }
 
   const fund = dados.fundNetwork;
-  if (fund?.applicable) {
+  // Um fundo só é afirmado quando a CVM respondeu confirmando o registro. Antes,
+  // bastava `applicable` — que o fallback de erro marcava como verdadeiro — para
+  // o motor cobrar "estrutura de fundo" e "beneficiário final não visível" de
+  // uma LTDA com dois sócios pessoa física. Erro técnico não é achado de risco.
+  const fundConfirmed = Boolean(fund?.applicable) && fund?.ok === true
+    && fund?.sourceStatus !== 'UNAVAILABLE' && fund?.sourceStatus !== 'ERROR';
+  if (fundConfirmed && fund) {
     add('Estrutura de fundo de investimento', 6, 'Gestor, administrador, cotistas e empresas investidas precisam ser analisados em conjunto.', 'ESTRUTURA_SOCIETARIA', 'indicator', 'alta');
     if ((fund.expandedCompanies || 0) > 0) add('Empresas vinculadas ao fundo', Math.min(12, 4 + ((fund.expandedCompanies || 0) * 2)), `${fund.expandedCompanies} empresa(s) relacionada(s) foram expandidas na rede regulatória.`, 'REDE_EMPRESARIAL', 'indicator', 'alta');
     const hasNaturalPerson = (fund.entities || []).some((entity) => normalize(entity.type).includes('person'));
     if (!hasNaturalPerson) add('Beneficiário final não visível na rede pública', 9, 'A estrutura pública consultada não revelou pessoa natural como beneficiário final; solicite declaração de beneficiários e conflitos.', 'TRANSPARENCIA', 'uncertainty', 'media');
-    if (!fund.ok || fund.consultaParcial) add('Cobertura regulatória do fundo incompleta', 6, fund.aviso || fund.erro || 'Parte da estrutura regulatória não pôde ser expandida.', 'COBERTURA', 'coverage', 'alta');
+    if (fund.consultaParcial) add('Cobertura regulatória do fundo incompleta', 6, fund.aviso || fund.erro || 'Parte da estrutura regulatória não pôde ser expandida.', 'COBERTURA', 'coverage', 'alta');
+  } else if (fund && !fund.ok) {
+    // Lacuna declarada, sem afirmar nada sobre a estrutura da empresa.
+    add(
+      'Cadastro de fundos da CVM não pôde ser consultado',
+      5,
+      fund.aviso || fund.erro || 'Não foi possível confirmar nem descartar estrutura de fundo para este CNPJ.',
+      'COBERTURA',
+      'coverage',
+      'alta',
+    );
   }
 
   const media = dados.adverseMedia;
@@ -380,7 +396,16 @@ export function calculateRisk(dados: RiskInput): RiskAssessment {
   }
 
   const tceProcesses = dados.tcePe?.processos || [];
-  const relevantExternalControl = tceProcesses.filter((item) => item.relevance === 'high');
+  // Identidade e gravidade são coisas distintas: `entityMatch` responde se é
+  // esta empresa, `relevance` responde se o processo pesa. Só pontua o que
+  // passa nas duas — um processo cuja atribuição não se sustenta vale zero,
+  // ainda que a decisão nele tenha sido pela irregularidade.
+  const identifiedInExternalControl = tceProcesses.filter((item) => (
+    item.relevantToEntity !== false
+    && item.relationshipType !== 'FALSE_POSITIVE'
+    && item.entityMatch?.level !== 'FALSE_POSITIVE'
+  ));
+  const relevantExternalControl = identifiedInExternalControl.filter((item) => item.relevance === 'high');
   if (relevantExternalControl.length > 0) {
     const irregularOutcomes = relevantExternalControl.filter((item) => /irregular/i.test(item.outcome || '')).length;
     add(
@@ -414,7 +439,8 @@ export function calculateRisk(dados: RiskInput): RiskAssessment {
   }
 
   const governance = dados.governanceHistory;
-  if (governance?.applicable) {
+  // Mesma regra do fundo: sem confirmação da fonte, o que existe é lacuna.
+  if (governance?.applicable || (governance && !governance.ok)) {
     if (!governance.ok || governance.coverageStatus === 'unavailable') add('Histórico de governança indisponível', 6, governance.aviso || governance.erro || 'Não foi possível verificar os cinco exercícios.', 'COBERTURA', 'coverage', 'alta');
     else if (governance.coverageStatus === 'partial') add('Histórico de governança parcial', 4, 'Parte dos últimos cinco exercícios não possui cobertura completa.', 'COBERTURA', 'coverage', 'alta');
     if ((governance.members || []).length > 10) add('Alta rotatividade ou amplitude de governança', 6, `${governance.members.length} pessoas distintas aparecem nos exercícios consultados.`, 'GOVERNANCA', 'indicator', 'media');

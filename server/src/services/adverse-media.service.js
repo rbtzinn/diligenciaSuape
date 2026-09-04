@@ -6,8 +6,17 @@
 
 const crypto = require('crypto');
 const { CompositeSearchProvider } = require('./search/composite-search.provider');
+const {
+  MATCH_LEVEL,
+  buildEntityProfile,
+  resolveEntityMatch,
+} = require('../entity-resolution/entity-resolution');
 
-const QUERY_PLAN_VERSION = 'adverse-media-v5';
+// v6: a correlação empresarial passa a ser decidida pela camada de resolução de
+// identidade, e resultado classificado como FALSO POSITIVO deixa de entrar no
+// dossiê. O número da versão faz parte da chave de cache: sem trocá-lo, uma
+// execução anterior devolveria os candidatos descartados por esta regra.
+const QUERY_PLAN_VERSION = 'adverse-media-v6';
 const SEARCH_DICTIONARY = {
   integrity: [
     'corrupção', 'fraude', 'suborno', 'improbidade', 'propina', 'desvio',
@@ -574,33 +583,59 @@ class AdverseMediaService {
     };
   }
 
-  evaluateCorrelation(company, itemText) {
-    const textNorm = normalizeText(itemText);
-    const textDigits = String(itemText || '').replace(/\D/g, '');
-    const razaoNorm = normalizeText(company.razaoSocial);
-    const fantasiaNorm = normalizeText(company.nomeFantasia);
-    const cnpjClean = String(company.cnpj || '').replace(/\D/g, '');
-    const companyTokens = significantTokens(company.razaoSocial);
-    const tokensMatched = companyTokens.filter((token) => containsPhrase(textNorm, token)).length;
-    const tokenCoverage = companyTokens.length ? tokensMatched / companyTokens.length : 0;
-    const hasCnpj = Boolean(cnpjClean.length === 14 && textDigits.includes(cnpjClean));
-    const hasCorporateName = Boolean(razaoNorm.length >= 5 && containsPhrase(textNorm, razaoNorm));
-    const hasTradeName = Boolean(fantasiaNorm.length >= 4 && containsPhrase(textNorm, fantasiaNorm));
-    let matchStrength = 'low';
-    if (hasCnpj || hasCorporateName) matchStrength = 'high';
-    else if (hasTradeName || (companyTokens.length >= 2 && tokenCoverage >= 0.75)) matchStrength = 'medium';
+  /**
+   * Perfil canônico da entidade investigada, reaproveitado por todos os itens
+   * de uma mesma execução. Montar o perfil por resultado desperdiçaria trabalho
+   * e, pior, permitiria que dois itens fossem julgados por critérios distintos.
+   */
+  resolveProfile(company, shareholders = []) {
+    const cacheKey = stableId(
+      'entity-profile',
+      String(company?.cnpj || ''),
+      normalizeText(company?.razaoSocial),
+      normalizeText(company?.nomeFantasia),
+      normalizeText(company?.municipio),
+      normalizeText(company?.uf),
+      String(shareholders.length),
+    );
+    if (this.profileCache?.key === cacheKey) return this.profileCache.profile;
+    const profile = buildEntityProfile({ ...company, socios: shareholders });
+    this.profileCache = { key: cacheKey, profile };
+    return profile;
+  }
+
+  /**
+   * Decide se um resultado de busca fala da empresa investigada.
+   *
+   * A decisão inteira vem da camada de resolução de identidade. O formato de
+   * retorno é preservado (`matchStrength` e `companyMatch`) porque o dossiê, o
+   * PDF e o pacote de evidências já o consomem; `entityMatch` acrescenta o
+   * nível, a pontuação e os sinais que sustentam a classificação.
+   */
+  evaluateCorrelation(company, itemText, profile) {
+    const entityProfile = profile || this.resolveProfile(company);
+    const entityMatch = resolveEntityMatch(entityProfile, { text: itemText });
+
+    // FALSO POSITIVO continua descrito como `low`: quem descarta o item é
+    // `searchAdverseMedia`, e este método permanece uma função de avaliação.
+    const matchStrength = entityMatch.level === MATCH_LEVEL.CONFIRMED
+      || entityMatch.level === MATCH_LEVEL.HIGH_CONFIDENCE
+      ? 'high'
+      : entityMatch.level === MATCH_LEVEL.POSSIBLE ? 'medium' : 'low';
+
     return {
       matchStrength,
+      entityMatch,
       companyMatch: {
-        corporateName: hasCorporateName,
-        tradeName: hasTradeName,
-        cnpj: hasCnpj,
+        corporateName: entityMatch.matched.corporateName,
+        tradeName: entityMatch.matched.tradeName,
+        cnpj: entityMatch.matched.cnpj,
       },
-      companyNameTokenCoverage: Math.round(tokenCoverage * 100),
+      companyNameTokenCoverage: entityMatch.matched.distinctiveTokenCoverage,
     };
   }
 
-  evaluatePersonCorrelation(person, company, itemText) {
+  evaluatePersonCorrelation(person, company, itemText, profile) {
     const textNorm = normalizeText(itemText);
     const textDigits = String(itemText || '').replace(/\D/g, '');
     const personName = normalizeText(person.subjectName);
@@ -610,13 +645,14 @@ class AdverseMediaService {
     const fullName = Boolean(personName && containsPhrase(textNorm, personName));
     const cpfDigits = visibleMaskedCpfDigits(person.subjectDocument);
     const maskedCpf = Boolean(fullName && cpfDigits && textDigits.includes(cpfDigits));
-    const companyCorrelation = this.evaluateCorrelation(company, itemText);
+    const companyCorrelation = this.evaluateCorrelation(company, itemText, profile);
     const companyContext = Object.values(companyCorrelation.companyMatch).some(Boolean);
     let matchStrength = 'low';
     if (fullName && (maskedCpf || companyContext)) matchStrength = 'high';
     else if (fullName || (tokens.length >= 2 && tokenCoverage === 100)) matchStrength = 'medium';
     return {
       matchStrength,
+      entityMatch: companyCorrelation.entityMatch,
       companyMatch: companyCorrelation.companyMatch,
       personMatch: { fullName, maskedCpf, companyContext, nameTokenCoverage: tokenCoverage },
       identityStatus: maskedCpf ? 'supported' : companyContext && fullName ? 'contextual' : 'unverified',
@@ -740,6 +776,10 @@ class AdverseMediaService {
     const fingerprintIndex = new Map();
     const executedQueries = [];
     const providers = [];
+    // Descartes ficam registrados: uma consulta que devolveu cem resultados e
+    // reteve dois precisa poder mostrar por que os outros noventa e oito saíram.
+    const falsePositives = [];
+    const entityProfile = this.resolveProfile(company, queryPlan.people);
 
     queryResponses.forEach(({ descriptor, response }, queryIndex) => {
       const responseSources = unique([
@@ -783,9 +823,29 @@ class AdverseMediaService {
           ...(Array.isArray(item.extraSnippets) ? item.extraSnippets : []),
         ].join(' ');
         const correlation = descriptor.subjectType === 'person'
-          ? this.evaluatePersonCorrelation(descriptor, company, fullContent)
-          : this.evaluateCorrelation(company, fullContent);
+          ? this.evaluatePersonCorrelation(descriptor, company, fullContent, entityProfile)
+          : this.evaluateCorrelation(company, fullContent, entityProfile);
         if (descriptor.subjectType === 'person' && correlation.matchStrength === 'low') continue;
+
+        // Resultado sobre a empresa cuja identidade não se sustenta é descartado
+        // aqui, e não exibido como candidato fraco. Era por esta porta que uma
+        // reportagem sobre a guerra na Síria entrava no dossiê de uma empresa
+        // chamada GUERRA CONSTRUCOES LTDA: bastava compartilhar uma palavra.
+        if (
+          descriptor.subjectType !== 'person'
+          && correlation.entityMatch?.level === MATCH_LEVEL.FALSE_POSITIVE
+        ) {
+          falsePositives.push({
+            title: item.title || 'Sem título',
+            url: item.url || canonicalUrl,
+            domain: item.domain || '',
+            query: descriptor.query,
+            level: MATCH_LEVEL.FALSE_POSITIVE,
+            score: correlation.entityMatch.score,
+            basis: correlation.entityMatch.basis,
+          });
+          continue;
+        }
         const { matchedTerms, categories } = this.classifyTerms(fullContent);
         const riskRelevant = matchedTerms.length > 0
           && correlation.matchStrength !== 'low'
@@ -848,6 +908,7 @@ class AdverseMediaService {
           }
           if (strengthScore(correlation.matchStrength) > strengthScore(current.matchStrength)) {
             current.matchStrength = correlation.matchStrength;
+            current.entityMatch = correlation.entityMatch;
             current.companyMatch = correlation.companyMatch;
             current.personMatch = correlation.personMatch;
             current.subjectType = descriptor.subjectType;
@@ -879,6 +940,7 @@ class AdverseMediaService {
           categories,
           riskRelevant,
           matchStrength: correlation.matchStrength,
+          entityMatch: correlation.entityMatch,
           companyMatch: correlation.companyMatch,
           personMatch: correlation.personMatch,
           subjectType: descriptor.subjectType,
@@ -973,6 +1035,23 @@ class AdverseMediaService {
       strongMatches: results.filter((result) => result.matchStrength === 'high').length,
       mediumMatches: results.filter((result) => result.matchStrength === 'medium').length,
       weakMatches: results.filter((result) => result.matchStrength === 'low').length,
+      // Identidade da entidade investigada e o que foi descartado por não ser
+      // ela. Sem estes campos, "5 resultados" e "5 resultados de 60" contariam
+      // a mesma história para quem lê o dossiê.
+      entity: {
+        entityId: entityProfile.entityId,
+        cnpj: entityProfile.cnpj,
+        razaoSocial: entityProfile.razaoSocial,
+        nomeFantasia: entityProfile.nomeFantasia,
+        aliases: [...entityProfile.aliases],
+        municipio: entityProfile.municipio,
+        uf: entityProfile.uf,
+        socios: entityProfile.socios.length,
+        administradores: entityProfile.administradores.length,
+      },
+      falsePositivesDiscarded: falsePositives.length,
+      falsePositives: falsePositives.slice(0, 50),
+      confirmedMatches: results.filter((result) => result.entityMatch?.level === MATCH_LEVEL.CONFIRMED).length,
       companyResultsCount: companyResults.length,
       personResultsCount: personResults.length,
       peopleRequested: queryPlan.peopleRequested,

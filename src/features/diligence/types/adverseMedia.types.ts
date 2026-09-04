@@ -12,6 +12,62 @@ export type AdverseMediaSubjectType = 'company' | 'person';
 
 export type AdverseMediaIdentityStatus = 'documented-entity' | 'supported' | 'contextual' | 'unverified';
 
+/** Níveis da camada de resolução de identidade da entidade investigada. */
+export type EntityMatchLevel = 'CONFIRMED' | 'HIGH_CONFIDENCE' | 'POSSIBLE' | 'FALSE_POSITIVE';
+
+export interface EntityMatchSignal {
+  code: string;
+  label: string;
+  points: number;
+  matched: boolean;
+  detail?: string;
+}
+
+/**
+ * Resposta à pergunta "a empresa é realmente a mesma?". Acompanha cada
+ * resultado para que o descarte de um item seja auditável, e não silencioso.
+ */
+export interface EntityMatch {
+  level: EntityMatchLevel;
+  score: number;
+  confidence: number;
+  basis: string;
+  signals: EntityMatchSignal[];
+  matched: {
+    cnpj: boolean;
+    corporateName: boolean;
+    tradeName: boolean;
+    municipality: boolean;
+    state: boolean;
+    partner: boolean;
+    partnerName?: string | null;
+    knownContract: boolean;
+    distinctiveTokenCoverage: number;
+  };
+}
+
+export interface AdverseMediaDiscardedResult {
+  title: string;
+  url?: string;
+  domain?: string;
+  query?: string;
+  level: 'FALSE_POSITIVE';
+  score: number;
+  basis: string;
+}
+
+export interface AdverseMediaEntitySummary {
+  entityId: string;
+  cnpj: string;
+  razaoSocial: string;
+  nomeFantasia?: string;
+  aliases: string[];
+  municipio?: string;
+  uf?: string;
+  socios: number;
+  administradores: number;
+}
+
 export interface AdverseMediaCoMentionedSubject {
   subjectType: AdverseMediaSubjectType;
   subjectName: string;
@@ -56,6 +112,8 @@ export interface AdverseMediaResult {
   categories: string[];
   riskRelevant?: boolean;
   matchStrength: AdverseMediaMatchStrength;
+  /** Identidade resolvida; ausente em dossiês salvos antes desta camada. */
+  entityMatch?: EntityMatch;
   companyMatch: {
     corporateName: boolean;
     tradeName: boolean;
@@ -117,6 +175,11 @@ export interface AdverseMediaSummary {
   strongMatches: number;
   mediumMatches: number;
   weakMatches: number;
+  confirmedMatches?: number;
+  entity?: AdverseMediaEntitySummary;
+  /** Resultados que citavam uma palavra do nome, mas não a empresa. */
+  falsePositivesDiscarded?: number;
+  falsePositives?: AdverseMediaDiscardedResult[];
   companyResultsCount?: number;
   personResultsCount?: number;
   peopleRequested?: number;

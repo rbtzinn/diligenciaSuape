@@ -2,10 +2,15 @@
 // DILIGÊNCIA 360 — Tipos do PNCP (contratações públicas)
 // ==========================================================
 
+import type { EntityMatch } from './adverseMedia.types';
+import type { SourceQueryStatus } from './sourceStatus.types';
+
 export type PncpContractStatus = 'CONFIRMADO' | 'DIVERGENTE' | 'NAO_VERIFICADO';
 
 export interface PncpContract {
   origem: 'PNCP';
+  /** Identidade resolvida; CNPJ do fornecedor confirma sozinho no PNCP. */
+  entityMatch?: EntityMatch | null;
   numeroControlePncp?: string;
   numeroContrato?: string;
   objeto?: string;
@@ -51,6 +56,8 @@ export interface PncpQueryLog {
   tipo: string;
   ok: boolean;
   status?: number | null;
+  /** Nem chegou a ser tentada: o orçamento de tempo da rota acabou antes. */
+  naoIniciada?: boolean;
   total?: number;
   retornados?: number;
   erro?: string;
@@ -59,7 +66,10 @@ export interface PncpQueryLog {
 export interface PncpSummary {
   ok: boolean;
   status?: number;
+  sourceStatus?: SourceQueryStatus;
   erro?: string;
+  aviso?: string;
+  deadlineExceeded?: boolean;
   provider?: string;
   consultadoEm?: string;
   consultaParcial?: boolean;

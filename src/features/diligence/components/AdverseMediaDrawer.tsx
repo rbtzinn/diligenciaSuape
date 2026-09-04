@@ -56,6 +56,18 @@ export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
       subtitle={`${companyCount} da empresa • ${personCount} de pessoas • ${adverseMedia.peopleSearched || 0} integrante(s) pesquisado(s) • ${Formatters.dateTime(adverseMedia.consultadoEm)}`}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        {/* Descarte por identidade. "5 resultados" e "5 de 60, com 55 descartados
+            por não serem desta empresa" descrevem coberturas muito diferentes. */}
+        {(adverseMedia.falsePositivesDiscarded || 0) > 0 ? (
+          <div className="clean-state-block" role="status">
+            <span>
+              {adverseMedia.falsePositivesDiscarded} resultado(s) foram descartados por não sustentarem a
+              identidade da empresa: citavam apenas uma palavra da razão social, sem CNPJ, nome completo
+              ou qualquer outra âncora. Eles não constam da lista abaixo nem do cálculo de exposição.
+            </span>
+          </div>
+        ) : null}
+
         {onRefresh ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>

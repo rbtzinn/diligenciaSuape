@@ -86,6 +86,15 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
     if (err instanceof Error && err.name === 'AbortError') {
       throw new ApiError('Tempo limite da requisição esgotado (timeout).');
     }
+    // `fetch` rejeita com TypeError("Failed to fetch") para qualquer falha de
+    // rede, CORS ou função encerrada antes de responder. A mensagem crua não
+    // diz nada a quem opera e ainda aparecia no dossiê; aqui ela vira uma
+    // descrição do que de fato aconteceu.
+    if (err instanceof TypeError) {
+      throw new ApiError(
+        'Não foi possível falar com o servidor do Diligência 360 (falha de rede ou consulta encerrada antes de responder).',
+      );
+    }
     const message = err instanceof Error ? err.message : 'Falha na comunicação com o servidor.';
     throw new ApiError(message);
   }
