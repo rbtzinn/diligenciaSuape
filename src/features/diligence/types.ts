@@ -13,6 +13,7 @@ import { FundNetworkSummary } from './types/fundNetwork.types';
 import { PncpSummary } from './types/pncp.types';
 import { FederalExposureSummary } from './types/federalExposure.types';
 import { TcePeSummary } from './types/tcePe.types';
+import { TceOpenDataSummary } from './types/tcePeOpenData.types';
 
 export * from './types/sourceStatus.types';
 export * from './types/judicial.types';
@@ -27,6 +28,7 @@ export * from './types/federalExposure.types';
 export * from './types/tcePe.types';
 export * from './types/tcePeOpenData.types';
 export * from './types/contractIntelligence.types';
+export * from './types/documentIntelligence.types';
 
 export interface Shareholder {
   nome_socio: string;
@@ -596,6 +598,8 @@ export interface DiligenceItem {
   pncp?: PncpSummary;
   federalExposure?: FederalExposureSummary;
   tcePe?: TcePeSummary;
+  /** Dados abertos do TCE-PE: contratos, aditivos, licitações, obras e documentos. */
+  tcePeOpenData?: TceOpenDataSummary;
   evidenceCenter?: EvidenceCenter;
 }
 

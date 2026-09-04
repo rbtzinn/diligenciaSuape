@@ -3,15 +3,17 @@
 // ==========================================================
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { HistoryStorage } from '../services/history.storage';
-import { DiligenceItem } from '../../diligence/types';
+import { HistoryStorage, DiligenceSummary } from '../services/history.storage';
 import { useAuth } from '../../auth/context/AuthContext';
 
 export type HistoryTab = 'all' | 'mine' | 'review';
 
 export function useHistory() {
   const { user } = useAuth();
-  const [items, setItems] = useState<DiligenceItem[]>([]);
+  // A listagem sempre foi de resumos: o backend nunca devolveu o dossiê
+  // completo aqui. O tipo agora diz isso, em vez de prometer campos que
+  // chegavam indefinidos.
+  const [items, setItems] = useState<DiligenceSummary[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<HistoryTab>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');

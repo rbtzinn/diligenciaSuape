@@ -100,6 +100,21 @@ const LINK_CONFIDENCE = Object.freeze({
   UNKNOWN: 'UNKNOWN',
 });
 
+/**
+ * Normaliza para o formato que o resolvedor temporal aceita.
+ *
+ * O TCE-PE publica data de duas formas: `dd/mm/aaaa` na vigência e
+ * `aaaa-mm-dd hh:mm:ss.S` na homologação e no julgamento. Sem converter a
+ * segunda, a data publicada pela fonte era lida como inexistente — e um fato
+ * exato virava lacuna.
+ */
+function toBrazilianDate(value) {
+  const raw = String(value ?? '').trim();
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  return raw;
+}
+
 function text(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
 }
@@ -192,14 +207,14 @@ function resolveDocumentDate(record, type) {
 
   if (type === DOCUMENT_TYPE.TENDER) {
     candidates.push({
-      value: record.dataPublicacaoHomologacao, precision: DATE_PRECISION.EXACT,
+      value: toBrazilianDate(record.dataPublicacaoHomologacao), precision: DATE_PRECISION.EXACT,
       source: 'dataPublicacaoHomologacao',
       basis: 'Data de publicação da homologação publicada pelo TCE-PE.',
     });
   }
   if (type === DOCUMENT_TYPE.PROCESS || type === DOCUMENT_TYPE.DECISION) {
     candidates.push({
-      value: record.judgmentDate, precision: DATE_PRECISION.EXACT,
+      value: toBrazilianDate(record.judgmentDate), precision: DATE_PRECISION.EXACT,
       source: 'DataSessaoJulgamento', basis: 'Data da sessão de julgamento publicada pelo TCE-PE.',
     });
   }
@@ -245,8 +260,15 @@ function buildDocument({ type, record, url, links = {}, entity = null, title = n
     params: record.params ?? null,
     /** Estado da CONSULTA que trouxe o registro — vocabulário da Fase 2. */
     sourceStatus: record.sourceStatus ?? null,
-    /** URL do registro na API, que não é o documento. */
-    sourceUrl: record.sourceUrl ?? null,
+    /**
+     * Endereço do REGISTRO na API — não do arquivo.
+     *
+     * O adaptador do TCE-PE preenche o `sourceUrl` do registro com o link do
+     * arquivo quando ele existe, o que faz os dois endereços coincidirem. Aqui
+     * eles voltam a ser distintos: `query` é a consulta que trouxe o registro, e
+     * é ela que permite reproduzir a coleta.
+     */
+    sourceUrl: record.query ?? record.sourceUrl ?? null,
     /** URL do documento em si, publicada pela fonte. */
     officialUrl,
     retrievedAt: record.retrievedAt ?? null,
@@ -349,6 +371,8 @@ function applyAvailability(document, probe) {
  */
 function documentDedupeKey(document) {
   if (document.officialUrl) return `URL:${document.officialUrl}`;
+  // O tipo sozinho não identifica nada: dois documentos OTHER sem vínculo
+  // colapsariam num só. A chave exige ao menos um identificador de verdade.
   const parts = [
     document.documentType,
     document.relatedContract?.codigoContrato ?? document.relatedContract?.numeroContrato ?? '',
@@ -357,7 +381,8 @@ function documentDedupeKey(document) {
     document.relatedTender?.codigoPL ?? '',
     document.relatedProcess?.processNumber ?? '',
   ];
-  return parts.some(Boolean) ? `ID:${parts.join('|')}` : null;
+  const identificadores = parts.slice(1).filter(Boolean);
+  return identificadores.length > 0 ? `ID:${parts.join('|')}` : null;
 }
 
 /**

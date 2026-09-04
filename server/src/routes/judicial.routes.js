@@ -7,6 +7,8 @@ const DatajudService = require('../services/datajud.service');
 const { TcePeService } = require('../services/tce-pe.service');
 const { TcePeIntelligenceService } = require('../services/tce-pe/tce-pe.intelligence');
 const { ContractIntelligenceService } = require('../contract-intelligence/contract-intelligence.service');
+const { DocumentIntelligenceService } = require('../document-intelligence/document-intelligence.service');
+const { projectForDossier } = require('../document-intelligence/dossier-projection');
 const { authenticate } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
@@ -35,7 +37,21 @@ router.post('/tce-pe/dados-abertos', async (req, res) => {
   // Inteligência contratual sobre a MESMA coleta: contratos e aditivos viram
   // eventos e linha do tempo sem nenhuma requisição adicional ao Tribunal.
   const contractIntelligence = ContractIntelligenceService.analyze(result);
-  res.status(result.status || 200).json({ ...result, contractIntelligence });
+  // Catálogo documental sobre a MESMA coleta. A verificação de disponibilidade
+  // é opcional: catalogar não é baixar, e por padrão nada é requisitado.
+  const documentIntelligence = await DocumentIntelligenceService.collect(
+    { tceResult: result, contractIntelligence },
+    { checkAvailability: req.body?.checkDocumentAvailability === true },
+  );
+  // A coleta completa de uma empresa ativa passa de 8 MB — além do teto de
+  // resposta da função serverless e do corpo aceito ao salvar o dossiê. A rota
+  // devolve a projeção, que declara o que ficou de fora. O payload íntegro
+  // continua disponível sob pedido explícito, para depuração.
+  const projection = projectForDossier({ tceResult: result, contractIntelligence, documentIntelligence });
+  if (req.body?.includeFullPayload === true) {
+    return res.status(result.status || 200).json({ ...result, contractIntelligence, documentIntelligence });
+  }
+  return res.status(result.status || 200).json(projection);
 });
 
 module.exports = router;

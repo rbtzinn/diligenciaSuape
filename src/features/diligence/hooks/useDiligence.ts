@@ -32,6 +32,7 @@ const INITIAL_STEPS: DiligenceStepConfig[] = [
   { id: 'media', label: 'Buscando ocorrências públicas e notícias na web', status: 'pending' },
   { id: 'gazettes', label: 'Pesquisando menções em Diários Oficiais municipais', status: 'pending' },
   { id: 'pncp', label: 'Consultando contratos públicos no PNCP', status: 'pending' },
+  { id: 'tceOpenData', label: 'Levantando contratos, aditivos e documentos no TCE-PE', status: 'pending' },
   { id: 'offshore', label: 'Reconciliando nomes na base Offshore Leaks (ICIJ)', status: 'pending' },
   { id: 'risk', label: 'Calculando indicador preliminar de atenção', status: 'pending' },
 ];
@@ -331,19 +332,69 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           log(`TCE-PE: ${tcePe.erro || 'fonte indisponível'}.`, 'warning');
         }
 
-
         // 6C. Contratos públicos — PNCP e Portal da Transparência em paralelo.
         // Ambas as fontes confirmam o fornecedor pelo CNPJ antes de materializar
         // contratos e órgãos públicos no dossiê e no grafo.
         updateStep('pncp', 'loading');
-        const [pncp, federalExposure] = await Promise.all([
+        updateStep('tceOpenData', 'loading');
+        // As três fontes de contrato público são independentes entre si e
+        // correm juntas: em série somariam mais de um minuto ao fluxo.
+        const [pncp, federalExposure, tcePeOpenData] = await Promise.all([
           DiligenceService.getPncpContracts({
             cnpj: clean,
             razaoSocial: empresa.razao_social || '',
             nomeFantasia: empresa.nome_fantasia || '',
           }),
           DiligenceService.getFederalExposure(clean),
+          DiligenceService.getTcePeOpenData({
+            cnpj: clean,
+            razaoSocial: empresa.razao_social || '',
+            nomeFantasia: empresa.nome_fantasia || '',
+            municipio: empresa.municipio || '',
+            uf: empresa.uf || '',
+          }),
         ]);
+
+        if (tcePeOpenData.sourceStatus === 'NOT_APPLICABLE') {
+          updateStep('tceOpenData', 'done', 'Requer CNPJ válido');
+          log('TCE-PE dados abertos: os datasets filtram por CPF/CNPJ e a consulta não pôde ser feita.');
+        } else if (tcePeOpenData.ok) {
+          const r = tcePeOpenData.resumo;
+          const indisponiveis = r?.providersIndisponiveis || 0;
+          updateStep(
+            'tceOpenData',
+            indisponiveis > 0 ? 'error' : 'done',
+            `${r?.contratos || 0} contrato(s) · ${r?.aditivos || 0} aditivo(s)`,
+          );
+          log(
+            `TCE-PE dados abertos: ${r?.contratos || 0} contrato(s), ${r?.aditivos || 0} termo(s) aditivo(s), ` +
+            `${r?.licitacoes || 0} licitação(ões) e ${tcePeOpenData.documentIntelligence?.resumo.total || 0} ` +
+            'documento(s) catalogado(s), todos confirmados pelo CNPJ publicado na fonte.',
+          );
+          if ((r?.descartados || 0) > 0) {
+            log(
+              `TCE-PE dados abertos: ${r?.descartados} registro(s) descartado(s) por pertencerem a outro ` +
+              'CPF/CNPJ, apesar do nome empresarial coincidente.',
+              'warning',
+            );
+          }
+          // Fonte indisponível é lacuna declarada, nunca ausência de registro.
+          if (indisponiveis > 0) {
+            log(
+              `TCE-PE dados abertos: ${indisponiveis} fonte(s) não responderam. A ausência de registros ` +
+              'não significa que a empresa não possua contratos, obras ou despesas.',
+              'warning',
+            );
+          }
+          for (const omissao of tcePeOpenData.projecao?.omissoes || []) log(`TCE-PE: ${omissao}`, 'warning');
+        } else {
+          updateStep('tceOpenData', 'error', 'Fonte indisponível');
+          log(
+            `TCE-PE dados abertos: ${tcePeOpenData.erro || 'fonte indisponível'}. Não é possível afirmar ` +
+            'que a empresa não possui contratos no Tribunal.',
+            'warning',
+          );
+        }
         const federais = federalExposure.resumo?.contratosConfirmados || 0;
         if (pncp.ok) {
           const confirmados = pncp.resumo?.confirmados || 0;
@@ -457,6 +508,7 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           adverseMedia: mediaRes,
           officialGazettes,
           tcePe,
+          tcePeOpenData,
           corporateNetwork,
           fundNetwork,
           offshore,

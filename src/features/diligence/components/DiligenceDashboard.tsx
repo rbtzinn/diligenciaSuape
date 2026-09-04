@@ -245,6 +245,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         onEnrich={handleEnrichDiscovery}
         enrichingId={enrichingId}
         tcePe={diligence.tcePe}
+        tcePeOpenData={diligence.tcePeOpenData}
       />
       <InvestigationQuestionnaireDrawer
         isOpen={activeDrawer === 'questionnaire'}

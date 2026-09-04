@@ -85,43 +85,17 @@ export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
       title="Publicações e ocorrências: empresa e pessoas"
       subtitle={`${companyCount} da empresa · ${personCount} de pessoas · ${adverseMedia.peopleSearched || 0} integrante(s) pesquisado(s) · ${Formatters.dateTime(adverseMedia.consultadoEm)}`}
     >
-<<<<<<< HEAD
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-        {/* Descarte por identidade. "5 resultados" e "5 de 60, com 55 descartados
-            por não serem desta empresa" descrevem coberturas muito diferentes. */}
-        {(adverseMedia.falsePositivesDiscarded || 0) > 0 ? (
-          <div className="clean-state-block" role="status">
-            <span>
-              {adverseMedia.falsePositivesDiscarded} resultado(s) foram descartados por não sustentarem a
-              identidade da empresa: citavam apenas uma palavra da razão social, sem CNPJ, nome completo
-              ou qualquer outra âncora. Eles não constam da lista abaixo nem do cálculo de exposição.
-            </span>
-          </div>
-        ) : null}
+      {/* ---- Descarte por identidade ---- */}
+      {/* "5 resultados" e "5 de 60, com 55 descartados por não serem desta
+          empresa" descrevem coberturas muito diferentes. */}
+      {(adverseMedia.falsePositivesDiscarded || 0) > 0 ? (
+        <Note tone="ok" role="status">
+          {adverseMedia.falsePositivesDiscarded} resultado(s) foram descartados por não sustentarem a
+          identidade da empresa: citavam apenas uma palavra da razão social, sem CNPJ, nome completo
+          ou qualquer outra âncora. Eles não constam da lista abaixo nem do cálculo de exposição.
+        </Note>
+      ) : null}
 
-        {onRefresh ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-2xs)' }}>
-                {formatMediaPlan(adverseMedia.queryPlanVersion)} · {formatMediaProviders(adverseMedia.providerSources, adverseMedia.provider)}
-              </span>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={onRefresh}
-                disabled={isRefreshing}
-              >
-                {isRefreshing ? 'Atualizando notícias…' : 'Atualizar notícias'}
-              </button>
-            </div>
-            {refreshNotice ? (
-              <div className={adverseMedia.consultaParcial ? 'warn-state-block' : 'clean-state-block'} role="status">
-                <span>{refreshNotice}</span>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-=======
       {/* ---- Atualização ---- */}
       {onRefresh ? (
         <div className="flex min-w-0 flex-col gap-2">
@@ -130,7 +104,6 @@ export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
               {formatMediaPlan(adverseMedia.queryPlanVersion)} ·{' '}
               {formatMediaProviders(adverseMedia.providerSources, adverseMedia.provider)}
             </span>
->>>>>>> 7522d3339a5eec82602cb402732a3535a6156c83
 
             <Button
               variant="secondary"

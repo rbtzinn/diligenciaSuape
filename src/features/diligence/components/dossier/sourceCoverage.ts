@@ -118,6 +118,37 @@ export function deriveSourceCoverage(diligence: DiligenceItem): SourceCoverageIt
       ?? fromCount(true, diligence.tcePe.ok, diligence.tcePe.processos?.length || 0, diligence.tcePe.erro)
     : { status: 'nao-consultada' });
 
+  // Dados abertos do TCE-PE. Cada dataset tem estado próprio: contratos
+  // SUCCESS com obras EMPTY e despesas UNAVAILABLE é informação, e um status
+  // único esconderia justamente a parte que importa.
+  const tceAberto = diligence.tcePeOpenData;
+  const tceProvider = (id: string) => tceAberto?.providers?.find((item) => item.provider === id);
+  for (const [id, label, providerId] of [
+    ['tce-contratos', 'Contratos (TCE-PE)', 'tce-pe-contratos'],
+    ['tce-aditivos', 'Termos aditivos (TCE-PE)', 'tce-pe-aditivos'],
+    ['tce-licitacoes', 'Licitações (TCE-PE)', 'tce-pe-licitacoes'],
+    ['tce-obras', 'Obras (TCE-PE)', 'tce-pe-obras'],
+    ['tce-despesas', 'Despesas (TCE-PE)', 'tce-pe-despesas-municipais'],
+  ] as const) {
+    const report = tceProvider(providerId);
+    add(id, label, report
+      ? fromSourceStatus(report.status, report.erros?.[0]) ?? { status: 'nao-consultada' }
+      : { status: 'nao-consultada' });
+  }
+
+  // O catálogo documental não é uma fonte: é o que as fontes publicaram.
+  // Referenciado e indisponível são estados distintos e ambos precisam aparecer.
+  const documentos = tceAberto?.documentIntelligence?.resumo;
+  add('documentos', 'Documentos publicados', documentos
+    ? documentos.comUrlOficial > 0
+      ? {
+        status: 'com-achado',
+        detail: `${documentos.comUrlOficial} com link oficial`
+          + (documentos.indisponiveis > 0 ? ` · ${documentos.indisponiveis} não obtido(s)` : ''),
+      }
+      : { status: 'sem-achado', detail: 'Nenhum documento publicado nos registros consultados' }
+    : { status: 'nao-consultada' });
+
   const federal = diligence.federalExposure;
   add('recursos-federais', 'Recursos federais', federal
     ? federal.semChave
