@@ -13,6 +13,7 @@ import React, { useState } from 'react';
 import { useHistory, HistoryTab } from '../hooks/useHistory';
 import { HistoryStorage } from '../services/history.storage';
 import { DiligenceItem } from '../../diligence/types';
+import type { DiligenceSummary } from '../services/history.storage';
 import { HistoryCard } from './HistoryCard';
 import { HistoryEmptyState } from './HistoryEmptyState';
 import { Button } from '../../../components/ui/Button';
@@ -52,16 +53,23 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ onOpenDiligence, onNew
     deleteDiligence,
   } = useHistory();
 
-  const [itemToDelete, setItemToDelete] = useState<DiligenceItem | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<DiligenceSummary | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const handleOpenItem = async (summaryItem: DiligenceItem) => {
-    if (summaryItem.empresa && summaryItem.risco?.detalhes) {
-      onOpenDiligence(summaryItem);
+  // O cartão traz o resumo; o dossiê completo vem do Google Sheets ao abrir.
+  const handleOpenItem = async (summaryItem: DiligenceSummary) => {
+    const full = await HistoryStorage.getById(summaryItem.id);
+    // Sem o dossiê completo não há o que abrir. Antes o resumo era passado
+    // adiante como se fosse o dossiê, e a tela renderizava um dossiê sem
+    // empresa, sem sócios e sem evidência — parecendo vazio em vez de
+    // indisponível.
+    if (!full) {
+      setLoadError('Não foi possível recuperar este dossiê do histórico permanente. '
+        + 'Tente novamente quando a fonte responder.');
       return;
     }
-    const full = await HistoryStorage.getById(summaryItem.id);
-    onOpenDiligence(full || summaryItem);
+    onOpenDiligence(full);
   };
 
   const handleConfirmDelete = async () => {
@@ -103,6 +111,10 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ onOpenDiligence, onNew
       />
 
       <PageBody gap="sm">
+        {loadError ? (
+          <Note tone="warn" role="alert">{loadError}</Note>
+        ) : null}
+
         {/* Rótulo visível em vez de `aria-label`: atributo com hífen
             não é checado pelo TypeScript em componente, então um
             `aria-label` passado a um componente que não o repassa

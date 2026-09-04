@@ -18,7 +18,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ViewType } from '../../types';
 import { useAuth } from '../../features/auth/context/AuthContext';
-import { HistoryStorage } from '../../features/history/services/history.storage';
+import { HistoryStorage, DiligenceSummary } from '../../features/history/services/history.storage';
 import { DiligenceItem } from '../../features/diligence/types';
 import { Icons } from '../ui/Icons';
 import { LogoutConfirmationDialog } from './LogoutConfirmationDialog';
@@ -55,7 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { user, logout } = useAuth();
   const [logoutOpen, setLogoutOpen] = useState(false);
   const logoutTriggerRef = useRef<HTMLButtonElement>(null);
-  const [recents, setRecents] = useState<DiligenceItem[]>([]);
+  const [recents, setRecents] = useState<DiligenceSummary[]>([]);
   const [openingId, setOpeningId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -69,7 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const closeLogout = useCallback(() => setLogoutOpen(false), []);
 
-  const openRecent = async (item: DiligenceItem) => {
+  const openRecent = async (item: DiligenceSummary) => {
     if (!onSelectRecent) {
       go('history');
       return;
@@ -77,7 +77,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setOpeningId(item.id);
     try {
       const full = await HistoryStorage.getById(item.id);
-      onSelectRecent(full || item);
+      // Sem o dossiê completo não se abre nada: passar o resumo adiante
+      // renderizaria um dossiê sem empresa nem evidência, que parece vazio
+      // em vez de indisponível.
+      if (!full) {
+        go('history');
+        return;
+      }
+      onSelectRecent(full);
       onCloseMobile?.();
     } finally {
       setOpeningId(null);

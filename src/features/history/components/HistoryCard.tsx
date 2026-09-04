@@ -9,7 +9,7 @@
 // ==========================================================
 
 import React from 'react';
-import { DiligenceItem } from '../../diligence/types';
+import type { DiligenceSummary } from '../services/history.storage';
 import type { StatusVariant } from '../../../types';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
@@ -18,8 +18,9 @@ import { Formatters } from '../../../lib/formatters';
 import { cn } from '../../../lib/cn';
 
 interface HistoryCardProps {
-  item: DiligenceItem;
-  onOpen: (item: DiligenceItem) => void;
+  /** O cartão exibe o resumo. O dossiê completo é buscado ao abrir. */
+  item: DiligenceSummary;
+  onOpen: (item: DiligenceSummary) => void;
   onDelete: (id: string) => void;
 }
 
