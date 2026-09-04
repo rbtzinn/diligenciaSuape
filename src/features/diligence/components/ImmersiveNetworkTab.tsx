@@ -159,7 +159,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   const rootEntity = useMemo(() => {
     if (!entities.length) return undefined;
     const normalizedTarget = normalizeText(targetCompanyName);
-    return entities.find((entity) => entity.role.toUpperCase() === 'ROOT')
+    return entities.find((entity) => String(entity.role || '').toUpperCase() === 'ROOT')
       || entities.find((entity) => normalizeText(entity.name) === normalizedTarget)
       || entities.find((entity) => entity.depth === 0)
       || entities[0];
@@ -712,7 +712,13 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
             className="pointer-events-none absolute inset-0 opacity-[0.55] [background-image:radial-gradient(var(--border-default)_1px,transparent_1px)] [background-size:22px_22px]"
           />
 
-          <div className="absolute inset-0" ref={graphRef} />
+          {/* O Cytoscape sobrescreve o `position` do container para
+              `relative` assim que monta. Com isso um `absolute
+              inset-0` deixa de esticar, e o palco colapsava para
+              altura zero — o grafo existia, com os nós certos, e
+              simplesmente não tinha onde ser pintado. A altura aqui
+              vem de `size-full`, que independe de posicionamento. */}
+          <div className="size-full" ref={graphRef} />
 
           {isCompactViewport ? (
             <div

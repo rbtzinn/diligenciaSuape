@@ -49,11 +49,31 @@ export const TabStrip: React.FC<TabStripProps> = ({
   const stripRef = useRef<HTMLDivElement>(null);
   const deep = tone === 'deep';
 
-  // Trocar de aba pelo teclado ou por um atalho de outra parte da
-  // tela não deve deixar a aba ativa fora da vista.
+  // Trocar de aba não deve deixar a aba ativa fora da vista — mas o
+  // ajuste tem de ser estritamente horizontal.
+  //
+  // Isto usava `scrollIntoView({ block: 'nearest' })`, que também
+  // mexe no eixo vertical: como a fita vive num cabeçalho preso no
+  // topo, o navegador trazia o cabeçalho de volta para a vista e
+  // desfazia, no mesmo quadro, a rolagem que o clique na aba tinha
+  // acabado de fazer até a seção. O resultado era clicar num eixo e
+  // a página não sair do lugar.
+  //
+  // Ajustar `scrollLeft` na mão não toca no vertical.
   useEffect(() => {
-    const active = stripRef.current?.querySelector<HTMLElement>('[aria-selected="true"]');
-    active?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    const strip = stripRef.current;
+    const active = strip?.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (!strip || !active) return;
+
+    const margem = 16;
+    const inicio = active.offsetLeft - margem;
+    const fim = active.offsetLeft + active.offsetWidth + margem;
+
+    if (inicio < strip.scrollLeft) {
+      strip.scrollTo({ left: inicio, behavior: 'smooth' });
+    } else if (fim > strip.scrollLeft + strip.clientWidth) {
+      strip.scrollTo({ left: fim - strip.clientWidth, behavior: 'smooth' });
+    }
   }, [activeId]);
 
   const moveFocus = (event: React.KeyboardEvent<HTMLDivElement>) => {

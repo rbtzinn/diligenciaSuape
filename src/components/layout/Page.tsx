@@ -12,7 +12,7 @@
 // `--gutter`): mudar lá realinha o app inteiro.
 // ==========================================================
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { cn } from '../../lib/cn';
 
 type PageTone = 'canvas' | 'deep';
@@ -88,9 +88,32 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   className,
 }) => {
   const deep = tone === 'deep';
+  const headerRef = useRef<HTMLElement>(null);
+
+  // Publica a altura real do cabeçalho preso como `--page-header-h`
+  // no contêiner que rola, para que `scrollIntoView` numa seção não
+  // pare com o alvo escondido atrás dele. A altura muda com a
+  // largura da tela (no celular há uma fita de abas a mais), então
+  // ela é medida, não estimada.
+  useEffect(() => {
+    const header = headerRef.current;
+    const scroller = header?.parentElement;
+    if (!header || !scroller || !sticky) return undefined;
+
+    const publish = () => {
+      scroller.style.setProperty('--page-header-h', `${Math.round(header.offsetHeight)}px`);
+    };
+    publish();
+
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(publish);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, [sticky]);
 
   return (
     <header
+      ref={headerRef}
       className={cn(
         'z-sticky w-full min-w-0 border-b',
         sticky && 'sticky top-0',
@@ -182,6 +205,8 @@ export const PageBody: React.FC<PageBodyProps> = ({ width = 'content', gap = 'md
   <div
     className={cn(
       'mx-auto flex w-full min-w-0 flex-col px-gutter pb-16 pt-4',
+      // Toda âncora dentro do corpo desconta o cabeçalho preso.
+      '[&_[id]]:scroll-mt-[calc(var(--page-header-h,0px)+12px)]',
       width === 'wide' ? 'max-w-content-wide' : width === 'prose' ? 'max-w-prose' : 'max-w-content',
       gap === 'sm' ? 'gap-2' : gap === 'lg' ? 'gap-6' : 'gap-4',
       className,
