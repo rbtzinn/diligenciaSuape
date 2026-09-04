@@ -4,6 +4,7 @@ import type { ProcessDiscovery, TcePeSummary, TceOpenDataSummary } from '../type
 import { JudicialDiscoverySection } from './JudicialDiscoverySection';
 import { TcePeProcessesSection } from './TcePeProcessesSection';
 import { TcePeOpenDataSection } from './TcePeOpenDataSection';
+import { DocumentCatalogSection } from './DocumentCatalogSection';
 
 interface JudicialProcessesDrawerProps {
   isOpen: boolean;
@@ -38,6 +39,7 @@ export const JudicialProcessesDrawer: React.FC<JudicialProcessesDrawerProps> = (
     <div className="flex min-w-0 flex-col gap-4">
       <TcePeProcessesSection summary={tcePe} />
       <TcePeOpenDataSection summary={tcePeOpenData} />
+      <DocumentCatalogSection summary={tcePeOpenData?.documentIntelligence} />
       <JudicialDiscoverySection
         discoveries={discoveries}
         onUpdateDiscoveries={onUpdateDiscoveries}

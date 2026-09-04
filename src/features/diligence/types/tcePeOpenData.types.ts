@@ -13,6 +13,7 @@ import type { EntityMatch } from './adverseMedia.types';
 import type { SourceQueryStatus } from './sourceStatus.types';
 import type { TcePeRelationshipType } from './tcePe.types';
 import type { ContractIntelligenceSummary } from './contractIntelligence.types';
+import type { DocumentIntelligenceSummary } from './documentIntelligence.types';
 
 /** Proveniência obrigatória de todo registro coletado. */
 export interface TceOpenDataEvidence {
@@ -247,6 +248,15 @@ export interface TceOpenDataSummary {
   };
   /** Perfis contratuais construídos sobre esta mesma coleta, sem nova consulta. */
   contractIntelligence?: ContractIntelligenceSummary;
+  /** Declara que o dossiê guarda um recorte, e de quanto. */
+  projecao?: {
+    aplicada: boolean;
+    rawRemovido: boolean;
+    omissoes: string[];
+    nota: string;
+  };
+  /** Catálogo dos documentos publicados, construído sobre esta mesma coleta. */
+  documentIntelligence?: DocumentIntelligenceSummary;
   erro?: string;
   limitacao?: string;
 }
