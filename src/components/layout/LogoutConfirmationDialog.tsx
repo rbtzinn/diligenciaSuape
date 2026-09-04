@@ -1,173 +1,89 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
-import { createPortal } from 'react-dom';
+// ==========================================================
+// DILIGÊNCIA 360 — Confirmação de saída
+// ==========================================================
+// Tinha 283 linhas de CSS próprio e a sua própria cópia do laço de
+// foco. Agora é um Modal em papel de `alertdialog`, com o laço de
+// foco vindo do Overlay — e com o Escape bloqueado enquanto a saída
+// está em curso, que era um detalhe só desta tela e que valia manter.
+// ==========================================================
+
+import { useState, type RefObject } from 'react';
 import { Icons } from '../ui/Icons';
+import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
+import { Note } from '../ui/Note';
 
 interface LogoutConfirmationDialogProps {
   onCancel: () => void;
   onConfirm: () => Promise<void>;
+  /** Botão que abriu o diálogo: recebe o foco de volta ao fechar. */
   returnFocusRef: RefObject<HTMLButtonElement>;
 }
-
-const FOCUSABLE_ELEMENTS = [
-  'button:not([disabled])',
-  '[href]',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])',
-].join(',');
 
 export function LogoutConfirmationDialog({
   onCancel,
   onConfirm,
   returnFocusRef,
 }: LogoutConfirmationDialogProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const stayButtonRef = useRef<HTMLButtonElement>(null);
-  const isSubmittingRef = useRef(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    const returnFocusElement = returnFocusRef.current;
-    document.body.style.overflow = 'hidden';
-    stayButtonRef.current?.focus();
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !isSubmittingRef.current) {
-        event.preventDefault();
-        onCancel();
-        return;
-      }
-
-      if (event.key !== 'Tab') return;
-
-      const focusable = Array.from(
-        dialogRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS) ?? [],
-      );
-
-      if (focusable.length === 0) {
-        event.preventDefault();
-        return;
-      }
-
-      const firstElement = focusable[0];
-      const lastElement = focusable[focusable.length - 1];
-
-      if (event.shiftKey && document.activeElement === firstElement) {
-        event.preventDefault();
-        lastElement.focus();
-      } else if (!event.shiftKey && document.activeElement === lastElement) {
-        event.preventDefault();
-        firstElement.focus();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', handleKeyDown);
-      returnFocusElement?.focus();
-    };
-  }, [onCancel, returnFocusRef]);
-
-  const handleConfirm = async () => {
-    isSubmittingRef.current = true;
-    setIsSubmitting(true);
-    setErrorMessage(null);
-
+  const confirm = async () => {
+    setSubmitting(true);
+    setError(null);
     try {
       await onConfirm();
     } catch {
-      isSubmittingRef.current = false;
-      setErrorMessage('Não foi possível encerrar a sessão. Tente novamente.');
-      setIsSubmitting(false);
+      setError('Não foi possível encerrar a sessão. Tente novamente.');
+      setSubmitting(false);
     }
   };
 
-  return createPortal(
-    <div
-      className="logout-dialog-backdrop"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !isSubmitting) onCancel();
-      }}
-    >
-      <div
-        ref={dialogRef}
-        className="logout-dialog"
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="logout-dialog-title"
-        aria-describedby="logout-dialog-description"
-      >
-        <div className="logout-dialog-accent" aria-hidden="true" />
-
-        <button
-          type="button"
-          className="logout-dialog-close"
-          onClick={onCancel}
-          aria-label="Continuar no sistema"
-          disabled={isSubmitting}
-        >
-          <Icons.X size={18} aria-hidden="true" />
-        </button>
-
-        <div className="logout-dialog-icon" aria-hidden="true">
-          <Icons.LogOut size={26} />
-        </div>
-
-        <div className="logout-dialog-copy">
-          <span className="logout-dialog-eyebrow">Sessão protegida</span>
-          <h2 id="logout-dialog-title">Encerrar sua sessão?</h2>
-          <p id="logout-dialog-description">
-            Você precisará entrar novamente para acessar as diligências e continuar suas análises.
-          </p>
-        </div>
-
-        <div className="logout-dialog-note">
-          <Icons.ShieldCheck size={18} aria-hidden="true" />
-          <span>A sessão será encerrada somente neste dispositivo.</span>
-        </div>
-
-        {errorMessage ? (
-          <p className="logout-dialog-error" role="alert">
-            {errorMessage}
-          </p>
-        ) : null}
-
-        <div className="logout-dialog-actions">
-          <button
-            ref={stayButtonRef}
-            type="button"
-            className="logout-dialog-action logout-dialog-action--stay"
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
+  return (
+    <Modal
+      isOpen
+      role="alertdialog"
+      size="sm"
+      onClose={onCancel}
+      // Enquanto encerra, fechar por fora ou por Escape deixaria a
+      // sessão num estado indefinido.
+      closeOnBackdropClick={!submitting}
+      disableEscape={submitting}
+      showCloseButton={false}
+      returnFocusTo={returnFocusRef}
+      title="Encerrar sua sessão?"
+      subtitle="Sessão protegida"
+      icon={<Icons.LogOut size={17} aria-hidden="true" />}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onCancel} disabled={submitting}>
             Continuar no sistema
-          </button>
-          <button
-            type="button"
-            className="logout-dialog-action logout-dialog-action--exit"
-            onClick={() => void handleConfirm()}
-            disabled={isSubmitting}
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => void confirm()}
+            isLoading={submitting}
+            loadingLabel="Encerrando…"
+            icon={<Icons.LogOut size={16} aria-hidden="true" />}
           >
-            {isSubmitting ? (
-              <>
-                <Icons.Loader size={17} aria-hidden="true" />
-                Encerrando...
-              </>
-            ) : (
-              <>
-                <Icons.LogOut size={17} aria-hidden="true" />
-                Encerrar sessão
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body,
+            Encerrar sessão
+          </Button>
+        </>
+      }
+    >
+      <p className="text-base leading-relaxed text-ink-2">
+        Você precisará entrar novamente para acessar as diligências e continuar suas análises.
+      </p>
+
+      <Note tone="neutral" icon={<Icons.ShieldCheck size={16} aria-hidden="true" />}>
+        A sessão será encerrada somente neste dispositivo.
+      </Note>
+
+      {error ? (
+        <Note tone="high" role="alert" icon={<Icons.AlertCircle size={16} aria-hidden="true" />}>
+          {error}
+        </Note>
+      ) : null}
+    </Modal>
   );
 }

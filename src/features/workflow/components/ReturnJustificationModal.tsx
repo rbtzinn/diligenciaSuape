@@ -1,11 +1,19 @@
 // ==========================================================
-// DILIGÊNCIA 360 — Modal de Justificativa de Devolução
+// DILIGÊNCIA 360 — Devolução para ajustes
+// ==========================================================
+// Era a quinta cópia do mesmo laço de foco do projeto, mais 320
+// linhas de CSS próprio em dossier-v3/return-review.css. Agora é um
+// Modal, com o Escape bloqueado enquanto a devolução está em curso —
+// detalhe que esta tela tinha e que vale manter, porque devolver é
+// uma ação que muda o estado da diligência.
 // ==========================================================
 
 import React, { FormEvent, useEffect, useId, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Button } from '../../../components/ui/Button';
 import { Icons } from '../../../components/ui/Icons';
+import { Modal } from '../../../components/ui/Modal';
+import { Note } from '../../../components/ui/Note';
+import { TextArea } from '../../../components/ui/Field';
 
 interface ReturnJustificationModalProps {
   isOpen: boolean;
@@ -22,60 +30,16 @@ export const ReturnJustificationModal: React.FC<ReturnJustificationModalProps> =
 }) => {
   const [justification, setJustification] = useState('');
   const [error, setError] = useState('');
-  const titleId = useId();
-  const descriptionId = useId();
-  const errorId = useId();
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const formId = useId();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const onCloseRef = useRef(onClose);
-  const isLoadingRef = useRef(isLoading);
 
+  // Cada abertura começa com o campo limpo: reaproveitar o texto de
+  // uma devolução anterior seria pior do que pedir para redigitar.
   useEffect(() => {
-    onCloseRef.current = onClose;
-    isLoadingRef.current = isLoading;
-  }, [isLoading, onClose]);
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    const previousActive = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const previousOverflow = document.body.style.overflow;
+    if (!isOpen) return;
     setJustification('');
     setError('');
-    document.body.style.overflow = 'hidden';
-    const focusTimer = window.setTimeout(() => textareaRef.current?.focus(), 0);
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !isLoadingRef.current) {
-        event.preventDefault();
-        onCloseRef.current();
-        return;
-      }
-      if (event.key !== 'Tab' || !dialogRef.current) return;
-      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      ));
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.clearTimeout(focusTimer);
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-      previousActive?.focus();
-    };
   }, [isOpen]);
-
-  if (!isOpen) return null;
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -89,102 +53,72 @@ export const ReturnJustificationModal: React.FC<ReturnJustificationModalProps> =
     await onSubmit(reason);
   };
 
-  return createPortal(
-    <div
-      className="return-review-backdrop"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !isLoading) onClose();
-      }}
-    >
-      <div
-        ref={dialogRef}
-        className="return-review-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={descriptionId}
-        aria-busy={isLoading}
-      >
-        <header className="return-review-header">
-          <div className="return-review-emblem" aria-hidden="true">
-            <Icons.ArrowLeft size={23} />
-          </div>
-          <div className="return-review-heading">
-            <span>Revisão de Compliance</span>
-            <h2 id={titleId}>Devolver para ajustes</h2>
-            <p id={descriptionId}>Registre orientações objetivas para o analista corrigir a diligência antes da decisão final.</p>
-          </div>
-          <button
-            type="button"
-            className="return-review-close"
-            aria-label="Fechar devolução para ajustes"
-            onClick={onClose}
-            disabled={isLoading}
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      closeOnBackdropClick={!isLoading}
+      disableEscape={isLoading}
+      title="Devolver para ajustes"
+      subtitle="Revisão de Compliance"
+      icon={<Icons.ArrowLeft size={17} aria-hidden="true" />}
+      footer={
+        <>
+          <p className="mr-auto flex min-w-0 items-center gap-1.5 text-2xs text-ink-3">
+            <Icons.History size={14} aria-hidden="true" className="shrink-0" />
+            Esta ação ficará registrada na trilha da diligência.
+          </p>
+
+          <Button variant="ghost" onClick={onClose} disabled={isLoading}>
+            Manter em revisão
+          </Button>
+          <Button
+            type="submit"
+            form={formId}
+            variant="primary"
+            icon={<Icons.ArrowLeft size={16} aria-hidden="true" />}
+            isLoading={isLoading}
+            loadingLabel="Devolvendo…"
           >
-            <Icons.X size={18} aria-hidden="true" />
-          </button>
-        </header>
+            Devolver para ajustes
+          </Button>
+        </>
+      }
+    >
+      <p className="text-base leading-relaxed text-ink-2">
+        Registre orientações objetivas para o analista corrigir a diligência antes da decisão final.
+      </p>
 
-        <form className="return-review-form" onSubmit={handleSubmit}>
-          <div className="return-review-flow" aria-label="Próxima etapa do fluxo">
-            <div aria-hidden="true"><Icons.Info size={18} /></div>
-            <p><strong>Próxima etapa</strong><span>A diligência volta ao analista com suas orientações e permanece registrada no histórico.</span></p>
-            <div className="return-review-flow-chip" aria-hidden="true">
-              <span>Revisão</span><Icons.ArrowRight size={14} /><strong>Analista</strong>
-            </div>
-          </div>
+      <Note tone="info" icon={<Icons.Info size={16} aria-hidden="true" />} title="Próxima etapa">
+        <span className="block">
+          A diligência volta ao analista com suas orientações e permanece registrada no histórico.
+        </span>
 
-          <label className="return-review-field" htmlFor="return-review-justification">
-            <span>Orientações para o analista</span>
-            <small>Informe a pendência, onde ela aparece e qual correção você espera.</small>
-            <textarea
-              ref={textareaRef}
-              id="return-review-justification"
-              rows={5}
-              placeholder="Ex.: revisar a documentação societária, anexar a fonte oficial e atualizar a conclusão do item..."
-              value={justification}
-              onChange={(event) => {
-                setJustification(event.target.value);
-                if (error) setError('');
-              }}
-              aria-invalid={Boolean(error)}
-              aria-describedby={error ? errorId : descriptionId}
-              disabled={isLoading}
-            />
-          </label>
+        <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-chip bg-surface px-2 py-0.5 text-2xs font-semibold">
+          Revisão
+          <Icons.ArrowRight size={12} aria-hidden="true" />
+          <strong className="font-bold">Analista</strong>
+        </span>
+      </Note>
 
-          {error ? (
-            <p id={errorId} className="return-review-error" role="alert">
-              <Icons.AlertCircle size={16} aria-hidden="true" /> {error}
-            </p>
-          ) : null}
-
-          <footer className="return-review-footer">
-            <p><Icons.History size={15} aria-hidden="true" /> Esta ação ficará registrada na trilha da diligência.</p>
-            <div>
-              <Button
-                type="button"
-                variant="ghost"
-                className="return-review-action return-review-action--cancel"
-                onClick={onClose}
-                disabled={isLoading}
-              >
-                Manter em revisão
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                className="return-review-action return-review-action--confirm"
-                icon={<Icons.ArrowLeft size={16} aria-hidden="true" />}
-                isLoading={isLoading}
-              >
-                Devolver para ajustes
-              </Button>
-            </div>
-          </footer>
-        </form>
-      </div>
-    </div>,
-    document.body,
+      <form id={formId} onSubmit={handleSubmit}>
+        <TextArea
+          ref={textareaRef}
+          id="return-review-justification"
+          label="Orientações para o analista"
+          hint="Informe a pendência, onde ela aparece e qual correção você espera."
+          rows={5}
+          placeholder="Ex.: revisar a documentação societária, anexar a fonte oficial e atualizar a conclusão do item…"
+          value={justification}
+          onChange={(event) => {
+            setJustification(event.target.value);
+            if (error) setError('');
+          }}
+          error={error || undefined}
+          disabled={isLoading}
+        />
+      </form>
+    </Modal>
   );
 };

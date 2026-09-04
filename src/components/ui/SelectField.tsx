@@ -1,11 +1,14 @@
-import { useId } from 'react';
-import { Icons } from './Icons';
-import '../../styles/select-field.css';
+// ==========================================================
+// DILIGÊNCIA 360 — SelectField
+// ==========================================================
+// Apelido do `Select` de Field.tsx, mantido porque a barra do mapa e
+// as gavetas já o chamam com esta assinatura. O desenho e o
+// select-field.css saíram: campo é um só.
+// ==========================================================
 
-export interface SelectOption<T extends string = string> {
-  value: T;
-  label: string;
-}
+import { Select, SelectOption } from './Field';
+
+export type { SelectOption };
 
 interface SelectFieldProps<T extends string> {
   label: string;
@@ -26,24 +29,17 @@ export function SelectField<T extends string>({
   tone = 'default',
   disabled = false,
 }: SelectFieldProps<T>) {
-  const selectId = useId();
-
   return (
-    <label className={`ui-select-field ui-select-field--${tone} ${className}`} htmlFor={selectId}>
-      <span className="ui-select-field__label">{label}</span>
-      <span className="ui-select-field__control">
-        <select
-          id={selectId}
-          value={value}
-          disabled={disabled}
-          onChange={(event) => onChange(event.target.value as T)}
-        >
-          {options.map((option) => (
-            <option value={option.value} key={option.value}>{option.label}</option>
-          ))}
-        </select>
-        <Icons.ChevronDown className="ui-select-field__chevron" size={15} aria-hidden="true" />
-      </span>
-    </label>
+    <Select
+      label={label}
+      value={value}
+      options={options}
+      onChange={onChange}
+      controlSize="sm"
+      disabled={disabled}
+      // `dark` era o nome antigo da superfície escura do mapa.
+      tone={tone === 'dark' ? 'deep' : 'default'}
+      className={className}
+    />
   );
 }

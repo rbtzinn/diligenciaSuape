@@ -10,7 +10,10 @@ import { DiscoveryEngine } from '../utils/discoveryEngine';
 import { JudicialDiscoveryCard } from './JudicialDiscoveryCard';
 import { ContentAnalyzerModal } from './ContentAnalyzerModal';
 import { JudicialManualAddModal } from './JudicialManualAddModal';
-import { Card } from '../../../components/ui/Card';
+import { Section } from '../../../components/ui/Section';
+import { EmptyState } from '../../../components/ui/EmptyState';
+import { Note } from '../../../components/ui/Note';
+import { TabStrip } from '../../../components/ui/TabStrip';
 import { Button } from '../../../components/ui/Button';
 import { Icons } from '../../../components/ui/Icons';
 
@@ -61,33 +64,33 @@ export const JudicialDiscoverySection: React.FC<JudicialDiscoverySectionProps> =
   if (discoveries.length === 0) {
     return (
       <>
-        <div className="evidence-zero-action">
-          <span className="evidence-zero-action-icon" aria-hidden="true">
-            <Icons.Scale size={19} />
-          </span>
-          <div className="evidence-zero-action-content">
-            <strong>Nenhum processo vinculado</strong>
-            <span>Analise um documento ou informe um número CNJ para iniciar esta verificação.</span>
-          </div>
-          <div className="evidence-zero-action-buttons">
-            <button
-              type="button"
-              className="judicial-cta-btn judicial-cta-secondary"
-              onClick={() => setIsAnalyzerOpen(true)}
-            >
-              <Icons.FileText size={14} aria-hidden="true" />
-              <span>Analisar conteúdo</span>
-            </button>
-            <button
-              type="button"
-              className="judicial-cta-btn judicial-cta-primary"
-              onClick={() => setIsManualAddOpen(true)}
-            >
-              <Icons.Plus size={14} aria-hidden="true" />
-              <span>Adicionar processo</span>
-            </button>
-          </div>
-        </div>
+        <Section mark={<Icons.Scale size={12} />} title="Processos judiciais (DataJud / CNJ)">
+          <EmptyState
+            icon={<Icons.Scale size={20} />}
+            title="Nenhum processo vinculado"
+            description="Analise um documento ou informe um número CNJ para iniciar esta verificação."
+            action={
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsAnalyzerOpen(true)}
+                  icon={<Icons.FileText size={14} aria-hidden="true" />}
+                >
+                  Analisar conteúdo
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setIsManualAddOpen(true)}
+                  icon={<Icons.Plus size={14} aria-hidden="true" />}
+                >
+                  Adicionar processo
+                </Button>
+              </div>
+            }
+          />
+        </Section>
 
         <ContentAnalyzerModal
           isOpen={isAnalyzerOpen}
@@ -104,30 +107,29 @@ export const JudicialDiscoverySection: React.FC<JudicialDiscoverySectionProps> =
   }
 
   return (
-    <Card
-      title="Processos Judiciais (DataJud / CNJ)"
-      icon={<Icons.Scale size={16} />}
-      action={
-        <div className="evidence-zero-action-buttons">
-          <button
-            type="button"
-            className="judicial-cta-btn judicial-cta-secondary"
+    <Section
+      mark={<Icons.Scale size={12} />}
+      title="Processos judiciais (DataJud / CNJ)"
+      footer={
+        <>
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => setIsAnalyzerOpen(true)}
+            icon={<Icons.FileText size={14} aria-hidden="true" />}
           >
-            <Icons.FileText size={14} aria-hidden="true" />
-            <span>Analisar conteúdo</span>
-          </button>
-          <button
-            type="button"
-            className="judicial-cta-btn judicial-cta-primary"
+            Analisar conteúdo
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             onClick={() => setIsManualAddOpen(true)}
+            icon={<Icons.Plus size={14} aria-hidden="true" />}
           >
-            <Icons.Plus size={14} aria-hidden="true" />
-            <span>Adicionar processo</span>
-          </button>
-        </div>
+            Adicionar processo
+          </Button>
+        </>
       }
-      className="dash-full-width"
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
         {/* Faixa Resumo das Descobertas */}
@@ -161,41 +163,30 @@ export const JudicialDiscoverySection: React.FC<JudicialDiscoverySectionProps> =
         </div>
 
         {/* Abas de Filtro */}
-        {discoveries.length > 0 && (
-          <div style={{ display: 'flex', gap: '0.35rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.35rem', overflowX: 'auto' }}>
-            <button
-              type="button"
-              className={`btn btn-sm ${filterTab === 'all' ? 'btn-secondary' : 'btn-ghost'}`}
-              onClick={() => setFilterTab('all')}
-            >
-              Todos ({stats.total})
-            </button>
-            <button
-              type="button"
-              className={`btn btn-sm ${filterTab === 'candidates' ? 'btn-secondary' : 'btn-ghost'}`}
-              onClick={() => setFilterTab('candidates')}
-            >
-              Aguardando Revisão ({stats.candidates})
-            </button>
-            <button
-              type="button"
-              className={`btn btn-sm ${filterTab === 'enriched' ? 'btn-secondary' : 'btn-ghost'}`}
-              onClick={() => setFilterTab('enriched')}
-            >
-              Enriquecidos ({stats.enriched})
-            </button>
+        {discoveries.length > 0 ? (
+          <div className="border-b border-line-soft bg-surface">
+            <TabStrip
+              items={[
+                { id: 'all', label: 'Todos', count: stats.total },
+                { id: 'candidates', label: 'Aguardando revisão', count: stats.candidates },
+                { id: 'enriched', label: 'Enriquecidos', count: stats.enriched },
+              ]}
+              activeId={filterTab}
+              onSelect={(id) => setFilterTab(id as typeof filterTab)}
+              label="Filtros de processos"
+            />
           </div>
-        )}
+        ) : null}
 
         {/* Lista de Processos */}
         {discoveries.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '1rem 0', color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)' }}>
+          <Note tone="neutral" icon={<Icons.Info size={15} aria-hidden="true" />}>
             Nenhum processo judicial descoberto ou vinculado a esta diligência.
-          </div>
+          </Note>
         ) : filteredList.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '1rem 0', color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)' }}>
+          <Note tone="neutral" icon={<Icons.Filter size={15} aria-hidden="true" />}>
             Nenhum processo encontrado para o filtro selecionado.
-          </div>
+          </Note>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
             {displayList.map((disc) => (
@@ -231,6 +222,6 @@ export const JudicialDiscoverySection: React.FC<JudicialDiscoverySectionProps> =
         onClose={() => setIsManualAddOpen(false)}
         onAdd={handleMergeExtracted}
       />
-    </Card>
+    </Section>
   );
 };

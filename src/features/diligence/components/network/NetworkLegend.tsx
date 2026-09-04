@@ -1,6 +1,15 @@
 // ==========================================================
-// DILIGÊNCIA 360 — Legenda da Rede Imersiva
-// 100% alinhada a styles/network-immersive/
+// DILIGÊNCIA 360 — Legenda do mapa
+// ==========================================================
+// A legenda e o contador ficaram com a pele do mapa escuro: o
+// contador era um bloco `rgba(5, 24, 43, 0.88)` escrito em estilo em
+// linha, e depois da conversão do grafo para tela clara ele passou a
+// ser uma caixa preta sobre fundo claro. Os dois agora usam a mesma
+// superfície do resto do app.
+//
+// As cores de borda repetem as do `CYTOSCAPE_STYLESHEET`, que é quem
+// pinta os nós de verdade — legenda que não bate com o grafo é pior
+// do que legenda nenhuma.
 // ==========================================================
 
 import React from 'react';
@@ -10,39 +19,50 @@ interface NetworkLegendProps {
   totalCount: number;
 }
 
-export const NetworkLegend: React.FC<NetworkLegendProps> = ({
-  visibleCount,
-  totalCount,
-}) => {
-  return (
-    <>
-      <div className="network-legend" aria-label="Legenda do mapa">
-        <span><i className="legend-company" /> Empresa analisada</span>
-        <span><i className="legend-person" /> Pessoa</span>
-        <b>|</b>
-        <span><b /> Confirmada</span>
-        <span><b className="legend-hypothesis" /> Hipótese</span>
-      </div>
+// Borda e preenchimento iguais aos de `CYTOSCAPE_STYLESHEET`: no mapa
+// o tipo passou a ser dito pelas duas coisas juntas, e um quadradinho
+// só de contorno já não representa o cartão que está na tela.
+const NODE_KINDS = [
+  { label: 'Empresa', color: '#2D60AD', fill: '#F1F6FC' },
+  { label: 'Pessoa', color: '#7C4DBE', fill: '#F7F2FD' },
+  { label: 'Órgão público', color: '#0E7490', fill: '#ECF9FB' },
+  { label: 'Ocorrência', color: '#DC2626', fill: '#FEF1F1' },
+] as const;
 
-      <div
-        className="network-visible-count"
-        style={{
-          position: 'absolute',
-          bottom: 16,
-          right: 16,
-          zIndex: 4,
-          padding: '6px 10px',
-          color: '#849db5',
-          fontSize: '9px',
-          background: 'rgba(5, 24, 43, 0.88)',
-          border: '1px solid #234663',
-          borderRadius: 9,
-          backdropFilter: 'blur(12px)',
-          pointerEvents: 'none',
-        }}
-      >
-        <span>{visibleCount} de {totalCount} entidades visíveis</span>
-      </div>
-    </>
-  );
-};
+export const NetworkLegend: React.FC<NetworkLegendProps> = ({ visibleCount, totalCount }) => (
+  <div className="pointer-events-none absolute inset-x-3 bottom-3 flex flex-wrap items-end justify-between gap-2">
+    <div
+      aria-label="Legenda do mapa"
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-line bg-surface/95 px-2.5 py-1.5 shadow-sm backdrop-blur-sm"
+    >
+      {NODE_KINDS.map((kind) => (
+        <span key={kind.label} className="flex items-center gap-1.5 text-2xs font-medium text-ink-2">
+          <span
+            aria-hidden="true"
+            className="size-2.5 rounded-sm border-2"
+            style={{ borderColor: kind.color, backgroundColor: kind.fill }}
+          />
+          {kind.label}
+        </span>
+      ))}
+
+      <span aria-hidden="true" className="h-3 w-px bg-line" />
+
+      <span className="flex items-center gap-1.5 text-2xs font-medium text-ink-2">
+        <span aria-hidden="true" className="h-0.5 w-4 rounded-full bg-brand" />
+        Confirmada
+      </span>
+      <span className="flex items-center gap-1.5 text-2xs font-medium text-ink-2">
+        <span
+          aria-hidden="true"
+          className="h-0 w-4 border-t-2 border-dashed border-[color:var(--brand-gold)]"
+        />
+        Hipótese
+      </span>
+    </div>
+
+    <span className="num rounded-lg border border-line bg-surface/95 px-2.5 py-1.5 text-2xs text-ink-3 shadow-sm backdrop-blur-sm">
+      {visibleCount} de {totalCount} entidades visíveis
+    </span>
+  </div>
+);

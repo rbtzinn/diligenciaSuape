@@ -43,7 +43,111 @@ export const RELATION_TYPE_LABELS: Record<string, string> = {
   CONTRACTED_BY: 'Contratos públicos confirmados',
   RECEIVED_PUBLIC_RESOURCES_FROM: 'Pagamentos públicos confirmados',
   NAMED_AS_INTERESTED_IN_EXTERNAL_CONTROL: 'Processos de controle externo',
+  MENCIONADA_EM: 'Menções validadas pelo analista',
+  INTERESSADA_EM: 'Interesse processual validado',
+  CONTRATADA_POR: 'Contratos validados pelo analista',
+  SANCIONADA_POR: 'Sanções validadas pelo analista',
+  RESPONSABILIZADA_EM: 'Responsabilizações validadas',
+  SOCIA_DE: 'Participações societárias validadas',
+  ADMINISTRADA_POR: 'Administração validada',
+  CITADA_COM: 'Citações conjuntas validadas',
+  DOCUMENTO_RELACIONADO: 'Documentos relacionados validados',
 };
+
+/**
+ * Rótulo curto da ligação, para escrever sobre o traço do mapa.
+ *
+ * `RELATION_TYPE_LABELS` é uma legenda de filtro: lê bem numa lista
+ * ("Sócios e acionistas"), mas dentro do grafo vira uma etiqueta de
+ * 26 caracteres que não cabe no vão entre dois cartões — o mapa
+ * mostrava seis cópias de "Integra o quadro…" empilhadas em torno da
+ * empresa investigada, todas cortadas no mesmo ponto.
+ *
+ * Aqui cada tipo tem a forma mais curta que ainda diz o que é. O
+ * rótulo por extenso continua no inspetor, onde há largura para ele.
+ */
+export const SHORT_RELATION_LABELS: Record<string, string> = {
+  DIRECTOR_OF: 'Administra',
+  RESPONSIBLE_DIRECTOR_OF: 'Diretor',
+  SHAREHOLDER_OF: 'Sócio',
+  QSA_MEMBER_OF: 'Sócio (por nome)',
+  LEGAL_REPRESENTATIVE_OF: 'Representa',
+  ADMINISTERS_FUND: 'Administra fundo',
+  MANAGES_FUND: 'Gere fundo',
+  AUDITS_FUND: 'Audita fundo',
+  CUSTODIAN_OF: 'Custodia',
+  CONTROLS_FUND: 'Controla fundo',
+  CONTRACTED_BY: 'Contratada',
+  CONTRATADA_POR: 'Contratada',
+  RECEIVED_PUBLIC_RESOURCES_FROM: 'Recebeu recursos',
+  NAMED_AS_INTERESTED_IN_EXTERNAL_CONTROL: 'Interessada',
+  INTERESSADA_EM: 'Interessada',
+  SANCIONADA_POR: 'Sancionada',
+  RESPONSABILIZADA_EM: 'Responsabilizada',
+  SOCIA_DE: 'Sócia',
+  ADMINISTRADA_POR: 'Administrada',
+  CO_MENTIONED_WITH: 'Citada junto',
+  CITADA_COM: 'Citada junto',
+  MENCIONADA_EM: 'Mencionada',
+  MENTIONED_IN: 'Mencionada',
+  MENTIONED_IN_OFFICIAL_GAZETTE: 'Diário oficial',
+  POSSIBLE_PERSON_OCCURRENCE: 'Possível ocorrência',
+  EVIDENCED_BY: 'Evidência',
+  DOCUMENTO_RELACIONADO: 'Documento',
+};
+
+/**
+ * A mesma ligação lida do outro lado.
+ *
+ * `SHORT_RELATION_LABELS` descreve o papel de quem é a origem: em
+ * "Ana —SHAREHOLDER_OF→ Construtora", "Sócio" é o papel da Ana. Ao
+ * explorar a partir da Ana, porém, quem ganha o cartão é a
+ * Construtora — e escrever "Sócio" nele inverteria quem participa de
+ * quem. Num mapa de diligência isso não é imprecisão de estilo: é
+ * dizer o contrário do que o registro público diz.
+ *
+ * Só os vínculos que a exploração por ramos mostra precisam de
+ * inverso; para os demais, o rótulo direto continua valendo.
+ */
+const INVERSE_RELATION_LABELS: Record<string, string> = {
+  DIRECTOR_OF: 'Administrada',
+  RESPONSIBLE_DIRECTOR_OF: 'Sob direção',
+  SHAREHOLDER_OF: 'Participação',
+  QSA_MEMBER_OF: 'Participação (por nome)',
+  LEGAL_REPRESENTATIVE_OF: 'Representada',
+  ADMINISTERS_FUND: 'Fundo administrado',
+  MANAGES_FUND: 'Fundo sob gestão',
+  AUDITS_FUND: 'Fundo auditado',
+  CUSTODIAN_OF: 'Sob custódia',
+  CONTROLS_FUND: 'Fundo controlado',
+  CONTRACTED_BY: 'Contratante',
+  CONTRATADA_POR: 'Contratante',
+  RECEIVED_PUBLIC_RESOURCES_FROM: 'Repassou recursos',
+  NAMED_AS_INTERESTED_IN_EXTERNAL_CONTROL: 'Aponta como interessada',
+  SOCIA_DE: 'Participação',
+  ADMINISTRADA_POR: 'Administra',
+};
+
+/**
+ * Uma etiqueta curta o bastante para caber sobre o traço da ligação.
+ *
+ * `inverted` diz que a ligação está sendo lida do lado do destino —
+ * é o caso do cartão de um vizinho que é o alvo da relação.
+ */
+export function shortRelationLabel(relationship: EgosRelationship, inverted = false): string {
+  const mapped = inverted
+    ? INVERSE_RELATION_LABELS[relationship.type] || SHORT_RELATION_LABELS[relationship.type]
+    : SHORT_RELATION_LABELS[relationship.type];
+  if (mapped) return mapped;
+  const label = String(relationship.label || '').trim();
+  if (!label) return '';
+  // Corta na fronteira de palavra: cortar no caractere produzia
+  // "Integra o quadr…", que é ruído, não informação.
+  if (label.length <= 18) return label;
+  const cut = label.slice(0, 18);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${(lastSpace > 8 ? cut.slice(0, lastSpace) : cut).trim()}…`;
+}
 
 export const CHAIN_ENTITY_ORDER: Record<string, number> = {
   Company: 0,
@@ -434,7 +538,7 @@ export function filterGraphEntities(
   return candidates.filter((entity) => (
     connectedIds.has(entity.id)
     || entity.id === rootEntityId
-    || entity.role.toUpperCase() === 'ROOT'
+    || String(entity.role || '').toUpperCase() === 'ROOT'
   ));
 }
 

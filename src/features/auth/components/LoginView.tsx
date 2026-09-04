@@ -1,35 +1,36 @@
 // ==========================================================
-// DILIGÊNCIA 360 — Tela de Autenticação Firebase Institucional
+// DILIGÊNCIA 360 — Tela de autenticação
+// ==========================================================
+// Era ~150 linhas de estilo em linha, com um `--radius-xl` que não
+// existia nos tokens (o cartão ficava de canto reto) e um botão de
+// altura fixa em 40px que não acompanhava a escala de toque. Agora
+// usa os campos, o botão e os avisos do projeto.
 // ==========================================================
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Icons } from '../../../components/ui/Icons';
+import { TextField } from '../../../components/ui/Field';
+import { Button } from '../../../components/ui/Button';
+import { Note } from '../../../components/ui/Note';
 
 function mapFirebaseError(err: unknown): string {
-  if (err instanceof Error) {
-    const msg = err.message || '';
-    if (msg.includes('auth/invalid-credential') || msg.includes('auth/user-not-found') || msg.includes('auth/wrong-password')) {
-      return 'E-mail ou senha inválidos. No primeiro acesso, confirme que sua conta foi criada no Firebase ou use “Esqueci minha senha”.';
-    }
-    if (msg.includes('auth/too-many-requests')) {
-      return 'Muitas tentativas de acesso. Aguarde alguns minutos.';
-    }
-    if (msg.includes('auth/user-disabled')) {
-      return 'Usuário desativado no sistema de autenticação.';
-    }
-    if (msg.includes('auth/invalid-email')) {
-      return 'Formato de e-mail corporativo inválido.';
-    }
-    if (msg.includes('auth/network-request-failed')) {
-      return 'Não foi possível conectar ao serviço de autenticação.';
-    }
-    if (msg.includes('autorização para acessar')) {
-      return msg;
-    }
-    return err.message;
+  if (!(err instanceof Error)) return 'Falha ao autenticar no sistema.';
+
+  const msg = err.message || '';
+  if (
+    msg.includes('auth/invalid-credential') ||
+    msg.includes('auth/user-not-found') ||
+    msg.includes('auth/wrong-password')
+  ) {
+    return 'E-mail ou senha inválidos. No primeiro acesso, confirme que sua conta foi criada no Firebase ou use “Esqueci minha senha”.';
   }
-  return 'Falha ao autenticar no sistema.';
+  if (msg.includes('auth/too-many-requests')) return 'Muitas tentativas de acesso. Aguarde alguns minutos.';
+  if (msg.includes('auth/user-disabled')) return 'Usuário desativado no sistema de autenticação.';
+  if (msg.includes('auth/invalid-email')) return 'Formato de e-mail corporativo inválido.';
+  if (msg.includes('auth/network-request-failed')) return 'Não foi possível conectar ao serviço de autenticação.';
+  if (msg.includes('autorização para acessar')) return msg;
+  return err.message;
 }
 
 export const LoginView: React.FC = () => {
@@ -39,47 +40,40 @@ export const LoginView: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [isResetMode, setIsResetMode] = useState(false);
 
-  const emailInputRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    emailInputRef.current?.focus();
+    emailRef.current?.focus();
   }, [isResetMode]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
     if (!email.trim()) {
       setError('Por favor, informe seu e-mail corporativo.');
       return;
     }
 
-    if (isResetMode) {
-      setIsLoading(true);
-      setError(null);
-      setInfoMessage(null);
-      try {
-        await sendPasswordReset(email.trim());
-        setInfoMessage('Se o e-mail estiver cadastrado, as instruções de recuperação foram enviadas.');
-        setIsResetMode(false);
-      } catch (err) {
-        setError(mapFirebaseError(err));
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-
-    if (!password) {
-      setError('Por favor, informe sua senha.');
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
-    setInfoMessage(null);
+    setInfo(null);
+
     try {
+      if (isResetMode) {
+        await sendPasswordReset(email.trim());
+        setInfo('Se o e-mail estiver cadastrado, as instruções de recuperação foram enviadas.');
+        setIsResetMode(false);
+        return;
+      }
+
+      if (!password) {
+        setError('Por favor, informe sua senha.');
+        return;
+      }
+
       await login({ email: email.trim(), password });
     } catch (err: unknown) {
       setError(mapFirebaseError(err));
@@ -89,148 +83,113 @@ export const LoginView: React.FC = () => {
   };
 
   return (
-    <main style={{ minHeight: '100dvh', width: '100%', display: 'grid', placeItems: 'center', backgroundColor: 'var(--bg-canvas)', padding: '1rem' }}>
-      <div
-        style={{
-          width: 'min(100% - 24px, 420px)',
-          backgroundColor: 'var(--bg-surface)',
-          border: '1px solid var(--border-default)',
-          borderRadius: 'var(--radius-xl)',
-          padding: '2.25rem 2rem',
-          boxShadow: 'var(--shadow-sm)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1.5rem',
-        }}
-        className="animate-fade-in-up"
-      >
-        <header style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
-          <div
-            style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: 'var(--radius-lg)',
-              backgroundColor: 'var(--brand-blue-subtle)',
-              color: 'var(--brand-blue)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '1px solid var(--brand-blue-border)',
-            }}
+    <main className="grid min-h-dvh w-full place-items-center bg-canvas px-4 py-8">
+      <div className="flex w-full max-w-[420px] flex-col gap-5 rounded-xl border border-line bg-surface p-6 shadow-sm sm:p-8">
+        <header className="flex flex-col items-center gap-1.5 text-center">
+          <span
+            aria-hidden="true"
+            className="grid size-12 place-items-center rounded-lg border border-brand-line bg-brand-soft text-brand"
           >
             <Icons.Shield size={24} />
-          </div>
-          <h1 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', marginTop: '0.25rem' }}>
-            Diligência 360
-          </h1>
-          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-            <span>Compliance & Due Diligence</span><br />
-            <span style={{ color: 'var(--text-tertiary)' }}>Complexo Portuário de Suape</span>
-          </div>
+          </span>
+          <h1 className="mt-1 text-xl font-extrabold text-ink">Diligência 360</h1>
+          <p className="text-xs leading-snug text-ink-2">
+            Compliance &amp; Due Diligence
+            <br />
+            <span className="text-ink-3">Complexo Portuário de Suape</span>
+          </p>
         </header>
 
-        {error && (
-          <div role="alert" aria-live="polite" style={{ padding: '0.75rem 1rem', backgroundColor: 'var(--status-critical-bg)', color: 'var(--status-critical-text)', border: '1px solid var(--status-critical-border)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-xs)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Icons.AlertCircle size={16} style={{ flexShrink: 0 }} />
-            <span>{error}</span>
-          </div>
-        )}
+        {error ? (
+          <Note tone="high" role="alert" icon={<Icons.AlertCircle size={16} aria-hidden="true" />}>
+            {error}
+          </Note>
+        ) : null}
 
-        {infoMessage && (
-          <div role="status" aria-live="polite" style={{ padding: '0.75rem 1rem', backgroundColor: 'var(--status-low-bg)', color: 'var(--status-low-text)', border: '1px solid var(--status-low-border)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-xs)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Icons.CheckCircle size={16} style={{ flexShrink: 0 }} />
-            <span>{infoMessage}</span>
-          </div>
-        )}
+        {info ? (
+          <Note tone="ok" role="status" icon={<Icons.CheckCircle size={16} aria-hidden="true" />}>
+            {info}
+          </Note>
+        ) : null}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-            <label htmlFor="login-email" style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--font-medium)', color: 'var(--text-secondary)' }}>
-              E-mail corporativo
-            </label>
-            <input
-              id="login-email"
-              ref={emailInputRef}
-              type="email"
-              className="input-control"
-              placeholder="nome@suape.pe.gov.br"
-              autoComplete="username"
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); setError(null); }}
-              disabled={isLoading}
-              required
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <TextField
+            ref={emailRef}
+            id="login-email"
+            label="E-mail corporativo"
+            type="email"
+            placeholder="nome@suape.pe.gov.br"
+            autoComplete="username"
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              setError(null);
+            }}
+            disabled={isLoading}
+            required
+          />
 
-          {!isResetMode && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label htmlFor="login-password" style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--font-medium)', color: 'var(--text-secondary)' }}>
-                  Senha
-                </label>
+          {!isResetMode ? (
+            <TextField
+              id="login-password"
+              label="Senha"
+              labelAction={
                 <button
                   type="button"
-                  onClick={() => { setIsResetMode(true); setError(null); setInfoMessage(null); }}
-                  style={{ background: 'none', border: 'none', color: 'var(--brand-blue)', fontSize: 'var(--text-2xs)', cursor: 'pointer', padding: 0 }}
+                  onClick={() => {
+                    setIsResetMode(true);
+                    setError(null);
+                    setInfo(null);
+                  }}
+                  className="text-2xs font-semibold text-brand hover:underline"
                 >
                   Esqueci minha senha
                 </button>
-              </div>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <input
-                  id="login-password"
-                  type={showPassword ? 'text' : 'password'}
-                  className="input-control"
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); setError(null); }}
-                  disabled={isLoading}
-                  required={!isResetMode}
-                  style={{ paddingRight: '2.5rem', width: '100%' }}
-                />
-                <button
-                  type="button"
+              }
+              type={showPassword ? 'text' : 'password'}
+              placeholder="••••••••"
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                setError(null);
+              }}
+              disabled={isLoading}
+              required
+              trailing={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconOnly
                   onClick={() => setShowPassword((prev) => !prev)}
                   aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                  style={{ position: 'absolute', right: '0.625rem', background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', padding: '0.25rem', display: 'inline-flex' }}
-                >
-                  {showPassword ? <Icons.EyeOff size={18} /> : <Icons.Eye size={18} />}
-                </button>
-              </div>
-            </div>
-          )}
+                  icon={showPassword ? <Icons.EyeOff size={17} /> : <Icons.Eye size={17} />}
+                />
+              }
+            />
+          ) : null}
 
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={isLoading}
-            style={{ width: '100%', marginTop: '0.25rem', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 'var(--font-semibold)' }}
-          >
-            {isLoading ? (
-              <span>Processando...</span>
-            ) : isResetMode ? (
-              <span>Enviar link de recuperação</span>
-            ) : (
-              <span>Entrar no sistema</span>
-            )}
-          </button>
+          <Button type="submit" variant="primary" block isLoading={isLoading} loadingLabel="Processando…">
+            {isResetMode ? 'Enviar link de recuperação' : 'Entrar no sistema'}
+          </Button>
 
-          {isResetMode && (
-            <button
-              type="button"
-              onClick={() => { setIsResetMode(false); setError(null); }}
-              style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', cursor: 'pointer', textAlign: 'center' }}
+          {isResetMode ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              block
+              onClick={() => {
+                setIsResetMode(false);
+                setError(null);
+              }}
             >
               ← Voltar ao login
-            </button>
-          )}
+            </Button>
+          ) : null}
         </form>
 
-        <footer style={{ textAlign: 'center', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.85rem' }}>
-          <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-muted)' }}>
-            Autenticação segura via Firebase • Gestão SUAPE
-          </span>
+        <footer className="border-t border-line-soft pt-3.5 text-center">
+          <span className="text-2xs text-ink-muted">Autenticação segura via Firebase • Gestão SUAPE</span>
         </footer>
       </div>
     </main>

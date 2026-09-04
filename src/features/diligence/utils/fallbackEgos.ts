@@ -74,7 +74,7 @@ export function ensureEgosSnapshot(diligence: DiligenceItem): EgosSnapshot {
       ...definition,
       id: current?.id || stableId('fallback-entity', definition.key),
       depth: Math.min(current?.depth ?? definition.depth, definition.depth),
-      role: current?.role.toUpperCase() === 'ROOT' ? current.role : definition.role,
+      role: String(current?.role || '').toUpperCase() === 'ROOT' ? current!.role : definition.role,
       confidence: Math.max(current?.confidence || 0, definition.confidence),
       properties: { ...(current?.properties || {}), ...(definition.properties || {}) },
       identifiers: [...(current?.identifiers || []), ...(definition.identifiers || [])]

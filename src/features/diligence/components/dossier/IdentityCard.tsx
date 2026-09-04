@@ -1,35 +1,39 @@
 // ==========================================================
 // DILIGÊNCIA 360 — Cartão de identificação do dossiê
+// ==========================================================
 // Identidade, contadores de cobertura e decisão sugerida.
+//
+// Duas correções de leitura. O score aparecia em monoespaçado, o que
+// o fazia parecer código de sistema; e era sempre azul da marca,
+// mesmo quando o nível dizia "Atenção Crítica" — número e cor
+// contavam histórias diferentes. O nível já vem classificado do
+// motor de risco (`risco.cor`), então agora é ele que pinta o bloco.
 // ==========================================================
 
 import React from 'react';
 import type { DiligenceItem } from '../../types';
+import type { StatusVariant } from '../../../../types';
 import type { SourceCoverageItem } from './sourceCoverage';
 import { summarizeCoverage } from './sourceCoverage';
+import { Fact, FactGrid, FactTone, Stat } from '../../../../components/ui/Facts';
+import { Chip } from '../../../../components/ui/Chip';
 
 interface IdentityCardProps {
   diligence: DiligenceItem;
   coverage: SourceCoverageItem[];
 }
 
-const Fact: React.FC<{ label: string; value: string; tone?: 'ok' | 'bad' | 'muted' }> = ({
-  label,
-  value,
-  tone,
-}) => (
-  <div>
-    <div className="text-[11px] text-ink-3">{label}</div>
-    <div
-      className={[
-        'mt-0.5 text-[14px] font-bold',
-        tone === 'ok' ? 'text-ok' : tone === 'bad' ? 'text-high' : 'text-ink',
-      ].join(' ')}
-    >
-      {value}
-    </div>
-  </div>
-);
+/** Nível de atenção do motor de risco → tom visual do bloco. */
+const RISK_TONE: Record<StatusVariant, FactTone> = {
+  low: 'ok',
+  success: 'ok',
+  medium: 'warn',
+  high: 'high',
+  critical: 'critical',
+  info: 'default',
+  primary: 'default',
+  neutral: 'muted',
+};
 
 function formatDateTime(value?: string) {
   if (!value) return '—';
@@ -37,42 +41,56 @@ function formatDateTime(value?: string) {
   return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleString('pt-BR');
 }
 
+/** Contador de duas casas: "04" alinha com "12" na mesma coluna. */
+function pad(value: number) {
+  return String(value).padStart(2, '0');
+}
+
 export const IdentityCard: React.FC<IdentityCardProps> = ({ diligence, coverage }) => {
   const resumo = summarizeCoverage(coverage);
   const risco = diligence.risco;
   const empresa = diligence.empresa || {};
+  const semResposta = resumo.falhou + resumo['nao-consultada'];
 
   return (
-    <section className="mt-4 grid gap-4 rounded-card border border-line bg-surface p-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,2fr)_auto] lg:items-center">
-      <div>
-        <span className="mb-2 inline-block rounded border border-brand-line bg-brand-soft px-2 py-0.5 text-[11px] text-brand">
+    <section className="grid min-w-0 gap-4 rounded-card border border-line bg-surface p-4 shadow-xs lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(200px,auto)] lg:items-start lg:gap-5">
+      {/* ---- Identidade ---- */}
+      <div className="min-w-0">
+        <Chip tone="brand" size="sm">
           CNPJ
-        </span>
-        <div className="font-mono text-[19px] font-bold text-ink">{diligence.cnpjFmt}</div>
-        <div className="mt-0.5 text-[13px] text-ink-3">{diligence.razaoSocial}</div>
+        </Chip>
+        <p className="mt-1.5 font-mono text-lg font-bold leading-tight text-ink">{diligence.cnpjFmt}</p>
+        <p className="mt-1 text-sm leading-snug text-ink-2">{diligence.razaoSocial}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-3">
+      {/* ---- Cobertura e cadastro ---- */}
+      <FactGrid columns={3} className="min-w-0 lg:border-l lg:border-line-soft lg:pl-5">
         <Fact label="Situação cadastral" value={empresa.descricao_situacao_cadastral || '—'} />
         <Fact label="Município" value={[empresa.municipio, empresa.uf].filter(Boolean).join('/') || '—'} />
-        <Fact label="Consultado em" value={formatDateTime(diligence.companyConsultedAt || diligence.dataAnalise)} />
-        <Fact label="Fontes com resultado" value={String(resumo['com-achado']).padStart(2, '0')} tone="ok" />
-        <Fact label="Fontes sem resultado" value={String(resumo['sem-achado']).padStart(2, '0')} />
-        {/* Fonte sem resposta é lacuna e precisa ser lida junto da decisão. */}
+        <Fact
+          label="Consultado em"
+          value={formatDateTime(diligence.companyConsultedAt || diligence.dataAnalise)}
+        />
+        <Fact label="Fontes com resultado" value={pad(resumo['com-achado'])} tone="ok" />
+        <Fact label="Fontes sem resultado" value={pad(resumo['sem-achado'])} />
+        {/* Fonte sem resposta é lacuna, e precisa ser lida junto da
+            decisão — não como um zero a mais na contagem. */}
         <Fact
           label="Fontes sem resposta"
-          value={String(resumo.falhou + resumo['nao-consultada']).padStart(2, '0')}
-          tone={resumo.falhou > 0 ? 'bad' : 'muted'}
+          value={pad(semResposta)}
+          tone={resumo.falhou > 0 ? 'high' : 'muted'}
+          hint={resumo.falhou > 0 ? 'Cobertura incompleta' : undefined}
         />
-      </div>
+      </FactGrid>
 
-      <div className="border-t border-line-soft pt-3 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0 lg:text-center">
-        <div className="font-mono text-[30px] font-bold leading-none text-brand">{risco?.score ?? '—'}</div>
-        <div className="mt-1 font-mono text-[11px] text-ink-3">de 100 · {risco?.nivel || 'não calculado'}</div>
-        <div className="mt-1.5 max-w-[190px] text-[13px] font-bold text-ink lg:mx-auto">
-          {risco?.decisao || '—'}
-        </div>
-      </div>
+      {/* ---- Decisão ---- */}
+      <Stat
+        value={risco?.score ?? '—'}
+        caption={`de 100 · ${risco?.nivel || 'não calculado'}`}
+        decision={risco?.decisao || '—'}
+        tone={risco?.cor ? RISK_TONE[risco.cor] ?? 'default' : 'muted'}
+        className="lg:min-w-[200px]"
+      />
     </section>
   );
 };

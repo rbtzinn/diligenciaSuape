@@ -14,6 +14,7 @@ import { AiAnalysisDrawer } from './AiAnalysisDrawer';
 import { PncpContractsDrawer } from './PncpContractsDrawer';
 import { DossierView } from './dossier/DossierView';
 import { RiskOverrideModal } from './RiskOverrideModal';
+import { EvidenceCenterDrawer } from './EvidenceCenterDrawer';
 import { ReportService } from '../../report/services/report.service';
 
 interface DiligenceDashboardProps {
@@ -28,7 +29,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   onDrillCompany,
 }) => {
   const [activeDrawer, setActiveDrawer] = useState<
-    'shareholders' | 'media' | 'sanctions' | 'processes' | 'questionnaire' | 'audit' | 'ai' | 'pncp' | null
+    'shareholders' | 'media' | 'sanctions' | 'processes' | 'questionnaire' | 'audit' | 'evidence' | 'ai' | 'pncp' | null
   >(null);
   const [discoveries, setDiscoveries] = useState<ProcessDiscovery[]>(diligence.processosDescobertos || []);
   const [adverseMedia, setAdverseMedia] = useState<AdverseMediaSummary | undefined>(diligence.adverseMedia);
@@ -44,10 +45,17 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const [riskModalOpen, setRiskModalOpen] = useState(false);
   const [riskSaving, setRiskSaving] = useState(false);
   const [localRisk, setLocalRisk] = useState<{ diligenceId: string; risk: RiskAssessment } | null>(null);
+  const [localEvidence, setLocalEvidence] = useState<{
+    diligenceId: string;
+    evidenceCenter: NonNullable<DiligenceItem['evidenceCenter']>;
+    egos: NonNullable<DiligenceItem['egos']>;
+  } | null>(null);
   const effectiveRisk = localRisk?.diligenceId === diligence.id ? localRisk.risk : diligence.risco;
+  const effectiveEvidenceCenter = localEvidence?.diligenceId === diligence.id ? localEvidence.evidenceCenter : diligence.evidenceCenter;
+  const effectiveEgos = localEvidence?.diligenceId === diligence.id ? localEvidence.egos : diligence.egos;
   const displayDiligence = useMemo(
-    () => ({ ...diligence, risco: effectiveRisk, adverseMedia }),
-    [adverseMedia, diligence, effectiveRisk],
+    () => ({ ...diligence, risco: effectiveRisk, adverseMedia, evidenceCenter: effectiveEvidenceCenter, egos: effectiveEgos }),
+    [adverseMedia, diligence, effectiveEgos, effectiveEvidenceCenter, effectiveRisk],
   );
 
   const handleEnrichDiscovery = async (discovery: ProcessDiscovery) => {
@@ -159,11 +167,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const safePepResults = Array.isArray(diligence.pepResults) ? diligence.pepResults : [];
 
   return (
-    <main className="investigation-dossier has-dossier-tabs">
-      <button type="button" className="investigation-back-sr" onClick={onBack}>
-        Nova consulta
-      </button>
-
+    <main className="flex min-h-0 min-w-0 flex-1 flex-col">
       {activeTab === 'dossie' ? (
         <DossierView
           diligence={displayDiligence}
@@ -174,17 +178,11 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           onOpenAudit={() => setActiveDrawer('audit')}
         />
       ) : null}
-      <div className="dossier-network-panel" hidden={activeTab !== 'mapa'}>
-        <div className="flex items-center gap-3 border-b border-line bg-surface px-4 py-2.5">
-          <button
-            type="button"
-            onClick={() => setActiveTab('dossie')}
-            className="cursor-pointer rounded-chip border border-line bg-surface-subtle px-3 py-1.5 text-[13px] text-brand hover:bg-surface-hover"
-          >
-            ← Voltar ao dossiê
-          </button>
-          <span className="truncate text-[13px] text-ink-3">Mapa de vínculos · {displayDiligence.razaoSocial}</span>
-        </div>
+
+      {/* O painel do mapa fica montado e apenas oculto: remontar o
+          grafo a cada troca de aba refazia o layout do Cytoscape e
+          perdia o enquadramento em que o analista estava. */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col" hidden={activeTab !== 'mapa'}>
       <ImmersiveNetworkTab
         diligence={displayDiligence}
         adverseMedia={adverseMedia}
@@ -200,9 +198,11 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         onOpenProcesses={() => setActiveDrawer('processes')}
         onOpenQuestionnaire={() => setActiveDrawer('questionnaire')}
         onOpenAudit={() => setActiveDrawer('audit')}
+        onOpenEvidence={() => setActiveDrawer('evidence')}
         onOpenAiAnalysis={() => setActiveDrawer('ai')}
         onOpenPncp={() => setActiveDrawer('pncp')}
         onDrillCompany={onDrillCompany}
+        onBackToDossier={() => setActiveTab('dossie')}
       />
       </div>
 
@@ -266,6 +266,12 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         onClose={() => setActiveDrawer(null)}
         pncp={diligence.pncp}
         federalExposure={diligence.federalExposure}
+      />
+      <EvidenceCenterDrawer
+        isOpen={activeDrawer === 'evidence'}
+        onClose={() => setActiveDrawer(null)}
+        diligence={displayDiligence}
+        onChange={(evidenceCenter, egos) => setLocalEvidence({ diligenceId: diligence.id, evidenceCenter, egos })}
       />
       <AiAnalysisDrawer
         isOpen={activeDrawer === 'ai'}

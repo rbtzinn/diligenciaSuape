@@ -136,17 +136,17 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
             {item.matchedTerms.length > 0 ? 'Termos:' : 'Nenhum termo adverso no trecho retornado'}
           </span>
           {item.matchedTerms.slice(0, 4).map((term, idx) => (
-            <span key={idx} className="badge badge-neutral" style={{ fontSize: 'var(--text-2xs)' }}>
+            <span key={idx} className="inline-flex max-w-full items-center gap-1.5 rounded-chip border px-2 py-0.5 text-2xs font-semibold leading-tight border-neutral-line bg-neutral-soft text-neutral-text">
               {term}
             </span>
           ))}
           {item.processNumbers && item.processNumbers.length > 0 && (
-            <span className="badge badge-info" style={{ fontSize: 'var(--text-2xs)' }}>
+            <span className="inline-flex max-w-full items-center gap-1.5 rounded-chip border px-2 py-0.5 text-2xs font-semibold leading-tight border-info-line bg-info-bg text-info-text">
               {item.processNumbers.length} Processo(s) CNJ
             </span>
           )}
           {item.questionnaireRefs?.map((reference) => (
-            <span key={reference} className="badge badge-info" style={{ fontSize: 'var(--text-2xs)' }}>
+            <span key={reference} className="inline-flex max-w-full items-center gap-1.5 rounded-chip border px-2 py-0.5 text-2xs font-semibold leading-tight border-info-line bg-info-bg text-info-text">
               Questão {reference}
             </span>
           ))}

@@ -214,7 +214,7 @@ function validateFindings(rawFindings, evidenceIndex) {
 
 function buildDisclaimer(cobertura) {
   const naoVerificados = cobertura
-    .filter((item) => item.status === 'INDISPONIVEL' || item.status === 'NAO_CONSULTADO' || item.status === 'PARCIAL')
+    .filter((item) => item.status === 'INDISPONIVEL' || item.status === 'NAO_CONSULTADO' || item.status === 'PARCIAL' || item.status === 'EXIGE_REVISAO_MANUAL')
     .map((item) => item.eixo);
 
   const base = 'Análise redigida por modelo de linguagem a partir das evidências coletadas pelos provedores oficiais.'

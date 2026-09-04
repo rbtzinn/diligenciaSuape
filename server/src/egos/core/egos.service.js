@@ -4,6 +4,7 @@ const { adaptReceita } = require('../adapters/receita.adapter');
 const { adaptCgu } = require('../adapters/cgu.adapter');
 const { adaptExternalResults } = require('../adapters/external-results.adapter');
 const { adaptInternalSuape } = require('../adapters/internal-suape/internal-suape.adapter');
+const { syncEvidenceCenterToEgos } = require('../../services/evidence-center.service');
 
 function materializeSnapshot(snapshot) {
   const runId = crypto.randomUUID();
@@ -103,7 +104,13 @@ const EgosService = {
     });
     builder.addInsight(`${builder.relationships.size} relação(ões) possuem evidência rastreável nesta diligência.`);
 
-    return materializeSnapshot(builder.toSnapshot());
+    const projectedSnapshot = {
+      ...payload,
+      id: diligenceId,
+      egos: materializeSnapshot(builder.toSnapshot()),
+    };
+    syncEvidenceCenterToEgos(projectedSnapshot);
+    return projectedSnapshot.egos;
   },
 
   async buildAndPersist(_tx, diligenceId, payload) {

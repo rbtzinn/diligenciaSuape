@@ -1,12 +1,23 @@
 // ==========================================================
 // DILIGÊNCIA 360 — Cobertura de fontes orientada à ação
 // ==========================================================
+// O que exige ação aparece primeiro; consulta concluída e fonte não
+// aplicável ficam recolhidas. A distinção entre "consultamos e nada
+// há" e "não consultamos" é o ponto da tela, e agora ela também está
+// na cor da linha, não só no texto.
+//
+// O desenho saiu de dossier-v3/evidence.css, cujas linhas de fonte
+// eram um grid de cinco colunas que no celular cortava a data e o
+// resultado.
+// ==========================================================
 
 import React from 'react';
 import { SanctionsResult, PepPartnerResult, JudicialProcessItem, AdverseMediaSummary } from '../types';
-import { Card } from '../../../components/ui/Card';
+import { Section } from '../../../components/ui/Section';
 import { Icons } from '../../../components/ui/Icons';
+import { Fact, FactGrid } from '../../../components/ui/Facts';
 import { Formatters } from '../../../lib/formatters';
+import { cn } from '../../../lib/cn';
 
 interface EvidenceSectionProps {
   ceis?: SanctionsResult;
@@ -28,23 +39,65 @@ interface SourceItem {
   state: SourceState;
 }
 
+const STATE_STYLE: Record<SourceState, { row: string; icon: string }> = {
+  consulted: { row: 'border-l-ok', icon: 'text-ok' },
+  action: { row: 'border-l-warn bg-warn-bg/40', icon: 'text-warn' },
+  not_applicable: { row: 'border-l-line-strong', icon: 'text-ink-muted' },
+};
+
 const SourceRow: React.FC<{ source: SourceItem }> = ({ source }) => (
-  <article className={`source-state-row source-state-row-${source.state}`}>
-    <span className="source-state-icon" aria-hidden="true">
-      {source.state === 'consulted'
-        ? <Icons.CheckCircle size={17} />
-        : source.state === 'action'
-          ? <Icons.AlertTriangle size={17} />
-          : <Icons.Info size={17} />}
+  <article
+    className={cn(
+      'flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-l-4 border-line-soft px-3 py-2.5 last:border-b-0',
+      STATE_STYLE[source.state].row,
+    )}
+  >
+    <span aria-hidden="true" className={cn('shrink-0', STATE_STYLE[source.state].icon)}>
+      {source.state === 'consulted' ? (
+        <Icons.CheckCircle size={16} />
+      ) : source.state === 'action' ? (
+        <Icons.AlertTriangle size={16} />
+      ) : (
+        <Icons.Info size={16} />
+      )}
     </span>
-    <div className="source-state-main">
-      <strong>{source.base}</strong>
-      <span>{source.provider}</span>
-    </div>
-    <span className="source-state-status">{source.status}</span>
-    <span className="source-state-result">{source.result}</span>
-    <time className="font-mono">{source.time}</time>
+
+    <span className="min-w-0 flex-1 basis-[180px]">
+      <strong className="block truncate text-sm font-bold text-ink">{source.base}</strong>
+      <span className="block truncate text-2xs text-ink-3">{source.provider}</span>
+    </span>
+
+    <span className="shrink-0 text-xs font-semibold text-ink-2">{source.status}</span>
+    <span className="min-w-0 flex-1 basis-[120px] text-xs text-ink-3">{source.result}</span>
+    <time className="num shrink-0 font-mono text-2xs text-ink-muted">{source.time}</time>
   </article>
+);
+
+/** Grupo recolhível de fontes num mesmo estado. */
+const SourceGroup: React.FC<{
+  icon: React.ReactNode;
+  label: React.ReactNode;
+  sources: SourceItem[];
+  defaultOpen?: boolean;
+  muted?: boolean;
+}> = ({ icon, label, sources, defaultOpen = false, muted = false }) => (
+  <details open={defaultOpen} className="overflow-hidden rounded-lg border border-line bg-surface">
+    <summary
+      className={cn(
+        'flex min-w-0 cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-surface-hover',
+        muted ? 'text-ink-3' : 'text-ink-2',
+      )}
+    >
+      <span aria-hidden="true" className="shrink-0">{icon}</span>
+      <span className="min-w-0 flex-1">{label}</span>
+      <Icons.ChevronDown size={15} aria-hidden="true" className="shrink-0 text-ink-3" />
+    </summary>
+    <div className="border-t border-line-soft">
+      {sources.map((source) => (
+        <SourceRow source={source} key={source.base} />
+      ))}
+    </div>
+  </details>
 );
 
 export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
@@ -171,50 +224,67 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
   const notApplicableSources = sources.filter((source) => source.state === 'not_applicable');
 
   return (
-    <Card
+    <Section
+      mark={<Icons.Database size={12} aria-hidden="true" />}
       title="Cobertura das fontes"
-      icon={<Icons.Database size={16} aria-hidden="true" />}
-      className="dash-full-width source-coverage-card"
+      subtitle="O que exige ação aparece primeiro"
     >
-      <div className="source-coverage-intro">
-        <p>O que exige ação aparece primeiro. Consultas concluídas e fontes não aplicáveis ficam recolhidas para reduzir ruído.</p>
-        <div className="source-coverage-metrics" aria-label="Resumo da cobertura">
-          <span className={actionSources.length > 0 ? 'has-action' : ''}><strong>{actionSources.length}</strong> não consultada(s)</span>
-          <span><strong>{consultedSources.length}</strong> consultada(s)</span>
-          <span><strong>{notApplicableSources.length}</strong> não aplicável(is)</span>
-        </div>
-      </div>
+      <div className="flex min-w-0 flex-col gap-3">
+        <p className="text-sm leading-relaxed text-ink-2">
+          O que exige ação aparece primeiro. Consultas concluídas e fontes não aplicáveis ficam recolhidas para reduzir
+          ruído.
+        </p>
 
-      {actionSources.length > 0 ? (
-        <section className="source-action-group" aria-labelledby="source-action-title">
-          <header>
-            <Icons.AlertTriangle size={18} aria-hidden="true" />
+        <FactGrid columns={3}>
+          <Fact
+            label="Não consultada(s)"
+            value={actionSources.length}
+            tone={actionSources.length > 0 ? 'warn' : 'muted'}
+          />
+          <Fact label="Consultada(s)" value={consultedSources.length} tone="ok" />
+          <Fact label="Não aplicável(is)" value={notApplicableSources.length} tone="muted" />
+        </FactGrid>
+
+        {actionSources.length > 0 ? (
+          <section
+            aria-labelledby="source-action-title"
+            className="overflow-hidden rounded-lg border border-warn-line bg-surface"
+          >
+            <header className="flex min-w-0 items-start gap-2 border-b border-warn-line bg-warn-bg px-3 py-2.5">
+              <Icons.AlertTriangle size={17} aria-hidden="true" className="mt-px shrink-0 text-warn" />
+              <div className="min-w-0">
+                <strong id="source-action-title" className="block text-sm font-bold text-warn-text">
+                  Fontes que ainda exigem ação
+                </strong>
+                <span className="block text-xs text-warn-text/80">
+                  Essas lacunas condicionam a conclusão do dossiê.
+                </span>
+              </div>
+            </header>
             <div>
-              <strong id="source-action-title">Fontes que ainda exigem ação</strong>
-              <span>Essas lacunas condicionam a conclusão do dossiê.</span>
+              {actionSources.map((source) => (
+                <SourceRow source={source} key={source.base} />
+              ))}
             </div>
-          </header>
-          <div>{actionSources.map((source) => <SourceRow source={source} key={source.base} />)}</div>
-        </section>
-      ) : null}
+          </section>
+        ) : null}
 
-      <details className="source-state-group" open={actionSources.length === 0}>
-        <summary>
-          <span><Icons.CheckCircle size={17} aria-hidden="true" /> {consultedSources.length} fontes consultadas <strong>✓</strong></span>
-          <Icons.ChevronDown size={16} aria-hidden="true" />
-        </summary>
-        <div>{consultedSources.map((source) => <SourceRow source={source} key={source.base} />)}</div>
-      </details>
+        <SourceGroup
+          icon={<Icons.CheckCircle size={16} className="text-ok" />}
+          label={`${consultedSources.length} fontes consultadas`}
+          sources={consultedSources}
+          defaultOpen={actionSources.length === 0}
+        />
 
-      {notApplicableSources.length > 0 ? (
-        <details className="source-state-group source-state-group-muted">
-          <summary>
-            <span><Icons.Info size={17} aria-hidden="true" /> {notApplicableSources.length} não aplicável(is) nesta execução</span>
-            <Icons.ChevronDown size={16} aria-hidden="true" />
-          </summary>
-          <div>{notApplicableSources.map((source) => <SourceRow source={source} key={source.base} />)}</div>
-        </details>
-      ) : null}
-    </Card>
+        {notApplicableSources.length > 0 ? (
+          <SourceGroup
+            icon={<Icons.Info size={16} className="text-ink-muted" />}
+            label={`${notApplicableSources.length} não aplicável(is) nesta execução`}
+            sources={notApplicableSources}
+            muted
+          />
+        ) : null}
+      </div>
+    </Section>
   );
 };

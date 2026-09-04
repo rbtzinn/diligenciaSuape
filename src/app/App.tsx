@@ -71,7 +71,7 @@ export const App: React.FC = () => {
 
   if (isAuthLoading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-app)', color: 'var(--text-tertiary)' }}>
+      <div className="grid min-h-dvh w-full place-items-center bg-canvas text-base text-ink-3">
         Carregando Diligência 360…
       </div>
     );

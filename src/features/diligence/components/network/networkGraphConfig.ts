@@ -10,49 +10,124 @@ import {
   isConfirmed,
   normalizeText,
   relationshipMatchesFilter,
+  shortRelationLabel,
   TYPE_LABELS,
 } from './networkUtils';
 
-export interface GraphNodeMetrics {
+/* ==========================================================
+   GEOMETRIA DO NÓ
+   ==========================================================
+   Um só lugar declara o tamanho do cartão de cada tipo de nó, e
+   tanto a folha de estilo do Cytoscape quanto os arranjos leem
+   daqui. Antes havia dois tamanhos concorrentes: a folha de estilo
+   desenhava cartões de 150×52 com o texto dentro, e uma função de
+   compensação de zoom reescrevia a largura para 52px e empurrava o
+   rótulo para fora com `text-margin-y`. O resultado era o texto
+   maior que a caixa, sobrepondo o nó vizinho — foi o que sobrou da
+   conversão de círculos para cartões.
+   ========================================================== */
+export interface NodeBox {
   width: number;
   height: number;
   fontSize: number;
+  /** Largura de texto: sempre menor que a caixa, por causa do padding. */
   textMaxWidth: number;
-  textMargin: number;
 }
 
-export const GRAPH_NODE_METRICS: Record<'default' | 'root' | 'document', GraphNodeMetrics> = {
-  default: { width: 52, height: 52, fontSize: 10, textMaxWidth: 115, textMargin: 10 },
-  root: { width: 84, height: 62, fontSize: 12, textMaxWidth: 160, textMargin: 10 },
-  document: { width: 32, height: 32, fontSize: 9, textMaxWidth: 95, textMargin: 8 },
+export const NODE_BOX: Record<'default' | 'root' | 'document', NodeBox> = {
+  default: { width: 150, height: 52, fontSize: 10, textMaxWidth: 128 },
+  root: { width: 176, height: 60, fontSize: 11, textMaxWidth: 152 },
+  document: { width: 128, height: 42, fontSize: 9, textMaxWidth: 108 },
 };
 
-export function syncGraphVisualScale(cy: cytoscape.Core) {
-  const currentZoom = Math.max(0.2, Math.min(3, cy.zoom()));
-  const nodeCompensation = 1 / currentZoom;
-  const labelCompensation = 1 / Math.max(0.8, currentZoom);
-  const compensateNode = (value: number) => Math.round(value * Math.sqrt(nodeCompensation) * 100) / 100;
-  const compensateLabel = (value: number) => Math.round(value * labelCompensation * 100) / 100;
-  const allNodes = cy.nodes();
-  const rootNodes = cy.nodes('[?isRoot]');
-  const documentNodes = cy.nodes('[entityType = "Document"]').not(rootNodes);
-  const defaultNodes = allNodes.not(rootNodes).not(documentNodes);
+/** Folga entre dois cartões vizinhos, para o traço da ligação respirar. */
+const NODE_GAP = 44;
 
-  const applyMetrics = (nodes: cytoscape.NodeCollection, metrics: GraphNodeMetrics) => {
-    nodes.style({
-      width: compensateNode(metrics.width),
-      height: compensateNode(metrics.height),
-      'font-size': `${compensateLabel(metrics.fontSize)}px`,
-      'text-max-width': `${compensateLabel(metrics.textMaxWidth)}px`,
-      'text-margin-y': `${compensateLabel(metrics.textMargin)}px`,
-    });
+/* ==========================================================
+   GEOMETRIA DO CELULAR
+   ==========================================================
+   No desktop o mapa é desenhado grande e depois encolhido para
+   caber (`fit`), e isso funciona porque o palco tem mil pixels de
+   largura. No celular a mesma conta era ruinosa: oito vizinhos em
+   cartões de 150px formam um anel de 640px de diâmetro, e encaixar
+   640px num palco de 390px com 76 de folga dá zoom 0,37 — o texto
+   de 10px virava 3,7px na tela. Era isto que estava ilegível: o
+   grafo certo, desenhado pequeno demais para ser lido.
+
+   Aqui a conta é ao contrário: o arranjo é calculado no tamanho do
+   palco, e o mapa é mostrado a zoom 1. O cartão é o maior que ainda
+   permite dois vizinhos lado a lado do nó em foco sem sair da tela —
+   é daí que sai a fórmula abaixo.
+   ========================================================== */
+export interface CompactGeometry {
+  cardWidth: number;
+  cardHeight: number;
+  rootWidth: number;
+  rootHeight: number;
+  /** Folga entre o cartão em foco e o do vizinho. */
+  gap: number;
+  /** Margem entre o cartão mais externo e a borda do palco. */
+  margin: number;
+}
+
+/** Cartões maiores que isto não cabem em pares num celular. */
+const COMPACT_CARD_MIN = 96;
+const COMPACT_CARD_MAX = 136;
+const COMPACT_ROOT_RATIO = 1.16;
+
+/**
+ * Restrição que define o cartão do celular: na horizontal cabem, do
+ * centro até a borda, meio cartão em foco, a folga e um cartão
+ * inteiro de vizinho. Ou seja
+ *
+ *   rootWidth / 2 + gap + cardWidth ≤ larguraDoPalco / 2 − margem
+ *
+ * Com `rootWidth = cardWidth × 1,16`, sobra uma equação de primeiro
+ * grau em `cardWidth`, que é o que a função resolve.
+ */
+export function compactGeometry(stageWidth: number): CompactGeometry {
+  const gap = 14;
+  const margin = 12;
+  const half = Math.max(280, stageWidth) / 2;
+  const cardWidth = Math.round(Math.max(
+    COMPACT_CARD_MIN,
+    Math.min(COMPACT_CARD_MAX, (half - margin - gap) / (1 + COMPACT_ROOT_RATIO / 2)),
+  ));
+
+  return {
+    cardWidth,
+    // Quatro linhas de texto: até três de nome e uma do vínculo.
+    cardHeight: 62,
+    rootWidth: Math.round(cardWidth * COMPACT_ROOT_RATIO),
+    rootHeight: 58,
+    gap,
+    margin,
   };
+}
 
-  cy.batch(() => {
-    applyMetrics(defaultNodes, GRAPH_NODE_METRICS.default);
-    applyMetrics(documentNodes, GRAPH_NODE_METRICS.document);
-    applyMetrics(rootNodes, GRAPH_NODE_METRICS.root);
-  });
+/** Nome cortado na fronteira de palavra, para caber no cartão. */
+function fitName(name: string, maxChars: number): string {
+  const clean = String(name || '').trim();
+  if (clean.length <= maxChars) return clean;
+  const cut = clean.slice(0, maxChars);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${(lastSpace > maxChars * 0.5 ? cut.slice(0, lastSpace) : cut).trim()}…`;
+}
+
+/** Quantos caracteres cabem no cartão do celular, por papel. */
+const COMPACT_NAME_CHARS = 32;
+const COMPACT_ROOT_NAME_CHARS = 40;
+
+/**
+ * Raio mínimo para acomodar `count` cartões num anel sem que dois se
+ * toquem. A conta é o perímetro necessário dividido por 2π: com
+ * cartões de 150px, um anel de raio 180 cabe sete, e o oitavo já
+ * entra por cima do sétimo. Era o que acontecia no mapa.
+ */
+function ringRadius(count: number, boxWidth: number, minimum: number): number {
+  if (count <= 1) return minimum;
+  const needed = (count * (boxWidth + NODE_GAP)) / (2 * Math.PI);
+  return Math.max(minimum, Math.round(needed));
 }
 
 /**
@@ -70,12 +145,30 @@ function carriesRisk(entity: EgosEntity): boolean {
   return false;
 }
 
+/**
+ * Modo celular do mapa.
+ *
+ * Fora do celular cada ligação escreve o próprio rótulo sobre o
+ * traço. Na exploração por ramos isso é desperdício e atrapalha:
+ * todas as ligações desenhadas partem do mesmo nó em foco, então o
+ * rótulo pertence sem ambiguidade ao vizinho — e escrito no traço
+ * ele colidia com o do vizinho ao lado, num palco de 390px.
+ *
+ * Por isso, aqui, o vínculo é a segunda linha do cartão do vizinho e
+ * o traço fica limpo.
+ */
+export interface CompactBuildOptions {
+  /** Id do nó em foco. Os demais nós são vizinhos diretos dele. */
+  focusId?: string;
+}
+
 export function buildCytoscapeElements(
   entities: EgosEntity[],
   relationships: EgosRelationship[],
   rootEntity: EgosEntity | undefined,
   filters: FilterState,
-  searchTerm: string
+  searchTerm: string,
+  compact?: CompactBuildOptions
 ): cytoscape.ElementDefinition[] {
   const normalizedSearch = normalizeText(searchTerm);
   const visible = new Map(
@@ -83,14 +176,40 @@ export function buildCytoscapeElements(
       .map((entity) => [entity.id, entity])
   );
 
+  // Vínculo de cada vizinho com o nó em foco, para a segunda linha do
+  // cartão no celular.
+  const bondToFocus = new Map<string, string>();
+  if (compact?.focusId) {
+    relationships.forEach((relationship) => {
+      const { sourceEntityId: source, targetEntityId: target } = relationship;
+      if (source !== compact.focusId && target !== compact.focusId) return;
+      const neighborId = source === compact.focusId ? target : source;
+      if (bondToFocus.has(neighborId)) return;
+      // O vizinho é o destino da relação quando o foco é a origem —
+      // e aí o rótulo tem de ser lido ao contrário.
+      bondToFocus.set(neighborId, shortRelationLabel(relationship, neighborId === target));
+    });
+  }
+
   const nodes: cytoscape.ElementDefinition[] = [...visible.values()].map((entity) => {
     const isRoot = rootEntity?.id === entity.id;
     const matches = normalizedSearch ? normalizeText(entity.name).includes(normalizedSearch) : false;
+    const isFocus = compact?.focusId === entity.id;
+
+    let label = entity.name;
+    if (compact) {
+      const maxChars = isFocus || isRoot ? COMPACT_ROOT_NAME_CHARS : COMPACT_NAME_CHARS;
+      const bond = isFocus ? '' : bondToFocus.get(entity.id) || '';
+      label = bond
+        ? `${fitName(entity.name, maxChars)}\n${bond}`
+        : fitName(entity.name, maxChars);
+    }
+
     return {
       group: 'nodes',
       data: {
         id: entity.id,
-        label: entity.name,
+        label,
         typeLabel: TYPE_LABELS[entity.type] || entity.type,
         entityType: entity.type,
         role: entity.role,
@@ -107,6 +226,8 @@ export function buildCytoscapeElements(
         // precisa destacar: sem isso, o grafo mostra com quem a empresa
         // se relaciona, mas não onde está o risco.
         carriesRisk(entity) ? 'has-risk' : '',
+        compact ? 'is-compact' : '',
+        compact && isFocus ? 'is-compact-focus' : '',
       ].filter(Boolean).join(' '),
     };
   });
@@ -128,7 +249,10 @@ export function buildCytoscapeElements(
           id: relationship.id,
           source: relationship.sourceEntityId,
           target: relationship.targetEntityId,
-          label: isDocEdge ? '' : relationship.label,
+          // Na exploração por ramos o vínculo já está escrito no
+          // cartão do vizinho; na rede completa não há foco, e é o
+          // traço que precisa dizer o que liga um nó ao outro.
+          label: isDocEdge || compact?.focusId ? '' : shortRelationLabel(relationship),
           fullLabel: relationship.label,
           status: relationship.status,
           type: relationship.type,
@@ -168,12 +292,15 @@ export function arrangeRadar(cy: cytoscape.Core, rootId?: string) {
     depthGroups[depth].push(node);
   });
 
-  // Organiza nós normais por anéis concêntricos com bom raio
-  const radiusStep = 210;
+  // Anéis concêntricos. O raio de cada anel é o maior entre a
+  // distância do grau e o mínimo que acomoda a quantidade de cartões
+  // daquele anel — sem a segunda parte, um grau com dez vizinhos
+  // empilhava os cartões um sobre o outro.
+  const radiusStep = 260;
   Object.entries(depthGroups).forEach(([depthStr, nodes]) => {
     const depth = Number(depthStr);
-    const radius = Math.max(180, depth * radiusStep);
     const count = nodes.length;
+    const radius = ringRadius(count, NODE_BOX.default.width, depth * radiusStep);
     const angleStep = (2 * Math.PI) / Math.max(1, count);
     const angleOffset = (depth % 2) * (angleStep / 2);
 
@@ -186,10 +313,11 @@ export function arrangeRadar(cy: cytoscape.Core, rootId?: string) {
     });
   });
 
-  // Organiza documentos no anel exterior mais distante com dispersão ampla
+  // Documentos no anel externo, fora dos graus de relacionamento.
   if (docNodes.length > 0) {
-    const docRadius = 390;
     const count = docNodes.length;
+    const deepestRing = Object.keys(depthGroups).reduce((max, key) => Math.max(max, Number(key)), 1);
+    const docRadius = ringRadius(count, NODE_BOX.document.width, (deepestRing + 1) * radiusStep);
     const angleStep = (2 * Math.PI) / Math.max(1, count);
 
     docNodes.forEach((node, index) => {
@@ -211,7 +339,31 @@ export function arrangeRadar(cy: cytoscape.Core, rootId?: string) {
   } as cytoscape.PresetLayoutOptions).run();
 }
 
-export function arrangeFocus(cy: cytoscape.Core, focusId?: string) {
+interface ArrangeFocusOptions {
+  /** Celular: o arranjo é calculado no tamanho do palco, a zoom 1. */
+  compact?: boolean;
+  /**
+   * Faixas do palco já ocupadas por algo que flutua sobre o mapa — a
+   * tarja do nó em foco no topo, o botão de "mostrar mais" embaixo.
+   * Sem descontá-las, o anel nasce centrado no palco inteiro e os nós
+   * de cima e de baixo aparecem por baixo delas.
+   */
+  insetTop?: number;
+  insetBottom?: number;
+}
+
+interface Point {
+  x: number;
+  y: number;
+}
+
+/** Dois cartões se cobrem quando se sobrepõem nos dois eixos. */
+function boxesCollide(a: Point, b: Point, aw: number, ah: number, bw: number, bh: number): boolean {
+  return Math.abs(a.x - b.x) < (aw + bw) / 2 + 8
+    && Math.abs(a.y - b.y) < (ah + bh) / 2 + 8;
+}
+
+export function arrangeFocus(cy: cytoscape.Core, focusId?: string, options: ArrangeFocusOptions = {}) {
   const focusNode = focusId ? cy.getElementById(focusId) : cy.nodes().first();
   const focus = focusNode.length ? focusNode : cy.nodes().first();
   if (!focus.length) return;
@@ -219,20 +371,90 @@ export function arrangeFocus(cy: cytoscape.Core, focusId?: string) {
   const neighbors = cy.nodes()
     .filter((node) => node.id() !== focus.id())
     .sort((left, right) => String(left.data('label')).localeCompare(String(right.data('label')), 'pt-BR'));
-  const positions: Record<string, { x: number; y: number }> = {
-    [focus.id()]: { x: 0, y: 0 },
-  };
   const count = neighbors.length;
-  const radius = count <= 4 ? 145 : count <= 8 ? 205 : 245;
   const angleStep = (2 * Math.PI) / Math.max(1, count);
   const angleOffset = -Math.PI / 2;
 
-  neighbors.forEach((node, index) => {
+  const positions: Record<string, { x: number; y: number }> = {
+    [focus.id()]: { x: 0, y: 0 },
+  };
+
+  const compactMode = options.compact === true;
+  const geometry = compactGeometry(cy.width());
+  const insetTop = compactMode ? Math.max(0, options.insetTop || 0) : 0;
+  const insetBottom = compactMode ? Math.max(0, options.insetBottom || 0) : 0;
+  const usableHeight = Math.max(160, cy.height() - insetTop - insetBottom);
+
+  // A altura do cartão sai do rótulo já renderizado — é a única
+  // medida confiável, porque quantas linhas um nome ocupa depende da
+  // fonte do aparelho. Os valores de `compactGeometry` ficam como
+  // reserva para o caso de o cartão ainda não ter sido medido.
+  const measuredHeight = (element: cytoscape.SingularElementArgument, fallback: number) => {
+    const height = element.isNode() ? element.height() : 0;
+    return Number.isFinite(height) && height > 0 ? height : fallback;
+  };
+  const cardHeight = neighbors.length
+    ? Math.max(...neighbors.map((node) => measuredHeight(node, geometry.cardHeight)))
+    : geometry.cardHeight;
+  const focusHeight = measuredHeight(focus, geometry.rootHeight);
+
+  // Fora do celular, o anel é dimensionado pelo conteúdo e o
+  // enquadramento fica por conta do `fit`, como no radar.
+  const radiusX = compactMode
+    ? Math.max(
+        (geometry.rootWidth + geometry.cardWidth) / 2 + geometry.gap,
+        cy.width() / 2 - geometry.cardWidth / 2 - geometry.margin,
+      )
+    : ringRadius(
+        count,
+        NODE_BOX.default.width,
+        Math.round((NODE_BOX.root.width + NODE_BOX.default.width) / 2 + NODE_GAP),
+      );
+
+  const ring = (radiusY: number): Point[] => neighbors.map((_, index) => {
     const angle = angleOffset + index * angleStep;
-    positions[node.id()] = {
-      x: Math.round(Math.cos(angle) * radius),
-      y: Math.round(Math.sin(angle) * radius),
+    return {
+      x: Math.round(Math.cos(angle) * radiusX),
+      y: Math.round(Math.sin(angle) * radiusY),
     };
+  });
+
+  const ringIsClear = (points: Point[]) => points.every((point, index) => {
+    const { cardWidth: cw, rootWidth: rw } = geometry;
+    if (boxesCollide(point, { x: 0, y: 0 }, cw, cardHeight, rw, focusHeight)) return false;
+    if (points.length < 2) return true;
+    return !boxesCollide(point, points[(index + 1) % points.length], cw, cardHeight, cw, cardHeight);
+  });
+
+  // O palco do celular é estreito e alto: `radiusX` está no limite da
+  // tela e não pode crescer, então quem abre espaço entre dois
+  // cartões vizinhos é a altura do anel. Ela parte do mínimo — dois
+  // cartões encostados — e cresce até que nenhum par se cubra.
+  const minRadiusY = (focusHeight + cardHeight) / 2 + geometry.gap;
+  const availableRadiusY = Math.max(
+    minRadiusY,
+    usableHeight / 2 - cardHeight / 2 - geometry.margin,
+  );
+
+  let radiusY = radiusX;
+  if (compactMode) {
+    let needed = minRadiusY;
+    for (let attempt = 0; attempt < 16 && !ringIsClear(ring(needed)); attempt += 1) {
+      needed = Math.round(needed * 1.12);
+    }
+    // Cabendo na faixa, o anel ainda se abre um pouco para respirar —
+    // mas não até a borda: com um vizinho só, ocupar a tela inteira
+    // deixava o par a duzentos pixels de distância, ligado por um
+    // traço vazio. Não cabendo, ele fica no tamanho que os vizinhos
+    // pedidos exigem, e o enquadramento adiante reduz o conjunto.
+    radiusY = needed <= availableRadiusY
+      ? Math.min(availableRadiusY, Math.round(needed * 1.35))
+      : needed;
+  }
+
+  const points = ring(radiusY);
+  points.forEach((point, index) => {
+    positions[neighbors[index].id()] = point;
   });
 
   cy.nodes().removeClass('is-mobile-focus');
@@ -240,14 +462,60 @@ export function arrangeFocus(cy: cytoscape.Core, focusId?: string) {
   cy.layout({
     name: 'preset',
     positions,
-    fit: true,
+    // No celular o enquadramento é feito abaixo, sobre as posições já
+    // calculadas: o `fit` do Cytoscape centraliza no palco inteiro e
+    // não sabe das faixas cobertas pela tarja e pelo botão.
+    fit: !compactMode,
     padding: 76,
     animate: true,
     animationDuration: 280,
   } as cytoscape.PresetLayoutOptions).run();
+
+  if (!compactMode) return;
+
+  // Caixa do conjunto em coordenadas do modelo.
+  const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point.y);
+  const left = Math.min(-geometry.rootWidth / 2, ...xs.map((x) => x - geometry.cardWidth / 2));
+  const right = Math.max(geometry.rootWidth / 2, ...xs.map((x) => x + geometry.cardWidth / 2));
+  const top = Math.min(-focusHeight / 2, ...ys.map((y) => y - cardHeight / 2));
+  const bottom = Math.max(focusHeight / 2, ...ys.map((y) => y + cardHeight / 2));
+
+  // Um enquadramento só para os dois casos: o anel que coube sai a
+  // zoom 1 — é para isso que ele foi desenhado no tamanho do palco —
+  // e o que não coube encolhe até caber. Nos dois, o centro do
+  // conjunto vai para o centro da faixa livre, e não do palco: é o que
+  // impede que o nó de cima nasça atrás da tarja do foco.
+  const framePadding = 12;
+  const scale = Math.min(
+    1,
+    (cy.width() - framePadding * 2) / Math.max(1, right - left),
+    (usableHeight - framePadding * 2) / Math.max(1, bottom - top),
+  );
+
+  cy.viewport({
+    zoom: scale,
+    pan: {
+      x: cy.width() / 2 - scale * ((left + right) / 2),
+      y: insetTop + usableHeight / 2 - scale * ((top + bottom) / 2),
+    },
+  });
 }
 
-export function arrangeChain(cy: cytoscape.Core, rootId?: string) {
+interface ArrangeChainOptions {
+  /** Celular: cartão menor, calha estreita e um piso de zoom. */
+  compact?: boolean;
+}
+
+/**
+ * Abaixo deste zoom o cartão deixa de ser legível e o mapa vira
+ * decoração. A rede completa num celular raramente cabe inteira; é
+ * preferível mostrá-la no menor tamanho ainda legível e deixar o
+ * dedo arrastar do que encolher tudo até ninguém ler nada.
+ */
+const COMPACT_MIN_ZOOM = 0.62;
+
+export function arrangeChain(cy: cytoscape.Core, rootId?: string, options: ArrangeChainOptions = {}) {
   const rootNode = rootId ? cy.getElementById(rootId) : cy.nodes('.is-root').first();
   const root = rootNode.length ? rootNode : cy.nodes().first();
   if (!root.length) return;
@@ -266,8 +534,19 @@ export function arrangeChain(cy: cytoscape.Core, rootId?: string) {
   // Leitura genealógica: raiz à esquerda e graus seguintes em blocos legíveis.
   // Camadas extensas quebram em subcolunas para evitar que o mapa seja reduzido
   // a uma faixa vertical quase impossível de selecionar.
-  const columnWidth = 270;
-  const rowHeight = 104;
+  const compactMode = options.compact === true;
+  const widestCard = cy.nodes().reduce(
+    (widest, node) => Math.max(widest, node.width() || 0),
+    compactMode ? compactGeometry(cy.width()).cardWidth : NODE_BOX.default.width,
+  );
+  const columnWidth = compactMode ? widestCard + 62 : NODE_BOX.default.width + 120;
+  // O cartão cresce com o nome; a linha acompanha o mais alto, senão
+  // um nome de quatro linhas encosta no cartão de baixo.
+  const tallestCard = cy.nodes().reduce(
+    (tallest, node) => Math.max(tallest, node.height() || 0),
+    NODE_BOX.default.height,
+  );
+  const rowHeight = tallestCard + (compactMode ? 22 : 34);
   const maxRowsPerColumn = 7;
   let nextColumnX = columnWidth;
 
@@ -292,12 +571,41 @@ export function arrangeChain(cy: cytoscape.Core, rootId?: string) {
   cy.layout({
     name: 'preset',
     positions,
-    fit: true,
+    // No celular o enquadramento é feito à mão logo abaixo, para
+    // poder impor o piso de zoom; por isso o arranjo não anima aqui.
+    fit: !compactMode,
     padding: 70,
-    animate: true,
+    animate: !compactMode,
     animationDuration: 360,
   } as cytoscape.PresetLayoutOptions).run();
+
+  if (compactMode) {
+    cy.fit(cy.elements(), 20);
+    if (cy.zoom() < COMPACT_MIN_ZOOM) {
+      cy.zoom(COMPACT_MIN_ZOOM);
+      cy.center(root);
+    }
+  }
 }
+
+/* ==========================================================
+   PALETA DO MAPA
+   ==========================================================
+   Cada tipo tem borda e um preenchimento claro da mesma família. A
+   borda sozinha não bastava: com 2px, qualquer zoom abaixo de 0,6 a
+   dissolve, e o mapa vira uma coleção de retângulos brancos iguais —
+   era preciso abrir a legenda para saber o que era pessoa e o que
+   era empresa. O preenchimento sobrevive à redução; é ele que
+   carrega o tipo quando o traço já não se vê.
+   ========================================================== */
+const TYPE_PAINT = {
+  company: { border: '#2D60AD', fill: '#F1F6FC' },
+  person: { border: '#7C4DBE', fill: '#F7F2FD' },
+  publicOffice: { border: '#0E7490', fill: '#ECF9FB' },
+  document: { border: '#8FA3AE', fill: '#F4F7F8' },
+  root: { border: '#FCB315', fill: '#FFF9EC' },
+  risk: { border: '#DC2626', fill: '#FEF1F1' },
+} as const;
 
 export const CYTOSCAPE_STYLESHEET: cytoscape.StylesheetStyle[] = [
   /* ==========================================================
@@ -306,77 +614,131 @@ export const CYTOSCAPE_STYLESHEET: cytoscape.StylesheetStyle[] = [
      O grafo era escuro e usava formas geométricas com o rótulo por
      fora, o que obrigava a consultar a legenda para saber o que cada
      forma significava e deixava a tela do mapa incoerente com o resto
-     do sistema. Agora cada nó é um cartão branco com o texto dentro e
-     a cor da borda indicando o tipo, no mesmo vocabulário visual do
-     dossiê.
+     do sistema. Agora cada nó é um cartão com o texto dentro, a cor
+     da borda e do preenchimento indicando o tipo, no mesmo
+     vocabulário visual do dossiê.
      ========================================================== */
   {
     selector: 'node',
     style: {
       label: 'data(label)',
       shape: 'roundrectangle',
-      'background-color': '#FFFFFF',
+      'background-color': TYPE_PAINT.company.fill,
       'border-width': 2,
-      'border-color': '#2D60AD',
+      'border-color': TYPE_PAINT.company.border,
       color: '#142630',
       'font-family': 'system-ui, -apple-system, Segoe UI, sans-serif',
       'font-size': '10px',
       'font-weight': 600,
       'text-valign': 'center',
       'text-halign': 'center',
-      'text-max-width': '128px',
+      'text-max-width': `${NODE_BOX.default.textMaxWidth}px`,
       'text-wrap': 'wrap',
-      width: 150,
-      height: 52,
-      padding: '6px',
-      'transition-property': 'border-color, width, height, opacity',
+      // Quebra na fronteira de palavra. Com `anywhere`, o mapa
+      // escrevia "MARIA APARECIDA DE SOUZA CAVALCANTI LI / NS" e
+      // "CONSTRUTORA HORIZ / ONTE": nome partido no meio da sílaba
+      // lê-se pior do que nome cortado no fim.
+      width: NODE_BOX.default.width,
+      // A largura é fixa, para os cartões alinharem; a altura vem do
+      // rótulo. Fixá-la também era supor quantas linhas um nome ocupa,
+      // e a suposição depende da fonte que o aparelho tem instalada:
+      // no mesmo nome, o cartão que cabia no desktop transbordava a
+      // borda no celular. Medir é mais barato do que adivinhar.
+      height: 'label',
+      padding: '8px',
+      'transition-property': 'border-color, background-color, width, height, opacity',
       'transition-duration': 180,
     } as unknown as cytoscape.Css.Node,
   },
   {
     selector: 'node.type-company',
-    style: { 'border-color': '#2D60AD' } as cytoscape.Css.Node,
+    style: {
+      'border-color': TYPE_PAINT.company.border,
+      'background-color': TYPE_PAINT.company.fill,
+    } as cytoscape.Css.Node,
   },
   {
     selector: 'node.type-person',
-    style: { 'border-color': '#7C4DBE' } as cytoscape.Css.Node,
+    style: {
+      'border-color': TYPE_PAINT.person.border,
+      'background-color': TYPE_PAINT.person.fill,
+    } as cytoscape.Css.Node,
   },
   {
     selector: 'node.type-publicoffice',
-    style: { 'border-color': '#0E7490' } as cytoscape.Css.Node,
+    style: {
+      'border-color': TYPE_PAINT.publicOffice.border,
+      'background-color': TYPE_PAINT.publicOffice.fill,
+    } as cytoscape.Css.Node,
   },
   {
     selector: 'node.type-document',
     style: {
-      'border-color': '#8FA3AE',
+      'border-color': TYPE_PAINT.document.border,
+      'background-color': TYPE_PAINT.document.fill,
       color: '#465B67',
-      width: 128,
-      height: 42,
-      'font-size': '9px',
-    } as cytoscape.Css.Node,
+      width: NODE_BOX.document.width,
+      'text-max-width': `${NODE_BOX.document.textMaxWidth}px`,
+      'font-size': `${NODE_BOX.document.fontSize}px`,
+    } as unknown as cytoscape.Css.Node,
   },
   {
     /* A empresa investigada usa o dourado institucional, o mesmo que a
        marca o cartão de identificação do dossiê. */
     selector: 'node.is-root',
     style: {
-      width: 176,
-      height: 60,
+      width: NODE_BOX.root.width,
+      'text-max-width': `${NODE_BOX.root.textMaxWidth}px`,
       'border-width': 3,
-      'border-color': '#FCB315',
-      'font-size': '11px',
+      'border-color': TYPE_PAINT.root.border,
+      'background-color': TYPE_PAINT.root.fill,
+      'font-size': `${NODE_BOX.root.fontSize}px`,
       'font-weight': 700,
-    } as cytoscape.Css.Node,
+    } as unknown as cytoscape.Css.Node,
   },
   {
     /* Ocorrência de controle externo é o único nó que o mapa pinta de
        vermelho: é onde está o risco, e precisa saltar. */
     selector: 'node.has-risk',
     style: {
-      'border-color': '#DC2626',
-      color: '#DC2626',
+      'border-color': TYPE_PAINT.risk.border,
+      'background-color': TYPE_PAINT.risk.fill,
+      color: '#991B1B',
     } as cytoscape.Css.Node,
   },
+
+  /* ==========================================================
+     CARTÃO DO CELULAR
+     A largura vem de `compactGeometry`, calculada a partir do palco:
+     é o maior cartão que ainda deixa um vizinho inteiro à esquerda e
+     à direita do nó em foco sem sair da tela. Como é lido a zoom 1, a
+     fonte pode ser a mesma do desktop e desta vez chega íntegra ao
+     olho.
+     ========================================================== */
+  {
+    selector: 'node.is-compact',
+    style: {
+      width: (node: cytoscape.NodeSingular) => compactGeometry(node.cy().width()).cardWidth,
+      'text-max-width': (node: cytoscape.NodeSingular) => (
+        `${compactGeometry(node.cy().width()).cardWidth - 16}px`
+      ),
+      'font-size': '10px',
+      padding: '7px',
+    } as unknown as cytoscape.Css.Node,
+  },
+  {
+    selector: 'node.is-compact.is-compact-focus',
+    style: {
+      width: (node: cytoscape.NodeSingular) => compactGeometry(node.cy().width()).rootWidth,
+      'text-max-width': (node: cytoscape.NodeSingular) => (
+        `${compactGeometry(node.cy().width()).rootWidth - 18}px`
+      ),
+      'font-size': '11px',
+      'font-weight': 700,
+      'border-width': 3,
+    } as unknown as cytoscape.Css.Node,
+  },
+
   {
     selector: 'node.is-search-match',
     style: {
@@ -416,17 +778,28 @@ export const CYTOSCAPE_STYLESHEET: cytoscape.StylesheetStyle[] = [
       'target-arrow-shape': 'triangle',
       'arrow-scale': 0.85,
       label: 'data(label)',
-      color: '#667A85',
+      color: '#465B67',
       'font-family': 'system-ui, -apple-system, Segoe UI, sans-serif',
       'font-size': '9px',
-      'text-rotation': 'autorotate',
+      'font-weight': 600,
+      // Etiqueta sempre na horizontal. Com `autorotate` ela girava
+      // junto com o traço, e numa ligação quase vertical acabava
+      // escrita de lado — texto virado é sempre mais lento de ler do
+      // que texto reto, mesmo quando cabe.
+      'text-rotation': 'none',
       'text-margin-y': -8,
-      'text-background-color': '#FBFCFD',
-      'text-background-opacity': 0.95,
+      'text-max-width': '96px',
+      'text-wrap': 'ellipsis',
+      'text-background-color': '#FFFFFF',
+      'text-background-opacity': 1,
       'text-background-padding': '3px',
+      'text-background-shape': 'roundrectangle',
+      'text-border-color': '#E7EEF1',
+      'text-border-width': 1,
+      'text-border-opacity': 1,
       'transition-property': 'line-color, target-arrow-color, width, opacity',
       'transition-duration': 180,
-    } as cytoscape.Css.Edge,
+    } as unknown as cytoscape.Css.Edge,
   },
   {
     selector: 'edge.is-confirmed',
@@ -456,12 +829,14 @@ export const CYTOSCAPE_STYLESHEET: cytoscape.StylesheetStyle[] = [
     } as cytoscape.Css.Edge,
   },
   {
+    /* Era branca sobre branco desde a conversão para tela clara: a
+       ligação selecionada simplesmente desaparecia. */
     selector: 'edge:selected',
     style: {
-      'line-color': '#ffffff',
-      'target-arrow-color': '#ffffff',
+      'line-color': '#163768',
+      'target-arrow-color': '#163768',
       width: 4,
-      'underlay-color': '#ffffff',
+      'underlay-color': '#2D60AD',
       'underlay-opacity': 0.16,
       'underlay-padding': 4,
     } as cytoscape.Css.Edge,

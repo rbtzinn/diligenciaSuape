@@ -25,7 +25,7 @@ export const InvestigationSanctionsDrawer: React.FC<InvestigationSanctionsDrawer
     title="Sanções oficiais"
     subtitle="CEIS e CNEP permanecem separados de notícias e hipóteses."
   >
-    <div className="investigation-sanctions-stack">
+    <div className="flex min-w-0 flex-col gap-4">
       <SanctionsSection ceis={ceis} cnep={cnep} />
       <PersonSanctionsSection personSanctions={personSanctions} />
     </div>

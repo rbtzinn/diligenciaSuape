@@ -101,7 +101,7 @@ export const JudicialDiscoveryDrawer: React.FC<JudicialDiscoveryDrawerProps> = (
 
         {/* 1. Proveniência e Fontes de Descoberta */}
         <div>
-          <span className="company-cell-label" style={{ marginBottom: '0.5rem', display: 'block' }}>
+          <span className="mb-2 block text-2xs font-semibold uppercase tracking-wide text-ink-3">
             Fontes de Descoberta ({sources.length})
           </span>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
@@ -151,7 +151,7 @@ export const JudicialDiscoveryDrawer: React.FC<JudicialDiscoveryDrawerProps> = (
         {/* 2. Metadados do DataJud (se enriquecido) */}
         {dataJud ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <span className="company-cell-label">Metadados Oficiais (DataJud / CNJ)</span>
+            <span className="block text-2xs font-semibold uppercase tracking-wide text-ink-3">Metadados Oficiais (DataJud / CNJ)</span>
 
             <div
               style={{
@@ -165,28 +165,28 @@ export const JudicialDiscoveryDrawer: React.FC<JudicialDiscoveryDrawerProps> = (
               }}
             >
               <div>
-                <span className="company-cell-label">Classe TPU</span>
+                <span className="block text-2xs font-semibold uppercase tracking-wide text-ink-3">Classe TPU</span>
                 <div style={{ fontWeight: 'var(--font-semibold)', color: 'var(--text-primary)', marginTop: '0.15rem' }}>
                   {dataJud.classe.nome}
                 </div>
               </div>
 
               <div>
-                <span className="company-cell-label">Órgão Julgador</span>
+                <span className="block text-2xs font-semibold uppercase tracking-wide text-ink-3">Órgão Julgador</span>
                 <div style={{ color: 'var(--text-primary)', marginTop: '0.15rem', fontSize: 'var(--text-sm)' }}>
                   {dataJud.orgaoJulgador.nome}
                 </div>
               </div>
 
               <div>
-                <span className="company-cell-label">Data de Ajuizamento</span>
+                <span className="block text-2xs font-semibold uppercase tracking-wide text-ink-3">Data de Ajuizamento</span>
                 <div className="font-mono" style={{ color: 'var(--text-primary)', marginTop: '0.15rem', fontSize: 'var(--text-sm)' }}>
                   {Formatters.date(dataJud.dataAjuizamento)}
                 </div>
               </div>
 
               <div>
-                <span className="company-cell-label">Grau / Instância</span>
+                <span className="block text-2xs font-semibold uppercase tracking-wide text-ink-3">Grau / Instância</span>
                 <div style={{ color: 'var(--text-primary)', marginTop: '0.15rem', fontSize: 'var(--text-sm)' }}>
                   {dataJud.grau} • {dataJud.sistema}
                 </div>
@@ -201,24 +201,28 @@ export const JudicialDiscoveryDrawer: React.FC<JudicialDiscoveryDrawerProps> = (
                 </span>
               </div>
 
-              <div className="timeline-list">
+              {/* Mesma forma da trilha de auditoria: ponto, traço e
+                  conteúdo, com o traço parando no penúltimo item. */}
+              <ol className="flex min-w-0 flex-col">
                 {displayMovements.map((m, idx) => (
-                  <div key={idx} className="timeline-item">
-                    <div className="timeline-dot info" />
-                    <div className="timeline-content">
-                      <div className="timeline-time font-mono">{Formatters.date(m.dataHora)}</div>
-                      <div className="timeline-text" style={{ fontWeight: 'var(--font-medium)', color: 'var(--text-primary)' }}>
-                        {m.nome}
-                      </div>
-                      {m.complementos && m.complementos.length > 0 && (
-                        <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)' }}>
-                          {m.complementos.join(' • ')}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <li key={idx} className="flex min-w-0 gap-3">
+                    <span aria-hidden="true" className="flex shrink-0 flex-col items-center">
+                      <span className="mt-1.5 size-2 shrink-0 rounded-full bg-brand" />
+                      {idx < displayMovements.length - 1 ? <span className="w-px flex-1 bg-line" /> : null}
+                    </span>
+
+                    <span className={idx < displayMovements.length - 1 ? 'min-w-0 flex-1 pb-3' : 'min-w-0 flex-1'}>
+                      <time className="num block font-mono text-2xs text-ink-muted">
+                        {Formatters.date(m.dataHora)}
+                      </time>
+                      <span className="block text-xs font-medium leading-relaxed text-ink">{m.nome}</span>
+                      {m.complementos && m.complementos.length > 0 ? (
+                        <span className="block text-2xs leading-snug text-ink-3">{m.complementos.join(' • ')}</span>
+                      ) : null}
+                    </span>
+                  </li>
                 ))}
-              </div>
+              </ol>
 
               {movimentos.length > 10 && (
                 <div style={{ textAlign: 'center', marginTop: '0.75rem' }}>
