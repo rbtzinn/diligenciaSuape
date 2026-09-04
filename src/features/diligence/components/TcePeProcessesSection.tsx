@@ -68,36 +68,25 @@ export const TcePeProcessesSection: React.FC<TcePeProcessesSectionProps> = ({ su
           </Note>
         ) : null}
 
-<<<<<<< HEAD
-      {/* Descarte por identidade. Sem esta linha, um dossiê que reteve 1 de 12
-          processos seria lido como se o TCE-PE tivesse devolvido apenas 1. */}
-      {(summary.falsePositivesDiscarded || 0) > 0 ? (
-        <div className="pncp-notice">
-          <strong>
-            {summary.falsePositivesDiscarded} processo(s) descartado(s) por incompatibilidade de identidade.
-          </strong>
-          <p>
+        {/* Descarte por identidade. Sem esta linha, um dossiê que reteve 1 de 12
+            processos seria lido como se o TCE-PE tivesse devolvido apenas 1. */}
+        {(summary.falsePositivesDiscarded || 0) > 0 ? (
+          <Note tone="warn" title={`${summary.falsePositivesDiscarded} processo(s) descartado(s) por incompatibilidade de identidade.`}>
             O nome empresarial apareceu, mas o processo trata de outro objeto — tipicamente ato de pessoal
             do órgão — ou a identificação não se sustentou. Eles não entram na exposição e permanecem
             registrados para conferência.
-          </p>
-        </div>
-      ) : null}
-
-      {summary.ok && summary.processos.length === 0 ? (
-        <p className="pncp-hint">
-          {summary.sourceStatus === 'EMPTY' || !summary.sourceStatus
-            ? 'A fonte respondeu e nenhum processo foi localizado pelos nomes empresariais pesquisados.'
-            : 'Nenhum processo atribuível à empresa após a verificação de identidade.'}
-        </p>
-      ) : null}
-=======
-        {summary.ok && summary.processos.length === 0 ? (
-          <Note tone="ok" icon={<Icons.Check size={15} aria-hidden="true" />}>
-            Nenhum processo foi localizado pelos nomes empresariais pesquisados.
           </Note>
         ) : null}
->>>>>>> 7522d3339a5eec82602cb402732a3535a6156c83
+
+        {/* A fonte ter respondido e nada haver é conclusão; não ter respondido
+            é lacuna. As duas produzem a mesma lista vazia. */}
+        {summary.ok && summary.processos.length === 0 ? (
+          <Note tone="ok" icon={<Icons.Check size={15} aria-hidden="true" />}>
+            {summary.sourceStatus === 'EMPTY' || !summary.sourceStatus
+              ? 'A fonte respondeu e nenhum processo foi localizado pelos nomes empresariais pesquisados.'
+              : 'Nenhum processo atribuível à empresa após a verificação de identidade.'}
+          </Note>
+        ) : null}
 
         {summary.processos.map((process) => (
           <article
