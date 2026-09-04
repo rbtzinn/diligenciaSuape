@@ -49,7 +49,14 @@ import { Button } from '../../../components/ui/Button';
 import { Chip } from '../../../components/ui/Chip';
 
 const MOBILE_NETWORK_BREAKPOINT = '(max-width: 760px)';
-const MOBILE_NEIGHBOR_PAGE_SIZE = 8;
+const MOBILE_NEIGHBOR_PAGE_SIZE = 6;
+
+/* Faixas do palco que ficam por baixo de algo flutuante no celular: a
+   tarja do nó em foco no topo e a linha de botão/dica embaixo. O
+   arranjo do grafo desconta as duas, de modo que nenhum cartão nasça
+   escondido atrás delas. */
+const MOBILE_STAGE_INSET_TOP = 46;
+const MOBILE_STAGE_INSET_BOTTOM = 52;
 
 function useCompactNetworkViewport() {
   const [isCompact, setIsCompact] = useState(() => (
@@ -140,6 +147,8 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   const filtersRef = useRef<FilterState>({ depth, relation: relationFilter, showDocuments });
   const compactViewportRef = useRef(isCompactViewport);
   compactViewportRef.current = isCompactViewport;
+  const mobileFullNetworkRef = useRef(isMobileFullNetwork);
+  mobileFullNetworkRef.current = isMobileFullNetwork;
 
   const networkData = useMemo(() => projectNetworkDocuments(
     egos?.entities || [],
@@ -347,6 +356,42 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
       .filter((item): item is NonNullable<typeof item> => Boolean(item));
   }, [entities, evidences, relationships, selectedEntity]);
 
+  /**
+   * Reenquadra o mapa no modo em que ele está.
+   *
+   * No desktop isso é um `fit`. No celular não pode ser: o arranjo
+   * compacto é desenhado no tamanho do palco e enquadrado descontando
+   * as faixas cobertas pela tarja e pelo botão — um `fit` ali
+   * devolvia o mapa encolhido e centrado no palco inteiro, que é
+   * exatamente o defeito que o arranjo existe para evitar. Tocar no
+   * fundo, limpar a busca ou usar "centralizar" caíam todos nesse
+   * `fit`.
+   */
+  const reframeGraph = () => {
+    const cy = cyRef.current;
+    if (!cy || cy.destroyed()) return;
+    if (!compactViewportRef.current) {
+      cy.animate({ fit: { eles: cy.elements(), padding: 60 }, duration: 400 });
+      return;
+    }
+    if (mobileFullNetworkRef.current) {
+      arrangeChain(cy, rootEntity?.id, { compact: true });
+      return;
+    }
+    arrangeFocus(cy, mobileFocusEntity?.id, {
+      compact: true,
+      insetTop: MOBILE_STAGE_INSET_TOP,
+      insetBottom: MOBILE_STAGE_INSET_BOTTOM,
+    });
+  };
+
+  // O manipulador de toque no fundo é registrado uma única vez, na
+  // criação do Cytoscape; sem esta referência ele ficaria preso na
+  // primeira versão de `reframeGraph` e reenquadraria segundo o modo
+  // em que o mapa estava naquele instante.
+  const reframeGraphRef = useRef(reframeGraph);
+  reframeGraphRef.current = reframeGraph;
+
   // Inicialização e atualização do Cytoscape
   useEffect(() => {
     if (!graphRef.current) return;
@@ -354,12 +399,19 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
     filtersRef.current = isCompactViewport
       ? { depth: 'all', relation: 'all', showDocuments: false }
       : { depth, relation: relationFilter, showDocuments };
+    // No celular, na exploração por ramos, o mapa é desenhado no
+    // tamanho do palco: cartão menor, nome ajustado ao cartão e o
+    // vínculo escrito na segunda linha do vizinho.
+    const compactBuild = isCompactViewport
+      ? { focusId: isMobileFullNetwork ? undefined : mobileFocusEntity?.id }
+      : undefined;
     const elements = buildCytoscapeElements(
       graphEntities,
       graphRelationships,
       rootEntity,
       filtersRef.current,
-      searchTerm
+      searchTerm,
+      compactBuild
     );
 
     if (!cyRef.current) {
@@ -405,7 +457,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
           setRoute(null);
           if (compactViewportRef.current) setIsMobileSheetExpanded(false);
           cy.elements().removeClass('is-dimmed is-route-active');
-          cy.animate({ fit: { eles: cy.elements(), padding: 60 }, duration: 400 });
+          reframeGraphRef.current();
         }
       });
 
@@ -422,9 +474,13 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
     const cy = cyRef.current;
     cy.resize();
     if (isCompactViewport && !isMobileFullNetwork) {
-      arrangeFocus(cy, mobileFocusEntity?.id);
+      arrangeFocus(cy, mobileFocusEntity?.id, {
+        compact: true,
+        insetTop: MOBILE_STAGE_INSET_TOP,
+        insetBottom: MOBILE_STAGE_INSET_BOTTOM,
+      });
     } else if (isCompactViewport || layoutMode === 'chain') {
-      arrangeChain(cy, rootEntity?.id);
+      arrangeChain(cy, rootEntity?.id, { compact: isCompactViewport });
     } else if (layoutMode === 'radar') {
       arrangeRadar(cy, rootEntity?.id);
     }
@@ -453,7 +509,25 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
         const cy = cyRef.current;
         if (!cy || cy.destroyed()) return;
         cy.resize();
-        cy.fit(cy.elements(), isCompactViewport ? 76 : 60);
+        // Na exploração por ramos o arranjo é função do tamanho do
+        // palco, então mudar de tamanho pede um novo arranjo — não um
+        // `fit`, que reintroduziria justamente o encolhimento de que o
+        // arranjo compacto existe para fugir.
+        if (isCompactViewport && !isMobileFullNetwork) {
+          cy.style().update();
+          arrangeFocus(cy, mobileFocusEntity?.id, {
+            compact: true,
+            insetTop: MOBILE_STAGE_INSET_TOP,
+            insetBottom: MOBILE_STAGE_INSET_BOTTOM,
+          });
+          return;
+        }
+        if (isCompactViewport) {
+          cy.style().update();
+          arrangeChain(cy, rootEntity?.id, { compact: true });
+          return;
+        }
+        cy.fit(cy.elements(), 60);
       });
     };
     const observer = new ResizeObserver(resizeGraph);
@@ -464,7 +538,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
       observer.disconnect();
       window.cancelAnimationFrame(frameId);
     };
-  }, [isCompactViewport]);
+  }, [isCompactViewport, isMobileFullNetwork, mobileFocusEntity?.id, rootEntity?.id]);
 
   // Download contextual de PDF da entidade (otimizado sem bloqueios)
   const downloadSelectedEntityReport = async () => {
@@ -510,9 +584,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   };
 
   const handleFit = () => {
-    if (cyRef.current) {
-      cyRef.current.animate({ fit: { eles: cyRef.current.elements(), padding: 60 }, duration: 400 });
-    }
+    reframeGraph();
   };
 
   const toggleFullscreen = () => {
@@ -562,7 +634,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
       setRoute(null);
       if (cyRef.current) {
         cyRef.current.elements().removeClass('is-dimmed is-route-active');
-        cyRef.current.animate({ fit: { eles: cyRef.current.elements(), padding: 60 }, duration: 400 });
+        reframeGraph();
       }
     }
   };
@@ -635,7 +707,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
     setIsMobileSheetExpanded(false);
     if (cyRef.current) {
       cyRef.current.elements().removeClass('is-dimmed is-route-active');
-      cyRef.current.animate({ fit: { eles: cyRef.current.elements(), padding: 60 }, duration: 400 });
+      reframeGraph();
     }
   };
 
@@ -659,7 +731,11 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
         eyebrow={isMobileFullNetwork ? 'Rede completa' : 'Exploração por ramos'}
         title="Mapa de vínculos"
         subtitle={targetCompanyName}
-        actions={
+        /* Os contadores só entram no desktop. No celular eles
+           desciam para uma fita própria de 44px, repetindo o que a
+           faixa flutuante sobre o mapa já diz — e essa altura sai
+           direto do palco do grafo, que é o que falta ali. */
+        actions={isCompactViewport ? undefined : (
           <>
             <Chip tone="neutral" size="sm">
               {displayedEntities.length} entidades
@@ -671,7 +747,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
               {reviewCount} em revisão
             </Chip>
           </>
-        }
+        )}
       />
 
       <NetworkToolbar
@@ -718,23 +794,35 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
               altura zero — o grafo existia, com os nós certos, e
               simplesmente não tinha onde ser pintado. A altura aqui
               vem de `size-full`, que independe de posicionamento. */}
-          <div className="size-full" ref={graphRef} />
+          <div
+            ref={graphRef}
+            className={cn(
+              'w-full',
+              // A folha de leitura é `fixed` e cobre os 132px de baixo.
+              // Antes o palco ia até o fim e o grafo era enquadrado
+              // contando com uma altura que a folha comia: o anel
+              // nascia centrado atrás dela. Encurtar o palco resolve na
+              // origem, e sem depender de posicionamento — que é o que
+              // o Cytoscape reescreve.
+              isCompactViewport ? 'h-[calc(100%-132px)]' : 'h-full',
+            )}
+          />
 
           {isCompactViewport ? (
+            /* Uma linha, não três: a faixa fica sobre o palco, e cada
+               pixel que ela ocupa é um pixel a menos de mapa. */
             <div
               aria-live="polite"
-              className="pointer-events-none absolute inset-x-3 top-3 flex min-w-0 items-center gap-2 rounded-lg border border-line bg-surface/95 px-3 py-2 shadow-sm backdrop-blur-sm"
+              className="pointer-events-none absolute inset-x-2 top-2 flex min-w-0 items-center gap-2 rounded-lg border border-line bg-surface/95 px-2.5 py-1.5 shadow-sm backdrop-blur-sm"
             >
-              <span className="min-w-0 flex-1">
-                <span className="block text-2xs font-semibold uppercase tracking-wide text-ink-3">
-                  {isMobileFullNetwork ? 'Rede completa' : 'Nó em foco'}
-                </span>
-                <strong className="block truncate text-sm font-bold text-ink">
-                  {isMobileFullNetwork ? targetCompanyName : mobileFocusEntity?.name}
-                </strong>
+              <span className="shrink-0 text-2xs font-semibold uppercase tracking-wide text-ink-3">
+                {isMobileFullNetwork ? 'Rede' : 'Foco'}
               </span>
+              <strong className="min-w-0 flex-1 truncate text-xs font-bold text-ink">
+                {isMobileFullNetwork ? targetCompanyName : mobileFocusEntity?.name}
+              </strong>
               <span className="num shrink-0 text-2xs text-ink-3">
-                {graphEntities.length} nós · {graphRelationships.length} ligações
+                {graphRelationships.length} ligações
               </span>
             </div>
           ) : null}
@@ -745,7 +833,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
               size="sm"
               onClick={() => setMobileNeighborLimit((current) => current + MOBILE_NEIGHBOR_PAGE_SIZE)}
               icon={<Icons.Plus size={15} aria-hidden="true" />}
-              className="absolute bottom-3 left-3 shadow-md"
+              className="absolute bottom-[144px] left-3 shadow-md"
             >
               Mostrar mais {Math.min(MOBILE_NEIGHBOR_PAGE_SIZE, remainingMobileNeighbors)}
               <span className="ml-1 text-2xs font-normal opacity-70">
@@ -759,8 +847,8 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
             && remainingMobileNeighbors === 0
             && mobileTrail.length <= 1
             && !selection ? (
-            <p className="absolute inset-x-3 bottom-3 rounded-lg border border-line bg-surface/95 px-3 py-2 text-center text-xs text-ink-2 shadow-sm backdrop-blur-sm">
-              Toque numa pessoa ou empresa para abrir somente aquele ramo.
+            <p className="absolute inset-x-3 bottom-[144px] rounded-lg border border-line bg-surface/95 px-3 py-1.5 text-center text-2xs text-ink-2 shadow-sm backdrop-blur-sm">
+              Toque numa pessoa ou empresa para abrir aquele ramo.
             </p>
           ) : null}
 
@@ -773,7 +861,9 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
             </div>
           ) : null}
 
-          <NetworkLegend visibleCount={displayedEntities.length} totalCount={entities.length} />
+          {isCompactViewport ? null : (
+            <NetworkLegend visibleCount={displayedEntities.length} totalCount={entities.length} />
+          )}
 
           {!isInspectorOpen ? (
             <Button

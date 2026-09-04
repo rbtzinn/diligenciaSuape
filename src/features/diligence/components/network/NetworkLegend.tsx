@@ -19,11 +19,14 @@ interface NetworkLegendProps {
   totalCount: number;
 }
 
+// Borda e preenchimento iguais aos de `CYTOSCAPE_STYLESHEET`: no mapa
+// o tipo passou a ser dito pelas duas coisas juntas, e um quadradinho
+// só de contorno já não representa o cartão que está na tela.
 const NODE_KINDS = [
-  { label: 'Empresa', color: 'var(--brand-blue)' },
-  { label: 'Pessoa', color: '#7C4DBE' },
-  { label: 'Órgão público', color: '#0E7490' },
-  { label: 'Ocorrência', color: 'var(--status-high)' },
+  { label: 'Empresa', color: '#2D60AD', fill: '#F1F6FC' },
+  { label: 'Pessoa', color: '#7C4DBE', fill: '#F7F2FD' },
+  { label: 'Órgão público', color: '#0E7490', fill: '#ECF9FB' },
+  { label: 'Ocorrência', color: '#DC2626', fill: '#FEF1F1' },
 ] as const;
 
 export const NetworkLegend: React.FC<NetworkLegendProps> = ({ visibleCount, totalCount }) => (
@@ -36,8 +39,8 @@ export const NetworkLegend: React.FC<NetworkLegendProps> = ({ visibleCount, tota
         <span key={kind.label} className="flex items-center gap-1.5 text-2xs font-medium text-ink-2">
           <span
             aria-hidden="true"
-            className="size-2.5 rounded-sm border-2 bg-surface"
-            style={{ borderColor: kind.color }}
+            className="size-2.5 rounded-sm border-2"
+            style={{ borderColor: kind.color, backgroundColor: kind.fill }}
           />
           {kind.label}
         </span>
