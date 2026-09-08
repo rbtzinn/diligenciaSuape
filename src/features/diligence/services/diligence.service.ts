@@ -414,7 +414,12 @@ export const DiligenceService = {
           razaoSocial: params.razaoSocial,
           nomeFantasia: params.nomeFantasia,
         }),
-        timeoutMs: 90_000,
+        // Eram 90 s numa função que a Vercel encerra aos 60: os últimos
+        // 30 s nunca chegavam a existir, e o que o navegador recebia era
+        // conexão cortada, não resposta. Agora o servidor tem orçamento
+        // de 40 s e devolve o que apurou; o cliente espera um pouco mais
+        // do que isso e menos do que a função vive.
+        timeoutMs: 55_000,
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Falha na consulta ao TCE-PE';
