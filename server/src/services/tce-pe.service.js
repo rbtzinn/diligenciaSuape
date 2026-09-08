@@ -8,6 +8,7 @@ const { RELATIONSHIP_TYPE } = require('../domain/relationship-type');
 const { normalizeText } = require('../egos/domain/normalization');
 const { nameVariants } = require('./pncp.service');
 const { SOURCE_STATUS, resolveSourceStatus } = require('../domain/source-status');
+const { mapWithConcurrency } = require('../utils/concurrency');
 const {
   MATCH_LEVEL,
   buildEntityProfile,
@@ -15,6 +16,37 @@ const {
 } = require('../entity-resolution/entity-resolution');
 
 const MAX_PROCESSES = 10;
+
+function envInt(name, fallback, minimum, maximum) {
+  const parsed = Number.parseInt(process.env[name], 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(Math.max(parsed, minimum), maximum);
+}
+
+/*
+ * ORÇAMENTO DE TEMPO
+ *
+ * A função serverless tem `maxDuration: 60` no server/vercel.json. Sem
+ * um teto próprio, esta rota passava dele com facilidade: são até
+ * quatro variantes de nome consultadas em série, a 20 s de timeout
+ * cada, e só então até dez processos com três consultas de detalhe por
+ * processo. Quatro variantes lentas já somam 80 s — a função morria no
+ * meio, o navegador recebia conexão cortada e a fonte aparecia como
+ * indisponível, sem nada do que já tinha sido apurado.
+ *
+ * O prazo abaixo faz a rota devolver o que concluiu. A consulta que não
+ * chegou a começar vira lacuna declarada (`naoIniciada`), que é
+ * diferente de fonte que recusou e diferente de fonte sem ocorrência.
+ * É o mesmo desenho já usado nos diários oficiais.
+ */
+const CONCURRENCY = envInt('TCE_PE_CONCURRENCY', 3, 1, 5);
+/** Abaixo disto não vale começar uma consulta: ela não terminaria. */
+const MIN_SLICE_MS = 1_500;
+// O piso precisa ser maior que `MIN_SLICE_MS`, senão um orçamento
+// configurado abaixo dele faz nenhuma consulta começar — a rota
+// devolveria "não iniciada" para tudo sem sequer tentar. O padrão
+// continua sendo 40 s.
+const GLOBAL_DEADLINE_MS = envInt('TCE_PE_DEADLINE_MS', 40_000, MIN_SLICE_MS * 2, 55_000);
 
 // Classes processuais em que a empresa quase nunca é parte: o objeto é o ato de
 // pessoal de um órgão. Quando o nome empresarial aparece num processo desses
@@ -34,8 +66,8 @@ const CONTRACT_CONTEXT_PATTERN = /CONTRATO|CONTRATA[CÇ][AÃ]O|LICITA[CÇ][AÃ]O
  * continua sendo lançada aqui porque `searchCompany` já a converte em consulta
  * parcial, e o comportamento validado na Fase 2 não muda.
  */
-async function query(method, params) {
-  const response = await queryDataset(method, params);
+async function query(method, params, options = {}) {
+  const response = await queryDataset(method, params, options);
   if (!response.ok) throw new Error(response.erro);
   return response.rows;
 }
@@ -244,36 +276,69 @@ const TcePeService = {
     }
     const profile = buildEntityProfile(company);
 
+    const deadlineAt = Date.now() + GLOBAL_DEADLINE_MS;
+    const remainingMs = () => deadlineAt - Date.now();
+    let deadlineExceeded = false;
+
     const candidates = new Map();
-    const consultas = [];
     let partial = false;
-    for (const variant of variants) {
+
+    // As variantes são independentes entre si; consultá-las em série era
+    // o que multiplicava o tempo total pelo número de variantes.
+    const consultas = await mapWithConcurrency(variants, CONCURRENCY, async (variant) => {
+      const slice = remainingMs();
+      if (slice < MIN_SLICE_MS) {
+        deadlineExceeded = true;
+        partial = true;
+        return {
+          termo: variant,
+          ok: false,
+          naoIniciada: true,
+          erro: 'Orçamento de tempo da consulta esgotado antes deste termo.',
+        };
+      }
       try {
-        const rows = await query('Processos', { Interessado: variant });
-        consultas.push({ termo: variant, ok: true, retornados: rows.length });
-        for (const row of rows) {
-          const match = matchCompanyName(row.Interessado, variants);
-          if (!match) continue;
-          const key = String(row.Processo || '').replace(/\D/g, '');
-          if (!key) continue;
-          const current = candidates.get(key);
-          if (!current || match.confidence > current.match.confidence) candidates.set(key, { row, match });
-        }
+        const rows = await query('Processos', { Interessado: variant }, { timeoutMs: slice });
+        return { termo: variant, ok: true, retornados: rows.length, rows };
       } catch (error) {
         partial = true;
-        consultas.push({ termo: variant, ok: false, erro: error.message });
+        return { termo: variant, ok: false, erro: error.message };
       }
+    });
+
+    // A escolha do melhor casamento acontece depois das consultas, e não
+    // dentro delas: em paralelo, a ordem de chegada é indeterminada, e
+    // decidir durante faria o resultado depender de quem respondeu antes.
+    for (const consulta of consultas) {
+      for (const row of consulta.rows || []) {
+        const match = matchCompanyName(row.Interessado, variants);
+        if (!match) continue;
+        const key = String(row.Processo || '').replace(/\D/g, '');
+        if (!key) continue;
+        const current = candidates.get(key);
+        if (!current || match.confidence > current.match.confidence) candidates.set(key, { row, match });
+      }
+      delete consulta.rows;
     }
 
     const selected = [...candidates.values()].slice(0, MAX_PROCESSES);
     if (candidates.size > MAX_PROCESSES) partial = true;
-    const processos = await Promise.all(selected.map(async ({ row, match }) => {
+    const processos = await mapWithConcurrency(selected, CONCURRENCY, async ({ row, match }) => {
       const formatted = formatProcessNumber(row.Processo);
       const details = { results: [], considerations: [], determinations: [] };
+      const slice = remainingMs();
+      // Sem tempo para os detalhes, o processo ainda entra na lista: ele
+      // foi encontrado, e omiti-lo esconderia um achado real. O que falta
+      // é o conteúdo da decisão, e isso é consulta parcial.
+      if (slice < MIN_SLICE_MS) {
+        deadlineExceeded = true;
+        partial = true;
+        return mapProcess(row, match, details, profile);
+      }
       const detailCalls = await Promise.allSettled([
-        query('Resultados', { Processo: formatted }),
-        query('Considerandos', { Processo: formatted }),
-        query('Determinacoes', { Processo: formatted }),
+        query('Resultados', { Processo: formatted }, { timeoutMs: slice }),
+        query('Considerandos', { Processo: formatted }, { timeoutMs: slice }),
+        query('Determinacoes', { Processo: formatted }, { timeoutMs: slice }),
       ]);
       if (detailCalls[0].status === 'fulfilled') details.results = detailCalls[0].value;
       else partial = true;
@@ -282,7 +347,7 @@ const TcePeService = {
       if (detailCalls[2].status === 'fulfilled') details.determinations = detailCalls[2].value;
       else partial = true;
       return mapProcess(row, match, details, profile);
-    }));
+    });
 
     // Falso positivo e coincidência incidental saem da lista principal, mas
     // ficam registrados: descarte silencioso não é auditável.
@@ -310,13 +375,32 @@ const TcePeService = {
       resultCount: relevantes.length,
     });
 
+    // Nenhuma consulta concluída: o dossiê precisa do motivo, não só do
+    // estado. Sem isto a tela dizia "TCE-PE não respondeu" e parava aí,
+    // e quem lia não sabia se a fonte estava fora do ar, se a consulta
+    // estourou o tempo, ou se valia tentar de novo.
+    const primeiraFalha = consultas.find((item) => !item.ok);
+    const nenhumaConcluida = consultasBemSucedidas === 0;
+    const naoIniciadas = consultas.filter((item) => item.naoIniciada).length;
+
     return {
       ok: consultas.some((item) => item.ok),
       sourceStatus,
+      ...(nenhumaConcluida
+        ? {
+            erro: primeiraFalha?.erro || 'Nenhuma consulta ao TCE-PE foi concluída.',
+            aviso: naoIniciadas === consultas.length
+              ? 'A consulta esgotou o tempo disponível antes de qualquer termo ser pesquisado. '
+                + 'A lista vazia não significa ausência de processo.'
+              : 'A fonte não respondeu. A lista vazia não significa ausência de processo.',
+          }
+        : {}),
+      consultasNaoIniciadas: naoIniciadas,
       provider: 'TCE-PE — API de Dados Abertos',
       sourceUrl: 'https://sistemas.tce.pe.gov.br/DadosAbertos/Exemplo!listar',
       consultadoEm: consultedAt,
       consultaParcial: partial,
+      deadlineExceeded,
       variantesPesquisadas: variants,
       consultas,
       processos: relevantes.sort((a, b) => (b.exercise || 0) - (a.exercise || 0)),

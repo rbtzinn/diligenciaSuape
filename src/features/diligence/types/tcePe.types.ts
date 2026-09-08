@@ -68,10 +68,22 @@ export interface TcePeSummary {
   erro?: string;
   provider?: string;
   sourceUrl?: string;
+  /** Motivo declarado quando nenhuma consulta foi concluída. */
+  aviso?: string;
   consultadoEm?: string;
   consultaParcial?: boolean;
+  /** A rota esgotou o próprio orçamento de tempo antes de terminar. */
+  deadlineExceeded?: boolean;
+  /** Termos que não chegaram a ser pesquisados — lacuna, não ausência. */
+  consultasNaoIniciadas?: number;
   variantesPesquisadas?: string[];
-  consultas?: Array<{ termo: string; ok: boolean; retornados?: number; erro?: string }>;
+  consultas?: Array<{
+    termo: string;
+    ok: boolean;
+    retornados?: number;
+    erro?: string;
+    naoIniciada?: boolean;
+  }>;
   processos: TcePeProcess[];
   processosDescartados?: TcePeDiscardedProcess[];
   falsePositivesDiscarded?: number;

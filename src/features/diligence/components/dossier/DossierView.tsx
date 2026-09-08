@@ -158,20 +158,34 @@ export const DossierView: React.FC<DossierViewProps> = ({
               {/* Cobertura incompleta entra na decisão, não no rodapé
                   técnico: zero achado numa fonte muda quando a fonte
                   não respondeu. */}
-              {semResposta.length > 0 ? (
-                <li className="flex min-w-0 items-start gap-2.5 px-4 py-3">
+              {/* Uma linha por fonte, com o motivo que o servidor
+                  registrou. O bloco dizia apenas "N fontes não
+                  responderam": o dossiê sabia qual fonte falhou e por
+                  quê — o `detail` vinha preenchido de
+                  `deriveSourceCoverage` — e descartava as duas coisas
+                  na hora de desenhar. Quem lia não tinha como
+                  distinguir fonte fora do ar de consulta que estourou o
+                  tempo, nem sabia o que valia tentar de novo. */}
+              {semResposta.map((item) => (
+                <li key={item.id} className="flex min-w-0 items-start gap-2.5 px-4 py-3">
                   <span aria-hidden="true" className="mt-1.5 size-2 shrink-0 rounded-full bg-warn" />
                   <div className="min-w-0">
                     <strong className="block text-sm font-bold leading-snug text-ink">
-                      {semResposta.length === 1
-                        ? `${semResposta[0].label} não respondeu`
-                        : `${semResposta.length} fontes não responderam`}
+                      {item.label} não respondeu
                     </strong>
-                    <span className="block text-xs leading-relaxed text-ink-2">
-                      A cobertura desta consulta está incompleta. Ausência de achado nessas fontes não pode ser lida
-                      como ausência de ocorrência.
-                    </span>
+                    {item.detail ? (
+                      <span className="block text-xs leading-relaxed text-ink-2">{item.detail}</span>
+                    ) : null}
                   </div>
+                </li>
+              ))}
+
+              {semResposta.length > 0 ? (
+                <li className="px-4 py-3">
+                  <span className="block text-xs leading-relaxed text-ink-3">
+                    A cobertura desta consulta está incompleta. Ausência de achado nessas fontes não pode ser lida
+                    como ausência de ocorrência.
+                  </span>
                 </li>
               ) : null}
             </ul>
