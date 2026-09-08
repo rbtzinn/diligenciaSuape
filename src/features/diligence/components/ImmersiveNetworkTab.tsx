@@ -43,6 +43,8 @@ import { InvestigationOverviewPanel } from './network/InvestigationOverviewPanel
 import { Icons } from '../../../components/ui/Icons';
 import { ReportService } from '../../report/services/report.service';
 import { ensureEgosSnapshot } from '../utils/fallbackEgos';
+import { extractEntityCnpj } from '../utils/entityCnpj';
+import { useCompanyPeek } from '../hooks/useCompanyPeek';
 import { cn } from '../../../lib/cn';
 import { PageHeader } from '../../../components/layout/Page';
 import { Button } from '../../../components/ui/Button';
@@ -120,6 +122,9 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
 }) => {
   const { id: diligenceId } = diligence;
   const isCompactViewport = useCompactNetworkViewport();
+  // Espiadas de empresas vinculadas, guardadas por CNPJ enquanto o
+  // mapa está aberto: voltar a um nó já consultado não repete a busca.
+  const { peeks, consultar: peekCompany, reconsultar: repeekCompany } = useCompanyPeek();
   const egos = useMemo(() => ensureEgosSnapshot(diligence), [diligence]);
   const targetCompanyName = diligence.razaoSocial || 'Empresa analisada';
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('chain');
@@ -259,6 +264,8 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   const selectedEntity = useMemo(() => (
     selection?.kind === 'node' ? entities.find((e) => e.id === selection.id) : undefined
   ), [entities, selection]);
+
+  const selectedEntityCnpj = useMemo(() => extractEntityCnpj(selectedEntity), [selectedEntity]);
 
   const selectedRelationship = useMemo(() => (
     selection?.kind === 'edge' ? relationships.find((r) => r.id === selection.id) : undefined
@@ -980,6 +987,9 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
                   selectedPersonOccurrences={selectedPersonOccurrences}
                   currentCnpj={diligence.cnpj}
                   onDrillCompany={onDrillCompany}
+                  companyPeek={selectedEntityCnpj ? peeks[selectedEntityCnpj] : undefined}
+                  onPeekCompany={peekCompany}
+                  onRepeekCompany={repeekCompany}
                 />
               ) : null}
             </div>
