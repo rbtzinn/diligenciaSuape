@@ -44,6 +44,8 @@ import { Button } from '../../../../components/ui/Button';
 import { Chip } from '../../../../components/ui/Chip';
 import { Note } from '../../../../components/ui/Note';
 import { DataTable, TableRow } from '../../../../components/ui/DataTable';
+import { CompanyPeekPanel } from './CompanyPeekPanel';
+import type { CompanyPeek } from '../../types/companyPeek.types';
 
 interface NetworkInspectorProps {
   selectedEntity?: EgosEntity;
@@ -58,6 +60,10 @@ interface NetworkInspectorProps {
   onExportEntityPdf: () => void;
   currentCnpj?: string;
   onDrillCompany?: (cnpj: string, name: string) => void;
+  /** Espiada já feita nesta sessão para a empresa selecionada. */
+  companyPeek?: CompanyPeek;
+  onPeekCompany?: (cnpj: string, name: string) => void;
+  onRepeekCompany?: (cnpj: string, name: string) => void;
   exportError: string;
   selectedConnections: DirectConnectionContext[];
   selectedEvidence: EgosEvidenceItem[];
@@ -150,6 +156,9 @@ export const NetworkInspector: React.FC<NetworkInspectorProps> = ({
   selectedPersonOccurrences,
   currentCnpj,
   onDrillCompany,
+  companyPeek,
+  onPeekCompany,
+  onRepeekCompany,
 }) => {
   if (!selectedEntity && !selectedRelationship) return null;
 
@@ -201,6 +210,20 @@ export const NetworkInspector: React.FC<NetworkInspectorProps> = ({
             >
               Traçar caminho até aqui
             </Button>
+          ) : null}
+
+          {/* Espiada na empresa vinculada. Vem antes do botão de
+              diligência de propósito: a ordem na tela é a ordem da
+              decisão — primeiro se olha, depois se decide se vale
+              abrir uma investigação inteira. */}
+          {drillCnpj && onPeekCompany ? (
+            <CompanyPeekPanel
+              cnpj={drillCnpj}
+              name={selectedEntity.name}
+              peek={companyPeek}
+              onConsultar={() => onPeekCompany(drillCnpj, selectedEntity.name)}
+              onReconsultar={() => onRepeekCompany?.(drillCnpj, selectedEntity.name)}
+            />
           ) : null}
 
           {/* Atalho para investigar uma empresa vinculada sem redigitar o CNPJ. */}
