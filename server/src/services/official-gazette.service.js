@@ -34,6 +34,25 @@ const CONCURRENCY = envInt('GAZETTE_CONCURRENCY', 3, 1, 6);
 const GLOBAL_DEADLINE_MS = envInt('GAZETTE_DEADLINE_MS', 40_000, 10_000, 55_000);
 // Timeout por sujeito. Precisa caber dentro do prazo global com folga.
 const SUBJECT_TIMEOUT_MS = envInt('GAZETTE_SUBJECT_TIMEOUT_MS', 12_000, 4_000, 20_000);
+
+// A primeira consulta de um termo inédito é fria no servidor do Querido Diário
+// e demora dezenas de segundos; as seguintes voltam em centenas de
+// milissegundos, do cache deles. Medido: 35,8 s na primeira, 0,3 s nas
+// seguintes. Com timeout de 12 s e uma tentativa só, todo termo novo abortava,
+// e como o abort não interrompe o trabalho do servidor, a execução seguinte
+// repetia a mesma consulta fria — a fonte aparecia como indisponível para
+// sempre.
+//
+// Abortar e tentar de novo aproveita justamente esse trabalho já feito: em
+// teste, a segunda tentativa devolveu o mesmo resultado que uma consulta sem
+// limite de tempo, incluindo total_gazettes e a lista completa.
+const SUBJECT_MAX_ATTEMPTS = envInt('GAZETTE_SUBJECT_ATTEMPTS', 3, 1, 5);
+// Pausa para o servidor terminar de montar o resultado antes da nova tentativa.
+const SUBJECT_RETRY_DELAY_MS = envInt('GAZETTE_RETRY_DELAY_MS', 1_500, 200, 5_000);
+
+function pause(ms) {
+  return new Promise((resolve) => { setTimeout(resolve, ms); });
+}
 const CACHE_TTL_MS = envInt('GAZETTE_CACHE_TTL_MS', 10 * 60 * 1000, 60_000, 60 * 60 * 1000);
 
 // Cache por consulta, não por diligência: o mesmo nome pesquisado em duas
@@ -146,7 +165,7 @@ function buildResult(item, subject, strength) {
   };
 }
 
-async function fetchGazettes({ query, territoryIds = [], since, timeoutMs = REQUEST_TIMEOUT_MS }) {
+async function fetchOnce({ query, territoryIds, since, timeoutMs }) {
   const url = new URL(API_URL);
   const params = new URLSearchParams({
     querystring: query,
@@ -192,6 +211,37 @@ async function fetchGazettes({ query, territoryIds = [], since, timeoutMs = REQU
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function fetchGazettes({
+  query,
+  territoryIds = [],
+  since,
+  timeoutMs = REQUEST_TIMEOUT_MS,
+  deadlineAt,
+  attempts = SUBJECT_MAX_ATTEMPTS,
+}) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    // Tentativa que não cabe no orçamento da rota não recupera nada: só atrasa
+    // a resposta parcial que já existe.
+    const remaining = deadlineAt ? deadlineAt - Date.now() : Infinity;
+    if (remaining < 1_500) break;
+    try {
+      return await fetchOnce({
+        query,
+        territoryIds,
+        since,
+        timeoutMs: Math.min(timeoutMs, remaining),
+      });
+    } catch (error) {
+      lastError = error;
+      // 4xx é a consulta que está errada, e repetir devolve o mesmo erro.
+      if (error.status && error.status >= 400 && error.status < 500) break;
+      if (attempt < attempts) await pause(SUBJECT_RETRY_DELAY_MS);
+    }
+  }
+  throw lastError || new Error('Tempo limite da consulta ao Querido Diário esgotado.');
 }
 
 const OfficialGazetteService = {
@@ -331,7 +381,8 @@ const OfficialGazetteService = {
           query,
           territoryIds,
           since: publishedSince,
-          timeoutMs: Math.min(SUBJECT_TIMEOUT_MS, remainingMs),
+          timeoutMs: SUBJECT_TIMEOUT_MS,
+          deadlineAt,
         });
         const gazettes = Array.isArray(payload.gazettes) ? payload.gazettes : [];
         return {
