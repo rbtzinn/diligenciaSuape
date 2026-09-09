@@ -232,6 +232,11 @@
      CAMADAS — a ordem do que cobre o quê, num lugar só.
      ---------------------------------------------------------- */
   --z-base: 0;
+  /* O cabeçalho de tabela também gruda, mas sempre por baixo do
+     cabeçalho da página: com o mesmo z-index, quem vinha depois no
+     DOM ganhava, e a fita de eixos ficava atrás dos nomes das
+     colunas. */
+  --z-table-head: 15;
   --z-sticky: 20;
   --z-sidebar: 60;
   --z-backdrop: 80;
