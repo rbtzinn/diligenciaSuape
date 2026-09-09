@@ -53,7 +53,7 @@ import { Chip } from '../../../components/ui/Chip';
 
 const MOBILE_NETWORK_BREAKPOINT = '(max-width: 760px)';
 const MOBILE_NEIGHBOR_PAGE_SIZE = 6;
-const DESKTOP_NEIGHBOR_LIMIT = 8;
+const DESKTOP_NEIGHBOR_PAGE_SIZE = 6;
 
 /* Faixas do palco que ficam por baixo de algo flutuante no celular: a
    tarja do nó em foco no topo e a linha de botão/dica embaixo. O
@@ -149,6 +149,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   // No desktop o mapa também abre por ramos: mostra o entorno imediato
   // e troca para os vínculos do nó selecionado, sem formar uma teia.
   const [desktopFocusEntityId, setDesktopFocusEntityId] = useState<string>();
+  const [desktopNeighborLimit, setDesktopNeighborLimit] = useState(DESKTOP_NEIGHBOR_PAGE_SIZE);
   // Grupos que o analista abriu. Fechado é o padrão: o mapa começa
   // legível e cresce por escolha, não por acaso.
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
@@ -233,8 +234,9 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
     entities,
     relationships,
     desktopFocusEntityId || rootEntity?.id,
-    DESKTOP_NEIGHBOR_LIMIT,
-  ), [desktopFocusEntityId, entities, relationships, rootEntity?.id]);
+    desktopNeighborLimit,
+    relationFilter,
+  ), [desktopFocusEntityId, desktopNeighborLimit, entities, relationFilter, relationships, rootEntity?.id]);
 
   const mobileFullEntities = useMemo(() => filterGraphEntities(
     entities,
@@ -280,6 +282,10 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   const remainingMobileNeighbors = Math.max(
     0,
     mobileFocusProjection.totalNeighbors - mobileFocusProjection.visibleNeighbors
+  );
+  const remainingDesktopNeighbors = Math.max(
+    0,
+    desktopFocusProjection.totalNeighbors - desktopFocusProjection.visibleNeighbors,
   );
 
   const selectedEntity = useMemo(() => (
@@ -482,6 +488,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
           setIsMobileSheetExpanded(false);
         } else {
           setDesktopFocusEntityId(nodeId);
+          setDesktopNeighborLimit(DESKTOP_NEIGHBOR_PAGE_SIZE);
           focusNeighborhood(cy, nodeId);
         }
       });
@@ -660,6 +667,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
       return;
     }
     setDesktopFocusEntityId(nodeId);
+    setDesktopNeighborLimit(DESKTOP_NEIGHBOR_PAGE_SIZE);
     if (cyRef.current) {
       cyRef.current.nodes().unselect();
       const node = cyRef.current.getElementById(nodeId);
@@ -889,6 +897,21 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
               Mostrar mais {Math.min(MOBILE_NEIGHBOR_PAGE_SIZE, remainingMobileNeighbors)}
               <span className="ml-1 text-2xs font-normal opacity-70">
                 ({remainingMobileNeighbors} restantes)
+              </span>
+            </Button>
+          ) : null}
+
+          {!isCompactViewport && remainingDesktopNeighbors > 0 ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setDesktopNeighborLimit((current) => current + DESKTOP_NEIGHBOR_PAGE_SIZE)}
+              icon={<Icons.Plus size={15} aria-hidden="true" />}
+              className="absolute bottom-4 left-1/2 z-sticky -translate-x-1/2 border-brand/30 bg-surface/95 shadow-md backdrop-blur-sm"
+            >
+              Mostrar mais {Math.min(DESKTOP_NEIGHBOR_PAGE_SIZE, remainingDesktopNeighbors)}
+              <span className="ml-1 text-2xs font-normal text-ink-3">
+                ({remainingDesktopNeighbors} restantes)
               </span>
             </Button>
           ) : null}
