@@ -136,11 +136,19 @@ async function callProvider(provider, { system, user, maxTokens, temperature, js
     const detail = await response.text().catch(() => '');
     const error = new Error(
       response.status === 429
-        ? 'Cota gratuita diária esgotada neste provedor.'
+        ? 'Limite de requisições ou capacidade temporária atingido. Aguarde e tente novamente (HTTP 429).'
         : response.status === 404
-          ? `O modelo "${model}" não existe mais neste provedor. Ajuste ${provider.envModel}.`
-          : response.status === 401 || response.status === 403
-            ? 'Chave de API recusada pelo provedor.'
+          ? `Modelo sem endpoint disponível. Confira ${provider.envModel} e escolha um modelo gratuito disponível (HTTP 404).`
+          : response.status === 401
+            ? 'Chave recusada. Confira a variável de ambiente e faça novo deploy do backend (HTTP 401).'
+            : response.status === 403
+              ? 'Acesso recusado. Confira as permissões da chave e as configurações de privacidade do provedor (HTTP 403).'
+              : response.status === 402
+                ? 'O provedor bloqueou a solicitação por saldo ou limite de crédito. Confira o modelo gratuito e os limites da chave; não é necessário ativar recarga automática (HTTP 402).'
+                : response.status === 400
+                  ? 'O modelo recusou os parâmetros enviados (HTTP 400).'
+                  : response.status === 503
+                    ? 'O modelo está temporariamente indisponível (HTTP 503).'
             : `Resposta ${response.status} do provedor.`
     );
     error.status = response.status;
@@ -212,7 +220,7 @@ async function chat({
   const error = new Error(
     attempts.length === 0
       ? 'Nenhum provedor de IA gratuito está configurado neste ambiente.'
-      : 'Todos os provedores de IA gratuitos falharam ou estão com a cota diária esgotada.'
+      : attempts.map((attempt) => `${attempt.provider}: ${attempt.erro}`).join(' | ')
   );
   error.attempts = attempts;
   error.status = attempts.some((attempt) => attempt.status === 429) ? 429 : 503;
