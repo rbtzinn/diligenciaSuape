@@ -212,7 +212,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
 
   return (
     <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <nav aria-label="Visões da diligência" className="flex shrink-0 gap-1 overflow-x-auto border-b border-line px-4 py-2">
+      <nav aria-label="Visões da diligência" className="scroll-fita flex min-w-0 shrink-0 gap-1 border-b border-line px-4 py-2">
         {([['noticias', 'Notícias e links'], ['dossie', 'Dossiê'], ['mapa', 'Mapa de vínculos']] as const).map(([id, label]) => (
           <button key={id} type="button" aria-current={activeTab === id ? 'page' : undefined} onClick={() => setActiveTab(id)}
             className={`shrink-0 rounded-md px-4 py-2 text-sm font-semibold ${activeTab === id ? 'bg-ink text-white' : 'text-ink-2 hover:bg-canvas'}`}>{label}</button>
