@@ -121,7 +121,9 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
       ref={headerRef}
       className={cn(
         'z-sticky w-full min-w-0 border-b',
-        sticky && 'sticky top-0',
+        // A topbar do workspace fica fixa. Sem esse offset, quando o
+        // cabeçalho passa a ser sticky ele sobe por baixo dela.
+        sticky && 'sticky top-[var(--topbar-h)]',
         deep
           ? 'on-deep border-deep-line bg-deep/95 text-on-deep backdrop-blur-sm'
           : 'border-line-soft bg-surface/95 text-ink backdrop-blur-sm',
@@ -215,8 +217,9 @@ export const PageBody: React.FC<PageBodyProps> = ({ width = 'content', gap = 'md
   <div
     className={cn(
       'mx-auto flex w-full min-w-0 flex-col px-gutter pb-16 pt-4',
-      // Toda âncora dentro do corpo desconta o cabeçalho preso.
-      '[&_[id]]:scroll-mt-[calc(var(--page-header-h,0px)+12px)]',
+      // Toda âncora dentro do corpo desconta a topbar fixa e o
+      // cabeçalho preso.
+      '[&_[id]]:scroll-mt-[calc(var(--topbar-h)+var(--page-header-h,0px)+12px)]',
       width === 'wide'
         ? 'max-w-content-wide'
         : width === 'sheet'
