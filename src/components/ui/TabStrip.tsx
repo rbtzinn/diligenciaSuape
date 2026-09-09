@@ -88,13 +88,21 @@ export const TabStrip: React.FC<TabStripProps> = ({
     }
   };
 
+  const scrollHorizontally = (event: React.WheelEvent<HTMLDivElement>) => {
+    const strip = event.currentTarget;
+    if (strip.scrollWidth <= strip.clientWidth || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+    event.preventDefault();
+    strip.scrollLeft += event.deltaY;
+  };
+
   return (
     <div
       ref={stripRef}
       role="tablist"
       aria-label={label}
       onKeyDown={moveFocus}
-      className={cn('scroll-fita -mx-gutter px-gutter', className)}
+      onWheel={scrollHorizontally}
+      className={cn('scroll-fita min-w-0 touch-pan-x -mx-gutter px-gutter', className)}
     >
       <div className="flex w-max items-stretch gap-0.5">
         {items.map((item) => {
