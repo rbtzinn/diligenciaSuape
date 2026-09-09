@@ -33,15 +33,15 @@ export function AiNewsSearch({ diligence, subject }: { diligence: DiligenceItem;
   };
   const links = result?.resultados?.filter((item) => safeNewsUrl(item.url)) || [];
   return <section className="min-w-0 overflow-hidden rounded-xl border border-brand/20 bg-surface shadow-sm" aria-label="Pesquisa ampliada com IA">
-    <div className="flex flex-wrap items-center justify-between gap-4 bg-brand-soft p-5">
+    <div className="flex flex-col items-stretch gap-4 bg-brand-soft p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
       <div className="min-w-0 flex-1">
         <p className="text-xs font-bold uppercase tracking-wider text-brand">Mais caminhos de pesquisa</p>
         <h2 className="mt-1 text-lg font-bold text-ink">Pesquisa ampliada com IA</h2>
         <p className="mt-2 max-w-prose text-sm text-ink-2">A IA cria consultas sobre a empresa e os nomes selecionados, pesquisa na web e usa os resultados para escolher novas buscas.</p>
       </div>
-      <Button variant="primary" onClick={search} isLoading={busy} loadingLabel="Pesquisando na web…">Pesquisar com IA</Button>
+      <Button className="w-full sm:w-auto sm:shrink-0" variant="primary" onClick={search} isLoading={busy} loadingLabel="Pesquisando na web…">Pesquisar com IA</Button>
     </div>
-    <div className="space-y-3 p-5">
+    <div className="min-w-0 space-y-3 p-4 [overflow-wrap:anywhere] sm:p-5">
       <p className="text-xs text-ink-3">Até duas rodadas e 12 consultas. Os links vêm dos buscadores; a disponibilidade depende das fontes e da cota de IA configurada.</p>
       {busy && <p role="status" className="text-sm text-brand">Planejando consultas e pesquisando novas fontes. Isso pode levar alguns minutos.</p>}
       {error && <p role="alert" className="text-sm text-high-text">{error}</p>}
