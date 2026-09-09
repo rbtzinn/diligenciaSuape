@@ -5,8 +5,9 @@
 //
 // A primeira: a rolagem horizontal vazava para a página, porque o
 // contêiner que rolava não era o cartão. Aqui a barra fica dentro do
-// cartão, sangrando até a borda com `-mx-4`, e o cabeçalho da tabela
-// gruda no topo enquanto se rola.
+// cartão, sangrando até a borda com `-mx-4`. O cabeçalho da tabela
+// rola junto com as linhas; quem permanece fixo é o cabeçalho do
+// dossiê, evitando duas camadas cobrindo o mesmo conteúdo.
 //
 // A segunda: pares Campo/Valor eram desenhados como tabela de duas
 // colunas. Em 360px de largura, "Fornecimento e gestão de recursos
@@ -96,7 +97,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                   key={column.key}
                   scope="col"
                   className={cn(
-                    'sticky top-[var(--page-header-h,0px)] z-base whitespace-nowrap border-b border-line bg-surface-subtle px-2.5 py-2 text-2xs font-semibold uppercase tracking-wide text-ink-3',
+                    'whitespace-nowrap border-b border-line bg-surface-subtle px-2.5 py-2 text-2xs font-semibold uppercase tracking-wide text-ink-3',
                     alignClass(column.align),
                     column.hideOnMobile && 'hidden md:table-cell',
                   )}
