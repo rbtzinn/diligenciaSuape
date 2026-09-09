@@ -47,7 +47,8 @@ const PROVIDER_CATALOG = Object.freeze([
     envKey: 'OPENROUTER_API_KEY',
     envModel: 'OPENROUTER_MODEL',
     defaultModel: 'openrouter/free',
-    supportsJsonMode: false,
+    // O roteador filtra os modelos gratuitos por suporte a saída JSON.
+    supportsJsonMode: true,
     // Aceita somente variantes :free ou o roteador exclusivamente gratuito.
     requireFreeModelSuffix: true,
   },
