@@ -184,7 +184,7 @@ const CORE_RELATIONAL_ENTITY_TYPES = new Set([
   'CourtCase',
 ]);
 
-const CORE_RELATIONSHIP_TYPES = new Set([
+export const CORE_RELATIONSHIP_TYPES = new Set([
   'ADMINISTERS_FUND',
   'MANAGES_FUND',
   'AUDITS_FUND',

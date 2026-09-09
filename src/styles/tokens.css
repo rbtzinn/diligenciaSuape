@@ -16,11 +16,15 @@
      surface (cartão), subtle (cabeçalho de cartão e faixa), e os
      dois estados de interação.
      ---------------------------------------------------------- */
-  --bg-canvas: #F3F7F9;
-  --bg-surface: #FFFFFF;
-  --bg-surface-subtle: #F7FAFB;
-  --bg-surface-hover: #EDF3F6;
-  --bg-surface-active: #E3EBEF;
+  /* Papel, e não tela. O dossiê é uma ficha: fundo de papel, tinta
+     quase preta, fio fino em vez de moldura de cartão. O azul do
+     SUAPE aparece no acento e no painel escuro, não no fundo — era
+     ele que dava ao app o ar de painel de sistema. */
+  --bg-canvas: #F2F0EA;
+  --bg-surface: #FBFAF7;
+  --bg-surface-subtle: #EDEBE4;
+  --bg-surface-hover: #E7E4DC;
+  --bg-surface-active: #DFDCD2;
 
   /* Apelido histórico: App.tsx pedia --bg-app, que nunca existiu e
      caía em transparente. Aponta para o canvas. */
@@ -40,18 +44,20 @@
   /* ----------------------------------------------------------
      TRAÇOS
      ---------------------------------------------------------- */
-  --border-subtle: #E7EEF1;
-  --border-default: #D8E3E8;
-  --border-strong: #BECED6;
+  /* O fio é o único traço da ficha: nada de sombra, nada de moldura
+     arredondada. Ele precisa ser visível no papel sem virar grade. */
+  --border-subtle: #E1DED4;
+  --border-default: #CFCBBE;
+  --border-strong: #A9A498;
   --border-focus: #2D60AD;
 
   /* ----------------------------------------------------------
      TEXTO
      ---------------------------------------------------------- */
-  --text-primary: #142630;
-  --text-secondary: #465B67;
-  --text-tertiary: #667A85;
-  --text-muted: #93A3AB;
+  --text-primary: #14161A;
+  --text-secondary: #43474D;
+  --text-tertiary: #6B6F76;
+  --text-muted: #9A9DA3;
   --text-inverse: #FFFFFF;
 
   /* ----------------------------------------------------------
@@ -65,7 +71,15 @@
   --brand-blue-text: #234D8E;
   --brand-blue-deep: #163768;
   --brand-gold: #FCB315;
-  --brand-gold-subtle: #FFF8E8;
+  --brand-gold-subtle: #FFF6E2;
+
+  /* O azul institucional não sobrevive sobre o painel escuro: #2D60AD
+     sobre #0A1F35 dá menos de 2:1, ou seja, não se lê. Este é o mesmo
+     azul clareado até passar em contraste (cerca de 7:1), e é ele o
+     acento de tudo que fica no escuro — número do score, marcadores,
+     avisos. */
+  --brand-blue-on-deep: #6FA8FF;
+  --brand-blue-on-deep-soft: #2A4C7D;
 
   /* ----------------------------------------------------------
      SITUAÇÃO — cada nível tem traço, fundo e texto próprios, para
@@ -203,6 +217,10 @@
   --sidebar-w-collapsed: 68px;
   --content-max: 1200px;
   --content-max-wide: 1440px;
+  /* Medida da ficha. Larga o bastante para o cabeçalho com três ações
+     e a fita de eixos, estreita o bastante para o texto ser lido sem
+     o olho perder a linha. `prose` (68ch) cortava o cabeçalho. */
+  --content-sheet: 760px;
   --gutter: clamp(16px, 3vw, 32px);
   --gutter-tight: clamp(12px, 2vw, 20px);
   --topbar-h: 56px;

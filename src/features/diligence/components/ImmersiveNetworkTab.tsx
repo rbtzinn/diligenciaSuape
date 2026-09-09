@@ -39,6 +39,7 @@ import { NetworkToolbar } from './network/NetworkToolbar';
 import { NetworkInspector } from './network/NetworkInspector';
 import { NetworkLegend } from './network/NetworkLegend';
 import { projectNetworkDocuments } from './network/networkDocumentProjection';
+import { clusterNetwork } from './network/networkClustering';
 import { InvestigationOverviewPanel } from './network/InvestigationOverviewPanel';
 import { Icons } from '../../../components/ui/Icons';
 import { ReportService } from '../../report/services/report.service';
@@ -144,6 +145,9 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   const [mobileFocusEntityId, setMobileFocusEntityId] = useState<string>();
   const [mobileTrail, setMobileTrail] = useState<string[]>([]);
   const [mobileNeighborLimit, setMobileNeighborLimit] = useState(MOBILE_NEIGHBOR_PAGE_SIZE);
+  // Grupos que o analista abriu. Fechado é o padrão: o mapa começa
+  // legível e cresce por escolha, não por acaso.
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
 
   const wrapperRef = useRef<HTMLElement | null>(null);
   const graphRef = useRef<HTMLDivElement | null>(null);
@@ -162,22 +166,43 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
     adverseMedia,
     targetCompanyName
   ), [adverseMedia, egos?.entities, egos?.evidences, egos?.relationships, targetCompanyName]);
-  const { entities, relationships, evidences, documentCount } = networkData;
+  const { entities: rawEntities, relationships: rawRelationships, evidences, documentCount } = networkData;
+
+  // A raiz é identificada no conjunto bruto: o agrupamento precisa
+  // saber quem ela é para nunca recolhê-la, e ele roda antes.
+  const rootEntityId = useMemo(() => {
+    if (!rawEntities.length) return undefined;
+    const normalizedTarget = normalizeText(targetCompanyName);
+    const found = rawEntities.find((entity) => String(entity.role || '').toUpperCase() === 'ROOT')
+      || rawEntities.find((entity) => normalizeText(entity.name) === normalizedTarget)
+      || rawEntities.find((entity) => entity.depth === 0)
+      || rawEntities[0];
+    return found?.id;
+  }, [rawEntities, targetCompanyName]);
+
+  // Folhas repetidas — dezenas de órgãos contratantes pendurados no
+  // mesmo nó pela mesma relação — viram um nó de grupo com a
+  // contagem. O agrupamento roda sobre o conjunto completo, e não
+  // sobre o já filtrado, de propósito: assim o grau de cada nó é o
+  // real, e quem faz ponte entre dois ramos nunca é recolhido por
+  // parecer folha num recorte.
+  const clustered = useMemo(
+    () => clusterNetwork(rawEntities, rawRelationships, rootEntityId, expandedGroups),
+    [expandedGroups, rawEntities, rawRelationships, rootEntityId],
+  );
+  const entities = clustered.entities;
+  const relationships = clustered.relationships;
+
+  const rootEntity = useMemo(
+    () => entities.find((entity) => entity.id === rootEntityId),
+    [entities, rootEntityId],
+  );
   const findings = useMemo(() => egos?.findings || [], [egos?.findings]);
   const resolutions = useMemo(() => egos?.resolutions || [], [egos?.resolutions]);
 
   const reviewCount = useMemo(() => (
     findings.filter((f) => f.status === 'REVIEW').length
   ), [findings]);
-
-  const rootEntity = useMemo(() => {
-    if (!entities.length) return undefined;
-    const normalizedTarget = normalizeText(targetCompanyName);
-    return entities.find((entity) => String(entity.role || '').toUpperCase() === 'ROOT')
-      || entities.find((entity) => normalizeText(entity.name) === normalizedTarget)
-      || entities.find((entity) => entity.depth === 0)
-      || entities[0];
-  }, [entities, targetCompanyName]);
 
   useEffect(() => {
     if (!rootEntity) return;
@@ -435,6 +460,19 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
       cy.on('tap', 'node', (evt) => {
         const node = evt.target;
         const nodeId = node.id();
+
+        // Nó de grupo não é entidade: tocar nele abre ou fecha o que
+        // ele recolhe, em vez de selecionar algo que não existe.
+        if (nodeId.startsWith('grupo:')) {
+          setExpandedGroups((current) => {
+            const next = new Set(current);
+            if (next.has(nodeId)) next.delete(nodeId);
+            else next.add(nodeId);
+            return next;
+          });
+          return;
+        }
+
         setSelection({ kind: 'node', id: nodeId });
         setIsInspectorOpen(true);
         if (compactViewportRef.current) {
@@ -750,6 +788,14 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
             <Chip tone="neutral" size="sm">
               {displayedRelationshipCount} ligações
             </Chip>
+            {/* O mapa recolhe folhas repetidas em nós de grupo. Sem
+                dizer quantas, o contador afirmaria que o mapa mostra
+                tudo — e ele passou a mostrar um resumo. */}
+            {clustered.collapsedCount > 0 ? (
+              <Chip tone="info" size="sm">
+                {clustered.collapsedCount} agrupadas
+              </Chip>
+            ) : null}
             <Chip tone={reviewCount > 0 ? 'warn' : 'ok'} size="sm" dot>
               {reviewCount} em revisão
             </Chip>
@@ -869,7 +915,11 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
           ) : null}
 
           {isCompactViewport ? null : (
-            <NetworkLegend visibleCount={displayedEntities.length} totalCount={entities.length} />
+            <NetworkLegend
+              visibleCount={displayedEntities.length}
+              totalCount={rawEntities.length}
+              groupedCount={clustered.collapsedCount}
+            />
           )}
 
           {!isInspectorOpen ? (

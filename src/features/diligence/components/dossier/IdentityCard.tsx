@@ -1,96 +1,115 @@
 // ==========================================================
-// DILIGÊNCIA 360 — Cartão de identificação do dossiê
+// DILIGÊNCIA 360 — Cabeçalho da ficha
 // ==========================================================
-// Identidade, contadores de cobertura e decisão sugerida.
+// Era um cartão de três colunas com identidade, contadores e score.
+// Virou o que um dossiê tem no alto: o nome grande, o carimbo do
+// nível, e os campos do cadastro em linhas de rótulo e valor.
 //
-// Duas correções de leitura. O score aparecia em monoespaçado, o que
-// o fazia parecer código de sistema; e era sempre azul da marca,
-// mesmo quando o nível dizia "Atenção Crítica" — número e cor
-// contavam histórias diferentes. O nível já vem classificado do
-// motor de risco (`risco.cor`), então agora é ele que pinta o bloco.
+// O score saiu daqui. Ele ganhou painel próprio, escuro, logo abaixo:
+// espremido numa terceira coluna, o número que decide a contratação
+// tinha o mesmo peso visual do município da sede.
 // ==========================================================
 
 import React from 'react';
 import type { DiligenceItem } from '../../types';
 import type { StatusVariant } from '../../../../types';
-import type { SourceCoverageItem } from './sourceCoverage';
-import { summarizeCoverage } from './sourceCoverage';
-import { Fact, FactGrid, FactTone, Stat } from '../../../../components/ui/Facts';
-import { Chip } from '../../../../components/ui/Chip';
+import { DataList, DataRow, Stamp, StampTone } from '../../../../components/ui/Sheet';
+import { Formatters } from '../../../../lib/formatters';
 
 interface IdentityCardProps {
   diligence: DiligenceItem;
-  coverage: SourceCoverageItem[];
 }
 
-/** Nível de atenção do motor de risco → tom visual do bloco. */
-const RISK_TONE: Record<StatusVariant, FactTone> = {
+const STAMP_TONE: Record<StatusVariant, StampTone> = {
   low: 'ok',
   success: 'ok',
   medium: 'warn',
   high: 'high',
   critical: 'critical',
-  info: 'default',
-  primary: 'default',
-  neutral: 'muted',
+  info: 'neutral',
+  primary: 'neutral',
+  neutral: 'neutral',
 };
 
-function formatDateTime(value?: string) {
-  if (!value) return '—';
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleString('pt-BR');
+/** "17/12/1991 · 34 anos" — a idade é o que se lê, a data é a prova. */
+function openingLine(value?: string): string {
+  const formatted = Formatters.date(value);
+  if (!formatted || formatted === '—') return '—';
+  const parsed = new Date(String(value));
+  if (Number.isNaN(parsed.getTime())) return formatted;
+  const years = Math.floor((Date.now() - parsed.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+  return years >= 1 ? `${formatted} · ${years} ${years === 1 ? 'ano' : 'anos'}` : formatted;
 }
 
-/** Contador de duas casas: "04" alinha com "12" na mesma coluna. */
-function pad(value: number) {
-  return String(value).padStart(2, '0');
+function addressLine(empresa: DiligenceItem['empresa']): string {
+  const street = [empresa?.logradouro, empresa?.numero, empresa?.complemento]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  const city = [empresa?.municipio, empresa?.uf].filter(Boolean).join('/');
+  return [street, city].filter(Boolean).join(' — ') || '—';
 }
 
-export const IdentityCard: React.FC<IdentityCardProps> = ({ diligence, coverage }) => {
-  const resumo = summarizeCoverage(coverage);
-  const risco = diligence.risco;
+export const IdentityCard: React.FC<IdentityCardProps> = ({ diligence }) => {
   const empresa = diligence.empresa || {};
-  const semResposta = resumo.falhou + resumo['nao-consultada'];
+  const risco = diligence.risco;
+  const situacao = empresa.descricao_situacao_cadastral || '';
+  const capital = Number(empresa.capital_social);
 
   return (
-    <section className="grid min-w-0 gap-4 rounded-card border border-line bg-surface p-4 shadow-xs lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(200px,auto)] lg:items-start lg:gap-5">
-      {/* ---- Identidade ---- */}
-      <div className="min-w-0">
-        <Chip tone="brand" size="sm">
-          CNPJ
-        </Chip>
-        <p className="mt-1.5 font-mono text-lg font-bold leading-tight text-ink">{diligence.cnpjFmt}</p>
-        <p className="mt-1 text-sm leading-snug text-ink-2">{diligence.razaoSocial}</p>
+    <div className="min-w-0">
+      <h1 className="text-2xl font-extrabold leading-[1.1] tracking-tight text-ink sm:text-3xl">
+        {diligence.razaoSocial || 'Empresa analisada'}
+      </h1>
+
+      <div className="mt-2.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+        {risco ? (
+          <Stamp tone={risco.cor ? STAMP_TONE[risco.cor] ?? 'neutral' : 'neutral'}>{risco.nivel}</Stamp>
+        ) : null}
+        <span className="ficha-label text-ink-3">
+          CNPJ <span className="num font-mono normal-case tracking-normal text-ink">{diligence.cnpjFmt}</span>
+        </span>
+        {situacao ? (
+          <span
+            className={`ficha-label border px-1.5 py-0.5 ${
+              situacao.toUpperCase() === 'ATIVA'
+                ? 'border-ok-line bg-ok-bg text-ok-text'
+                : 'border-high-line bg-high-bg text-high-text'
+            }`}
+          >
+            {situacao}
+          </span>
+        ) : null}
       </div>
 
-      {/* ---- Cobertura e cadastro ---- */}
-      <FactGrid columns={3} className="min-w-0 lg:border-l lg:border-line-soft lg:pl-5">
-        <Fact label="Situação cadastral" value={empresa.descricao_situacao_cadastral || '—'} />
-        <Fact label="Município" value={[empresa.municipio, empresa.uf].filter(Boolean).join('/') || '—'} />
-        <Fact
-          label="Consultado em"
-          value={formatDateTime(diligence.companyConsultedAt || diligence.dataAnalise)}
-        />
-        <Fact label="Fontes com resultado" value={pad(resumo['com-achado'])} tone="ok" />
-        <Fact label="Fontes sem resultado" value={pad(resumo['sem-achado'])} />
-        {/* Fonte sem resposta é lacuna, e precisa ser lida junto da
-            decisão — não como um zero a mais na contagem. */}
-        <Fact
-          label="Fontes sem resposta"
-          value={pad(semResposta)}
-          tone={resumo.falhou > 0 ? 'high' : 'muted'}
-          hint={resumo.falhou > 0 ? 'Cobertura incompleta' : undefined}
-        />
-      </FactGrid>
-
-      {/* ---- Decisão ---- */}
-      <Stat
-        value={risco?.score ?? '—'}
-        caption={`de 100 · ${risco?.nivel || 'não calculado'}`}
-        decision={risco?.decisao || '—'}
-        tone={risco?.cor ? RISK_TONE[risco.cor] ?? 'default' : 'muted'}
-        className="lg:min-w-[200px]"
-      />
-    </section>
+      <DataList className="mt-4">
+        {empresa.nome_fantasia ? <DataRow label="Nome fantasia" value={empresa.nome_fantasia} /> : null}
+        {empresa.cnae_fiscal_descricao ? (
+          <DataRow
+            label="CNAE"
+            value={
+              <>
+                {empresa.cnae_fiscal ? (
+                  <span className="num mr-1.5 font-mono text-ink-3">{empresa.cnae_fiscal}</span>
+                ) : null}
+                {empresa.cnae_fiscal_descricao}
+              </>
+            }
+          />
+        ) : null}
+        <DataRow label="Abertura" value={openingLine(empresa.data_inicio_atividade)} />
+        {Number.isFinite(capital) && capital > 0 ? (
+          <DataRow label="Capital social" value={Formatters.currency(capital)} mono />
+        ) : null}
+        {empresa.porte || empresa.natureza_juridica ? (
+          <DataRow
+            label="Porte e natureza"
+            value={[empresa.porte, empresa.natureza_juridica].filter(Boolean).join(' · ')}
+          />
+        ) : null}
+        <DataRow label="Endereço" value={addressLine(empresa)} />
+        <DataRow label="Quadro societário" value={`${diligence.socios?.length || 0} integrante(s)`} />
+      </DataList>
+    </div>
   );
 };

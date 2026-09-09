@@ -1,33 +1,31 @@
 // ==========================================================
 // DILIGÊNCIA 360 — Dossiê
 // ==========================================================
-// Ordem de leitura: identificação e decisão, depois o que pesa
-// contra, depois os eixos, e a rede no fim com acesso ao mapa.
+// A tela é uma ficha, não um painel: fundo de papel, coluna única de
+// leitura, seções numeradas de (A) a (E) e fio fino no lugar da
+// moldura de cartão.
 //
-// O cabeçalho era o pior ponto do app no celular. As três ações
-// ("Fontes e auditoria", "Mapa de vínculos", "Exportar PDF") eram
-// botões de texto que quebravam em duas linhas, e a fita de eixos
-// quebrava em outras duas ou três. O resultado eram quatro fileiras
-// de links sem forma de botão, com o título perdido no meio.
-//
-// Agora as ações são botões de verdade que rolam numa fita, e a fita
-// de eixos nunca quebra. O cabeçalho tem uma altura só, em qualquer
-// largura de tela.
+// A ordem é a da decisão, e é o que o formato passou a sustentar:
+// quem é a empresa, quanto de atenção ela exige, o que pesa contra, o
+// que cada eixo apurou, e a rede no fim. Antes tudo isso vinha em
+// cartões do mesmo peso, empilhados — e uma pilha de caixas iguais não
+// diz o que ler primeiro.
 // ==========================================================
 
 import React, { useMemo, useState } from 'react';
 import type { DiligenceItem } from '../../types';
 import { AxisSection } from './AxisSection';
 import { IdentityCard } from './IdentityCard';
+import { ScorePanel } from './ScorePanel';
 import { deriveDossierAxes } from './dossierAxes';
 import { deriveSourceCoverage } from './sourceCoverage';
 import { deriveDossierFindings } from './dossierFindings';
 import { Page, PageBody, PageHeader } from '../../../../components/layout/Page';
 import { TabStrip, TabItem } from '../../../../components/ui/TabStrip';
-import { Section } from '../../../../components/ui/Section';
+import { SheetSection } from '../../../../components/ui/Sheet';
 import { Button } from '../../../../components/ui/Button';
-import { Chip } from '../../../../components/ui/Chip';
 import { Icons } from '../../../../components/ui/Icons';
+import { Formatters } from '../../../../lib/formatters';
 
 interface DossierViewProps {
   diligence: DiligenceItem;
@@ -53,9 +51,11 @@ export const DossierView: React.FC<DossierViewProps> = ({
 
   const relevantes = findings
     .filter((finding) => ['critico', 'alto', 'moderado'].includes(finding.severity))
-    .slice(0, 3);
+    .slice(0, 4);
   const semResposta = coverage.filter((item) => item.status === 'falhou');
   const entidades = diligence.egos?.metrics?.entities || 0;
+  const ligacoes = diligence.egos?.metrics?.relationships || 0;
+  const consultadoEm = Formatters.date(diligence.companyConsultedAt || diligence.dataAnalise);
 
   const tabs: TabItem[] = axes.map((axis) => ({
     id: axis.id,
@@ -74,10 +74,11 @@ export const DossierView: React.FC<DossierViewProps> = ({
   return (
     <Page>
       <PageHeader
+        width="sheet"
         onBack={onBack}
         backLabel="Voltar para a busca"
         eyebrow="Dossiê de integridade"
-        title={<span className="font-mono">{diligence.cnpjFmt}</span>}
+        title={<span className="num font-mono">{diligence.cnpjFmt}</span>}
         subtitle={diligence.razaoSocial}
         actions={
           <>
@@ -134,17 +135,34 @@ export const DossierView: React.FC<DossierViewProps> = ({
         tabs={<TabStrip items={tabs} activeId={activeAxis} onSelect={irParaEixo} label="Eixos do dossiê" />}
       />
 
-      <PageBody>
-        <IdentityCard diligence={diligence} coverage={coverage} />
+      {/* Coluna única e estreita: a ficha é para ser lida de cima a
+          baixo, e uma linha de texto de mil pixels não é legível. */}
+      <PageBody width="sheet" gap="lg">
+        <SheetSection mark="A" title="Cabeçalho" meta={`Consultado ${consultadoEm}`}>
+          <IdentityCard diligence={diligence} />
+        </SheetSection>
+
+        <SheetSection
+          mark="B"
+          title="Índice de atenção"
+          meta={`${findings.length} achados`}
+          flush
+        >
+          <ScorePanel
+            diligence={diligence}
+            unansweredSources={semResposta.map((item) => item.label)}
+            className="mt-3"
+          />
+        </SheetSection>
 
         {relevantes.length > 0 || semResposta.length > 0 ? (
-          <Section title="O que pesa contra" mark="!" flush>
-            <ul className="divide-y divide-line-soft">
+          <SheetSection mark="C" title="O que pesa contra" meta={`${relevantes.length + semResposta.length} pontos`} flush>
+            <ul className="mt-1">
               {relevantes.map((finding) => (
-                <li key={finding.id} className="flex min-w-0 items-start gap-2.5 px-4 py-3">
+                <li key={finding.id} className="flex min-w-0 items-start gap-2.5 border-b border-line-soft py-2.5">
                   <span
                     aria-hidden="true"
-                    className={`mt-1.5 size-2 shrink-0 rounded-full ${
+                    className={`mt-1.5 size-1.5 shrink-0 ${
                       finding.severity === 'moderado' ? 'bg-warn' : 'bg-high'
                     }`}
                   />
@@ -155,20 +173,12 @@ export const DossierView: React.FC<DossierViewProps> = ({
                 </li>
               ))}
 
-              {/* Cobertura incompleta entra na decisão, não no rodapé
-                  técnico: zero achado numa fonte muda quando a fonte
-                  não respondeu. */}
               {/* Uma linha por fonte, com o motivo que o servidor
-                  registrou. O bloco dizia apenas "N fontes não
-                  responderam": o dossiê sabia qual fonte falhou e por
-                  quê — o `detail` vinha preenchido de
-                  `deriveSourceCoverage` — e descartava as duas coisas
-                  na hora de desenhar. Quem lia não tinha como
-                  distinguir fonte fora do ar de consulta que estourou o
-                  tempo, nem sabia o que valia tentar de novo. */}
+                  registrou. Sem ele, "não respondeu" e "nada consta"
+                  ficavam iguais na tela e significam o oposto. */}
               {semResposta.map((item) => (
-                <li key={item.id} className="flex min-w-0 items-start gap-2.5 px-4 py-3">
-                  <span aria-hidden="true" className="mt-1.5 size-2 shrink-0 rounded-full bg-warn" />
+                <li key={item.id} className="flex min-w-0 items-start gap-2.5 border-b border-line-soft py-2.5">
+                  <span aria-hidden="true" className="mt-1.5 size-1.5 shrink-0 bg-warn" />
                   <div className="min-w-0">
                     <strong className="block text-sm font-bold leading-snug text-ink">
                       {item.label} não respondeu
@@ -181,39 +191,45 @@ export const DossierView: React.FC<DossierViewProps> = ({
               ))}
 
               {semResposta.length > 0 ? (
-                <li className="px-4 py-3">
-                  <span className="block text-xs leading-relaxed text-ink-3">
+                <li className="py-2.5">
+                  <span className="block font-mono text-2xs leading-relaxed text-ink-3">
                     A cobertura desta consulta está incompleta. Ausência de achado nessas fontes não pode ser lida
                     como ausência de ocorrência.
                   </span>
                 </li>
               ) : null}
             </ul>
-          </Section>
+          </SheetSection>
         ) : null}
 
-        {axes.map((axis) => (
-          <AxisSection key={axis.id} axis={axis} defaultOpen={axis.rows.length > 0} />
-        ))}
+        <SheetSection mark="D" title="Eixos apurados" meta={`${axes.length} eixos`} flush>
+          <div className="mt-1">
+            {axes.map((axis) => (
+              <AxisSection key={axis.id} axis={axis} defaultOpen={axis.rows.length > 0} />
+            ))}
+          </div>
+        </SheetSection>
 
-        <Section
-          mark="R"
+        <SheetSection
+          mark="E"
           title="Estrutura societária e vínculos"
-          trailing={
-            <Chip tone="brand" size="sm" solid>
-              {entidades > 0 ? `${entidades} entidades` : 'Mapa local'}
-            </Chip>
-          }
+          meta={entidades > 0 ? `${entidades} entidades · ${ligacoes} ligações` : 'mapa local'}
           footer={
-            <Button variant="outline" size="sm" onClick={onOpenNetwork} rightIcon={<Icons.ArrowRight size={15} aria-hidden="true" />}>
-              Abrir mapa em tela cheia
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenNetwork}
+              rightIcon={<Icons.ArrowRight size={15} aria-hidden="true" />}
+            >
+              Abrir mapa de vínculos
             </Button>
           }
         >
           <p className="text-sm leading-relaxed text-ink-2">
-            Mapa de relações entre a empresa, o quadro societário, órgãos contratantes e ocorrências.
+            Relações entre a empresa, o quadro societário, as empresas ligadas, os órgãos contratantes e as
+            ocorrências apuradas. O mapa abre por ramos: cada nó pode ser aberto para ver com quem ele se liga.
           </p>
-        </Section>
+        </SheetSection>
       </PageBody>
     </Page>
   );

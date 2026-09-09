@@ -17,6 +17,8 @@ import React from 'react';
 interface NetworkLegendProps {
   visibleCount: number;
   totalCount: number;
+  /** Entidades recolhidas em nós de grupo, ainda fechados. */
+  groupedCount?: number;
 }
 
 // Borda e preenchimento iguais aos de `CYTOSCAPE_STYLESHEET`: no mapa
@@ -29,7 +31,11 @@ const NODE_KINDS = [
   { label: 'Ocorrência', color: '#DC2626', fill: '#FEF1F1' },
 ] as const;
 
-export const NetworkLegend: React.FC<NetworkLegendProps> = ({ visibleCount, totalCount }) => (
+export const NetworkLegend: React.FC<NetworkLegendProps> = ({
+  visibleCount,
+  totalCount,
+  groupedCount = 0,
+}) => (
   <div className="pointer-events-none absolute inset-x-3 bottom-3 flex flex-wrap items-end justify-between gap-2">
     <div
       aria-label="Legenda do mapa"
@@ -59,10 +65,24 @@ export const NetworkLegend: React.FC<NetworkLegendProps> = ({ visibleCount, tota
         />
         Hipótese
       </span>
+
+      {groupedCount > 0 ? (
+        <>
+          <span aria-hidden="true" className="h-3 w-px bg-line" />
+          <span className="flex items-center gap-1.5 text-2xs font-medium text-ink-2">
+            <span
+              aria-hidden="true"
+              className="size-2.5 rounded-sm border-2 border-dashed border-line-strong bg-surface-subtle"
+            />
+            Grupo — toque para abrir
+          </span>
+        </>
+      ) : null}
     </div>
 
     <span className="num rounded-lg border border-line bg-surface/95 px-2.5 py-1.5 text-2xs text-ink-3 shadow-sm backdrop-blur-sm">
-      {visibleCount} de {totalCount} entidades visíveis
+      {visibleCount} de {totalCount} entidades
+      {groupedCount > 0 ? ` · ${groupedCount} agrupadas` : ' visíveis'}
     </span>
   </div>
 );
