@@ -171,7 +171,7 @@ export const NetworkToolbar: React.FC<NetworkToolbarProps> = ({
           icon={<Icons.Filter size={15} aria-hidden="true" />}
           rightIcon={
             activeFilterCount > 0 ? (
-              <span className="num rounded-chip bg-brand px-1.5 text-2xs font-bold text-white">
+              <span className="num inline-grid size-5 min-w-5 place-items-center rounded-chip bg-brand px-1.5 text-2xs font-bold leading-none text-white">
                 {activeFilterCount}
               </span>
             ) : undefined
