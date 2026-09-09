@@ -1,6 +1,12 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
+test('modo gratuito exclui Brave mesmo quando uma chave existe', () => {
+  const provider = new CompositeSearchProvider({ freeOnly: true, brave: { apiKey: 'configured' } });
+  assert.ok(provider.providers.length > 0);
+  assert.equal(provider.providers.some((p) => /brave/i.test(p.name)), false);
+});
+
 const { BraveSearchProvider } = require('../src/services/search/brave-search.provider');
 const { GoogleNewsRssProvider } = require('../src/services/search/google-news-rss.provider');
 const {

@@ -396,7 +396,7 @@ export const InvestigationWorkspace: React.FC<InvestigationWorkspaceProps> = ({
         {phase === 'loading' ? <DiligencePulse query={visibleQuery} steps={steps} /> : null}
 
         {phase === 'map' && diligence ? (
-          <DiligenceDashboard diligence={diligence} onBack={startAnotherSearch} onDrillCompany={onDrillCompany} />
+          <DiligenceDashboard key={diligence.id} diligence={diligence} onBack={startAnotherSearch} onDrillCompany={onDrillCompany} />
         ) : null}
       </div>
 

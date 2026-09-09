@@ -52,6 +52,21 @@ router.post('/', async (req, res) => {
   }
 });
 
+router.patch('/:id/media', async (req, res) => {
+  const { adverseMedia, automaticRisk } = req.body || {};
+  if (!Array.isArray(adverseMedia?.results) || adverseMedia.results.length > 2000
+    || !Number.isFinite(automaticRisk?.score) || automaticRisk.score < 0 || automaticRisk.score > 100
+    || !Array.isArray(automaticRisk?.detalhes)) {
+    return res.status(400).json({ ok: false, erro: 'Publicações ou avaliação automática inválidas.' });
+  }
+  try {
+    const data = await DiligenceHistoryService.saveMedia(req.params.id, adverseMedia, automaticRisk, req.user);
+    return res.json({ ok: true, data });
+  } catch (error) {
+    return res.status(503).json({ ok: false, erro: 'Não foi possível salvar no histórico. As publicações continuam nesta tela.' });
+  }
+});
+
 router.get('/', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit, 10) || 100;

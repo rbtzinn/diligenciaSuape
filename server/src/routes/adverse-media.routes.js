@@ -7,11 +7,15 @@ const router = express.Router();
 const { AdverseMediaService } = require('../services/adverse-media.service');
 const { authenticate } = require('../middlewares/auth.middleware');
 
+const { CompositeSearchProvider } = require('../services/search/composite-search.provider');
 const adverseMediaService = new AdverseMediaService();
+const freeProvider = new CompositeSearchProvider({ persistentUse: true, freeOnly: true });
+freeProvider.cacheScope = 'free-news';
+const freeNewsService = new AdverseMediaService(freeProvider);
 router.use(authenticate);
 
 router.post('/search', async (req, res) => {
-  const { cnpj, razaoSocial, nomeFantasia, municipio, uf, shareholders, forceRefresh } = req.body || {};
+  const { cnpj, razaoSocial, nomeFantasia, municipio, uf, shareholders, forceRefresh, newsOnly, subjectName, queryOffset } = req.body || {};
 
   if (!cnpj && !razaoSocial) {
     return res.status(400).json({
@@ -22,12 +26,12 @@ router.post('/search', async (req, res) => {
   }
 
   try {
-    const result = await adverseMediaService.searchAdverseMedia(
+    const result = await (newsOnly === true ? freeNewsService : adverseMediaService).searchAdverseMedia(
       // Município e UF são âncoras de identidade: confirmam a empresa quando o
       // nome, sozinho, seria ambíguo. Ausentes, a resolução apenas não pontua.
       { cnpj, razaoSocial, nomeFantasia, municipio, uf },
       Array.isArray(shareholders) ? shareholders : [],
-      { forceRefresh: forceRefresh === true }
+      { forceRefresh: forceRefresh === true, newsOnly: newsOnly === true, subjectName: typeof subjectName === 'string' ? subjectName.slice(0, 200) : '', queryOffset: Number.isSafeInteger(queryOffset) && queryOffset >= 0 ? queryOffset : 0 }
     );
 
     return res.status(result.status || 200).json(result);

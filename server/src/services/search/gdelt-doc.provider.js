@@ -150,7 +150,7 @@ class GdeltDocProvider extends SearchProvider {
     searchUrl.searchParams.set('format', 'json');
     searchUrl.searchParams.set('maxrecords', String(requestedCount));
     searchUrl.searchParams.set('sort', 'HybridRel');
-    const timespan = gdeltTimespan(freshness);
+    const timespan = gdeltTimespan(freshness) || '1year';
     if (timespan) searchUrl.searchParams.set('timespan', timespan);
 
     try {
