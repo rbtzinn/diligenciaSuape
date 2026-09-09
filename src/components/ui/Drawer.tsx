@@ -117,7 +117,7 @@ export const Drawer: React.FC<DrawerProps> = ({
           </button>
         </header>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-y-auto bg-canvas p-4 sm:p-5">{children}</div>
+        <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto bg-canvas p-4 sm:p-5">{children}</div>
 
         <footer className="flex min-w-0 flex-wrap items-center justify-end gap-2 border-t border-line-soft bg-surface px-4 py-3 sm:px-5">
           {footer || (
