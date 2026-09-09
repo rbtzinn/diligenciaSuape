@@ -1,7 +1,7 @@
 // ==========================================================
 // DILIGÊNCIA 360 — Provedor de LLM gratuito com fallback em cadeia
-// Todos os provedores abaixo operam em cota gratuita e falham com HTTP 429
-// quando a cota diária termina. Nenhum deles cobra sem cartão cadastrado.
+// O modo freeOnly restringe chamadas ao OpenRouter com seleção gratuita.
+// Os demais provedores dependem do plano e dos limites configurados na conta.
 // ==========================================================
 
 const { safeFetch } = require('../../utils/safeFetch');
@@ -42,13 +42,13 @@ const PROVIDER_CATALOG = Object.freeze([
   },
   {
     id: 'openrouter-free',
-    label: 'OpenRouter (modelos :free)',
+    label: 'OpenRouter (modelos gratuitos)',
     baseUrl: 'https://openrouter.ai/api/v1',
     envKey: 'OPENROUTER_API_KEY',
     envModel: 'OPENROUTER_MODEL',
-    defaultModel: 'meta-llama/llama-3.3-70b-instruct:free',
+    defaultModel: 'openrouter/free',
     supportsJsonMode: false,
-    // Trava de custo: a conta pode ter crédito, então só modelos ":free" passam.
+    // Aceita somente variantes :free ou o roteador exclusivamente gratuito.
     requireFreeModelSuffix: true,
   },
 ]);
@@ -64,7 +64,9 @@ function readModel(provider) {
 }
 
 function isBillableModel(provider, model) {
-  return provider.requireFreeModelSuffix === true && !String(model).endsWith(':free');
+  return provider.requireFreeModelSuffix === true
+    && model !== 'openrouter/free'
+    && !String(model).endsWith(':free');
 }
 
 function describeProvider(provider) {
@@ -78,7 +80,7 @@ function describeProvider(provider) {
     configured: Boolean(key) && !blockedByCostGuard,
     blockedByCostGuard,
     ...(blockedByCostGuard
-      ? { message: `Modelo "${model}" não termina em ":free" e foi bloqueado para evitar consumo de crédito pago.` }
+      ? { message: `Modelo "${model}" não é openrouter/free nem uma variante ":free" e foi bloqueado para evitar consumo de crédito pago.` }
       : {}),
   };
 }
@@ -198,7 +200,7 @@ async function chat({
     if (isBillableModel(provider, model)) {
       attempts.push({
         provider: provider.id,
-        erro: `Bloqueado pela trava de custo: "${model}" não é um modelo :free.`,
+        erro: `Bloqueado pela trava de custo: "${model}" não é openrouter/free nem uma variante :free.`,
       });
       continue;
     }
