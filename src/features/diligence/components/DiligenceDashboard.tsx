@@ -233,32 +233,34 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         />
       ) : null}
 
-      {/* O painel do mapa fica montado e apenas oculto: remontar o
-          grafo a cada troca de aba refazia o layout do Cytoscape e
-          perdia o enquadramento em que o analista estava. */}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col" hidden={activeTab !== 'mapa'}>
-      <ImmersiveNetworkTab
-        diligence={displayDiligence}
-        adverseMedia={adverseMedia}
-        discoveries={discoveries}
-        workflowStatus={workflowStatus}
-        isExportingPdf={isExportingPdf}
-        onWorkflowStatusChange={setWorkflowStatus}
-        onExportPdf={handleExportPdf}
-        onEditRisk={() => setRiskModalOpen(true)}
-        onOpenPeople={() => setActiveDrawer('shareholders')}
-        onOpenSanctions={() => setActiveDrawer('sanctions')}
-        onOpenMedia={() => setActiveDrawer('media')}
-        onOpenProcesses={() => setActiveDrawer('processes')}
-        onOpenQuestionnaire={() => setActiveDrawer('questionnaire')}
-        onOpenAudit={() => setActiveDrawer('audit')}
-        onOpenEvidence={() => setActiveDrawer('evidence')}
-        onOpenAiAnalysis={() => setActiveDrawer('ai')}
-        onOpenPncp={() => setActiveDrawer('pncp')}
-        onDrillCompany={onDrillCompany}
-        onBackToDossier={() => setActiveTab('dossie')}
-      />
-      </div>
+      {/* Ao sair do mapa, desmontamos o Cytoscape. Quando o analista
+          volta, o ramo inicial é recalculado e enquadrado no espaço
+          disponível, sem herdar zoom e pan do nó anterior. */}
+      {activeTab === 'mapa' ? (
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <ImmersiveNetworkTab
+            diligence={displayDiligence}
+            adverseMedia={adverseMedia}
+            discoveries={discoveries}
+            workflowStatus={workflowStatus}
+            isExportingPdf={isExportingPdf}
+            onWorkflowStatusChange={setWorkflowStatus}
+            onExportPdf={handleExportPdf}
+            onEditRisk={() => setRiskModalOpen(true)}
+            onOpenPeople={() => setActiveDrawer('shareholders')}
+            onOpenSanctions={() => setActiveDrawer('sanctions')}
+            onOpenMedia={() => setActiveDrawer('media')}
+            onOpenProcesses={() => setActiveDrawer('processes')}
+            onOpenQuestionnaire={() => setActiveDrawer('questionnaire')}
+            onOpenAudit={() => setActiveDrawer('audit')}
+            onOpenEvidence={() => setActiveDrawer('evidence')}
+            onOpenAiAnalysis={() => setActiveDrawer('ai')}
+            onOpenPncp={() => setActiveDrawer('pncp')}
+            onDrillCompany={onDrillCompany}
+            onBackToDossier={() => setActiveTab('dossie')}
+          />
+        </div>
+      ) : null}
 
       <ShareholdersDrawer
         isOpen={activeDrawer === 'shareholders'}
