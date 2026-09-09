@@ -106,7 +106,7 @@ export const DossierView: React.FC<DossierViewProps> = ({
   return (
     <Page scrollRef={pageRef}>
       <PageHeader
-        width="sheet"
+        width="content"
         onBack={onBack}
         backLabel="Voltar para a busca"
         eyebrow="Dossiê de integridade"
@@ -167,9 +167,9 @@ export const DossierView: React.FC<DossierViewProps> = ({
         tabs={<TabStrip items={tabs} activeId={activeAxis} onSelect={irParaEixo} label="Eixos do dossiê" />}
       />
 
-      {/* Coluna única e estreita: a ficha é para ser lida de cima a
-          baixo, e uma linha de texto de mil pixels não é legível. */}
-      <PageBody width="sheet" gap="lg">
+      {/* O dossiê usa a largura de conteúdo para dar espaço às tabelas
+          e ações. Em telas menores a calha continua fluida. */}
+      <PageBody width="content" gap="lg">
         <SheetSection mark="A" title="Cabeçalho" meta={`Consultado ${consultadoEm}`}>
           <IdentityCard diligence={diligence} />
         </SheetSection>
