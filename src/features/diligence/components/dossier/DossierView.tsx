@@ -12,7 +12,7 @@
 // diz o que ler primeiro.
 // ==========================================================
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { DiligenceItem } from '../../types';
 import { AxisSection } from './AxisSection';
 import { IdentityCard } from './IdentityCard';
@@ -48,6 +48,7 @@ export const DossierView: React.FC<DossierViewProps> = ({
   const coverage = useMemo(() => deriveSourceCoverage(diligence), [diligence]);
   const findings = useMemo(() => deriveDossierFindings(diligence), [diligence]);
   const [activeAxis, setActiveAxis] = useState(axes[0]?.id || '');
+  const pageRef = useRef<HTMLDivElement>(null);
 
   const relevantes = findings
     .filter((finding) => ['critico', 'alto', 'moderado'].includes(finding.severity))
@@ -71,8 +72,39 @@ export const DossierView: React.FC<DossierViewProps> = ({
     document.getElementById(`eixo-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  // A fita acompanha a leitura: ao atravessar uma seção, a aba ativa
+  // muda e é trazida horizontalmente para a área visível.
+  useEffect(() => {
+    const scroller = pageRef.current;
+    if (!scroller || axes.length === 0) return undefined;
+
+    let frame = 0;
+    const updateActiveAxis = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const header = scroller.querySelector<HTMLElement>(':scope > header');
+        const threshold = scroller.getBoundingClientRect().top + (header?.offsetHeight || 0) + 16;
+        let current = axes[0]?.id || '';
+
+        axes.forEach((axis) => {
+          const section = document.getElementById(`eixo-${axis.id}`);
+          if (section && section.getBoundingClientRect().top <= threshold) current = axis.id;
+        });
+
+        setActiveAxis((previous) => previous === current ? previous : current);
+      });
+    };
+
+    updateActiveAxis();
+    scroller.addEventListener('scroll', updateActiveAxis, { passive: true });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      scroller.removeEventListener('scroll', updateActiveAxis);
+    };
+  }, [axes]);
+
   return (
-    <Page>
+    <Page scrollRef={pageRef}>
       <PageHeader
         width="sheet"
         onBack={onBack}
