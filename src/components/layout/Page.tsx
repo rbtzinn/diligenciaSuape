@@ -21,6 +21,7 @@ interface PageProps {
   /** `deep` pinta a página na superfície escura (mapa de vínculos). */
   tone?: PageTone;
   className?: string;
+  scrollRef?: React.Ref<HTMLDivElement>;
   children: React.ReactNode;
 }
 
@@ -29,8 +30,9 @@ interface PageProps {
  * para que o cabeçalho preso funcione e para que a barra horizontal
  * de uma tabela larga não vaze para a página.
  */
-export const Page: React.FC<PageProps> = ({ tone = 'canvas', className, children }) => (
+export const Page: React.FC<PageProps> = ({ tone = 'canvas', className, scrollRef, children }) => (
   <div
+    ref={scrollRef}
     className={cn(
       'flex h-full min-h-0 w-full min-w-0 flex-col overflow-y-auto overflow-x-hidden',
       tone === 'deep' ? 'on-deep bg-deep text-on-deep' : 'bg-canvas text-ink',
