@@ -63,8 +63,8 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
         opacity: item.status === 'discarded' ? 0.6 : 1,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
+      <div className="flex min-w-0 flex-col gap-3">
+        <div className="min-w-0 w-full" style={{ overflowWrap: 'anywhere' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
             <span style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--font-bold)', color: isPerson ? 'var(--status-medium-text)' : 'var(--brand-primary)' }}>
               {isPerson ? 'PESSOA PESQUISADA' : 'EMPRESA PESQUISADA'}
@@ -93,7 +93,7 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
             }}
             className="hover-underline"
           >
-            <span style={{ overflowWrap: 'anywhere' }}>{item.title}</span>
+            <span style={{ minWidth: 0, overflowWrap: 'anywhere', lineHeight: 1.5 }}>{item.title}</span>
             <Icons.ExternalLink size={12} style={{ color: 'var(--text-tertiary)' }} />
           </a>
           <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
@@ -106,7 +106,7 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
           ) : null}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-1.5 [&>*]:max-w-full [&>*]:whitespace-normal [&>*]:break-words">
           <Badge variant={item.riskRelevant === false ? 'neutral' : 'medium'}>
             {item.riskRelevant === false ? 'Menção geral' : 'Termo de atenção'}
           </Badge>

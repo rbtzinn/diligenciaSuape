@@ -86,7 +86,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || isLoading}
       aria-busy={isLoading || undefined}
       className={cn(
-        'inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap border font-semibold leading-none transition-colors',
+        'inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap border font-semibold leading-normal transition-colors',
         'disabled:pointer-events-none disabled:opacity-[var(--btn-disabled-opacity)]',
         iconOnly ? ICON_ONLY[resolved] : SIZE[resolved],
         VARIANT[variant],
@@ -98,12 +98,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       {isLoading ? (
         <>
           <Spinner />
-          {!iconOnly ? <span className="truncate">{loadingLabel}</span> : null}
+          {!iconOnly ? <span className="min-w-0 truncate py-0.5 leading-normal">{loadingLabel}</span> : null}
         </>
       ) : (
         <>
           {icon ? <span className="grid shrink-0 place-items-center">{icon}</span> : null}
-          {children ? <span className={cn(!iconOnly && 'truncate')}>{children}</span> : null}
+          {children ? <span className={cn(!iconOnly && 'min-w-0 truncate py-0.5 leading-normal')}>{children}</span> : null}
           {rightIcon ? <span className="grid shrink-0 place-items-center">{rightIcon}</span> : null}
         </>
       )}
