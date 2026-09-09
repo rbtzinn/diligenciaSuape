@@ -57,6 +57,9 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
         display: 'flex',
         flexDirection: 'column',
         gap: '0.5rem',
+        minWidth: 0,
+        maxWidth: '100%',
+        overflow: 'hidden',
         opacity: item.status === 'discarded' ? 0.6 : 1,
       }}
     >
@@ -85,6 +88,8 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
               alignItems: 'center',
               gap: '0.35rem',
               textDecoration: 'none',
+              maxWidth: '100%',
+              overflowWrap: 'anywhere',
             }}
             className="hover-underline"
           >
@@ -139,7 +144,7 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
             {item.matchedTerms.length > 0 ? 'Termos:' : 'Nenhum termo adverso no trecho retornado'}
           </span>
           {item.matchedTerms.slice(0, 4).map((term, idx) => (
-            <span key={idx} className="inline-flex max-w-full items-center gap-1.5 rounded-chip border px-2 py-0.5 text-2xs font-semibold leading-tight border-neutral-line bg-neutral-soft text-neutral-text">
+            <span key={idx} className="inline-flex min-w-0 max-w-full items-center gap-1.5 break-all rounded-chip border px-2 py-0.5 text-2xs font-semibold leading-tight border-neutral-line bg-neutral-soft text-neutral-text">
               {term}
             </span>
           ))}
