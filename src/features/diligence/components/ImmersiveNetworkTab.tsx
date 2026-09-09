@@ -53,6 +53,7 @@ import { Chip } from '../../../components/ui/Chip';
 
 const MOBILE_NETWORK_BREAKPOINT = '(max-width: 760px)';
 const MOBILE_NEIGHBOR_PAGE_SIZE = 6;
+const DESKTOP_NEIGHBOR_LIMIT = 8;
 
 /* Faixas do palco que ficam por baixo de algo flutuante no celular: a
    tarja do nó em foco no topo e a linha de botão/dica embaixo. O
@@ -145,6 +146,9 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   const [mobileFocusEntityId, setMobileFocusEntityId] = useState<string>();
   const [mobileTrail, setMobileTrail] = useState<string[]>([]);
   const [mobileNeighborLimit, setMobileNeighborLimit] = useState(MOBILE_NEIGHBOR_PAGE_SIZE);
+  // No desktop o mapa também abre por ramos: mostra o entorno imediato
+  // e troca para os vínculos do nó selecionado, sem formar uma teia.
+  const [desktopFocusEntityId, setDesktopFocusEntityId] = useState<string>();
   // Grupos que o analista abriu. Fechado é o padrão: o mapa começa
   // legível e cresce por escolha, não por acaso.
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
@@ -225,6 +229,13 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
     mobileNeighborLimit
   ), [entities, mobileFocusEntity?.id, mobileNeighborLimit, relationships]);
 
+  const desktopFocusProjection = useMemo(() => projectFocusGraph(
+    entities,
+    relationships,
+    desktopFocusEntityId || rootEntity?.id,
+    DESKTOP_NEIGHBOR_LIMIT,
+  ), [desktopFocusEntityId, entities, relationships, rootEntity?.id]);
+
   const mobileFullEntities = useMemo(() => filterGraphEntities(
     entities,
     relationships,
@@ -256,31 +267,16 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
     ...relationTypes.map(([value, label]) => ({ value, label })),
   ], [relationTypes]);
 
-  const visibleEntities = useMemo(() => filterGraphEntities(
-    entities,
-    relationships,
-    { depth, relation: relationFilter, showDocuments },
-    rootEntity?.id
-  ), [depth, entities, relationFilter, relationships, rootEntity?.id, showDocuments]);
-  const visibleRelationshipCount = useMemo(() => {
-    const visibleIds = new Set(visibleEntities.map((entity) => entity.id));
-    return relationships.filter((relationship) => (
-      visibleIds.has(relationship.sourceEntityId)
-      && visibleIds.has(relationship.targetEntityId)
-      && relationshipMatchesFilter(relationship, relationFilter)
-    )).length;
-  }, [relationFilter, relationships, visibleEntities]);
-
   const graphEntities = isCompactViewport
     ? (isMobileFullNetwork ? mobileFullEntities : mobileFocusProjection.entities)
-    : entities;
+    : desktopFocusProjection.entities;
   const graphRelationships = isCompactViewport
     ? (isMobileFullNetwork ? mobileFullRelationships : mobileFocusProjection.relationships)
-    : relationships;
-  const displayedEntities = isCompactViewport ? graphEntities : visibleEntities;
+    : desktopFocusProjection.relationships;
+  const displayedEntities = isCompactViewport ? graphEntities : desktopFocusProjection.entities;
   const displayedRelationshipCount = isCompactViewport
     ? graphRelationships.length
-    : visibleRelationshipCount;
+    : desktopFocusProjection.relationships.length;
   const remainingMobileNeighbors = Math.max(
     0,
     mobileFocusProjection.totalNeighbors - mobileFocusProjection.visibleNeighbors
@@ -485,6 +481,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
           });
           setIsMobileSheetExpanded(false);
         } else {
+          setDesktopFocusEntityId(nodeId);
           focusNeighborhood(cy, nodeId);
         }
       });
@@ -662,6 +659,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
       }
       return;
     }
+    setDesktopFocusEntityId(nodeId);
     if (cyRef.current) {
       cyRef.current.nodes().unselect();
       const node = cyRef.current.getElementById(nodeId);
