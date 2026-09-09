@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const { DiligenceRepository } = require('../repositories/diligence.repository');
 const { ReviewRepository } = require('../repositories/review.repository');
 const { EgosService } = require('../egos/core/egos.service');
-const { applyEgosOverlay } = require('./risk-assessment.service');
+const { applyEgosOverlay, decisionForManualLevel } = require('./risk-assessment.service');
 
 const recentDiligenceCache = new Map();
 
@@ -64,6 +64,24 @@ const DiligenceHistoryService = {
       savedAt: saved.updatedAt,
       storage: 'google_sheets',
     };
+  },
+
+  async saveMedia(id, adverseMedia, automaticRisk, user) {
+    const { snapshot } = await DiligenceRepository.mutate(id, (current) => {
+      current.adverseMedia = adverseMedia;
+      const assessed = applyEgosOverlay(automaticRisk, current.egos);
+      const override = current.risco?.manualOverride;
+      current.risco = override ? {
+        ...assessed,
+        ...decisionForManualLevel(override.level, override.score, override.reason),
+        manualOverride: override,
+      } : assessed;
+    }, {
+      user, action: 'update_media', entityType: 'diligence', entityId: id,
+      justification: 'Publicações e revisões de notícias atualizadas; indicador automático recalculado.',
+    });
+    this.cacheSnapshot(snapshot);
+    return snapshot;
   },
 
   async getDiligenceById(id) {

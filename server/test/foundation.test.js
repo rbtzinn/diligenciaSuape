@@ -1,6 +1,29 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
+test('salvar notícias preserva workflow e avaliação manual sem acumular pontos a cada gravação', async () => {
+  const { DiligenceHistoryService } = require('../src/services/diligence-history.service');
+  const { DiligenceRepository } = require('../src/repositories/diligence.repository');
+  const original = DiligenceRepository.mutate;
+  const current = { id: 'news-test', status: 'in_review', createdBy: { id: 'owner' },
+    egos: { findings: [{ axis: 'INTERNAL_SUAPE', status: 'REVIEW', severity: 'HIGH' }] },
+    risco: { score: 75, manualOverride: { score: 75, level: 'Atenção Crítica', reason: 'Revisão humana' } } };
+  let audit;
+  DiligenceRepository.mutate = async (_id, mutate, event) => { await mutate(current); audit = event; return { snapshot: current }; };
+  try {
+    for (let n = 0; n < 2; n++) {
+      const saved = await DiligenceHistoryService.saveMedia('news-test', { ok: true, results: [] }, { score: 20, detalhes: [] }, { id: 'reviewer' });
+      assert.equal(saved.risco.score, 75);
+      assert.equal(saved.risco.automaticScore, 35);
+      assert.equal(saved.status, 'in_review');
+      assert.equal(saved.createdBy.id, 'owner');
+      assert.equal(saved.risco.manualOverride.reason, 'Revisão humana');
+    }
+    assert.equal(audit.action, 'update_media');
+    assert.equal(audit.user.id, 'reviewer');
+  } finally { DiligenceRepository.mutate = original; }
+});
+
 const DatajudService = require('../src/services/datajud.service');
 const { AdverseMediaService } = require('../src/services/adverse-media.service');
 const { comparePerson } = require('../src/egos/entity-resolution/entity-resolution.service');

@@ -1,6 +1,55 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
+test('busca ampliada usa etapas sem repetir consultas e mantém todas as pessoas', async () => {
+  const service = new AdverseMediaService(providerWith(async () => ({ ok: true, results: [] })));
+  const people = ['ANA MARIA SILVA', 'BRUNO SOUZA LIMA'].map((nome_socio) => ({ nome_socio, identificador_de_socio: 2, cnpj_cpf_do_socio: '***456789**' }));
+  const seen = new Set();
+  let offset = 0;
+  let first;
+  do {
+    const result = await service.searchAdverseMedia(company, people, { newsOnly: true, queryOffset: offset, forceRefresh: true });
+    first ||= result;
+    assert.ok(result.queriesExecuted.length <= 12);
+    for (const q of result.queriesExecuted) {
+      const key = `${q.subjectName}:${q.channel}:${q.query}`;
+      assert.equal(seen.has(key), false);
+      seen.add(key);
+    }
+    offset = result.batch.nextOffset;
+  } while (offset !== null);
+  assert.ok(first.queriesExecuted.some((q) => q.subjectName === 'ANA MARIA SILVA'));
+  assert.ok(first.queriesExecuted.some((q) => q.subjectName === 'BRUNO SOUZA LIMA'));
+  assert.ok([...seen].some((q) => q.includes('456789')));
+});
+
+test('CPF mascarado não se forma juntando números independentes da notícia', () => {
+  const service = new AdverseMediaService(providerWith(async () => ({ ok: true, results: [] })));
+  const person = { subjectName: 'ANA MARIA SILVA', subjectDocument: '***456789**' };
+  assert.equal(service.evaluatePersonCorrelation(person, company, 'Ana Maria Silva: 456 pessoas em 789 cidades').personMatch.maskedCpf, false);
+  assert.equal(service.evaluatePersonCorrelation(person, company, 'Ana Maria Silva CPF ***.456.789-**').personMatch.maskedCpf, true);
+  assert.equal(service.evaluatePersonCorrelation(person, company, 'Ana Maria Silva CNPJ 12345678901000').personMatch.maskedCpf, false);
+});
+
+test('nome abreviado com contexto corporativo fica como candidato sem afirmar identidade', () => {
+  const service = new AdverseMediaService(providerWith(async () => ({ ok: true, results: [] })));
+  const person = { subjectName: 'ANA MARIA SILVA' };
+  const correlation = service.evaluatePersonCorrelation(person, company, 'Ana Silva é citada com Empresa Exemplo Ltda.');
+  assert.equal(correlation.matchStrength, 'medium');
+  assert.equal(correlation.personMatch.fullName, false);
+  assert.equal(correlation.identityStatus, 'unverified');
+  assert.equal(service.evaluatePersonCorrelation(person, company, 'Ana Silva foi citada.').matchStrength, 'low');
+});
+
+test('busca de uma pessoa não executa consultas das outras nem expõe CPF completo', async () => {
+  const service = new AdverseMediaService(providerWith(async () => ({ ok: true, results: [] })));
+  const people = Array.from({ length: 25 }, (_, n) => ({ nome_socio: `PESSOA NOME ${n}`, identificador_de_socio: 2, cnpj_cpf_do_socio: '12345678901' }));
+  const result = await service.searchAdverseMedia(company, people, { newsOnly: true, subjectName: 'PESSOA NOME 24', forceRefresh: true });
+  assert.ok(result.queriesExecuted.length > 0);
+  assert.ok(result.queriesExecuted.every((q) => q.subjectName === 'PESSOA NOME 24'));
+  assert.equal(JSON.stringify(result).includes('12345678901'), false);
+});
+
 const {
   AdverseMediaService,
   sanitizePersonDocument,
@@ -47,7 +96,7 @@ test('plano sempre prioriza CNPJ e cobre todas as pessoas antes da expansão', (
   );
   const anaQueries = plan.queries.filter((item) => item.subjectName === 'ANA MARIA SILVA');
   assert.deepEqual(
-    anaQueries.filter((item) => item.channel === 'news').map((item) => item.purpose),
+    anaQueries.filter((item) => item.channel === 'news').slice(0, 3).map((item) => item.purpose),
     ['general_mention', 'person_context', 'adverse_discovery'],
   );
   assert.equal(anaQueries[0].query, '"ANA MARIA SILVA"');

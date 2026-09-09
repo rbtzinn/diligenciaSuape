@@ -7,6 +7,7 @@ import { AdverseMediaResult, AdverseMediaStatus } from '../types';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
 import { Icons } from '../../../components/ui/Icons';
+import { safeNewsUrl, newsSubjects } from '../utils/newsResults';
 import { formatMediaProviders } from '../utils/mediaSources';
 
 interface AdverseMediaCardProps {
@@ -21,7 +22,7 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
   const isPerson = item.subjectType === 'person';
   const matchConfig: Record<string, { label: string; variant: 'critical' | 'medium' | 'neutral' }> = isPerson ? {
     high: { label: 'Nome + contexto', variant: 'medium' },
-    medium: { label: 'Nome completo', variant: 'medium' },
+    medium: { label: item.personMatch?.fullName === false ? 'Nome parcial ou variante' : 'Nome completo', variant: 'medium' },
     low: { label: 'Associação fraca', variant: 'neutral' },
   } : {
     high: { label: 'Empresa identificada', variant: 'neutral' },
@@ -60,7 +61,7 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: '240px' }}>
+        <div style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
             <span style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--font-bold)', color: isPerson ? 'var(--status-medium-text)' : 'var(--brand-primary)' }}>
               {isPerson ? 'PESSOA PESQUISADA' : 'EMPRESA PESQUISADA'}
@@ -73,9 +74,9 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
             ) : null}
           </div>
           <a
-            href={item.url}
+            href={safeNewsUrl(item.url)}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             style={{
               fontSize: 'var(--text-sm)',
               fontWeight: 'var(--font-bold)',
@@ -87,11 +88,11 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
             }}
             className="hover-underline"
           >
-            <span>{item.title}</span>
+            <span style={{ overflowWrap: 'anywhere' }}>{item.title}</span>
             <Icons.ExternalLink size={12} style={{ color: 'var(--text-tertiary)' }} />
           </a>
           <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-            {item.domain} {item.publishedAt ? `• ${item.publishedAt}` : ''}
+            {item.domain} {item.publishedAt ? `• ${new Date(item.publishedAt).toLocaleDateString('pt-BR')}` : '• Data não informada'}
           </div>
           {item.providerSources && item.providerSources.length > 0 ? (
             <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)', marginTop: '0.1rem' }}>
@@ -110,6 +111,8 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
         </div>
       </div>
 
+      {newsSubjects(item).length > 1 && <p className="text-xs text-ink-3">Também menciona: {newsSubjects(item).filter((name) => name !== item.subjectName).join(', ')}</p>}
+      {item.personMatch?.maskedCpf && <p className="text-xs text-ink-3">CPF mascarado compatível no trecho; associação sujeita à revisão.</p>}
       {item.snippet && (
         <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: '1.45' }}>
           {item.snippet}
@@ -153,7 +156,7 @@ export const AdverseMediaCard: React.FC<AdverseMediaCardProps> = ({
         </div>
 
         {onStatusChange && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
             {item.status !== 'validated' && (
               <Button
                 variant="ghost"

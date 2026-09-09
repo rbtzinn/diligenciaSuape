@@ -16,7 +16,7 @@ const {
 // identidade, e resultado classificado como FALSO POSITIVO deixa de entrar no
 // dossiê. O número da versão faz parte da chave de cache: sem trocá-lo, uma
 // execução anterior devolveria os candidatos descartados por esta regra.
-const QUERY_PLAN_VERSION = 'adverse-media-v6';
+const QUERY_PLAN_VERSION = 'adverse-media-v7';
 const SEARCH_DICTIONARY = {
   integrity: [
     'corrupção', 'fraude', 'suborno', 'improbidade', 'propina', 'desvio',
@@ -96,7 +96,7 @@ function envInt(name, fallback) {
 // público. O padrão agora cobre o plano inteiro.
 const MAX_COMPANY_QUERIES = Math.max(3, envInt('ADVERSE_MEDIA_MAX_QUERIES', 14));
 const MAX_PERSON_SUBJECTS = envInt('ADVERSE_MEDIA_MAX_PERSON_SUBJECTS', 20);
-const MAX_PERSON_QUERIES = envInt('ADVERSE_MEDIA_MAX_PERSON_QUERIES', MAX_PERSON_SUBJECTS * 8);
+const MAX_PERSON_QUERIES = envInt('ADVERSE_MEDIA_MAX_PERSON_QUERIES', MAX_PERSON_SUBJECTS * 24);
 const SEARCH_CONCURRENCY = Math.max(1, Math.min(envInt('ADVERSE_MEDIA_CONCURRENCY', 6), 6));
 const RESULTS_PER_QUERY = Math.max(10, Math.min(envInt('ADVERSE_MEDIA_RESULTS_PER_QUERY', 50), 50));
 const GLOBAL_DEADLINE_MS = Math.max(15_000, Math.min(envInt('ADVERSE_MEDIA_DEADLINE_MS', 50_000), 65_000));
@@ -184,6 +184,13 @@ function visibleMaskedCpfDigits(value) {
   return raw.includes('*') && digits.length >= 5 && digits.length <= 9 ? digits : '';
 }
 
+function matchesMaskedCpf(text, document) {
+  const expected = visibleMaskedCpfDigits(document);
+  if (!expected) return false;
+  const candidates = String(text || '').match(/(?<![\d*])(?:\*{3}|\d{3})[.\s]?\d{3}[.\s]?\d{3}[-.\s]?(?:\*{2}|\d{2})(?![\d*])/g) || [];
+  return candidates.some((candidate) => visibleMaskedCpfDigits(sanitizePersonDocument(candidate)) === expected);
+}
+
 function sanitizePersonDocument(value) {
   const raw = String(value || '').trim();
   const digits = raw.replace(/\D/g, '');
@@ -255,7 +262,7 @@ function detectCoMentionedSubjects(company, people, itemText) {
     const name = String(person?.nome_socio || person?.name || '').replace(/\s+/g, ' ').trim();
     if (!name || significantTokens(name).length < 2 || !containsPhrase(textNorm, name)) continue;
     const cpfDigits = visibleMaskedCpfDigits(person?.cnpj_cpf_do_socio || person?.cpfCnpj);
-    const maskedCpfMatch = Boolean(cpfDigits && textDigits.includes(cpfDigits));
+    const maskedCpfMatch = Boolean(cpfDigits && matchesMaskedCpf(itemText, person?.cnpj_cpf_do_socio || person?.cpfCnpj));
     subjects.push({
       subjectType: 'person',
       subjectName: name,
@@ -316,7 +323,7 @@ function publishedDay(value) {
 }
 
 class AdverseMediaService {
-  constructor(provider = new CompositeSearchProvider({ persistentUse: true })) {
+  constructor(provider = new CompositeSearchProvider({ persistentUse: true, freeOnly: true })) {
     this.provider = provider;
   }
 
@@ -431,7 +438,7 @@ class AdverseMediaService {
       .replace(/["“”]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-    if (!name) return [];
+    if (significantTokens(name).length < 2) return [];
     const nameQuoted = quoteSearchTerm(name);
     const companyName = String(company?.nomeFantasia || company?.razaoSocial || '').trim();
     const companyQuoted = quoteSearchTerm(companyName);
@@ -451,6 +458,31 @@ class AdverseMediaService {
       purpose: 'adverse_discovery',
       channel: 'news',
       priority: 30,
+    });
+
+    const masked = sanitizePersonDocument(person?.cnpj_cpf_do_socio || person?.cpfCnpj);
+    const visible = visibleMaskedCpfDigits(masked);
+    if (visible) descriptors.push({
+      query: nameQuoted + ' ' + quoteSearchTerm(visible),
+      purpose: 'masked_cpf', channel: 'web', priority: 32,
+    });
+    if (visible.length === 6) descriptors.push({
+      query: nameQuoted + ' ' + quoteSearchTerm(visible.slice(0, 3) + '.' + visible.slice(3)),
+      purpose: 'masked_cpf', channel: 'web', priority: 33,
+    });
+    // Consultas curtas por tema alcançam matérias que não citam a empresa.
+    for (const terms of [
+      '(fraude OR corrupção OR improbidade)',
+      '(investigação OR denúncia OR operação)',
+      '(condenação OR absolvição OR arquivamento)',
+      '("lavagem de dinheiro" OR "polícia federal")',
+    ]) {
+      descriptors.push({ query: nameQuoted + ' ' + terms, purpose: 'adverse_discovery', channel: 'news', priority: 34 });
+      descriptors.push({ query: nameQuoted + ' ' + terms, purpose: 'adverse_discovery', channel: 'web', priority: 35 });
+    }
+    if (company?.municipio) descriptors.push({
+      query: nameQuoted + ' ' + quoteSearchTerm(company.municipio),
+      purpose: 'local_context', channel: 'news', priority: 36,
     });
 
     // O canal web alcança o que RSS de notícia não indexa: atos oficiais,
@@ -490,9 +522,9 @@ class AdverseMediaService {
 
     // Bases públicas nominais que não expõem busca por nome em API aberta
     // são alcançadas pelo índice web, restritas aos domínios oficiais.
-    if (INSTITUTIONAL_SITE_FILTER) {
+    for (const siteFilter of INSTITUTIONAL_SITE_FILTERS) {
       descriptors.push({
-        query: nameQuoted + ' ' + INSTITUTIONAL_SITE_FILTER,
+        query: nameQuoted + ' ' + siteFilter,
         purpose: 'institutional_record',
         channel: 'web',
         priority: 85,
@@ -637,19 +669,19 @@ class AdverseMediaService {
 
   evaluatePersonCorrelation(person, company, itemText, profile) {
     const textNorm = normalizeText(itemText);
-    const textDigits = String(itemText || '').replace(/\D/g, '');
     const personName = normalizeText(person.subjectName);
     const tokens = significantTokens(personName);
     const tokensMatched = tokens.filter((token) => containsPhrase(textNorm, token)).length;
     const tokenCoverage = tokens.length > 0 ? Math.round((tokensMatched / tokens.length) * 100) : 0;
     const fullName = Boolean(personName && containsPhrase(textNorm, personName));
     const cpfDigits = visibleMaskedCpfDigits(person.subjectDocument);
-    const maskedCpf = Boolean(fullName && cpfDigits && textDigits.includes(cpfDigits));
+    const maskedCpf = Boolean(fullName && cpfDigits && matchesMaskedCpf(itemText, person.subjectDocument));
     const companyCorrelation = this.evaluateCorrelation(company, itemText, profile);
     const companyContext = Object.values(companyCorrelation.companyMatch).some(Boolean);
     let matchStrength = 'low';
     if (fullName && (maskedCpf || companyContext)) matchStrength = 'high';
-    else if (fullName || (tokens.length >= 2 && tokenCoverage === 100)) matchStrength = 'medium';
+    else if (fullName || (tokens.length >= 2 && tokenCoverage === 100)
+      || (companyContext && tokens.length >= 3 && containsPhrase(textNorm, tokens[0]) && containsPhrase(textNorm, tokens[tokens.length - 1]))) matchStrength = 'medium';
     return {
       matchStrength,
       entityMatch: companyCorrelation.entityMatch,
@@ -680,13 +712,35 @@ class AdverseMediaService {
       return { ok: false, status: 400, erro: 'Dados da empresa insuficientes para busca.', results: [] };
     }
 
-    const queryPlan = this.buildQueryPlan(company, shareholders);
+    const selectedShareholders = options.newsOnly && options.subjectName
+      ? shareholders.filter((p) => normalizeText(p.nome_socio || p.name) === normalizeText(options.subjectName))
+      : shareholders;
+    const queryPlan = this.buildQueryPlan(company, selectedShareholders);
+    let batch;
+    if (options.newsOnly) {
+      const rounds = new Map();
+      const plan = queryPlan.queries.filter((q) =>
+        !['official_document', 'document_file', 'institutional_record'].includes(q.purpose)
+        && (!options.subjectName || normalizeText(q.subjectName) === normalizeText(options.subjectName)))
+        .map((query, index) => {
+          const round = rounds.get(query.subjectName) || 0;
+          rounds.set(query.subjectName, round + 1);
+          return { query, round, index };
+        }).sort((a, b) => a.round - b.round || a.index - b.index).map((item) => item.query);
+      const offset = Math.max(0, Math.min(Number(options.queryOffset) || 0, plan.length));
+      const end = Math.min(offset + 12, plan.length);
+      queryPlan.queries = plan.slice(offset, end);
+      batch = { offset, nextOffset: end < plan.length ? end : null, total: plan.length };
+    }
     const cnpjClean = String(company.cnpj || '').replace(/\D/g, '');
     const subjectsKey = queryPlan.people
       .map((person) => normalizeText(person.nome_socio) + ':' + (person.cnpj_cpf_do_socio || ''))
       .join('|');
     const cacheKey = stableId(
       QUERY_PLAN_VERSION,
+      this.provider.cacheScope || this.provider.name,
+      options.newsOnly ? JSON.stringify([options.subjectName, batch]) : "full",
+      normalizeText(company.municipio), normalizeText(company.uf),
       cnpjClean,
       normalizeText(company.razaoSocial),
       normalizeText(company.nomeFantasia),
@@ -794,7 +848,7 @@ class AdverseMediaService {
         subjectType: descriptor.subjectType,
         subjectName: descriptor.subjectName,
         ok: Boolean(response?.ok),
-        partial: Boolean(response?.partial),
+        partial: Boolean(response?.partial || response?.hasMore),
         status: response?.status,
         count: response?.results?.length || 0,
         provider: responseSources.join(' + ') || response?.provider,
@@ -996,6 +1050,7 @@ class AdverseMediaService {
     const providerPartial = executedQueries.some((query) => query.partial);
     const personPlanIncomplete = queryPlan.peopleTruncated || queryPlan.expansionQueriesSkipped > 0;
     const consultaParcial = personPlanIncomplete
+      || Boolean(batch?.nextOffset)
       || deadlineExceeded
       || providerPartial
       || successfulQueries < executedQueries.length;
@@ -1068,6 +1123,7 @@ class AdverseMediaService {
       queriesExecuted: executedQueries,
       queriesPlanned: queryPlan.queries.length,
       queryPlanVersion: QUERY_PLAN_VERSION,
+      batch,
       deadlineExceeded,
       consultaParcial,
       coverageStatus: allFailed ? 'UNAVAILABLE' : consultaParcial ? 'PARTIAL' : 'COMPLETE',

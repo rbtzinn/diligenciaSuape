@@ -64,12 +64,38 @@ O tutorial completo e as variáveis separadas por projeto estão em [VERCEL_DEPL
   sujeito a revisão: a identidade só se sustenta quando o CPF mascarado das duas
   fontes coincide, e mesmo assim exige validação documental.
 - CNJ/DataJud.
-- Brave Search para mídia adversa, quando configurada, incluindo co-menções entre entidades conhecidas na mesma publicação.
+- Fontes gratuitas de mídia e notícias, incluindo co-menções entre entidades conhecidas na mesma publicação.
 - Diários oficiais e ICIJ Offshore Leaks.
+
+## Notícias e links em destaque
+
+A diligência abre na aba **Notícias e links**, sem exigir navegação no grafo.
+Os títulos abrem as fontes em outra aba. É possível filtrar por pessoa, texto,
+fonte e termos de atenção, ordenar por data e acessar os diários oficiais.
+
+**Ampliar busca gratuita** executa até 12 consultas por etapa. **Continuar busca
+gratuita** avança pelo plano sem repetir as consultas anteriores. Selecionar uma
+pessoa direciona o plano a ela, inclusive quando estiver além do limite da
+varredura inicial. Os resultados se acumulam e as revisões são preservadas.
+**Salvar no dossiê** grava publicações e revisões, recalcula o indicador automático
+com os dados da tela e preserva a classificação manual e o andamento existentes.
+
+As buscas de mídia usam Google News RSS, GDELT, SearXNG configurado e DuckDuckGo
+Lite; Brave não é chamado por essas rotas, mesmo se houver chave configurada.
+Não há API paga necessária, mas hospedar uma instância SearXNG pode ter custo.
+As fontes gratuitas têm limites e não oferecem cobertura exaustiva da internet.
+O GDELT usa a janela de um ano; o Google News não recebe um filtro temporal nesta
+busca. Fontes com falhas e resultados limitados permanecem sinalizados.
+
+As consultas incluem nome completo, empresa, município, grupos curtos de termos
+adversos e, quando disponível, a parte visível do CPF **sempre junto do nome**.
+Nenhum CPF oculto é reconstruído. Nome abreviado com contexto empresarial pode
+aparecer como candidato, sem identidade confirmada e sem elevar risco sozinho.
+Os limites de coleta da diligência inicial continuam declarados no diagnóstico.
 
 ## Pesquisa gratuita e ampla
 
-A busca não depende de provedor pago. Sem chave Brave, o sistema opera com quatro
+A busca de mídia não chama provedor pago. O sistema opera com quatro
 fontes gratuitas, divididas em dois canais:
 
 - Canal de notícias: Google News RSS e GDELT DOC.

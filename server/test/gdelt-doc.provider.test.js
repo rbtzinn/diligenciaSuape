@@ -1,6 +1,13 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
+test('GDELT pesquisa um ano por padrão, sem limitar ao trimestre implícito', async () => {
+  let url;
+  const provider = new GdeltDocProvider({ fetchImpl: async (value) => { url = new URL(value); return jsonResponse({ articles: [] }); } });
+  await provider.searchWeb({ query: '"Empresa Exemplo"' });
+  assert.equal(url.searchParams.get('timespan'), '1year');
+});
+
 const {
   GdeltDocProvider,
   normalizeSeenDate,

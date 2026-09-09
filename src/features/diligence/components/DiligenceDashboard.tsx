@@ -15,6 +15,10 @@ import { PncpContractsDrawer } from './PncpContractsDrawer';
 import { DossierView } from './dossier/DossierView';
 import { RiskOverrideModal } from './RiskOverrideModal';
 import { EvidenceCenterDrawer } from './EvidenceCenterDrawer';
+import { NewsWorkspace } from './NewsWorkspace';
+import { mergeNews } from '../utils/newsResults';
+import { request } from '../../../lib/api';
+import { calculateRisk } from '../utils/risk';
 import { ReportService } from '../../report/services/report.service';
 
 interface DiligenceDashboardProps {
@@ -39,9 +43,11 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isRefreshingMedia, setIsRefreshingMedia] = useState(false);
   const [mediaRefreshNotice, setMediaRefreshNotice] = useState<string | null>(null);
-  // Achados abrem primeiro: o conteúdo do dossiê deixa de depender de
-  // descobrir um painel lateral. O grafo continua disponível na outra aba.
-  const [activeTab, setActiveTab] = useState<'dossie' | 'mapa'>('dossie');
+  // Publicações abrem primeiro, com dossiê e mapa acessíveis pela navegação.
+  const [activeTab, setActiveTab] = useState<'noticias' | 'dossie' | 'mapa'>('noticias');
+  const [newsProgress, setNewsProgress] = useState<Record<string, number | null>>({});
+  const [savingNews, setSavingNews] = useState(false);
+  const [savedNewsDiligence, setSavedNewsDiligence] = useState<DiligenceItem | null>(null);
   const [riskModalOpen, setRiskModalOpen] = useState(false);
   const [riskSaving, setRiskSaving] = useState(false);
   const [localRisk, setLocalRisk] = useState<{ diligenceId: string; risk: RiskAssessment } | null>(null);
@@ -50,12 +56,12 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
     evidenceCenter: NonNullable<DiligenceItem['evidenceCenter']>;
     egos: NonNullable<DiligenceItem['egos']>;
   } | null>(null);
-  const effectiveRisk = localRisk?.diligenceId === diligence.id ? localRisk.risk : diligence.risco;
+  const effectiveRisk = localRisk?.diligenceId === diligence.id ? localRisk.risk : savedNewsDiligence?.risco || diligence.risco;
   const effectiveEvidenceCenter = localEvidence?.diligenceId === diligence.id ? localEvidence.evidenceCenter : diligence.evidenceCenter;
-  const effectiveEgos = localEvidence?.diligenceId === diligence.id ? localEvidence.egos : diligence.egos;
+  const effectiveEgos = localEvidence?.diligenceId === diligence.id ? localEvidence.egos : savedNewsDiligence?.egos || diligence.egos;
   const displayDiligence = useMemo(
-    () => ({ ...diligence, risco: effectiveRisk, adverseMedia, evidenceCenter: effectiveEvidenceCenter, egos: effectiveEgos }),
-    [adverseMedia, diligence, effectiveEgos, effectiveEvidenceCenter, effectiveRisk],
+    () => ({ ...diligence, ...savedNewsDiligence, status: workflowStatus, risco: effectiveRisk, adverseMedia, evidenceCenter: effectiveEvidenceCenter, egos: effectiveEgos }),
+    [adverseMedia, diligence, savedNewsDiligence, workflowStatus, effectiveEgos, effectiveEvidenceCenter, effectiveRisk],
   );
 
   const handleEnrichDiscovery = async (discovery: ProcessDiscovery) => {
@@ -110,6 +116,8 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         cnpj: diligence.cnpj,
         razaoSocial: diligence.razaoSocial,
         nomeFantasia: diligence.nomeFantasia,
+        municipio: diligence.empresa.municipio,
+        uf: diligence.empresa.uf,
         shareholders: Array.isArray(diligence.socios) ? diligence.socios : [],
         forceRefresh: true,
       });
@@ -117,14 +125,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         setMediaRefreshNotice(refreshed.aviso || 'As fontes não responderam; os resultados anteriores foram preservados.');
         return;
       }
-      const reviewedStatuses = new Map(
-        (adverseMedia?.results || []).map((item) => [item.canonicalUrl || item.url || item.id, item.status])
-      );
-      const results = refreshed.results.map((item) => ({
-        ...item,
-        status: reviewedStatuses.get(item.canonicalUrl || item.url || item.id) || item.status,
-      }));
-      setAdverseMedia({ ...refreshed, results });
+      setAdverseMedia((previous) => mergeNews(previous, refreshed));
       setMediaRefreshNotice(
         refreshed.consultaParcial
           ? 'Atualização parcial concluída. As fontes que responderam já aparecem nesta tela e nos próximos PDFs.'
@@ -133,6 +134,49 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
     } finally {
       setIsRefreshingMedia(false);
     }
+  };
+
+  const handleNewsSearch = async (subject: string, restart = false) => {
+    if (isRefreshingMedia || savingNews) return;
+    setIsRefreshingMedia(true);
+    setMediaRefreshNotice(null);
+    try {
+      const refreshed = await DiligenceService.searchAdverseMedia({
+        cnpj: diligence.cnpj, razaoSocial: diligence.razaoSocial,
+        nomeFantasia: diligence.nomeFantasia,
+        municipio: diligence.empresa.municipio, uf: diligence.empresa.uf,
+        shareholders: diligence.socios || [], newsOnly: true, subjectName: subject,
+        queryOffset: restart ? 0 : newsProgress[subject] || 0, forceRefresh: true,
+      });
+      if (!refreshed.ok) {
+        setMediaRefreshNotice(refreshed.aviso || 'As fontes não responderam. Seus links anteriores foram preservados; tente esta etapa novamente.');
+        return;
+      }
+      const oldUrls = new Set((adverseMedia?.results || []).map((r) => r.canonicalUrl || r.url));
+      const added = refreshed.results.filter((r) => !oldUrls.has(r.canonicalUrl || r.url)).length;
+      setAdverseMedia((previous) => mergeNews(previous, refreshed));
+      setNewsProgress((previous) => ({ ...previous, [subject]: refreshed.batch?.nextOffset ?? null }));
+      setMediaRefreshNotice(`${added} novos links encontrados. ${refreshed.consultaParcial ? 'Algumas fontes ou etapas estão pendentes. ' : ''}Salve no dossiê para atualizar o histórico e o indicador de atenção.`);
+    } catch (error) {
+      setMediaRefreshNotice(error instanceof Error ? error.message : 'Não foi possível ampliar a busca.');
+    } finally { setIsRefreshingMedia(false); }
+  };
+
+  const handleSaveNews = async () => {
+    if (savingNews || isRefreshingMedia) return;
+    setSavingNews(true);
+    try {
+      const automaticRisk = calculateRisk({ ...displayDiligence, discoveries });
+      const response = await request<{ ok: boolean; data: DiligenceItem }>(`/api/diligences/${diligence.id}/media`, {
+        method: 'PATCH', body: JSON.stringify({ adverseMedia, automaticRisk }),
+      });
+      const saved = response.data;
+      setSavedNewsDiligence(saved);
+      setLocalRisk(null);
+      setMediaRefreshNotice('Publicações e revisões salvas no histórico; indicador automático atualizado.');
+    } catch (error) {
+      setMediaRefreshNotice(error instanceof Error ? error.message : 'Não foi possível salvar as publicações.');
+    } finally { setSavingNews(false); }
   };
 
   const handleExportPdf = async () => {
@@ -168,6 +212,16 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
 
   return (
     <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <nav aria-label="Visões da diligência" className="flex shrink-0 gap-1 overflow-x-auto border-b border-line px-4 py-2">
+        {([['noticias', 'Notícias e links'], ['dossie', 'Dossiê'], ['mapa', 'Mapa de vínculos']] as const).map(([id, label]) => (
+          <button key={id} type="button" aria-current={activeTab === id ? 'page' : undefined} onClick={() => setActiveTab(id)}
+            className={`shrink-0 rounded-md px-4 py-2 text-sm font-semibold ${activeTab === id ? 'bg-ink text-white' : 'text-ink-2 hover:bg-canvas'}`}>{label}</button>
+        ))}
+      </nav>
+      {activeTab === 'noticias' && <NewsWorkspace diligence={displayDiligence} busy={isRefreshingMedia} saving={savingNews}
+        progress={newsProgress} notice={mediaRefreshNotice} onSearch={handleNewsSearch} onSave={handleSaveNews}
+        onReview={handleMediaStatusChange} onAudit={() => setActiveDrawer('media')} />}
+
       {activeTab === 'dossie' ? (
         <DossierView
           diligence={displayDiligence}

@@ -166,6 +166,7 @@ export interface AdverseMediaSubjectSummary {
 }
 
 export interface AdverseMediaSummary {
+  batch?: { offset: number; nextOffset: number | null; total: number };
   ok: boolean;
   provider?: string;
   totalFound: number;

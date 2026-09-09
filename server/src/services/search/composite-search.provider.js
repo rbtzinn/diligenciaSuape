@@ -158,7 +158,7 @@ class CompositeSearchProvider extends SearchProvider {
     const normalizedOptions = Array.isArray(options) ? { providers: options } : options;
     this.persistentUse = normalizedOptions.persistentUse === true;
     this.providers = normalizedOptions.providers || [
-      new BraveSearchProvider(normalizedOptions.brave),
+      ...(normalizedOptions.freeOnly ? [] : [new BraveSearchProvider(normalizedOptions.brave)]),
       new GoogleNewsRssProvider(normalizedOptions.googleNewsRss),
       new GdeltDocProvider(normalizedOptions.gdelt),
       new SearxngProvider(normalizedOptions.searxng),

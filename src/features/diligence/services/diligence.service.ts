@@ -239,6 +239,9 @@ export const DiligenceService = {
     uf?: string;
     shareholders?: Shareholder[];
     forceRefresh?: boolean;
+    newsOnly?: boolean;
+    subjectName?: string;
+    queryOffset?: number;
   }): Promise<AdverseMediaSummary> {
     try {
       return await request<AdverseMediaSummary>('/api/adverse-media/search', {
