@@ -32,7 +32,6 @@ import {
   arrangeRadar,
   buildCytoscapeElements,
   CYTOSCAPE_STYLESHEET,
-  focusNeighborhood,
   pulseRoute,
 } from './network/networkGraphConfig';
 import { NetworkToolbar } from './network/NetworkToolbar';
@@ -489,7 +488,6 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
         } else {
           setDesktopFocusEntityId(nodeId);
           setDesktopNeighborLimit(DESKTOP_NEIGHBOR_PAGE_SIZE);
-          focusNeighborhood(cy, nodeId);
         }
       });
 
@@ -673,7 +671,6 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
       const node = cyRef.current.getElementById(nodeId);
       if (node.length) {
         node.select();
-        focusNeighborhood(cyRef.current, nodeId);
       }
     }
   };
