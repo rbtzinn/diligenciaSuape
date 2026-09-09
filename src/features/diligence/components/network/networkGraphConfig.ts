@@ -197,6 +197,13 @@ export function buildCytoscapeElements(
     const isFocus = compact?.focusId === entity.id;
 
     let label = entity.name;
+    // O nó de grupo diz a contagem e o vínculo: "48 órgãos e
+    // instituições / Contratada por". Sem a segunda linha ele seria
+    // um número sem relação, e o mapa perderia justamente o que o
+    // agrupamento resume.
+    if (entity.properties?.grupo && entity.properties?.vinculo) {
+      label = `${entity.name}\n${String(entity.properties.vinculo)}`;
+    }
     if (compact) {
       const maxChars = isFocus || isRoot ? COMPACT_ROOT_NAME_CHARS : COMPACT_NAME_CHARS;
       const bond = isFocus ? '' : bondToFocus.get(entity.id) || '';
@@ -228,6 +235,7 @@ export function buildCytoscapeElements(
         carriesRisk(entity) ? 'has-risk' : '',
         compact ? 'is-compact' : '',
         compact && isFocus ? 'is-compact-focus' : '',
+        entity.properties?.grupo ? 'is-group' : '',
       ].filter(Boolean).join(' '),
     };
   });
@@ -262,6 +270,7 @@ export function buildCytoscapeElements(
         classes: [
           confirmed ? 'is-confirmed' : 'is-hypothesis',
           isDocEdge ? 'is-doc-edge' : '',
+          relationship.properties?.grupo ? 'is-group-edge' : '',
           `rel-${relationship.type.toLowerCase()}`,
         ].filter(Boolean).join(' '),
       };
@@ -547,7 +556,13 @@ export function arrangeChain(cy: cytoscape.Core, rootId?: string, options: Arran
     NODE_BOX.default.height,
   );
   const rowHeight = tallestCard + (compactMode ? 22 : 34);
-  const maxRowsPerColumn = 7;
+  // Sete linhas por subcoluna produzem um bloco quase quadrado até
+  // umas cinquenta entidades. Acima disso o arranjo virava uma faixa
+  // horizontal de catorze subcolunas: o `fit` então encolhia tudo pela
+  // largura e sobrava metade da tela vazia em cima e embaixo. A raiz
+  // quadrada mantém o bloco proporcional ao que há para desenhar.
+  const totalToPlace = cy.nodes().length;
+  const maxRowsPerColumn = Math.max(7, Math.ceil(Math.sqrt(Math.max(1, totalToPlace))));
   let nextColumnX = columnWidth;
 
   Object.entries(grouped)
@@ -739,6 +754,33 @@ export const CYTOSCAPE_STYLESHEET: cytoscape.StylesheetStyle[] = [
     } as unknown as cytoscape.Css.Node,
   },
 
+  {
+    /* Nó de grupo: traço interrompido e fundo neutro. A forma precisa
+       dizer, antes de qualquer leitura, que ali não há uma entidade e
+       sim várias — um nó cheio no meio de nós cheios seria lido como
+       mais um órgão, e não como quarenta. */
+    selector: 'node.is-group',
+    style: {
+      'border-style': 'dashed',
+      'border-width': 2,
+      'border-color': '#6B6F76',
+      'background-color': '#EDEBE4',
+      color: '#43474D',
+      'font-weight': 700,
+      shape: 'roundrectangle',
+    } as unknown as cytoscape.Css.Node,
+  },
+  {
+    /* A ligação do grupo é uma só representando muitas: mais grossa,
+       e interrompida como o nó. */
+    selector: 'edge.is-group-edge',
+    style: {
+      'line-style': 'dashed',
+      'line-color': '#8A8F97',
+      'target-arrow-color': '#8A8F97',
+      width: 3,
+    } as cytoscape.Css.Edge,
+  },
   {
     selector: 'node.is-search-match',
     style: {

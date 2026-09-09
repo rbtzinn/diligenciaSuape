@@ -54,6 +54,16 @@ function userInitials(name?: string) {
 // Fase 1 — Busca
 // ==========================================================
 
+/** O que a diligência apura, na ordem em que o dossiê apresenta. */
+const LANDING_STEPS = [
+  'Ficha cadastral completa e situação na Receita Federal',
+  'Sócios, administradores e as empresas ligadas a eles',
+  'Sanções em CEIS e CNEP, processos e controle externo',
+  'Publicações e menções em fontes abertas e diários oficiais',
+  'Mapa de vínculos navegável por ramos',
+  'Índice de atenção com o que sustenta cada ponto',
+] as const;
+
 const SearchLanding: React.FC<{
   value: string;
   error: string | null;
@@ -90,43 +100,38 @@ const SearchLanding: React.FC<{
   };
 
   return (
-    <main className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden px-gutter py-10">
-      {/* Marca d'água: o brasão em escala grande, quase apagado. Não
-          usa imagem para não pesar no primeiro carregamento. */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <span className="absolute -left-24 top-1/4 size-[420px] rounded-full bg-brand-soft opacity-60 blur-3xl" />
-        <span className="absolute -right-20 bottom-0 size-[360px] rounded-full bg-gold-soft opacity-70 blur-3xl" />
-      </div>
-
+    /* Abertura da ficha. Alinhada à esquerda e sem ilustração: o que
+       a tela precisa dizer é o que a diligência apura e em que fontes,
+       e uma marca d'água centralizada empurrava isso para baixo da
+       dobra no celular. */
+    <main className="min-h-0 flex-1 overflow-y-auto px-gutter py-8 sm:py-12">
       <div
         className={cn(
-          'relative flex w-full max-w-[560px] flex-col items-center gap-5 text-center transition-all duration-500',
-          launching ? 'scale-[0.98] opacity-0' : 'animate-rise',
+          'mx-auto flex w-full max-w-sheet flex-col transition-all duration-500',
+          launching ? 'scale-[0.99] opacity-0' : 'animate-rise',
         )}
       >
-        <span
-          aria-hidden="true"
-          className="grid size-14 place-items-center rounded-xl border border-brand-line bg-surface text-brand shadow-sm"
-        >
-          <Icons.Shield size={26} />
-        </span>
-
-        <div className="flex flex-col gap-1.5">
-          <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-ink">
-            Diligência de integridade
-          </h1>
-          <p className="text-md leading-relaxed text-ink-2">
-            Informe o CNPJ da empresa. As consultas às fontes públicas oficiais são organizadas e o andamento de cada
-            uma fica visível.
-          </p>
+        <div className="border-b border-line pb-1.5">
+          <span className="ficha-label text-ink-3">
+            <span className="text-ink-muted">(00)</span> Abertura de dossiê
+          </span>
         </div>
 
-        <form onSubmit={submit} className="flex w-full flex-col gap-3" aria-busy={launching}>
+        <h1 className="mt-5 text-2xl font-extrabold leading-[1.15] tracking-tight text-ink sm:text-3xl">
+          Diligência de integridade de uma empresa e do seu quadro societário.
+        </h1>
+
+        <p className="mt-3 max-w-[52ch] text-md leading-relaxed text-ink-2">
+          Informe o CNPJ. O sistema consulta o cadastro oficial da Receita Federal, mapeia o quadro societário,
+          rastreia sanções, processos e publicações de cada integrante, encontra as empresas ligadas e monta o mapa
+          de vínculos com um índice de atenção para contratar.
+        </p>
+
+        <form onSubmit={submit} className="mt-6 flex w-full flex-col gap-3" aria-busy={launching}>
           <TextField
             id="investigation-cnpj"
             name="cnpj"
-            label="CNPJ da empresa"
-            fieldClassName="text-left"
+            label="Buscar por CNPJ"
             controlSize="lg"
             mono
             type="text"
@@ -146,10 +151,31 @@ const SearchLanding: React.FC<{
         </form>
 
         {error ? (
-          <Note tone="high" role="alert" className="w-full text-left" icon={<Icons.AlertCircle size={16} aria-hidden="true" />}>
+          <Note
+            tone="high"
+            role="alert"
+            className="mt-3 w-full"
+            icon={<Icons.AlertCircle size={16} aria-hidden="true" />}
+          >
             {error}
           </Note>
         ) : null}
+
+        <ul className="mt-8 border-t border-line">
+          {LANDING_STEPS.map((step) => (
+            <li
+              key={step}
+              className="flex min-w-0 items-baseline gap-2 border-b border-line-soft py-2.5 text-sm text-ink-2"
+            >
+              <span aria-hidden="true" className="ficha-label shrink-0 text-ink-muted">&gt;</span>
+              <span className="min-w-0">{step}</span>
+            </li>
+          ))}
+        </ul>
+
+        <p className="ficha-label mt-6 text-center leading-relaxed text-ink-muted">
+          Dados cadastrais da Receita Federal + pesquisa em fontes abertas · confirme antes de decidir
+        </p>
       </div>
     </main>
   );

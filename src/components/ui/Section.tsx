@@ -30,6 +30,13 @@ interface SectionProps {
   /** Tira o respiro interno do corpo — para tabela e lista que já
       têm o seu, e para o canvas do mapa. */
   flush?: boolean;
+  /**
+   * Sem casca de cartão: fio fino no lugar de moldura, fundo do papel
+   * no lugar de superfície. É a forma que a seção assume dentro da
+   * ficha, onde uma pilha de caixas iguais competiria com a hierarquia
+   * que as próprias seções (A), (B), (C) já estabelecem.
+   */
+  plain?: boolean;
   id?: string;
   className?: string;
   bodyClassName?: string;
@@ -46,6 +53,7 @@ export const Section: React.FC<SectionProps> = ({
   defaultOpen = true,
   tone = 'default',
   flush = false,
+  plain = false,
   id,
   className,
   bodyClassName,
@@ -101,20 +109,32 @@ export const Section: React.FC<SectionProps> = ({
     </>
   );
 
-  const headerClasses = cn(
-    'flex w-full min-w-0 items-center gap-2.5 px-4 py-3 text-left',
-    visible && 'border-b',
-    deep ? 'border-deep-line bg-deep-raised text-on-deep' : 'border-line-soft bg-surface-subtle text-ink',
-    collapsible && (deep ? 'hover:bg-deep-hover' : 'hover:bg-surface-hover'),
-    'transition-colors',
-  );
+  const headerClasses = plain
+    ? cn(
+        'flex w-full min-w-0 items-center gap-2.5 py-2 text-left transition-colors',
+        visible && 'border-b border-line-soft',
+        'text-ink',
+        collapsible && 'hover:text-brand',
+      )
+    : cn(
+        'flex w-full min-w-0 items-center gap-2.5 px-4 py-3 text-left',
+        visible && 'border-b',
+        deep ? 'border-deep-line bg-deep-raised text-on-deep' : 'border-line-soft bg-surface-subtle text-ink',
+        collapsible && (deep ? 'hover:bg-deep-hover' : 'hover:bg-surface-hover'),
+        'transition-colors',
+      );
 
   return (
     <section
       id={id}
       className={cn(
-        'min-w-0 overflow-hidden rounded-card border shadow-xs',
-        deep ? 'border-deep-line bg-deep-raised text-on-deep' : 'border-line bg-surface text-ink',
+        'min-w-0',
+        plain
+          ? 'border-b border-line text-ink last:border-b-0'
+          : cn(
+              'overflow-hidden rounded-card border shadow-xs',
+              deep ? 'border-deep-line bg-deep-raised text-on-deep' : 'border-line bg-surface text-ink',
+            ),
         className,
       )}
     >
@@ -129,7 +149,7 @@ export const Section: React.FC<SectionProps> = ({
       ) : null}
 
       {visible ? (
-        <div id={bodyId} className={cn('min-w-0', !flush && 'p-4', bodyClassName)}>
+        <div id={bodyId} className={cn('min-w-0', !flush && (plain ? 'py-3' : 'p-4'), bodyClassName)}>
           {children}
         </div>
       ) : null}

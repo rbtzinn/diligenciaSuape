@@ -73,6 +73,9 @@
   --color-brand-text: var(--brand-blue-text);
   --color-gold: var(--brand-gold);
   --color-gold-soft: var(--brand-gold-subtle);
+  /* Acento sobre o painel escuro. O azul institucional não se lê ali. */
+  --color-brand-on-deep: var(--brand-blue-on-deep);
+  --color-brand-on-deep-soft: var(--brand-blue-on-deep-soft);
 
   /* ----------------------------------------------------------
      SITUAÇÃO — cada nível com traço, fundo e texto, para que o par
@@ -154,6 +157,7 @@
   }
 
   --container-content: 1200px;
+  --container-sheet: var(--content-sheet);
   --container-content-wide: 1440px;
   --container-prose: 68ch;
 }
@@ -219,4 +223,18 @@
 @utility num {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
+}
+
+/* Rótulo de ficha: monoespaçado, caixa alta, entreletra aberta. É o
+   que separa o metadado — nome do campo, marcador de seção, carimbo
+   de consulta — do conteúdo que ele nomeia. Aparece dezenas de vezes
+   no dossiê; escrito à mão em cada lugar, ele saía diferente em
+   cada um. */
+@utility ficha-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  line-height: 1.4;
 }

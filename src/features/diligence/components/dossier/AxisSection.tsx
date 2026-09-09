@@ -62,12 +62,19 @@ export const AxisSection: React.FC<AxisSectionProps> = ({ axis, defaultOpen = tr
     mono: !twoColumn && MONO_HEADERS.test(header),
     strong: index === 0,
     align: index === axis.columns.length - 1 && !twoColumn ? 'right' : 'left',
+    nowrap: /^situa[çc][ãa]o$/i.test(header),
   }));
 
   const hasStatus = axis.rows.some((row) => row.status);
   const hasLink = axis.rows.some((row) => row.href);
 
-  if (hasStatus) {
+  // Vários eixos já declaram "Situação" como última coluna própria e
+  // entregam o valor em `row.status`, não numa célula. Acrescentar a
+  // coluna de situação nesses casos desenhava o mesmo cabeçalho duas
+  // vezes, com a primeira das duas sempre vazia.
+  const declaresStatusColumn = /^situa[çc][ãa]o$/i.test(axis.columns[axis.columns.length - 1] || '');
+
+  if (hasStatus && !declaresStatusColumn) {
     columns.push({ key: 'status', header: 'Situação', align: 'right', nowrap: true });
   }
   if (hasLink) {
@@ -81,8 +88,12 @@ export const AxisSection: React.FC<AxisSectionProps> = ({ axis, defaultOpen = tr
       cells[`c${index}`] = cell;
     });
 
+    // Quando o eixo declara a própria coluna de situação, o selo vai
+    // para dentro dela, no lugar da célula vazia.
+    const statusKey = declaresStatusColumn ? `c${axis.columns.length - 1}` : 'status';
+
     if (hasStatus) {
-      cells.status = row.status ? (
+      cells[statusKey] = row.status ? (
         <Chip tone={ROW_TONE[row.status.tone]} size="sm">
           {row.status.label}
         </Chip>
@@ -112,6 +123,7 @@ export const AxisSection: React.FC<AxisSectionProps> = ({ axis, defaultOpen = tr
       title={axis.label}
       collapsible
       defaultOpen={defaultOpen}
+      plain
       flush
       trailing={
         <Chip tone={STATUS_TONE[axis.status]} size="sm" solid={axis.status === 'com-achado'}>
@@ -120,15 +132,15 @@ export const AxisSection: React.FC<AxisSectionProps> = ({ axis, defaultOpen = tr
       }
     >
       {axis.rows.length === 0 ? (
-        <p className="px-4 py-3.5 text-sm leading-relaxed text-ink-3">{EMPTY_COPY[axis.status]}</p>
+        <p className="py-3 text-sm leading-relaxed text-ink-3">{EMPTY_COPY[axis.status]}</p>
       ) : (
-        <div className="px-4 py-3">
+        <div className="py-3">
           <DataTable columns={columns} rows={rows} layout={twoColumn ? 'auto' : 'table'} />
         </div>
       )}
 
       {axis.note ? (
-        <p className="border-t border-line-soft px-4 py-2.5 text-xs leading-relaxed text-ink-3">{axis.note}</p>
+        <p className="border-t border-line-soft py-2.5 text-xs leading-relaxed text-ink-3">{axis.note}</p>
       ) : null}
     </Section>
   );

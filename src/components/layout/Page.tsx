@@ -60,8 +60,13 @@ interface PageHeaderProps {
   /** Fita de abas, colada na base do cabeçalho. */
   tabs?: React.ReactNode;
   tone?: PageTone;
-  /** Largura do miolo. `wide` para o mapa, `content` para leitura. */
-  width?: 'content' | 'wide';
+  /**
+   * Largura do miolo. `wide` para o mapa, `content` para telas de
+   * tabela e `prose` para a ficha — nesta, cabeçalho e corpo precisam
+   * da mesma medida, senão o título flutua sobre uma coluna de texto
+   * com metade da largura dele.
+   */
+  width?: 'content' | 'wide' | 'sheet';
   sticky?: boolean;
   className?: string;
 }
@@ -123,7 +128,12 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         className,
       )}
     >
-      <div className={cn('mx-auto w-full min-w-0 px-gutter', width === 'wide' ? 'max-w-content-wide' : 'max-w-content')}>
+      <div
+        className={cn(
+          'mx-auto w-full min-w-0 px-gutter',
+          width === 'wide' ? 'max-w-content-wide' : width === 'sheet' ? 'max-w-sheet' : 'max-w-content',
+        )}
+      >
         <div className="flex min-w-0 items-center gap-3 py-3">
           {onBack ? (
             <button
@@ -188,7 +198,7 @@ const BackArrow: React.FC = () => (
 );
 
 interface PageBodyProps {
-  width?: 'content' | 'wide' | 'prose';
+  width?: 'content' | 'wide' | 'prose' | 'sheet';
   /** Ritmo vertical entre os cartões filhos. */
   gap?: 'sm' | 'md' | 'lg';
   className?: string;
@@ -207,7 +217,13 @@ export const PageBody: React.FC<PageBodyProps> = ({ width = 'content', gap = 'md
       'mx-auto flex w-full min-w-0 flex-col px-gutter pb-16 pt-4',
       // Toda âncora dentro do corpo desconta o cabeçalho preso.
       '[&_[id]]:scroll-mt-[calc(var(--page-header-h,0px)+12px)]',
-      width === 'wide' ? 'max-w-content-wide' : width === 'prose' ? 'max-w-prose' : 'max-w-content',
+      width === 'wide'
+        ? 'max-w-content-wide'
+        : width === 'sheet'
+          ? 'max-w-sheet'
+          : width === 'prose'
+            ? 'max-w-prose'
+            : 'max-w-content',
       gap === 'sm' ? 'gap-2' : gap === 'lg' ? 'gap-6' : 'gap-4',
       className,
     )}
