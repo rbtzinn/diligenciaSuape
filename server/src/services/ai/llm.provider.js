@@ -177,10 +177,12 @@ async function chat({
   temperature = 0.1,
   jsonMode = false,
   timeoutMs = DEFAULT_TIMEOUT_MS,
+  freeOnly = false,
 } = {}) {
   const attempts = [];
 
   for (const provider of PROVIDER_CATALOG) {
+    if (freeOnly && !provider.requireFreeModelSuffix) continue;
     const apiKey = readKey(provider);
     if (!apiKey) continue;
 

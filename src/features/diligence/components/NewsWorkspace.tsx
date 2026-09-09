@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { AdverseMediaStatus, DiligenceItem } from '../types';
 import { Button } from '../../../components/ui/Button';
 import { AdverseMediaCard } from './AdverseMediaCard';
+import { AiNewsSearch } from './AiNewsSearch';
 import { newsSubjects, safeNewsUrl } from '../utils/newsResults';
 
 interface Props {
@@ -42,7 +43,7 @@ export function NewsWorkspace({ diligence, busy, saving, notice, progress, onSea
   const fieldClass = 'w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink';
   const failed = media?.queriesExecuted?.filter((q) => !q.ok || q.partial).length || 0;
 
-  return <section className="mx-auto w-full max-w-6xl min-w-0 space-y-5 overflow-y-auto p-4 sm:p-6" aria-label="Notícias e links">
+  return <section className="mx-auto w-full max-w-content min-w-0 space-y-6 overflow-y-auto px-gutter py-6" aria-label="Notícias e links">
     <header className="flex flex-wrap items-start justify-between gap-4">
       <div className="min-w-0">
         <p className="text-xs font-semibold uppercase tracking-wider text-ink-3">Pesquisa de fontes públicas</p>
@@ -70,6 +71,7 @@ export function NewsWorkspace({ diligence, busy, saving, notice, progress, onSea
       <p className="mt-2 text-xs text-ink-3">Sem API paga nesta busca. As fontes gratuitas podem limitar ou interromper consultas.</p>
     </div>
 
+    <AiNewsSearch key={diligence.id} diligence={diligence} subject={subject} />
     {notice && <p role="status" className="rounded-md border border-line p-3 text-sm text-ink-2">{notice}</p>}
     {(!media?.ok || media.consultaParcial || failed > 0) && <div className="rounded-md border border-line p-3 text-sm text-ink-2">
       <strong>Cobertura incompleta.</strong> {failed > 0 ? `${failed} consultas com falha ou resposta parcial. ` : ''}{media?.aviso || 'Não foi possível verificar todas as fontes.'}

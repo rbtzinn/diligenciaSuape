@@ -15,8 +15,27 @@ const { investigate } = require('../services/ai/investigative-leads.service');
 const { CompositeSearchProvider } = require('../services/search/composite-search.provider');
 
 const leadSearchProvider = new CompositeSearchProvider({ persistentUse: true });
+const newsSearchProvider = new CompositeSearchProvider({ persistentUse: true, freeOnly: true });
+const { researchNews } = require('../services/ai/news-research.service');
 
 router.use(authenticate);
+
+router.post('/news-research', async (req, res) => {
+  const { empresa, socios } = req.body || {};
+  if (!empresa || !(empresa.razaoSocial || empresa.cnpj)) {
+    return res.status(400).json({ ok: false, erro: 'Informe a empresa pesquisada.' });
+  }
+  if (!listProviders().some((provider) => provider.id === 'openrouter-free' && provider.configured)) {
+    return res.status(503).json({ ok: false, erro: 'Configure OPENROUTER_API_KEY e OPENROUTER_MODEL com um modelo :free no servidor para habilitar esta pesquisa sem consumo de modelos pagos.' });
+  }
+  const company = Object.fromEntries(['razaoSocial', 'nomeFantasia', 'cnpj', 'municipio', 'uf', 'atividade'].map((key) => [key, String(empresa[key] || '').slice(0, 250)]));
+  const shareholders = (Array.isArray(socios) ? socios : []).slice(0, 50).map((person) => ({ nome_socio: String(person?.nome_socio || '').slice(0, 200) }));
+  try {
+    return res.json(await researchNews({ company, shareholders, coverage: [] }, newsSearchProvider));
+  } catch {
+    return res.status(503).json({ ok: false, erro: 'Não foi possível concluir a pesquisa ampliada.' });
+  }
+});
 
 router.get('/status', (_req, res) => {
   const providers = listProviders();

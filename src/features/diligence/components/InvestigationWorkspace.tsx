@@ -317,7 +317,8 @@ export const InvestigationWorkspace: React.FC<InvestigationWorkspaceProps> = ({
 
   return (
     <section className="flex h-dvh min-h-0 w-full min-w-0 flex-col overflow-hidden bg-canvas">
-      <header className="flex min-w-0 shrink-0 items-center gap-3 border-b border-line-soft bg-surface px-gutter py-2">
+      <header className="shrink-0 border-b border-line-soft bg-surface">
+      <div className="mx-auto flex w-full max-w-content min-w-0 items-center gap-3 px-gutter py-3">
         <button
           type="button"
           onClick={startAnotherSearch}
@@ -386,6 +387,7 @@ export const InvestigationWorkspace: React.FC<InvestigationWorkspaceProps> = ({
             {userInitials(user?.name)}
           </button>
         </nav>
+      </div>
       </header>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
