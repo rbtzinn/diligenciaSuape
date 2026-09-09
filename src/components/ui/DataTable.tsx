@@ -96,7 +96,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                   key={column.key}
                   scope="col"
                   className={cn(
-                    'sticky top-0 z-sticky whitespace-nowrap border-b border-line bg-surface-subtle px-2.5 py-2 text-2xs font-semibold uppercase tracking-wide text-ink-3',
+                    'sticky top-[var(--page-header-h,0px)] z-base whitespace-nowrap border-b border-line bg-surface-subtle px-2.5 py-2 text-2xs font-semibold uppercase tracking-wide text-ink-3',
                     alignClass(column.align),
                     column.hideOnMobile && 'hidden md:table-cell',
                   )}
