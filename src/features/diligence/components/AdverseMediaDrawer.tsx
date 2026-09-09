@@ -173,12 +173,13 @@ export const AdverseMediaDrawer: React.FC<AdverseMediaDrawerProps> = ({
       ) : null}
 
       {/* ---- Filtros ---- */}
-      <div className="rounded-lg border border-line bg-surface px-1">
+      <div className="min-w-0 max-w-full overflow-hidden rounded-lg border border-line bg-surface px-1">
         <TabStrip
           items={tabs}
           activeId={filter}
           onSelect={(id) => setFilter(id as MediaFilter)}
           label="Filtros de publicações"
+          className="!mx-0 !px-0"
         />
       </div>
 
