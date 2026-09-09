@@ -451,7 +451,8 @@ export function projectFocusGraph(
   entities: EgosEntity[],
   relationships: EgosRelationship[],
   focusEntityId: string | undefined,
-  neighborLimit: number
+  neighborLimit: number,
+  relationshipFilter = 'core',
 ): FocusGraphProjection {
   const entityById = new Map(entities.map((entity) => [entity.id, entity]));
   const focusEntity = focusEntityId ? entityById.get(focusEntityId) : undefined;
@@ -461,7 +462,7 @@ export function projectFocusGraph(
 
   const candidates = relationships
     .filter((relationship) => touches(relationship, focusEntity.id))
-    .filter((relationship) => relationshipMatchesFilter(relationship, 'core'))
+    .filter((relationship) => relationshipMatchesFilter(relationship, relationshipFilter))
     .map((relationship) => {
       const neighborId = otherEntityId(relationship, focusEntity.id);
       return { relationship, neighbor: entityById.get(neighborId) };
@@ -491,7 +492,7 @@ export function projectFocusGraph(
   const visibleNeighborIds = new Set(visibleConnections.map((item) => item.neighbor.id));
   const visibleRelationships = relationships
     .filter((relationship) => touches(relationship, focusEntity.id))
-    .filter((relationship) => relationshipMatchesFilter(relationship, 'core'))
+    .filter((relationship) => relationshipMatchesFilter(relationship, relationshipFilter))
     .filter((relationship) => visibleNeighborIds.has(otherEntityId(relationship, focusEntity.id)));
 
   return {
