@@ -317,7 +317,16 @@ async function executeLeads(consultas, searchProvider, options = {}) {
     }
   });
 
-  return { ok: true, resultados: Array.from(vistos.values()), consultasExecutadas };
+  const successfulQueries = consultasExecutadas.filter((consulta) => consulta.ok);
+  const errors = [...new Set(consultasExecutadas
+    .filter((consulta) => !consulta.ok && consulta.erro)
+    .map((consulta) => consulta.erro))];
+  return {
+    ok: successfulQueries.length > 0,
+    resultados: Array.from(vistos.values()),
+    consultasExecutadas,
+    ...(successfulQueries.length === 0 && errors.length > 0 ? { erro: errors.join(' | ') } : {}),
+  };
 }
 
 /**

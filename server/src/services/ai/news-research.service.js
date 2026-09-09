@@ -44,7 +44,10 @@ async function researchNews(input, searchProvider, dependencies = {}) {
         return true;
       }).slice(0, 6);
       if (!fresh.length) break;
-      const response = await withinDeadline(() => execute(fresh, searchProvider, {
+      // Esta tela pesquisa notícias. Forçar o índice de notícias evita depender
+      // do HTML do DuckDuckGo, que frequentemente bloqueia IPs da Vercel.
+      const newsQueries = fresh.map((query) => ({ ...query, canal: 'news' }));
+      const response = await withinDeadline(() => execute(newsQueries, searchProvider, {
         deadlineMs: Math.max(1, Math.min(20_000, deadlineAt - Date.now())),
       }));
       queries.push(...response.consultasExecutadas);
