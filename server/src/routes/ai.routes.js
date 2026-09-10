@@ -16,9 +16,48 @@ const { CompositeSearchProvider } = require('../services/search/composite-search
 
 const leadSearchProvider = new CompositeSearchProvider({ persistentUse: true });
 const newsSearchProvider = new CompositeSearchProvider({ persistentUse: true, freeOnly: true });
-const { researchNews } = require('../services/ai/news-research.service');
+const { researchNews, researchInput, planNews, searchNewsQueries } = require('../services/ai/news-research.service');
 
 router.use(authenticate);
+
+// Planning and searches have independent deadlines. No in-memory job is needed
+// on Vercel: the authenticated client holds the bounded, validated query plan.
+function researchStep(work) {
+  return async (req, res) => {
+    const controller = new AbortController();
+    const onClose = () => { if (!res.writableEnded) controller.abort(); };
+    res.once('close', onClose);
+    try {
+      const result = await work(req.body || {}, controller.signal);
+      if (!controller.signal.aborted) res.json(result);
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      if (error.retryAfterSeconds) res.set('Retry-After', String(error.retryAfterSeconds));
+      res.status(error.status >= 400 && error.status <= 599 ? error.status : 503).json({
+        ok: false, erro: error.message || 'Não foi possível concluir esta etapa.',
+        codigo: error.code, retryAfterSeconds: error.retryAfterSeconds,
+      });
+    } finally {
+      res.off('close', onClose);
+    }
+  };
+}
+
+router.post('/news-research/plan', researchStep(async (body, signal) => {
+  const input = researchInput(body);
+  const provider = listProviders().find((p) => p.id === 'openrouter-free');
+  if (!provider?.configured) {
+    const error = new Error(provider?.message || 'Configure OPENROUTER_API_KEY no backend e use OPENROUTER_MODEL=openrouter/free.');
+    error.status = 503;
+    error.code = 'AI_NOT_CONFIGURED';
+    throw error;
+  }
+  return planNews(input, body.contexto, { signal });
+}));
+
+router.post('/news-research/search', researchStep((body, signal) => (
+  searchNewsQueries(researchInput(body), body.consultas, newsSearchProvider, { signal })
+)));
 
 router.post('/news-research', async (req, res) => {
   const { empresa, socios } = req.body || {};

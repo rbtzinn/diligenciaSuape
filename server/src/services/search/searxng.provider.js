@@ -116,6 +116,7 @@ class SearxngProvider extends SearchProvider {
     channel = 'web',
     offset = 0,
     timeoutMs,
+    signal,
   } = {}) {
     const normalizedQuery = typeof query === 'string' ? query.trim() : '';
     const normalizedChannel = String(channel || 'web').toLowerCase();
@@ -144,6 +145,7 @@ class SearxngProvider extends SearchProvider {
     try {
       const response = await this.fetchImpl(searchUrl.toString(), {
         timeoutMs: requestTimeoutMs,
+        signal,
         headers: { Accept: 'application/json' },
       });
 
@@ -227,3 +229,4 @@ module.exports = {
   normalizeBaseUrl,
   normalizeResult,
 };
+

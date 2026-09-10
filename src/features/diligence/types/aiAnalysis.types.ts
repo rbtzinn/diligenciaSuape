@@ -92,6 +92,8 @@ export interface AiLeadQuery {
   ok?: boolean;
   resultCount?: number;
   erro?: string;
+  partial?: boolean;
+  attempts?: Array<{ provider: string; ok: boolean; status?: number; erro?: string; skipped?: boolean }>;
 }
 
 export interface AiLeadResult {
@@ -102,6 +104,7 @@ export interface AiLeadResult {
   publishedAt?: string | null;
   origemConsulta: string;
   motivoDaConsulta?: string | null;
+  providerSources?: string[];
 }
 
 export interface AiHypothesis {
@@ -125,4 +128,5 @@ export interface AiLeadsResult {
   resultados?: AiLeadResult[];
   hipoteses?: AiHypothesis[];
   aviso?: string;
+  partial?: boolean;
 }

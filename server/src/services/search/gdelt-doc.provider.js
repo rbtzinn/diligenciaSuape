@@ -134,6 +134,7 @@ class GdeltDocProvider extends SearchProvider {
     channel = 'news',
     freshness,
     timeoutMs,
+    signal,
   } = {}) {
     const normalizedQuery = typeof query === 'string' ? query.trim() : '';
     const normalizedChannel = String(channel || 'news').toLowerCase();
@@ -156,6 +157,7 @@ class GdeltDocProvider extends SearchProvider {
     try {
       const response = await this.fetchImpl(searchUrl.toString(), {
         timeoutMs: requestTimeoutMs,
+        signal,
         headers: { Accept: 'application/json' },
       });
 
@@ -253,3 +255,5 @@ module.exports = {
   normalizeArticle,
   normalizeSeenDate,
 };
+
+

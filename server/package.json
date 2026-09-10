@@ -7,7 +7,8 @@
     "start": "node index.js",
     "dev": "node index.js",
     "build": "node --check index.js",
-    "test": "node --test test/entity-resolution.test.js test/dossier-projection.test.js test/document-intelligence.test.js test/contract-timeline.test.js test/contract-intelligence.test.js test/tce-pe.intelligence.test.js test/search-query-generator.test.js test/source-status.test.js test/tce-pe.entity-resolution.test.js test/foundation.test.js test/person-sanctions.test.js test/google-sheets.integration.test.js test/entity-report.test.js test/person-corporate-network.test.js test/search-providers.test.js test/gdelt-doc.provider.test.js test/adverse-media.service.test.js test/free-web-search.test.js test/payroll-workbook.test.js test/ai-dossier-analysis.test.js test/investigative-leads.test.js test/pncp.service.test.js test/tce-pe.service.test.js test/tce-pe.deadline.test.js test/evidence-center.test.js"
+    "test:ai": "node --test test/llm-provider.test.js test/news-steps.test.js test/news-research.test.js test/investigative-leads.test.js test/ai-dossier-analysis.test.js test/search-providers.test.js test/news-routes.test.js",
+    "test": "node --test test/entity-resolution.test.js test/dossier-projection.test.js test/document-intelligence.test.js test/contract-timeline.test.js test/contract-intelligence.test.js test/tce-pe.intelligence.test.js test/search-query-generator.test.js test/source-status.test.js test/tce-pe.entity-resolution.test.js test/foundation.test.js test/person-sanctions.test.js test/google-sheets.integration.test.js test/entity-report.test.js test/person-corporate-network.test.js test/search-providers.test.js test/gdelt-doc.provider.test.js test/adverse-media.service.test.js test/free-web-search.test.js test/payroll-workbook.test.js test/ai-dossier-analysis.test.js test/investigative-leads.test.js test/pncp.service.test.js test/tce-pe.service.test.js test/tce-pe.deadline.test.js test/evidence-center.test.js test/llm-provider.test.js test/news-steps.test.js test/news-research.test.js test/news-routes.test.js"
   },
   "engines": {
     "node": "24.x"
@@ -23,3 +24,4 @@
     "pdfkit": "^0.19.1"
   }
 }
+

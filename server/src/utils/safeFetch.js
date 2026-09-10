@@ -5,7 +5,7 @@
 const TIMEOUT_MS = 15000;
 
 async function safeFetch(url, opts = {}) {
-  const { timeoutMs = TIMEOUT_MS, ...fetchOptions } = opts;
+  const { timeoutMs = TIMEOUT_MS, signal, ...fetchOptions } = opts;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
 
@@ -15,7 +15,7 @@ async function safeFetch(url, opts = {}) {
   };
 
   try {
-    const res = await fetch(url, { ...fetchOptions, headers, signal: ctrl.signal });
+    const res = await fetch(url, { ...fetchOptions, headers, signal: signal ? AbortSignal.any([signal, ctrl.signal]) : ctrl.signal });
     clearTimeout(timer);
     return res;
   } catch (e) {

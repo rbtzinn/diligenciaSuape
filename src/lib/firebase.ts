@@ -30,11 +30,12 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const auth: Auth = getAuth(app);
 
 export async function getFirebaseIdToken(): Promise<string | null> {
+  await auth.authStateReady();
   const currentUser = auth.currentUser;
   if (!currentUser) return null;
   try {
     return await currentUser.getIdToken();
   } catch {
-    return null;
+    throw new Error('Não foi possível renovar sua sessão. Entre novamente para continuar.');
   }
 }

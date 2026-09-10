@@ -138,6 +138,7 @@ class DuckDuckGoLiteProvider extends SearchProvider {
     channel = 'web',
     offset = 0,
     timeoutMs,
+    signal,
   } = {}) {
     const normalizedQuery = typeof query === 'string' ? query.trim() : '';
     const normalizedChannel = String(channel || 'web').toLowerCase();
@@ -164,6 +165,7 @@ class DuckDuckGoLiteProvider extends SearchProvider {
       const response = await this.fetchImpl(ENDPOINT, {
         method: 'POST',
         timeoutMs: requestTimeoutMs,
+        signal,
         headers: {
           Accept: 'text/html',
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -255,3 +257,4 @@ module.exports = {
   parseResults,
   resolveRedirect,
 };
+

@@ -4,6 +4,7 @@
 // ==========================================================
 
 const { SearchProvider } = require('./search.provider');
+const { withDeadline } = require('../../utils/deadline');
 const { BraveSearchProvider } = require('./brave-search.provider');
 const { GoogleNewsRssProvider } = require('./google-news-rss.provider');
 const { GdeltDocProvider } = require('./gdelt-doc.provider');
@@ -211,6 +212,7 @@ class CompositeSearchProvider extends SearchProvider {
     priority,
     purpose,
     timeoutMs,
+    signal,
   } = {}) {
     const normalizedQuery = typeof query === 'string' ? query.trim() : '';
     const normalizedChannel = String(channel || 'web').toLowerCase();
@@ -281,7 +283,8 @@ class CompositeSearchProvider extends SearchProvider {
       };
     }
 
-    const settled = await Promise.allSettled(applicableProviders.map((provider) => provider.searchWeb({
+    const settled = await Promise.allSettled(applicableProviders.map((provider) => withDeadline(
+      Math.max(1, (timeoutMs || 12000) - 100), (providerSignal) => provider.searchWeb({
       query: normalizedQuery,
       count: requestedCount,
       channel: normalizedChannel,
@@ -290,7 +293,8 @@ class CompositeSearchProvider extends SearchProvider {
       priority,
       purpose,
       timeoutMs,
-    })));
+      signal: providerSignal,
+    }), signal)));
 
     const responses = settled.map((outcome, index) => {
       const provider = applicableProviders[index];

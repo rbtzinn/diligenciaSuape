@@ -14,7 +14,7 @@ export function resolveApiUrl(endpoint: string): string {
 }
 
 export class ApiError extends Error {
-  constructor(message: string, public status?: number) {
+  constructor(message: string, public status?: number, public code?: string, public retryAfterSeconds?: number) {
     super(message);
     this.name = 'ApiError';
   }
@@ -42,15 +42,28 @@ function getErrorMessageForStatus(status: number, serverError?: string): string 
   }
 }
 
-type RequestOptions = RequestInit & { timeoutMs?: number };
+type RequestOptions = RequestInit & { timeoutMs?: number; requireAuth?: boolean };
+
+function abortable<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const onAbort = () => reject(new DOMException('Abortado', 'AbortError'));
+    if (signal.aborted) onAbort();
+    else signal.addEventListener('abort', onAbort, { once: true });
+    promise.then(resolve, reject).finally(() => signal.removeEventListener('abort', onAbort));
+  });
+}
 
 export async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-  const { timeoutMs = TIMEOUT_MS, ...fetchOptions } = options;
+  const { timeoutMs = TIMEOUT_MS, requireAuth = false, signal, ...fetchOptions } = options;
   const controller = new AbortController();
+  const onAbort = () => controller.abort();
+  if (signal?.aborted) controller.abort();
+  signal?.addEventListener('abort', onAbort, { once: true });
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const idToken = await getFirebaseIdToken();
+    const idToken = await abortable(getFirebaseIdToken(), controller.signal);
+    if (requireAuth && !idToken) throw new ApiError('Sua sessão terminou. Entre novamente para continuar a pesquisa.', 401, 'SESSION_REQUIRED');
 
     const headers: Record<string, string> = {
       Accept: 'application/json',
@@ -68,14 +81,18 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
       headers,
     });
 
-    clearTimeout(timeoutId);
-
-    const data = await response.json().catch(() => ({}));
+    const data = await abortable(response.json().catch(() => ({})), controller.signal);
+    if (controller.signal.aborted) throw new DOMException('Abortado', 'AbortError');
 
     if (!response.ok) {
       const msg = getErrorMessageForStatus(response.status, data?.erro);
-      throw new ApiError(msg, response.status);
+      const rawRetryAfter = data?.retryAfterSeconds || response.headers.get('Retry-After');
+      const numericWait = Number(rawRetryAfter);
+      const retryAfter = (Number.isFinite(numericWait) ? Math.max(0, numericWait)
+        : Math.max(0, Math.ceil((Date.parse(String(rawRetryAfter)) - Date.now()) / 1000))) || undefined;
+      throw new ApiError(msg, response.status, data?.codigo, retryAfter);
     }
+    if (requireAuth && typeof data?.ok !== 'boolean') throw new ApiError('O servidor devolveu uma resposta inválida. Tente retomar a etapa.', 502, 'INVALID_RESPONSE');
 
     return data as T;
   } catch (err: unknown) {
@@ -84,7 +101,7 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
       throw err;
     }
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new ApiError('Tempo limite da requisição esgotado (timeout).');
+      throw new ApiError(signal?.aborted ? 'Pesquisa pausada.' : 'Tempo limite da etapa esgotado. Você pode continuar a pesquisa.', undefined, signal?.aborted ? 'CANCELLED' : 'TIMEOUT');
     }
     // `fetch` rejeita com TypeError("Failed to fetch") para qualquer falha de
     // rede, CORS ou função encerrada antes de responder. A mensagem crua não
@@ -97,5 +114,8 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
     }
     const message = err instanceof Error ? err.message : 'Falha na comunicação com o servidor.';
     throw new ApiError(message);
+  } finally {
+    clearTimeout(timeoutId);
+    signal?.removeEventListener('abort', onAbort);
   }
 }

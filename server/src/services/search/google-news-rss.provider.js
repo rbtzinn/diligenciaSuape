@@ -231,6 +231,7 @@ class GoogleNewsRssProvider extends SearchProvider {
     channel = 'news',
     offset = 0,
     timeoutMs,
+    signal,
   } = {}) {
     const normalizedQuery = typeof query === 'string' ? query.trim() : '';
     const normalizedChannel = String(channel || 'news').toLowerCase();
@@ -253,6 +254,7 @@ class GoogleNewsRssProvider extends SearchProvider {
     try {
       const response = await this.fetchImpl(searchUrl.toString(), {
         timeoutMs: requestTimeoutMs,
+        signal,
         headers: {
           Accept: 'application/rss+xml, application/xml, text/xml',
         },
@@ -340,3 +342,4 @@ module.exports = {
   isWellFormedXml,
   parseRssItems,
 };
+

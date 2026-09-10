@@ -38,6 +38,7 @@ const allowedOrigins = new Set([
 
 app.use(cors({
   credentials: true,
+  exposedHeaders: ['Retry-After'],
   origin(origin, callback) {
     if (!origin || allowedOrigins.has(origin)) return callback(null, true);
     return callback(new Error('Origem não autorizada pelo Diligência 360.'));
