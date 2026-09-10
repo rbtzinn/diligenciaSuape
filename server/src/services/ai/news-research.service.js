@@ -27,10 +27,15 @@ async function researchNews(input, searchProvider, dependencies = {}) {
   let provider;
   let warning;
   for (let round = 0; round < 2; round += 1) {
+    if (round > 0 && deadlineAt - Date.now() < 24_000) {
+      warning = 'Primeira rodada concluída. A segunda não foi iniciada por falta de tempo disponível.';
+      break;
+    }
     try {
       const plan = await withinDeadline(() => propose(input, {
-        timeoutMs: Math.max(1, Math.min(30_000, deadlineAt - Date.now())),
+        timeoutMs: Math.max(1, Math.min(round === 0 ? 28_000 : 14_000, deadlineAt - Date.now())),
         newsResearch: true,
+        maxTokens: 1800,
         searchContext: round ? {
           consultasExecutadas: [...seen],
           resultados: [...results.values()].slice(0, 12).map(({ title, snippet }) => ({ title, snippet: snippet.slice(0, 600) })),
@@ -42,13 +47,13 @@ async function researchNews(input, searchProvider, dependencies = {}) {
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
-      }).slice(0, 6);
+      }).slice(0, 4);
       if (!fresh.length) break;
       // Esta tela pesquisa notícias. Forçar o índice de notícias evita depender
       // do HTML do DuckDuckGo, que frequentemente bloqueia IPs da Vercel.
       const newsQueries = fresh.map((query) => ({ ...query, canal: 'news' }));
       const response = await withinDeadline(() => execute(newsQueries, searchProvider, {
-        deadlineMs: Math.max(1, Math.min(20_000, deadlineAt - Date.now())),
+        deadlineMs: Math.max(1, Math.min(9_000, deadlineAt - Date.now())),
       }));
       queries.push(...response.consultasExecutadas);
       for (const item of response.resultados) {
