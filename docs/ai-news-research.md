@@ -35,9 +35,10 @@ RSS, GDELT e SearXNG quando já configurado.
 - Resultados são exibidos a cada lote. **Continuar pesquisa** retenta apenas
   consultas pendentes, sem gerar outro plano. **Aprofundar pesquisa** pede novas
   consultas, enviando histórico limitado de títulos, trechos e consultas.
-- O progresso fica em memória enquanto o painel permanece aberto. Recarregar
-  a página ou mudar a empresa/pessoa reinicia a sessão. **Pausar pesquisa**
-  cancela o trabalho em andamento; os lotes já recebidos permanecem visíveis.
+- O progresso fica salvo na sessão da aba, separado por diligência e por
+  empresa/pessoa. Recarregar a página ou navegar pelo dossiê mantém os links;
+  fechar a aba encerra a sessão. **Pausar pesquisa** cancela o trabalho em
+  andamento; os lotes já recebidos permanecem visíveis.
 
 HTTP 200 com `error` no corpo é tratado como falha. Erros transitórios, resposta
 vazia, truncamento e plano inválido permitem uma única nova tentativa gratuita,

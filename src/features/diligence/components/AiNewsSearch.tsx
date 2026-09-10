@@ -3,7 +3,15 @@ import type { AiLeadsResult, DiligenceItem } from '../types';
 import { ApiError, request } from '../../../lib/api';
 import { Button } from '../../../components/ui/Button';
 import { safeNewsUrl } from '../utils/newsResults';
-import { emptyNewsSession, mergeNewsResult, queryKey, type NewsSession } from '../services/ai-news-session';
+import {
+  browserNewsStorage,
+  loadNewsSession,
+  mergeNewsResult,
+  newsSessionStorageKey,
+  queryKey,
+  saveNewsSession,
+  type NewsSession,
+} from '../services/ai-news-session';
 
 type Props = { diligence: DiligenceItem; subject: string };
 
@@ -12,7 +20,8 @@ export function AiNewsSearch(props: Props) {
 }
 
 function ResearchPanel({ diligence, subject }: Props) {
-  const [session, setSession] = useState(emptyNewsSession);
+  const storageKey = newsSessionStorageKey(diligence.id, subject);
+  const [session, setSession] = useState(() => loadNewsSession(browserNewsStorage(), storageKey));
   const current = useRef(session);
   const active = useRef<AbortController | null>(null);
   const [busy, setBusy] = useState(false);
@@ -28,7 +37,11 @@ function ResearchPanel({ diligence, subject }: Props) {
     return () => clearTimeout(timer);
   }, [cooldown]);
 
-  const commit = (value: NewsSession) => { current.current = value; setSession(value); };
+  const commit = (value: NewsSession) => {
+    current.current = value;
+    setSession(value);
+    saveNewsSession(browserNewsStorage(), storageKey, value);
+  };
   const search = async () => {
     if (active.current || cooling) return;
     const controller = new AbortController();
@@ -115,6 +128,7 @@ function ResearchPanel({ diligence, subject }: Props) {
       {cooling && <p className="text-xs text-ink-2">Novas tentativas foram pausadas. O botão será liberado após o intervalo informado; a disponibilidade da cota ainda depende do provedor.</p>}
       {hasProgress && <>
         <p className="text-sm font-semibold text-ink">{subject || 'Empresa e quadro societário'} · {links.length} links · {queries.filter((q) => q.ok).length} consultas respondidas{session.pending.length ? ` · ${session.pending.length} pendentes` : ''}</p>
+        <p className="text-xs text-ink-3">Resultados preservados nesta aba mesmo ao atualizar a página ou navegar pelo dossiê.</p>
         {result.modelo && <p className="text-xs text-ink-3">Plano: {result.provedor} · {result.modelo}</p>}
         <p className="text-xs text-ink-3">{result.aviso}</p>
         <div className="grid min-w-0 gap-3 lg:grid-cols-2">

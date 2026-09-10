@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { emptyNewsSession, mergeNewsResult, queryKey } from './ai-news-session';
+import {
+  emptyNewsSession,
+  loadNewsSession,
+  mergeNewsResult,
+  newsSessionStorageKey,
+  queryKey,
+  saveNewsSession,
+} from './ai-news-session';
 import type { AiLeadQuery, AiLeadResult } from '../types';
 
 const query: AiLeadQuery = { termo: 'Empresa Exemplo', canal: 'news', alvo: 'empresa', ok: true, resultCount: 1 };
@@ -26,5 +33,22 @@ describe('sessão da busca ampliada', () => {
     expect(next.resultados).toEqual([]);
     expect(next.ok).toBe(false);
     expect(queryKey({ ...query, termo: ' EMPRESA EXEMPLO ' })).toBe(queryKey(query));
+  });
+  it('salva e restaura sessões separadas para empresa e pessoa', () => {
+    const values = new Map<string, string>();
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => { values.set(key, value); },
+    };
+    const companyKey = newsSessionStorageKey('diligencia-1', '');
+    const personKey = newsSessionStorageKey('diligencia-1', 'Maria Silva');
+    const saved = { result: mergeNewsResult(emptyNewsSession().result, { ok: true, resultados: [link], consultasExecutadas: [query] }), pending: [], round: 2 };
+    saveNewsSession(storage, companyKey, saved);
+    expect(loadNewsSession(storage, companyKey)).toEqual(saved);
+    expect(loadNewsSession(storage, personKey)).toEqual(emptyNewsSession());
+  });
+  it('ignora conteúdo corrompido e falha de armazenamento sem derrubar a tela', () => {
+    expect(loadNewsSession({ getItem: () => '{inválido' }, 'chave')).toEqual(emptyNewsSession());
+    expect(() => saveNewsSession({ setItem: () => { throw new Error('quota'); } }, 'chave', emptyNewsSession())).not.toThrow();
   });
 });

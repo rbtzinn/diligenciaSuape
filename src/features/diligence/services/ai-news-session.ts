@@ -7,9 +7,69 @@ export interface NewsSession {
   round: number;
 }
 
+const STORAGE_PREFIX = 'diligencia360:ai-news:v1';
+const MAX_STORED_RESULTS = 200;
+const MAX_STORED_QUERIES = 128;
+
 export const emptyNewsSession = (): NewsSession => ({
   result: { ok: false, resultados: [], consultasExecutadas: [] }, pending: [], round: 0,
 });
+
+export function newsSessionStorageKey(diligenceId: string, subject: string): string {
+  return `${STORAGE_PREFIX}:${encodeURIComponent(diligenceId)}:${encodeURIComponent(subject.trim() || 'empresa')}`;
+}
+
+export function browserNewsStorage(): Storage | undefined {
+  try {
+    return typeof window === 'undefined' ? undefined : window.sessionStorage;
+  } catch {
+    return undefined;
+  }
+}
+
+function validSession(value: unknown): value is NewsSession {
+  if (!value || typeof value !== 'object') return false;
+  const session = value as Partial<NewsSession>;
+  return Boolean(
+    session.result && typeof session.result === 'object'
+      && Array.isArray(session.result.resultados)
+      && Array.isArray(session.result.consultasExecutadas)
+      && Array.isArray(session.pending)
+      && session.pending.every((query) => query && typeof query.termo === 'string')
+      && typeof session.round === 'number'
+      && Number.isFinite(session.round)
+      && session.round >= 0,
+  );
+}
+
+export function loadNewsSession(storage: Pick<Storage, 'getItem'> | undefined, key: string): NewsSession {
+  if (!storage) return emptyNewsSession();
+  try {
+    const raw = storage.getItem(key);
+    if (!raw) return emptyNewsSession();
+    const parsed: unknown = JSON.parse(raw);
+    return validSession(parsed) ? parsed : emptyNewsSession();
+  } catch {
+    return emptyNewsSession();
+  }
+}
+
+export function saveNewsSession(storage: Pick<Storage, 'setItem'> | undefined, key: string, session: NewsSession): void {
+  if (!storage) return;
+  try {
+    storage.setItem(key, JSON.stringify({
+      ...session,
+      pending: session.pending.slice(0, 8),
+      result: {
+        ...session.result,
+        resultados: (session.result.resultados || []).slice(-MAX_STORED_RESULTS),
+        consultasExecutadas: (session.result.consultasExecutadas || []).slice(-MAX_STORED_QUERIES),
+      },
+    }));
+  } catch {
+    // Storage can be unavailable or full. The live session still keeps working.
+  }
+}
 
 export function queryKey(query: AiLeadQuery): string {
   return query.termo.trim().toLocaleLowerCase('pt-BR');

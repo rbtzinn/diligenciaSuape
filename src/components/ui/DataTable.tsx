@@ -97,12 +97,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                   key={column.key}
                   scope="col"
                   className={cn(
-                    // Grudava em `top-0`, ou seja, no topo do contêiner
-                    // que rola — que fica atrás do cabeçalho da
-                    // página. O nome da coluna passava por cima da
-                    // fita de eixos. `thead-sticky` para na altura
-                    // real do cabeçalho e numa camada abaixo dele.
-                    'thead-sticky whitespace-nowrap border-b border-line bg-surface-subtle px-2.5 py-2 text-2xs font-semibold uppercase tracking-wide text-ink-3',
+                    'whitespace-nowrap border-b border-line bg-surface-subtle px-2.5 py-2 text-2xs font-semibold uppercase tracking-wide text-ink-3',
                     alignClass(column.align),
                     column.hideOnMobile && 'hidden md:table-cell',
                   )}
