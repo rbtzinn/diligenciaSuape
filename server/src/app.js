@@ -28,22 +28,48 @@ const configuredOrigins = String(process.env.CORS_ALLOWED_ORIGINS || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
-const allowedOrigins = new Set([
+
+const defaultAllowedOrigins = new Set([
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:8080',
   'http://127.0.0.1:8080',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'https://diligencia-suape.vercel.app',
+  'https://diligencia360-api.vercel.app',
   ...configuredOrigins,
 ]);
 
-app.use(cors({
+function isOriginAllowed(origin) {
+  if (!origin) return true;
+  if (defaultAllowedOrigins.has(origin)) return true;
+  try {
+    const url = new URL(origin);
+    if (
+      url.hostname.endsWith('.vercel.app') &&
+      (url.hostname.includes('diligencia-suape') || url.hostname.includes('diligencia360'))
+    ) {
+      return true;
+    }
+  } catch {
+    // Ignora formato inválido
+  }
+  return false;
+}
+
+const corsOptions = {
   credentials: true,
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   exposedHeaders: ['Retry-After'],
   origin(origin, callback) {
-    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    if (isOriginAllowed(origin)) return callback(null, true);
     return callback(new Error('Origem não autorizada pelo Diligência 360.'));
   },
-}));
+};
+
+app.use(cors(corsOptions));
 // Mantém margem abaixo do limite de 4,5 MB das Vercel Functions sem truncar
 // dossiês ricos em evidências e relações.
 app.use(express.json({ limit: '4mb' }));

@@ -56,7 +56,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(JSON.parse(savedDev));
           setIsLoading(false);
           return;
-        } catch {}
+        } catch {
+          // Ignora JSON corrompido no storage local
+          localStorage.removeItem('diligencia360_dev_user');
+        }
       }
     }
 

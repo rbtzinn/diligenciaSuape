@@ -486,6 +486,12 @@ test('rotas de consulta recusam acesso sem token', async (t) => {
     headers: { Origin: 'https://origem-nao-autorizada.example' },
   });
   assert.equal(corsResponse.status, 403);
+
+  const allowedCorsResponse = await fetch(`http://127.0.0.1:${address.port}/api/status`, {
+    headers: { Origin: 'https://diligencia-suape.vercel.app' },
+  });
+  assert.equal(allowedCorsResponse.status, 200);
+  assert.equal(allowedCorsResponse.headers.get('access-control-allow-origin'), 'https://diligencia-suape.vercel.app');
 });
 
 test('contrato federal só é marcado como confirmado pelo CNPJ exato', () => {

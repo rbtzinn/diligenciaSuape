@@ -117,7 +117,6 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   onOpenAiAnalysis,
   onOpenPncp,
   onDrillCompany,
-  onBackToDossier: _onBackToDossier,
 }) => {
   const { id: diligenceId } = diligence;
   const isCompactViewport = useCompactNetworkViewport();
