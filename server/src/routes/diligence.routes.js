@@ -11,23 +11,55 @@ const { parseSuapeQuestionnaire } = require('../services/questionnaire-parser.se
 
 const router = express.Router();
 
-// Rota para analisar questionário de diligência (.xlsx)
+router.use(authenticate);
+
+// Rota protegida para analisar questionário de diligência (.pdf, .xlsx, .xls)
 router.post('/parse-questionnaire', async (req, res) => {
   try {
     const { fileBase64, filename } = req.body || {};
-    if (!fileBase64) {
-      return res.status(400).json({ ok: false, erro: 'Arquivo base64 não fornecido.' });
+
+    if (!fileBase64 || typeof fileBase64 !== 'string') {
+      return res.status(400).json({ ok: false, erro: 'Arquivo base64 não fornecido ou em formato inválido.' });
     }
-    const buffer = Buffer.from(fileBase64, 'base64');
-    const parsed = await parseSuapeQuestionnaire(buffer);
-    return res.json({ ok: true, filename, ...parsed });
+
+    const safeFilename = String(filename || 'questionario.pdf').trim();
+    const ext = safeFilename.toLowerCase().slice(safeFilename.lastIndexOf('.'));
+    if (!['.pdf', '.xlsx', '.xls'].includes(ext)) {
+      return res.status(400).json({
+        ok: false,
+        erro: `Extensão de arquivo "${ext}" não permitida. Apenas documentos PDF (.pdf) ou planilhas Excel (.xlsx, .xls) são aceitos.`,
+      });
+    }
+
+    // Limite de segurança no payload Base64 (máx ~20 MB base64 correspondente a ~15 MB binário)
+    if (fileBase64.length > 20 * 1024 * 1024) {
+      return res.status(413).json({
+        ok: false,
+        erro: 'O arquivo excede o limite máximo permitido de 15 MB para processamento de questionário.',
+      });
+    }
+
+    let buffer;
+    try {
+      buffer = Buffer.from(fileBase64, 'base64');
+    } catch {
+      return res.status(400).json({ ok: false, erro: 'Codificação Base64 inválida ou corrompida.' });
+    }
+
+    if (!buffer || buffer.length === 0) {
+      return res.status(400).json({ ok: false, erro: 'O arquivo enviado está vazio.' });
+    }
+
+    const parsed = await parseSuapeQuestionnaire(buffer, safeFilename);
+    return res.json({ ok: true, filename: safeFilename, ...parsed });
   } catch (err) {
     console.error('[DiligenceRoutes] Erro ao processar questionário:', err.message);
-    return res.status(422).json({ ok: false, erro: `Falha ao analisar o questionário (.xlsx ou .pdf): ${err.message}` });
+    return res.status(422).json({
+      ok: false,
+      erro: `Falha ao analisar o questionário (${err.message})`,
+    });
   }
 });
-
-router.use(authenticate);
 
 router.post('/', async (req, res) => {
   try {

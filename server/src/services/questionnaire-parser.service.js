@@ -1,28 +1,34 @@
 // ==========================================================
 // DILIGÊNCIA 360 — SUAPE Questionnaire Parser Service
-// Extrai respostas e dados cadastrais de arquivos .xlsx e .pdf
-// do Questionário de Diligência de Integridade da SUAPE
+// Extração e normalização de questionários de diligência
 // Suporta:
-// 1. Planilhas Excel (.xlsx, .xls) — modelos "Questionário" e "Avaliação de Integridade"
-// 2. Documentos PDF (.pdf) — exportados do Excel, preenchidos digitalmente ou digitalizados
+// 1. Planilhas Excel (.xlsx e .xls via biblioteca oficial 'xlsx')
+// 2. Documentos PDF (.pdf via 'pdf-parse')
+// Respostas tri-state: true ('Sim'), false ('Não'), null ('Não identificado')
 // ==========================================================
 
-const AdmZip = require('adm-zip');
+const xlsx = require('xlsx');
 const { PDFParse } = require('pdf-parse');
 
 /**
- * Normaliza valores de respostas para "Sim" ou "Não"
+ * Normaliza respostas para tri-state:
+ * true = 'Sim'
+ * false = 'Não'
+ * null = 'Não identificado' (proibido presumir falso silenciosamente)
  */
 function normalizeAnswer(val) {
-  if (!val || typeof val !== 'string') return null;
+  if (val === true || val === false) return val;
+  if (val === null || val === undefined) return null;
+  if (typeof val !== 'string') return null;
+
   const clean = val.trim().toLowerCase();
-  if (['sim', 's', 'x', 'true', 'verdadeiro', '1'].includes(clean)) return 'Sim';
-  if (['não', 'nao', 'n', 'false', 'falso', '0'].includes(clean)) return 'Não';
+  if (['sim', 's', 'x', 'true', 'verdadeiro', '1'].includes(clean)) return true;
+  if (['não', 'nao', 'n', 'false', 'falso', '0'].includes(clean)) return false;
   return null;
 }
 
 /**
- * Detecta se o buffer corresponde a um documento PDF
+ * Verifica assinatura mágica de PDF (%PDF)
  */
 function isPdfBuffer(buffer) {
   if (!buffer || buffer.length < 4) return false;
@@ -30,50 +36,8 @@ function isPdfBuffer(buffer) {
 }
 
 /**
- * Extrai resposta de um trecho textual de PDF
- */
-function extractAnswerFromSnippet(snippet) {
-  if (!snippet) return 'Não';
-
-  // 1. Padrões explícitos com X / checado
-  // Ex: [X] Sim, (X) Sim, ☑ Sim, [x] SIM, Sim [X], Sim (X)
-  const simChecked = /(?:\[[xX]\]|\([xX]\)|☑|☒|✓|✔|■|●)\s*sim/i.test(snippet) ||
-                     /sim\s*(?:\[[xX]\]|\([xX]\)|☑|☒|✓|✔|■|●)/i.test(snippet);
-                     
-  const naoChecked = /(?:\[[xX]\]|\([xX]\)|☑|☒|✓|✔|■|●)\s*n[ãa]o/i.test(snippet) ||
-                     /n[ãa]o\s*(?:\[[xX]\]|\([xX]\)|☑|☒|✓|✔|■|●)/i.test(snippet);
-
-  if (simChecked && !naoChecked) return 'Sim';
-  if (naoChecked && !simChecked) return 'Não';
-
-  // 2. Se um está marcado com [ ] e o outro não
-  // Ex: [ ] Sim  Não  (indica que Sim não foi marcado)
-  const emptySim = /\[\s*\]\s*sim/i.test(snippet) || /sim\s*\[\s*\]/i.test(snippet);
-  const emptyNao = /\[\s*\]\s*n[ãa]o/i.test(snippet) || /n[ãa]o\s*\[\s*\]/i.test(snippet);
-
-  if (emptySim && !emptyNao) return 'Não';
-  if (emptyNao && !emptySim) return 'Sim';
-
-  // 3. Resposta textual isolada ("Resposta: Sim", "Resposta: Não" ou linha direta)
-  const lines = snippet.split('\n').map(l => l.trim()).filter(Boolean);
-  for (const line of lines) {
-    if (/^(?:resposta[:\s]*)?sim$/i.test(line)) return 'Sim';
-    if (/^(?:resposta[:\s]*)?n[ãa]o$/i.test(line)) return 'Não';
-  }
-
-  // 4. Verificação de palavras isoladas no trecho
-  const words = snippet.match(/\b(sim|n[ãa]o)\b/gi) || [];
-  if (words.length === 1) {
-    return normalizeAnswer(words[0]) || 'Não';
-  }
-
-  return 'Não';
-}
-
-/**
- * Lê e analisa um arquivo PDF de Questionário SUAPE
- * @param {Buffer} buffer - Buffer do arquivo .pdf
- * @returns {Promise<Object>} Dados extraídos e respostas mapeadas
+ * Extrai respostas de um arquivo PDF preenchido da SUAPE
+ * @param {Buffer} buffer - Buffer do PDF
  */
 async function parseSuapePdf(buffer) {
   let fullText = '';
@@ -81,74 +45,160 @@ async function parseSuapePdf(buffer) {
     const parser = new PDFParse({ data: buffer });
     const result = await parser.getText();
     await parser.destroy();
-    fullText = (result && result.text) ? result.text : '';
-  } catch (pdfErr) {
-    console.warn('[QuestionnaireParser] Falha na extração de texto do PDF:', pdfErr.message);
+    fullText = result && result.text ? result.text : '';
+  } catch (err) {
+    throw new Error(`Falha ao ler estrutura do documento PDF: ${err.message}`);
   }
 
-  const isScanned = fullText.trim().length < 30;
-
-  // Função para recortar a seção da pergunta
-  function getQuestionSnippet(qNum) {
-    if (isScanned) return '';
-    const esc = qNum.replace('.', '\\.');
-    // Procura o trecho após a menção de qNum até a próxima pergunta ou seção seguinte
-    const regex = new RegExp(`(?:^|[\\s(])${esc}[.)\\s][\\s\\S]*?(?=(?:\\n\\s*\\d+\\.\\d+|\\n\\s*7\\.\\d+|\\n\\s*8\\.|\\n\\s*8\\s|\\n\\s*Declaração|\\n\\s*DECLARAÇÃO|$))`, 'i');
-    const m = fullText.match(regex);
-    return m ? m[0] : '';
+  if (!fullText || fullText.trim().length < 20) {
+    throw new Error('O arquivo PDF está vazio ou é uma imagem escaneada sem camada de texto extraível.');
   }
 
-  const q4_4 = extractAnswerFromSnippet(getQuestionSnippet('4.4'));
-  const q5_2 = extractAnswerFromSnippet(getQuestionSnippet('5.2'));
-  const q7_1 = extractAnswerFromSnippet(getQuestionSnippet('7.1'));
-  const q7_2 = extractAnswerFromSnippet(getQuestionSnippet('7.2'));
-  const q7_3 = extractAnswerFromSnippet(getQuestionSnippet('7.3'));
-  const q7_4 = extractAnswerFromSnippet(getQuestionSnippet('7.4'));
-  const q7_5 = extractAnswerFromSnippet(getQuestionSnippet('7.5'));
-  const q7_6 = extractAnswerFromSnippet(getQuestionSnippet('7.6'));
-  const q7_7 = extractAnswerFromSnippet(getQuestionSnippet('7.7'));
-  const q7_8 = extractAnswerFromSnippet(getQuestionSnippet('7.8'));
-  const q7_9 = extractAnswerFromSnippet(getQuestionSnippet('7.9'));
+  // Divide o texto por páginas
+  const pageTexts = fullText.split(/-- \d+ of \d+ --/);
 
-  // CNPJ
-  const cnpjMatch = fullText.match(/\b\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\b/);
-  const cnpjDetectado = cnpjMatch ? cnpjMatch[0] : '';
+  // Helper para extrair sequências "Selecione \n Sim/Não" de uma página
+  function getDropdownSelections(pageText) {
+    const regex = /Selecione\s*\n\s*(Sim|Não|Nao)/gi;
+    const matches = [];
+    let m;
+    while ((m = regex.exec(pageText)) !== null) {
+      matches.push(m[1].toLowerCase().startsWith('s'));
+    }
+    return matches;
+  }
 
-  // Processo SEI
-  const seiMatch = fullText.match(/(?:SEI[:\s]*|Processo[:\s]*)?([0-9]{4,10}\.[0-9]{4,6}\/[0-9]{4}-[0-9]{2})/i);
-  const processoSeiDetectado = seiMatch ? `SEI: ${seiMatch[1]}` : '';
+  const answers = {
+    '4.4': null,
+    '5.2': null,
+    '7.1': null,
+    '7.2': null,
+    '7.3': null,
+    '7.4': null,
+    '7.5': null,
+    '7.6': null,
+    '7.7': null,
+    '7.8': null,
+    '7.9': null,
+    '8.2': null,
+    '8.7': null,
+    '9.0': null,
+    alcadaConselho: null,
+  };
 
-  // Diretoria
-  const dirMatch = fullText.match(/\b(DGP|DIRIN|DGO|DENG|PRESI|DAF|DPO)\b/i);
-  const diretoriaDetectada = dirMatch ? dirMatch[1].toUpperCase() : '';
+  // 1. Extração estrutural baseada no formulário padrão SUAPE (páginas)
+  // Página 2 contém 4.4 e 5.2
+  const p2 = pageTexts[1] || '';
+  const p2Sel = getDropdownSelections(p2);
+  if (p2Sel.length >= 2) {
+    answers['4.4'] = p2Sel[0];
+    answers['5.2'] = p2Sel[1];
+  }
 
-  // Razão Social
-  const rsMatch = fullText.match(/(?:Razão Social(?: e Tipo Societário)?|Nome Empresarial|Empresa)[:\s]*([^\n\r]+)/i);
-  let razaoSocialDetectada = rsMatch ? rsMatch[1].trim() : '';
-  if (razaoSocialDetectada.length > 80) razaoSocialDetectada = razaoSocialDetectada.slice(0, 80);
+  // Página 3 contém 6.1, 7.1, 7.2, 7.3, 7.4
+  const p3 = pageTexts[2] || '';
+  const p3Sel = getDropdownSelections(p3);
+  if (p3Sel.length >= 5) {
+    answers['7.1'] = p3Sel[1];
+    answers['7.2'] = p3Sel[2];
+    answers['7.3'] = p3Sel[3];
+    answers['7.4'] = p3Sel[4];
+  } else if (p3Sel.length >= 4) {
+    answers['7.1'] = p3Sel[0];
+    answers['7.2'] = p3Sel[1];
+    answers['7.3'] = p3Sel[2];
+    answers['7.4'] = p3Sel[3];
+  }
 
-  // Valor do contrato
-  let valorDetectado = null;
-  const valMatches = [...fullText.matchAll(/R\$\s*([\d\.,]+)/gi)];
-  for (const vm of valMatches) {
-    const rawVal = vm[1];
-    // Converte formato brasileiro 46.056,00 para número
-    const num = parseFloat(rawVal.replace(/\./g, '').replace(',', '.'));
-    if (!isNaN(num) && num > 50) {
-      valorDetectado = num;
-      break;
+  // Página 4 contém 7.5, 7.6, 7.7, 7.8, 7.9, 8.1
+  const p4 = pageTexts[3] || '';
+  const p4Sel = getDropdownSelections(p4);
+  if (p4Sel.length >= 5) {
+    answers['7.5'] = p4Sel[0];
+    answers['7.6'] = p4Sel[1];
+    answers['7.7'] = p4Sel[2];
+    answers['7.8'] = p4Sel[3];
+    answers['7.9'] = p4Sel[4];
+  }
+
+  // Página 5 contém 8.2 a 9.0 (Governança e Compliance)
+  const p5 = pageTexts[4] || '';
+  const p5Sel = getDropdownSelections(p5);
+  if (p5Sel.length >= 9) {
+    answers['8.2'] = p5Sel[0]; // Código de Ética
+    answers['8.7'] = p5Sel[5]; // Treinamento Alta Administração
+    answers['9.0'] = p5Sel[8]; // Compliance Officer
+  }
+
+  // 2. Heurística secundária: Procurar checkboxes explícitos [X] / (X) por proximidade caso as páginas não tenham dropdowns
+  const questionsToScan = ['4.4', '5.2', '7.1', '7.2', '7.3', '7.4', '7.5', '7.6', '7.7', '7.8', '7.9', '8.2', '8.7', '9.0'];
+  for (const q of questionsToScan) {
+    if (answers[q] === null) {
+      const qEsc = q.replace('.', '\\.');
+      const qRegex = new RegExp(`${qEsc}[^\\n]*\\n([\\s\\S]{1,400})`, 'i');
+      const match = fullText.match(qRegex);
+      if (match) {
+        const snippet = match[1];
+        const simChecked = /(?:\[[xX]\]|\([xX]\)|☑|☒|✓|✔|■|●)\s*sim/i.test(snippet);
+        const naoChecked = /(?:\[[xX]\]|\([xX]\)|☑|☒|✓|✔|■|●)\s*n[ãa]o/i.test(snippet);
+        if (simChecked && !naoChecked) answers[q] = true;
+        else if (naoChecked && !simChecked) answers[q] = false;
+      }
     }
   }
 
-  // Alçada do Conselho (Row 40 da planilha oficial: valor >= 10M ou menção explícita de Conselho)
-  const qAlcadaConselho = (valorDetectado !== null && valorDetectado >= 10000000) || /alçada do conselho/i.test(fullText);
+  // 3. Extração cadastral: CNPJ e Razão Social
+  const cnpjMatch = fullText.match(/\b\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\b/);
+  const cnpj = cnpjMatch ? cnpjMatch[0] : '';
 
-  // Flags da fórmula oficial:
-  // J16: =IF(OR(N23=TRUE(),N40=TRUE()),"Muito Alto",IF(OR(N28=TRUE()),"Alto",IF(N29=TRUE(),"Médio","Baixo")))
-  const n23 = q4_4 === 'Sim' || q5_2 === 'Sim';
-  const n28 = [q7_1, q7_3, q7_4, q7_5, q7_6, q7_7, q7_8, q7_9].some(a => a === 'Sim');
-  const n29 = q7_2 === 'Sim';
-  const n40 = qAlcadaConselho;
+  let razaoSocial = '';
+  const p1 = pageTexts[0] || '';
+  const corporateMatch = p1.match(/\n([A-Z0-9 .,&-]+?(?:S\/?A|LTDA|EIRELI|ME|EPP))\s*[\r\n]/i);
+  if (corporateMatch) {
+    razaoSocial = corporateMatch[1].trim().replace(/\t+/g, ' ');
+  } else {
+    const fallbackMatch = fullText.match(/Raz[ãa]o\s*Social[^:\n]*[:\n\t]*([^\n\r]+)/i);
+    if (fallbackMatch) {
+      const raw = fallbackMatch[1].trim();
+      if (!raw.toLowerCase().includes('informações') && !raw.toLowerCase().includes('dados gerais') && !raw.toLowerCase().includes('societário')) {
+        razaoSocial = raw.replace(/\t+/g, ' ').trim();
+      }
+    }
+  }
+
+  // 4. Campos que NÃO existem no questionário devem ser estritamente null (sem invenções)
+  let valorContrato = null;
+  const valorMatch = fullText.match(/R\$\s*([0-9]{1,3}(?:\.[0-9]{3})*\,[0-9]{2})/i);
+  if (valorMatch) {
+    const cleanNum = valorMatch[1].replace(/\./g, '').replace(',', '.');
+    valorContrato = parseFloat(cleanNum) || null;
+  }
+
+  let processoSei = null;
+  const seiMatch = fullText.match(/(?:processo|sei)\s*[:\s]*([0-9]{5,8}\.?[0-9]{4,8}\/?[0-9]{4}-[0-9]{2})/i);
+  if (seiMatch) {
+    processoSei = seiMatch[1];
+  }
+
+  let diretoria = null;
+  const dirMatch = fullText.match(/\b(DGP|DIRIN|DGO|DENG|PRESI|DAF|DPO)\b/i);
+  if (dirMatch) {
+    diretoria = dirMatch[1].toUpperCase();
+  }
+
+  const n23 = answers['4.4'] === true || answers['5.2'] === true;
+  const n40 = answers.alcadaConselho === true || (valorContrato !== null && valorContrato >= 10000000);
+  const n28 = [
+    answers['7.1'],
+    answers['7.3'],
+    answers['7.4'],
+    answers['7.5'],
+    answers['7.6'],
+    answers['7.7'],
+    answers['7.8'],
+    answers['7.9'],
+  ].some((v) => v === true);
+  const n29 = answers['7.2'] === true;
 
   let riscoCalculado = 'Baixo';
   if (n23 || n40) {
@@ -157,240 +207,187 @@ async function parseSuapePdf(buffer) {
     riscoCalculado = 'Alto';
   } else if (n29) {
     riscoCalculado = 'Médio';
+  }
+
+  const respostas = {};
+  for (const [k, v] of Object.entries(answers)) {
+    respostas[k] = v === true ? 'Sim' : v === false ? 'Não' : null;
   }
 
   return {
     ok: true,
     formato: 'PDF',
-    isScanned,
-    sheetIdentificada: isScanned ? 'PDF (Digitalizado/Imagem)' : 'Documento PDF',
-    aviso: isScanned
-      ? 'PDF digitalizado/sem texto selecionável. As 11 perguntas foram abertas para confirmação rápida com 1 clique.'
-      : null,
+    sheetIdentificada: 'Documento PDF',
     dadosGerais: {
-      razaoSocial: razaoSocialDetectada || '',
-      cnpj: cnpjDetectado || '',
-      valorContrato: valorDetectado,
-      processoSei: processoSeiDetectado || '',
-      diretoria: diretoriaDetectada || '',
+      razaoSocial,
+      cnpj,
+      valorContrato,
+      processoSei,
+      diretoria,
     },
-    respostas: {
-      '4.4': q4_4,
-      '5.2': q5_2,
-      '7.1': q7_1,
-      '7.2': q7_2,
-      '7.3': q7_3,
-      '7.4': q7_4,
-      '7.5': q7_5,
-      '7.6': q7_6,
-      '7.7': q7_7,
-      '7.8': q7_8,
-      '7.9': q7_9,
-      alcadaConselho: n40 ? 'Sim' : 'Não',
-    },
+    respostas,
+    rawAnswers: answers,
     flagsIntegridade: {
       n23_corrupcaoOuCrimes: n23,
       n40_alcadaConselho: n40,
-      n28_interacaoPublicaOuPEP: n28,
+      n28_interacaoPublicaOuPep: n28,
       n29_licencasOrdinarias: n29,
       riscoCalculado,
       detalhes: {
-        q4_4_corrupcaoPJ: q4_4 === 'Sim',
-        q5_2_crimesSocios: q5_2 === 'Sim',
-        q7_1_atividadeRegulada: q7_1 === 'Sim',
-        q7_2_licencasOrdinarias: q7_2 === 'Sim',
-        q7_3_licencasContratuais: q7_3 === 'Sim',
-        q7_4_interacaoPoderPublico: q7_4 === 'Sim',
-        q7_5_representacaoTerceiros: q7_5 === 'Sim',
-        q7_6_pepSocio: q7_6 === 'Sim',
-        q7_7_pepFamiliar: q7_7 === 'Sim',
-        q7_8_parentescoSuape: q7_8 === 'Sim',
-        q7_9_participacaoGoverno: q7_9 === 'Sim',
-        alcadaConselho: n40,
+        q4_4_corrupcaoPJ: answers['4.4'],
+        q5_2_crimesSocios: answers['5.2'],
+        q7_1_atividadeRegulada: answers['7.1'],
+        q7_2_licencasOrdinarias: answers['7.2'],
+        q7_3_licencasContratuais: answers['7.3'],
+        q7_4_interacaoPoderPublico: answers['7.4'],
+        q7_5_representacaoTerceiros: answers['7.5'],
+        q7_6_pepSocio: answers['7.6'],
+        q7_7_pepFamiliar: answers['7.7'],
+        q7_8_parentescoSuape: answers['7.8'],
+        q7_9_participacaoGoverno: answers['7.9'],
+        q8_2_codigoConduta: answers['8.2'],
+        q8_7_treinamentoGestao: answers['8.7'],
+        q9_0_complianceOfficer: answers['9.0'],
+        alcadaConselho: answers.alcadaConselho,
       },
     },
+    aviso: null,
   };
 }
 
 /**
- * Lê e analisa um arquivo XLSX de Questionário ou Avaliação de Integridade de SUAPE
- * @param {Buffer} buffer - Buffer do arquivo .xlsx
- * @returns {Object} Dados extraídos e respostas mapeadas
+ * Lê e analisa um arquivo Excel (.xlsx ou .xls) preenchido
+ * @param {Buffer} buffer - Buffer do arquivo Excel
  */
 function parseSuapeXlsx(buffer) {
-  const zip = new AdmZip(buffer);
-  
-  // 1. Identifica a planilha correta
-  const workbookXml = zip.readAsText('xl/workbook.xml');
-  const sharedStringsXml = zip.readAsText('xl/sharedStrings.xml');
-
-  // Mapear strings compartilhadas
-  const sharedStrings = [];
-  if (sharedStringsXml) {
-    const siRegex = /<si>([\s\S]*?)<\/si>/g;
-    let m;
-    while ((m = siRegex.exec(sharedStringsXml)) !== null) {
-      const tMatches = [...m[1].matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g)];
-      sharedStrings.push(tMatches.map(x => x[1]).join(''));
-    }
+  let workbook;
+  try {
+    workbook = xlsx.read(buffer, { type: 'buffer', cellFormula: false });
+  } catch (err) {
+    throw new Error(`Falha ao ler arquivo Excel (.xlsx/.xls): ${err.message}`);
   }
 
-  // Identificar sheets
-  const sheets = [];
-  const sheetRegex = /<sheet[^>]*name="([^"]+)"[^>]*sheetId="([^"]+)"[^>]*r:id="([^"]+)"/g;
-  let sm;
-  while ((sm = sheetRegex.exec(workbookXml)) !== null) {
-    sheets.push({ name: sm[1], sheetId: sm[2], rId: sm[3] });
+  if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+    throw new Error('A pasta de trabalho do Excel não possui planilhas válidas.');
   }
 
-  const relsXml = zip.readAsText('xl/_rels/workbook.xml.rels');
-  function getSheetPath(rId) {
-    if (!relsXml) return null;
-    const relRegex = new RegExp(`Id="${rId}"[^>]*Target="([^"]+)"`);
-    const relMatch = relsXml.match(relRegex);
-    return relMatch ? 'xl/' + relMatch[1].replace(/^\//, '') : null;
+  // Identifica a melhor aba (procura por "Questionário", "Questionario", ou primeira não-apoio)
+  let targetSheetName = workbook.SheetNames.find(
+    (name) => name.toLowerCase().includes('question') || name.toLowerCase().includes('integridade')
+  );
+  if (!targetSheetName) {
+    targetSheetName = workbook.SheetNames.find(
+      (name) => !name.toLowerCase().includes('apoio') && !name.toLowerCase().includes('instru')
+    ) || workbook.SheetNames[0];
   }
 
-  // Se houver sheet de "Avaliação de Integridade", lemos também
-  const avaliacaoSheetMeta = sheets.find(s => s.name.toLowerCase().includes('avaliação') || s.name.toLowerCase().includes('avaliacao'));
-  // Sheet de Questionário ou CheckList
-  const questionarioSheetMeta = sheets.find(s => 
-    s.name.toLowerCase().includes('questionário') || 
-    s.name.toLowerCase().includes('questionario') || 
-    s.name.toLowerCase().includes('checklist')
-  ) || sheets[0];
-
-  // Helper para extrair mapa de células de uma sheet
-  function parseSheetCells(sheetPath) {
-    if (!sheetPath) return {};
-    const sheetXml = zip.readAsText(sheetPath);
-    if (!sheetXml) return {};
-    const cellRegex = /<c r="([A-Z0-9]+)"(?:[^>]*?t="([^"]*)")?[^>]*>(?:<v>([\s\S]*?)<\/v>)?<\/c>/g;
-    let cm;
-    const cells = {};
-    while ((cm = cellRegex.exec(sheetXml)) !== null) {
-      const ref = cm[1];
-      const t = cm[2];
-      let v = cm[3];
-      if (t === 's' && v !== undefined) {
-        v = sharedStrings[parseInt(v, 10)] ?? v;
-      }
-      cells[ref] = v;
-    }
-    return cells;
+  const sheet = workbook.Sheets[targetSheetName];
+  if (!sheet) {
+    throw new Error(`Não foi possível abrir a planilha "${targetSheetName}".`);
   }
 
-  const qCells = parseSheetCells(questionarioSheetMeta ? getSheetPath(questionarioSheetMeta.rId) : null);
-  const aCells = avaliacaoSheetMeta ? parseSheetCells(getSheetPath(avaliacaoSheetMeta.rId)) : {};
+  // Converte a planilha para linhas de objetos para busca textual flexível
+  const range = xlsx.utils.decode_range(sheet['!ref'] || 'A1:Z300');
 
-  // Busca por varredura nas proximidades de um item (ex: "4.4", "7.3")
-  function findAnswerForQuestion(questionNum, specificRefs = []) {
-    // 1. Tenta refs específicas na sheet de avaliação de integridade (ex: L23, L28...)
-    for (const ref of specificRefs) {
-      if (aCells[ref]) {
-        const norm = normalizeAnswer(aCells[ref]);
-        if (norm) return norm;
-      }
-      if (qCells[ref]) {
-        const norm = normalizeAnswer(qCells[ref]);
-        if (norm) return norm;
-      }
-    }
+  const answers = {
+    '4.4': null,
+    '5.2': null,
+    '7.1': null,
+    '7.2': null,
+    '7.3': null,
+    '7.4': null,
+    '7.5': null,
+    '7.6': null,
+    '7.7': null,
+    '7.8': null,
+    '7.9': null,
+    '8.2': null,
+    '8.7': null,
+    '9.0': null,
+    alcadaConselho: null,
+  };
 
-    // 2. Busca na sheet de questionário nas proximidades da menção ao número
-    for (const [ref, text] of Object.entries(qCells)) {
-      if (typeof text === 'string' && (text.startsWith(questionNum) || text.includes(` ${questionNum} `) || text.includes(` ${questionNum}.`))) {
-        const row = parseInt(ref.replace(/^[A-Z]+/, ''), 10);
-        // Analisa linhas próximas
-        for (let r = row; r <= row + 4; r++) {
-          for (const col of ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N']) {
-            const val = qCells[`${col}${r}`];
-            const norm = normalizeAnswer(val);
-            if (norm) return norm;
+  // Helper para buscar células contendo o identificador e ler a resposta nas colunas vizinhas
+  function findAnswerNear(query) {
+    for (let r = range.s.r; r <= range.e.r; r++) {
+      for (let c = range.s.c; c <= Math.min(range.e.c, 6); c++) {
+        const addr = xlsx.utils.encode_cell({ r, c });
+        const cell = sheet[addr];
+        if (cell && typeof cell.v === 'string' && cell.v.includes(query)) {
+          // Busca nas células até 3 linhas abaixo e colunas adjacentes (C, D, E, F)
+          for (let dr = 0; dr <= 3; dr++) {
+            for (let dc = 0; dc <= 6; dc++) {
+              const targetAddr = xlsx.utils.encode_cell({ r: r + dr, c: c + dc });
+              const targetCell = sheet[targetAddr];
+              if (targetCell) {
+                const norm = normalizeAnswer(String(targetCell.v));
+                if (norm !== null) return norm;
+              }
+            }
           }
         }
       }
     }
-
-    return 'Não';
+    return null;
   }
 
-  // Mapeamento das questões com referências tanto do Questionário quanto da Avaliação de Integridade (L23..L40)
-  const q4_4 = findAnswerForQuestion('4.4', ['L23', 'C69', 'C70']);
-  const q5_2 = findAnswerForQuestion('5.2', ['L24', 'B89', 'B90', 'C89']);
-  const q7_1 = findAnswerForQuestion('7.1', ['L28', 'C103', 'C104']);
-  const q7_2 = findAnswerForQuestion('7.2', ['L29', 'C112', 'C113']);
-  const q7_3 = findAnswerForQuestion('7.3', ['L30', 'C122', 'C123']);
-  const q7_4 = findAnswerForQuestion('7.4', ['L31', 'C131', 'C132']);
-  const q7_5 = findAnswerForQuestion('7.5', ['L32', 'C140', 'C141']);
-  const q7_6 = findAnswerForQuestion('7.6', ['L33', 'C150', 'C151']);
-  const q7_7 = findAnswerForQuestion('7.7', ['L34', 'C159', 'C160']);
-  const q7_8 = findAnswerForQuestion('7.8', ['L35', 'C167', 'C168']);
-  const q7_9 = findAnswerForQuestion('7.9', ['L36', 'C176', 'C177']);
-  const qAlcadaConselho = findAnswerForQuestion('Conselho', ['L40']) === 'Sim';
+  answers['4.4'] = findAnswerNear('4.4');
+  answers['5.2'] = findAnswerNear('5.2');
+  answers['7.1'] = findAnswerNear('7.1');
+  answers['7.2'] = findAnswerNear('7.2');
+  answers['7.3'] = findAnswerNear('7.3');
+  answers['7.4'] = findAnswerNear('7.4');
+  answers['7.5'] = findAnswerNear('7.5');
+  answers['7.6'] = findAnswerNear('7.6');
+  answers['7.7'] = findAnswerNear('7.7');
+  answers['7.8'] = findAnswerNear('7.8');
+  answers['7.9'] = findAnswerNear('7.9');
+  answers['8.2'] = findAnswerNear('8.2');
+  answers['8.7'] = findAnswerNear('8.7');
+  answers['9.0'] = findAnswerNear('9.0');
 
-  // Extração inteligente de dados da empresa e contratação
-  let cnpjDetectado = null;
-  let razaoSocialDetectada = null;
-  let valorDetectado = null;
-  let processoSeiDetectado = null;
-  let diretoriaDetectada = null;
-
-  const cnpjRegex = /\b\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\b/;
-  const seiRegex = /(?:SEI[:\s]*|Processo[:\s]*)?([0-9]{10}\.[0-9]{6}\/[0-9]{4}-[0-9]{2})/i;
-  const diretoriaRegex = /\b(DGP|DIRIN|DGO|DENG|PRESI|DAF|DPO)\b/i;
-
-  const allCells = { ...qCells, ...aCells };
-
-  for (const [ref, val] of Object.entries(allCells)) {
-    if (typeof val !== 'string') continue;
-    const text = val.trim();
-
-    // CNPJ
-    if (!cnpjDetectado) {
-      const cnpjMatch = text.match(cnpjRegex);
-      if (cnpjMatch) cnpjDetectado = cnpjMatch[0];
-    }
-
-    // Processo SEI
-    if (!processoSeiDetectado) {
-      const seiMatch = text.match(seiRegex);
-      if (seiMatch) processoSeiDetectado = `SEI: ${seiMatch[1]}`;
-    }
-
-    // Diretoria
-    if (!diretoriaDetectada) {
-      const dirMatch = text.match(diretoriaRegex);
-      if (dirMatch) diretoriaDetectada = dirMatch[1].toUpperCase();
-    }
-
-    // Razão Social (quando no bloco de informações cadastrais 1.1)
-    if (!razaoSocialDetectada && (text.includes('Razão Social e Tipo Societário') || text.includes('Razao Social e Tipo'))) {
-      const row = parseInt(ref.replace(/^[A-Z]+/, ''), 10);
-      for (const col of ['C', 'D', 'E', 'F', 'G', 'H']) {
-        const candidate = allCells[`${col}${row}`];
-        if (candidate && typeof candidate === 'string' && candidate.trim().length > 2 && !candidate.includes(':') && candidate !== 'Objeto Social:') {
-          razaoSocialDetectada = candidate.trim();
-          break;
+  // Extrai CNPJ e Razão Social
+  let cnpj = '';
+  let razaoSocial = '';
+  for (let r = range.s.r; r <= Math.min(range.e.r, 40); r++) {
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const addr = xlsx.utils.encode_cell({ r, c });
+      const cell = sheet[addr];
+      if (cell && typeof cell.v === 'string') {
+        const val = cell.v.trim();
+        if (/\b\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\b/.test(val)) {
+          const m = val.match(/\b\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\b/);
+          if (m && !cnpj) cnpj = m[0];
+        }
+        if (val.toLowerCase().includes('razão social') || val.toLowerCase().includes('razao social')) {
+          const rightCell = sheet[xlsx.utils.encode_cell({ r, c: c + 1 })];
+          if (rightCell && typeof rightCell.v === 'string' && rightCell.v.trim() && !razaoSocial) {
+            razaoSocial = rightCell.v.trim();
+          } else {
+            const nextAddr = xlsx.utils.encode_cell({ r: r + 1, c });
+            const nextCell = sheet[nextAddr];
+            if (nextCell && typeof nextCell.v === 'string' && !razaoSocial) {
+              razaoSocial = nextCell.v.trim();
+            }
+          }
         }
       }
     }
-
-    // Valor do contrato
-    if (!valorDetectado) {
-      if (text.includes('R$')) {
-        const num = parseFloat(text.replace(/[^\d,-]/g, '').replace(',', '.'));
-        if (!isNaN(num) && num > 100) valorDetectado = num;
-      }
-    }
   }
 
-  // Flags da fórmula oficial:
-  // J16: =IF(OR(N23=TRUE(),N40=TRUE()),"Muito Alto",IF(OR(N28=TRUE()),"Alto",IF(N29=TRUE(),"Médio","Baixo")))
-  const n23 = q4_4 === 'Sim' || q5_2 === 'Sim';
-  const n28 = [q7_1, q7_3, q7_4, q7_5, q7_6, q7_7, q7_8, q7_9].some(a => a === 'Sim');
-  const n29 = q7_2 === 'Sim';
-  const n40 = qAlcadaConselho || (valorDetectado !== null && valorDetectado >= 10000000);
+  const n23 = answers['4.4'] === true || answers['5.2'] === true;
+  const n40 = answers.alcadaConselho === true;
+  const n28 = [
+    answers['7.1'],
+    answers['7.3'],
+    answers['7.4'],
+    answers['7.5'],
+    answers['7.6'],
+    answers['7.7'],
+    answers['7.8'],
+    answers['7.9'],
+  ].some((v) => v === true);
+  const n29 = answers['7.2'] === true;
 
   let riscoCalculado = 'Baixo';
   if (n23 || n40) {
@@ -401,65 +398,82 @@ function parseSuapeXlsx(buffer) {
     riscoCalculado = 'Médio';
   }
 
+  const respostas = {};
+  for (const [k, v] of Object.entries(answers)) {
+    respostas[k] = v === true ? 'Sim' : v === false ? 'Não' : null;
+  }
+
   return {
     ok: true,
-    formato: 'XLSX',
-    sheetIdentificada: questionarioSheetMeta ? questionarioSheetMeta.name : 'Questionário',
+    formato: 'Excel',
+    sheetIdentificada: targetSheetName,
     dadosGerais: {
-      razaoSocial: razaoSocialDetectada || '',
-      cnpj: cnpjDetectado || '',
-      valorContrato: valorDetectado,
-      processoSei: processoSeiDetectado || '',
-      diretoria: diretoriaDetectada || '',
+      razaoSocial,
+      cnpj,
+      valorContrato: null,
+      processoSei: null,
+      diretoria: null,
     },
-    respostas: {
-      '4.4': q4_4,
-      '5.2': q5_2,
-      '7.1': q7_1,
-      '7.2': q7_2,
-      '7.3': q7_3,
-      '7.4': q7_4,
-      '7.5': q7_5,
-      '7.6': q7_6,
-      '7.7': q7_7,
-      '7.8': q7_8,
-      '7.9': q7_9,
-      alcadaConselho: n40 ? 'Sim' : 'Não',
-    },
+    respostas,
+    rawAnswers: answers,
     flagsIntegridade: {
       n23_corrupcaoOuCrimes: n23,
       n40_alcadaConselho: n40,
-      n28_interacaoPublicaOuPEP: n28,
+      n28_interacaoPublicaOuPep: n28,
       n29_licencasOrdinarias: n29,
       riscoCalculado,
       detalhes: {
-        q4_4_corrupcaoPJ: q4_4 === 'Sim',
-        q5_2_crimesSocios: q5_2 === 'Sim',
-        q7_1_atividadeRegulada: q7_1 === 'Sim',
-        q7_2_licencasOrdinarias: q7_2 === 'Sim',
-        q7_3_licencasContratuais: q7_3 === 'Sim',
-        q7_4_interacaoPoderPublico: q7_4 === 'Sim',
-        q7_5_representacaoTerceiros: q7_5 === 'Sim',
-        q7_6_pepSocio: q7_6 === 'Sim',
-        q7_7_pepFamiliar: q7_7 === 'Sim',
-        q7_8_parentescoSuape: q7_8 === 'Sim',
-        q7_9_participacaoGoverno: q7_9 === 'Sim',
-        alcadaConselho: n40,
+        q4_4_corrupcaoPJ: answers['4.4'],
+        q5_2_crimesSocios: answers['5.2'],
+        q7_1_atividadeRegulada: answers['7.1'],
+        q7_2_licencasOrdinarias: answers['7.2'],
+        q7_3_licencasContratuais: answers['7.3'],
+        q7_4_interacaoPoderPublico: answers['7.4'],
+        q7_5_representacaoTerceiros: answers['7.5'],
+        q7_6_pepSocio: answers['7.6'],
+        q7_7_pepFamiliar: answers['7.7'],
+        q7_8_parentescoSuape: answers['7.8'],
+        q7_9_participacaoGoverno: answers['7.9'],
+        q8_2_codigoConduta: answers['8.2'],
+        q8_7_treinamentoGestao: answers['8.7'],
+        q9_0_complianceOfficer: answers['9.0'],
+        alcadaConselho: answers.alcadaConselho,
       },
     },
+    aviso: null,
   };
 }
 
 /**
- * Função principal que roteia para o parser apropriado (.pdf ou .xlsx)
- * @param {Buffer} buffer - Buffer binário do arquivo
- * @returns {Promise<Object>} Resultado da análise
+ * Função principal do parser de questionários de diligência SUAPE
+ * @param {Buffer} buffer - Buffer do arquivo
+ * @param {string} [filename] - Nome original do arquivo
  */
-async function parseSuapeQuestionnaire(buffer) {
-  if (isPdfBuffer(buffer)) {
+async function parseSuapeQuestionnaire(buffer, filename = '') {
+  if (!buffer || buffer.length === 0) {
+    throw new Error('Arquivo não fornecido ou buffer vazio.');
+  }
+
+  // Limite máximo de segurança: 15 MB
+  if (buffer.length > 15 * 1024 * 1024) {
+    throw new Error('O arquivo excede o tamanho máximo permitido de 15 MB.');
+  }
+
+  const isPdf = isPdfBuffer(buffer) || filename.toLowerCase().endsWith('.pdf');
+  const isExcel =
+    filename.toLowerCase().endsWith('.xlsx') ||
+    filename.toLowerCase().endsWith('.xls') ||
+    (!isPdf && buffer.slice(0, 2).toString() === 'PK'); // ZIP / XLSX magic number
+
+  if (isPdf) {
     return await parseSuapePdf(buffer);
   }
-  return parseSuapeXlsx(buffer);
+
+  if (isExcel) {
+    return parseSuapeXlsx(buffer);
+  }
+
+  throw new Error('Formato de arquivo não suportado. Por favor, envie um arquivo em PDF (.pdf) ou Excel (.xlsx, .xls).');
 }
 
 module.exports = {

@@ -1,17 +1,14 @@
-// ==========================================================
-// DILIGÊNCIA 360 — Avaliação de Integridade Oficial SUAPE
-// & Gerador da Linha para o Mapa de Risco de Terceiros
-// Fórmulas Oficiais da Planilha "Avaliação de Integridade - xx.xlsx"
-// ==========================================================
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import type { DiligenceItem, ProcessDiscovery } from '../types';
 import { Icons } from '../../../components/ui/Icons';
+import { getFirebaseIdToken } from '../../../lib/firebase';
 import {
   evaluateSuapeIntegrity,
   generateRiskMapRow,
   SUAPE_QUESTION_TEXTS,
   type SuapeCalculatedRisk,
+  type QuestionnaireAnswer,
+  type IntegrityAnswers,
 } from '../utils/suapeRiskMapRowGenerator';
 
 interface SuapeIntegrityEvaluationViewProps {
@@ -64,20 +61,23 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
     aviso?: string | null;
   } | null>(null);
 
-  // Respostas detalhadas dos itens da Avaliação de Integridade oficial
-  const [questionAnswers, setQuestionAnswers] = useState<Record<string, boolean>>({
-    '4.4': false,
-    '5.2': false,
-    '7.1': false,
-    '7.2': false,
-    '7.3': false,
-    '7.4': false,
-    '7.5': false,
-    '7.6': false,
-    '7.7': false,
-    '7.8': false,
-    '7.9': false,
-    alcadaConselho: false,
+  // Respostas detalhadas dos itens da Avaliação de Integridade oficial (tri-state: true | false | null)
+  const [questionAnswers, setQuestionAnswers] = useState<IntegrityAnswers>({
+    '4.4': null,
+    '5.2': null,
+    '7.1': null,
+    '7.2': null,
+    '7.3': null,
+    '7.4': null,
+    '7.5': null,
+    '7.6': null,
+    '7.7': null,
+    '7.8': null,
+    '7.9': null,
+    '8.2': null,
+    '8.7': null,
+    '9.0': null,
+    alcadaConselho: null,
   });
 
   // Salva analista e diretoria no localStorage
@@ -91,8 +91,9 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
 
   // Função para processar o upload do questionário (.pdf ou .xlsx)
   const handleFileUpload = async (file: File) => {
-    const isPdf = file.name.toLowerCase().endsWith('.pdf');
-    const isExcel = file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls');
+    const safeName = file.name.toLowerCase();
+    const isPdf = safeName.endsWith('.pdf');
+    const isExcel = safeName.endsWith('.xlsx') || safeName.endsWith('.xls');
 
     if (!isPdf && !isExcel) {
       setUploadError('Por favor, selecione um arquivo válido em PDF (.pdf) ou Excel (.xlsx, .xls).');
@@ -115,9 +116,13 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
       reader.readAsDataURL(file);
       const fileBase64 = await base64Promise;
 
+      const token = await getFirebaseIdToken();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const response = await fetch('/api/diligences/parse-questionnaire', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ filename: file.name, fileBase64 }),
       });
 
@@ -142,24 +147,27 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
       }
 
       const detalhes = data.flagsIntegridade?.detalhes || {};
-      const newAnswers = {
-        '4.4': Boolean(detalhes.q4_4_corrupcaoPJ),
-        '5.2': Boolean(detalhes.q5_2_crimesSocios),
-        '7.1': Boolean(detalhes.q7_1_atividadeRegulada),
-        '7.2': Boolean(detalhes.q7_2_licencasOrdinarias),
-        '7.3': Boolean(detalhes.q7_3_licencasContratuais),
-        '7.4': Boolean(detalhes.q7_4_interacaoPoderPublico),
-        '7.5': Boolean(detalhes.q7_5_representacaoTerceiros),
-        '7.6': Boolean(detalhes.q7_6_pepSocio),
-        '7.7': Boolean(detalhes.q7_7_pepFamiliar),
-        '7.8': Boolean(detalhes.q7_8_parentescoSuape),
-        '7.9': Boolean(detalhes.q7_9_participacaoGoverno),
-        alcadaConselho: Boolean(detalhes.alcadaConselho),
+      const newAnswers: IntegrityAnswers = {
+        '4.4': detalhes.q4_4_corrupcaoPJ ?? null,
+        '5.2': detalhes.q5_2_crimesSocios ?? null,
+        '7.1': detalhes.q7_1_atividadeRegulada ?? null,
+        '7.2': detalhes.q7_2_licencasOrdinarias ?? null,
+        '7.3': detalhes.q7_3_licencasContratuais ?? null,
+        '7.4': detalhes.q7_4_interacaoPoderPublico ?? null,
+        '7.5': detalhes.q7_5_representacaoTerceiros ?? null,
+        '7.6': detalhes.q7_6_pepSocio ?? null,
+        '7.7': detalhes.q7_7_pepFamiliar ?? null,
+        '7.8': detalhes.q7_8_parentescoSuape ?? null,
+        '7.9': detalhes.q7_9_participacaoGoverno ?? null,
+        '8.2': detalhes.q8_2_codigoConduta ?? null,
+        '8.7': detalhes.q8_7_treinamentoGestao ?? null,
+        '9.0': detalhes.q9_0_complianceOfficer ?? null,
+        alcadaConselho: detalhes.alcadaConselho ?? null,
       };
 
       setQuestionAnswers(newAnswers);
 
-      const answeredCount = Object.values(newAnswers).filter(Boolean).length;
+      const answeredCount = Object.values(newAnswers).filter((v) => v !== null).length;
       setAttachedFile({
         name: file.name,
         size: file.size,
@@ -182,25 +190,28 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
     setUploadError(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
     setQuestionAnswers({
-      '4.4': false,
-      '5.2': false,
-      '7.1': false,
-      '7.2': false,
-      '7.3': false,
-      '7.4': false,
-      '7.5': false,
-      '7.6': false,
-      '7.7': false,
-      '7.8': false,
-      '7.9': false,
-      alcadaConselho: false,
+      '4.4': null,
+      '5.2': null,
+      '7.1': null,
+      '7.2': null,
+      '7.3': null,
+      '7.4': null,
+      '7.5': null,
+      '7.6': null,
+      '7.7': null,
+      '7.8': null,
+      '7.9': null,
+      '8.2': null,
+      '8.7': null,
+      '9.0': null,
+      alcadaConselho: null,
     });
   };
 
-  const handleToggleAnswer = (key: string) => {
+  const handleSetAnswer = (key: keyof IntegrityAnswers, value: QuestionnaireAnswer) => {
     setQuestionAnswers((prev) => ({
       ...prev,
-      [key]: !prev[key],
+      [key]: value,
     }));
   };
 
@@ -227,20 +238,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
   }, [valorContratoStr]);
 
   const evaluation = useMemo(() => {
-    return evaluateSuapeIntegrity(diligence, valorNumerico, {
-      q4_4: questionAnswers['4.4'],
-      q5_2: questionAnswers['5.2'],
-      q7_1: questionAnswers['7.1'],
-      q7_2: questionAnswers['7.2'],
-      q7_3: questionAnswers['7.3'],
-      q7_4: questionAnswers['7.4'],
-      q7_5: questionAnswers['7.5'],
-      q7_6: questionAnswers['7.6'],
-      q7_7: questionAnswers['7.7'],
-      q7_8: questionAnswers['7.8'],
-      q7_9: questionAnswers['7.9'],
-      alcadaConselho: questionAnswers.alcadaConselho,
-    });
+    return evaluateSuapeIntegrity(diligence, valorNumerico, questionAnswers);
   }, [diligence, valorNumerico, questionAnswers]);
 
   const riskMapRow = useMemo(() => {
@@ -266,9 +264,11 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
       valorContrato: formattedValor,
       notaTecnica,
       processoSei,
+      answers: questionAnswers,
       customEvaluation: evaluation,
       customFatorRisco1: evaluation.fatorRisco1,
       customFatorRisco2: evaluation.fatorRisco2,
+      customFatorRisco4: evaluation.fatorRisco4,
       customPlanoAcao: evaluation.recommendedAction,
     });
   }, [
@@ -284,6 +284,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
     valorContratoStr,
     notaTecnica,
     processoSei,
+    questionAnswers,
     evaluation,
   ]);
 
@@ -330,6 +331,80 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
   };
 
   const badgeStyle = riskBadgeColors[evaluation.calculatedRisk];
+
+  const renderTriStateQuestion = (
+    key: keyof IntegrityAnswers,
+    label: string,
+    description: string
+  ) => {
+    const val = questionAnswers[key];
+    const isUnset = val === null;
+
+    return (
+      <div
+        key={key}
+        className={`rounded-xl border p-3.5 transition-all ${
+          isUnset
+            ? 'border-amber-300 bg-amber-50/50'
+            : val === true
+            ? 'border-rose-200 bg-white shadow-2xs'
+            : 'border-slate-200 bg-white'
+        }`}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-800">{label}</span>
+              {isUnset && (
+                <span className="rounded bg-amber-200 px-1.5 py-0.5 text-3xs font-black text-amber-900 animate-pulse">
+                  Requer confirmação
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-2xs leading-relaxed text-slate-500 line-clamp-3" title={description}>
+              {description}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => handleSetAnswer(key, true)}
+              className={`rounded-md px-2.5 py-1 text-2xs font-extrabold transition-all ${
+                val === true
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-rose-700 hover:bg-white/60'
+              }`}
+            >
+              Sim
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSetAnswer(key, false)}
+              className={`rounded-md px-2.5 py-1 text-2xs font-extrabold transition-all ${
+                val === false
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-emerald-700 hover:bg-white/60'
+              }`}
+            >
+              Não
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSetAnswer(key, null)}
+              className={`rounded-md px-2 py-1 text-2xs font-extrabold transition-all ${
+                isUnset
+                  ? 'bg-amber-500 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-slate-700 hover:bg-white/60'
+              }`}
+              title="Não identificado no questionário (requer confirmação humana)"
+            >
+              ?
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="w-full flex-1 overflow-x-hidden bg-slate-50 text-slate-900 pb-16">
@@ -443,12 +518,12 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                   <h2 className="text-sm font-black text-[#0F2D59]">
                     Questionário de Diligência Preenchido (.pdf ou .xlsx)
                   </h2>
-                  <span className="rounded bg-emerald-100 px-2 py-0.5 text-3xs font-black text-emerald-800">
-                    Automação 100% Correta
+                  <span className="rounded bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-3xs font-extrabold text-indigo-700">
+                    Extração Assistida · Validação Humana
                   </span>
                 </div>
                 <p className="text-xs text-slate-500">
-                  Anexe o questionário devolvido pelo terceiro (em PDF assinado/digital ou planilha Excel) para extrair as respostas (4.4, 5.2, 7.1 a 7.9) e calcular o risco sem erros.
+                  Anexe o questionário devolvido pelo terceiro (PDF assinado ou Excel) para extrair as respostas oficiais (4.4, 5.2, 7.1 a 7.9) com conferência humana obrigatória.
                 </p>
               </div>
             </div>
@@ -739,225 +814,107 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
 
         {/* SEÇÃO 3: CHECKLIST AUDITÁVEL DAS PERGUNTAS DO QUESTIONÁRIO (INTERATIVO) */}
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-sm font-black text-[#0F2D59]">
-                Checklist dos Fatores de Integridade (Perguntas Oficiais SUAPE)
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-black text-[#0F2D59]">
+                  Checklist dos Fatores de Integridade (Perguntas Oficiais SUAPE)
+                </h2>
+                <span className="rounded bg-slate-100 px-2 py-0.5 text-3xs font-extrabold text-slate-600">
+                  Respostas Tri-State Oficiais
+                </span>
+              </div>
               <p className="text-2xs text-slate-500 mt-0.5">
-                Alterne ou revise as respostas do questionário com 1 clique para auditar o impacto imediato na fórmula J16.
+                Revise ou confirme as respostas extraídas do questionário (Sim, Não ou Não identificado) para auditar o impacto imediato na fórmula J16 e nas colunas 26 a 28 do Mapa de Risco.
               </p>
             </div>
-            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-3xs font-bold text-slate-600">
-              11 Fatores Auditados
-            </span>
+            {evaluation.unidentifiedItems.length > 0 && (
+              <span className="rounded-full bg-amber-100 px-2.5 py-1 text-3xs font-black text-amber-900 border border-amber-300">
+                {evaluation.unidentifiedItems.length} pendente(s) de confirmação
+              </span>
+            )}
           </div>
 
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="mt-4 space-y-4">
             {/* GRUPO N23: FRAUDE E CORRUPÇÃO */}
-            <div className="rounded-xl border border-rose-100 bg-rose-50/30 p-3 space-y-2">
-              <div className="flex items-center justify-between border-b border-rose-100 pb-1.5">
+            <div className="rounded-xl border border-rose-100 bg-rose-50/20 p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-rose-100 pb-2">
                 <span className="text-3xs font-black uppercase tracking-wider text-rose-800">
-                  Impacto Célula N23 → Risco Muito Alto
+                  Gatilho Célula N23 → Risco Muito Alto
                 </span>
                 <span className="rounded bg-rose-100 px-1.5 py-0.5 text-3xs font-bold text-rose-900">
-                  N23
+                  N23 (Itens 4.4 e 5.2)
                 </span>
               </div>
-
-              <label className="flex items-start gap-2.5 p-1 rounded-lg hover:bg-rose-50 cursor-pointer transition-colors">
-                <input
-                  type="checkbox"
-                  checked={questionAnswers['4.4']}
-                  onChange={() => handleToggleAnswer('4.4')}
-                  className="mt-0.5 h-4 w-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500"
-                />
-                <div className="text-xs">
-                  <span className="font-bold text-slate-900">Item 4.4:</span>{' '}
-                  <span className="text-slate-700">{SUAPE_QUESTION_TEXTS['4.4']}</span>
-                </div>
-              </label>
-
-              <label className="flex items-start gap-2.5 p-1 rounded-lg hover:bg-rose-50 cursor-pointer transition-colors">
-                <input
-                  type="checkbox"
-                  checked={questionAnswers['5.2']}
-                  onChange={() => handleToggleAnswer('5.2')}
-                  className="mt-0.5 h-4 w-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500"
-                />
-                <div className="text-xs">
-                  <span className="font-bold text-slate-900">Item 5.2:</span>{' '}
-                  <span className="text-slate-700">{SUAPE_QUESTION_TEXTS['5.2']}</span>
-                </div>
-              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {renderTriStateQuestion('4.4', 'Item 4.4: Corrupção PJ / Licitações', SUAPE_QUESTION_TEXTS['4.4'])}
+                {renderTriStateQuestion('5.2', 'Item 5.2: Crimes Sócios', SUAPE_QUESTION_TEXTS['5.2'])}
+              </div>
             </div>
 
-            {/* GRUPO N40: ALÇADA DO CONSELHO */}
-            <div className="rounded-xl border border-rose-100 bg-rose-50/30 p-3 space-y-2">
-              <div className="flex items-center justify-between border-b border-rose-100 pb-1.5">
+            {/* GRUPO N40: ALÇADA DO CONSELHO DE ADMINISTRAÇÃO */}
+            <div className="rounded-xl border border-rose-100 bg-rose-50/20 p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-rose-100 pb-2">
                 <span className="text-3xs font-black uppercase tracking-wider text-rose-800">
-                  Impacto Célula N40 → Risco Muito Alto
+                  Gatilho Célula N40 → Risco Muito Alto (Fórmula Oficial J16)
                 </span>
                 <span className="rounded bg-rose-100 px-1.5 py-0.5 text-3xs font-bold text-rose-900">
-                  N40
+                  N40 (Alçada Conselho)
                 </span>
               </div>
-
-              <label className="flex items-start gap-2.5 p-1 rounded-lg hover:bg-rose-50 cursor-pointer transition-colors">
-                <input
-                  type="checkbox"
-                  checked={questionAnswers.alcadaConselho}
-                  onChange={() => handleToggleAnswer('alcadaConselho')}
-                  className="mt-0.5 h-4 w-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500"
-                />
-                <div className="text-xs">
-                  <span className="font-bold text-slate-900">Row 40:</span>{' '}
-                  <span className="text-slate-700">{SUAPE_QUESTION_TEXTS['conselho']}</span>
-                </div>
-              </label>
+              {renderTriStateQuestion('alcadaConselho', 'Row 40: Alçada do Conselho de Administração', SUAPE_QUESTION_TEXTS['conselho'])}
             </div>
 
             {/* GRUPO N28: INTERAÇÃO PÚBLICA & PEP */}
-            <div className="rounded-xl border border-amber-100 bg-amber-50/30 p-3 space-y-2 md:col-span-2">
-              <div className="flex items-center justify-between border-b border-amber-100 pb-1.5">
+            <div className="rounded-xl border border-amber-100 bg-amber-50/20 p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-amber-100 pb-2">
                 <span className="text-3xs font-black uppercase tracking-wider text-amber-800">
-                  Impacto Célula N28 → Risco Alto
+                  Gatilho Célula N28 → Risco Alto
                 </span>
                 <span className="rounded bg-amber-100 px-1.5 py-0.5 text-3xs font-bold text-amber-900">
                   N28 (Itens 7.1, 7.3 a 7.9)
                 </span>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <label className="flex items-start gap-2 p-1 rounded-lg hover:bg-amber-50/70 cursor-pointer transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={questionAnswers['7.1']}
-                    onChange={() => handleToggleAnswer('7.1')}
-                    className="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-                  />
-                  <div className="text-xs">
-                    <span className="font-bold text-slate-900">7.1:</span>{' '}
-                    <span className="text-slate-700">{SUAPE_QUESTION_TEXTS['7.1']}</span>
-                  </div>
-                </label>
-
-                <label className="flex items-start gap-2 p-1 rounded-lg hover:bg-amber-50/70 cursor-pointer transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={questionAnswers['7.3']}
-                    onChange={() => handleToggleAnswer('7.3')}
-                    className="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-                  />
-                  <div className="text-xs">
-                    <span className="font-bold text-slate-900">7.3:</span>{' '}
-                    <span className="text-slate-700">{SUAPE_QUESTION_TEXTS['7.3']}</span>
-                  </div>
-                </label>
-
-                <label className="flex items-start gap-2 p-1 rounded-lg hover:bg-amber-50/70 cursor-pointer transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={questionAnswers['7.4']}
-                    onChange={() => handleToggleAnswer('7.4')}
-                    className="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-                  />
-                  <div className="text-xs">
-                    <span className="font-bold text-slate-900">7.4:</span>{' '}
-                    <span className="text-slate-700">{SUAPE_QUESTION_TEXTS['7.4']}</span>
-                  </div>
-                </label>
-
-                <label className="flex items-start gap-2 p-1 rounded-lg hover:bg-amber-50/70 cursor-pointer transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={questionAnswers['7.5']}
-                    onChange={() => handleToggleAnswer('7.5')}
-                    className="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-                  />
-                  <div className="text-xs">
-                    <span className="font-bold text-slate-900">7.5:</span>{' '}
-                    <span className="text-slate-700">{SUAPE_QUESTION_TEXTS['7.5']}</span>
-                  </div>
-                </label>
-
-                <label className="flex items-start gap-2 p-1 rounded-lg hover:bg-amber-50/70 cursor-pointer transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={questionAnswers['7.6']}
-                    onChange={() => handleToggleAnswer('7.6')}
-                    className="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-                  />
-                  <div className="text-xs">
-                    <span className="font-bold text-slate-900">7.6:</span>{' '}
-                    <span className="text-slate-700">{SUAPE_QUESTION_TEXTS['7.6']}</span>
-                  </div>
-                </label>
-
-                <label className="flex items-start gap-2 p-1 rounded-lg hover:bg-amber-50/70 cursor-pointer transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={questionAnswers['7.7']}
-                    onChange={() => handleToggleAnswer('7.7')}
-                    className="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-                  />
-                  <div className="text-xs">
-                    <span className="font-bold text-slate-900">7.7:</span>{' '}
-                    <span className="text-slate-700">{SUAPE_QUESTION_TEXTS['7.7']}</span>
-                  </div>
-                </label>
-
-                <label className="flex items-start gap-2 p-1 rounded-lg hover:bg-amber-50/70 cursor-pointer transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={questionAnswers['7.8']}
-                    onChange={() => handleToggleAnswer('7.8')}
-                    className="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-                  />
-                  <div className="text-xs">
-                    <span className="font-bold text-slate-900">7.8:</span>{' '}
-                    <span className="text-slate-700">{SUAPE_QUESTION_TEXTS['7.8']}</span>
-                  </div>
-                </label>
-
-                <label className="flex items-start gap-2 p-1 rounded-lg hover:bg-amber-50/70 cursor-pointer transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={questionAnswers['7.9']}
-                    onChange={() => handleToggleAnswer('7.9')}
-                    className="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-                  />
-                  <div className="text-xs">
-                    <span className="font-bold text-slate-900">7.9:</span>{' '}
-                    <span className="text-slate-700">{SUAPE_QUESTION_TEXTS['7.9']}</span>
-                  </div>
-                </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {renderTriStateQuestion('7.1', 'Item 7.1: Atividade Regulada', SUAPE_QUESTION_TEXTS['7.1'])}
+                {renderTriStateQuestion('7.3', 'Item 7.3: Licenças Contratuais / Órgãos Públicos / PEP', SUAPE_QUESTION_TEXTS['7.3'])}
+                {renderTriStateQuestion('7.4', 'Item 7.4: Interação com Órgão Governamental / PEP', SUAPE_QUESTION_TEXTS['7.4'])}
+                {renderTriStateQuestion('7.5', 'Item 7.5: Representação de Suape perante Terceiros', SUAPE_QUESTION_TEXTS['7.5'])}
+                {renderTriStateQuestion('7.6', 'Item 7.6: PEP Sócio / Administrador', SUAPE_QUESTION_TEXTS['7.6'])}
+                {renderTriStateQuestion('7.7', 'Item 7.7: Familiar PEP', SUAPE_QUESTION_TEXTS['7.7'])}
+                {renderTriStateQuestion('7.8', 'Item 7.8: Familiar com Influência Relevante em Suape', SUAPE_QUESTION_TEXTS['7.8'])}
+                {renderTriStateQuestion('7.9', 'Item 7.9: Participação Governamental nos Negócios', SUAPE_QUESTION_TEXTS['7.9'])}
               </div>
             </div>
 
             {/* GRUPO N29: LICENÇAS ORDINÁRIAS */}
-            <div className="rounded-xl border border-yellow-100 bg-yellow-50/30 p-3 space-y-2 md:col-span-2">
-              <div className="flex items-center justify-between border-b border-yellow-100 pb-1.5">
+            <div className="rounded-xl border border-yellow-100 bg-yellow-50/20 p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-yellow-100 pb-2">
                 <span className="text-3xs font-black uppercase tracking-wider text-yellow-800">
-                  Impacto Célula N29 → Risco Médio
+                  Gatilho Célula N29 → Risco Médio
                 </span>
                 <span className="rounded bg-yellow-100 px-1.5 py-0.5 text-3xs font-bold text-yellow-900">
-                  N29
+                  N29 (Item 7.2)
                 </span>
               </div>
+              {renderTriStateQuestion('7.2', 'Item 7.2: Licenças Ordinárias / ART / RRT / Funcionamento', SUAPE_QUESTION_TEXTS['7.2'])}
+            </div>
 
-              <label className="flex items-start gap-2.5 p-1 rounded-lg hover:bg-yellow-50 cursor-pointer transition-colors">
-                <input
-                  type="checkbox"
-                  checked={questionAnswers['7.2']}
-                  onChange={() => handleToggleAnswer('7.2')}
-                  className="mt-0.5 h-4 w-4 rounded border-yellow-300 text-yellow-600 focus:ring-yellow-500"
-                />
-                <div className="text-xs">
-                  <span className="font-bold text-slate-900">Item 7.2:</span>{' '}
-                  <span className="text-slate-700">{SUAPE_QUESTION_TEXTS['7.2']}</span>
-                </div>
-              </label>
+            {/* GRUPO GOVERNANÇA: ALIMENTA AS COLUNAS 26, 27 E 28 DO MAPA DE RISCO */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                <span className="text-3xs font-black uppercase tracking-wider text-[#0F2D59]">
+                  Governança e Integridade → Colunas 26, 27 e 28 do Mapa de Risco
+                </span>
+                <span className="rounded bg-[#0F2D59]/10 px-1.5 py-0.5 text-3xs font-extrabold text-[#0F2D59]">
+                  Colunas 26, 27, 28
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {renderTriStateQuestion('8.2', 'Item 8.2 (Col 26): Código de Conduta / Ética', SUAPE_QUESTION_TEXTS['8.2'])}
+                {renderTriStateQuestion('8.7', 'Item 8.7 (Col 27): Treinamento Alta Administração', SUAPE_QUESTION_TEXTS['8.7'])}
+                {renderTriStateQuestion('9.0', 'Item 9.0 (Col 28): Profissional / Órgão Anticorrupção', SUAPE_QUESTION_TEXTS['9.0'])}
+              </div>
             </div>
           </div>
         </section>

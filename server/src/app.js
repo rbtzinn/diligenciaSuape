@@ -26,7 +26,7 @@ const app = express();
 
 const configuredOrigins = String(process.env.CORS_ALLOWED_ORIGINS || '')
   .split(',')
-  .map((origin) => origin.trim())
+  .map((origin) => origin.trim().replace(/\/$/, ''))
   .filter(Boolean);
 
 const defaultAllowedOrigins = new Set([
@@ -43,9 +43,10 @@ const defaultAllowedOrigins = new Set([
 
 function isOriginAllowed(origin) {
   if (!origin) return true;
-  if (defaultAllowedOrigins.has(origin)) return true;
+  const clean = String(origin).trim().replace(/\/$/, '');
+  if (defaultAllowedOrigins.has(clean)) return true;
   try {
-    const url = new URL(origin);
+    const url = new URL(clean);
     if (
       url.hostname.endsWith('.vercel.app') &&
       (url.hostname.includes('diligencia-suape') || url.hostname.includes('diligencia360'))
@@ -70,6 +71,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 // Mantém margem abaixo do limite de 4,5 MB das Vercel Functions sem truncar
 // dossiês ricos em evidências e relações.
 app.use(express.json({ limit: '4mb' }));
