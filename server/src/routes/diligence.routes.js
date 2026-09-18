@@ -7,8 +7,25 @@ const { DiligenceHistoryService } = require('../services/diligence-history.servi
 const { EvidenceCenterService } = require('../services/evidence-center.service');
 const { authenticate } = require('../middlewares/auth.middleware');
 const { isScoreWithinLevel } = require('../services/risk-assessment.service');
+const { parseSuapeQuestionnaire } = require('../services/questionnaire-parser.service');
 
 const router = express.Router();
+
+// Rota para analisar questionário de diligência (.xlsx)
+router.post('/parse-questionnaire', async (req, res) => {
+  try {
+    const { fileBase64, filename } = req.body || {};
+    if (!fileBase64) {
+      return res.status(400).json({ ok: false, erro: 'Arquivo base64 não fornecido.' });
+    }
+    const buffer = Buffer.from(fileBase64, 'base64');
+    const parsed = await parseSuapeQuestionnaire(buffer);
+    return res.json({ ok: true, filename, ...parsed });
+  } catch (err) {
+    console.error('[DiligenceRoutes] Erro ao processar questionário:', err.message);
+    return res.status(422).json({ ok: false, erro: `Falha ao analisar o questionário (.xlsx ou .pdf): ${err.message}` });
+  }
+});
 
 router.use(authenticate);
 

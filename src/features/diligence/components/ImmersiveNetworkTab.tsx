@@ -46,9 +46,7 @@ import { ensureEgosSnapshot } from '../utils/fallbackEgos';
 import { extractEntityCnpj } from '../utils/entityCnpj';
 import { useCompanyPeek } from '../hooks/useCompanyPeek';
 import { cn } from '../../../lib/cn';
-import { PageHeader } from '../../../components/layout/Page';
 import { Button } from '../../../components/ui/Button';
-import { Chip } from '../../../components/ui/Chip';
 
 const MOBILE_NETWORK_BREAKPOINT = '(max-width: 760px)';
 const MOBILE_NEIGHBOR_PAGE_SIZE = 6;
@@ -119,7 +117,7 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
   onOpenAiAnalysis,
   onOpenPncp,
   onDrillCompany,
-  onBackToDossier,
+  onBackToDossier: _onBackToDossier,
 }) => {
   const { id: diligenceId } = diligence;
   const isCompactViewport = useCompactNetworkViewport();
@@ -771,40 +769,6 @@ export const ImmersiveNetworkTab: React.FC<ImmersiveNetworkTabProps> = ({
         isFullscreen && 'z-modal fixed inset-0',
       )}
     >
-      <PageHeader
-        width="wide"
-        sticky={false}
-        onBack={onBackToDossier}
-        backLabel="Voltar ao dossiê"
-        eyebrow={isMobileFullNetwork ? 'Rede completa' : 'Exploração por ramos'}
-        title="Mapa de vínculos"
-        subtitle={targetCompanyName}
-        /* Os contadores só entram no desktop. No celular eles
-           desciam para uma fita própria de 44px, repetindo o que a
-           faixa flutuante sobre o mapa já diz — e essa altura sai
-           direto do palco do grafo, que é o que falta ali. */
-        actions={isCompactViewport ? undefined : (
-          <>
-            <Chip tone="neutral" size="sm">
-              {displayedEntities.length} entidades
-            </Chip>
-            <Chip tone="neutral" size="sm">
-              {displayedRelationshipCount} ligações
-            </Chip>
-            {/* O mapa recolhe folhas repetidas em nós de grupo. Sem
-                dizer quantas, o contador afirmaria que o mapa mostra
-                tudo — e ele passou a mostrar um resumo. */}
-            {clustered.collapsedCount > 0 ? (
-              <Chip tone="info" size="sm">
-                {clustered.collapsedCount} agrupadas
-              </Chip>
-            ) : null}
-            <Chip tone={reviewCount > 0 ? 'warn' : 'ok'} size="sm" dot>
-              {reviewCount} em revisão
-            </Chip>
-          </>
-        )}
-      />
 
       <NetworkToolbar
         searchTerm={searchTerm}

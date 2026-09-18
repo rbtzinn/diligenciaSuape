@@ -34,7 +34,7 @@ function mapFirebaseError(err: unknown): string {
 }
 
 export const LoginView: React.FC = () => {
-  const { login, sendPasswordReset } = useAuth();
+  const { login, sendPasswordReset, loginDev } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -172,6 +172,23 @@ export const LoginView: React.FC = () => {
           <Button type="submit" variant="primary" block isLoading={isLoading} loadingLabel="Processando…">
             {isResetMode ? 'Enviar link de recuperação' : 'Entrar no sistema'}
           </Button>
+
+          {import.meta.env.DEV && !isResetMode && (
+            <div className="mt-2 pt-3 border-t border-line flex flex-col gap-1.5">
+              <Button
+                type="button"
+                variant="secondary"
+                block
+                onClick={() => loginDev('Roberto Gabriel (SUAPE Compliance)', 'roberto.gabriel@suape.pe.gov.br')}
+                icon={<Icons.ShieldCheck size={16} className="text-ok" />}
+              >
+                Acesso Rápido Local (Analista SUAPE)
+              </Button>
+              <p className="text-center text-3xs text-ink-3">
+                Modo local de desenvolvimento ativo · Conectado ao backend local
+              </p>
+            </div>
+          )}
 
           {isResetMode ? (
             <Button

@@ -1,0 +1,5327 @@
+{
+  "ceac": [
+    {
+      "cnpjCpf": "05.078.415/0001-00",
+      "cnpjClean": "05078415000100",
+      "linha": 9,
+      "nome": "PA",
+      "estabelecimento": "",
+      "uf": "2021",
+      "origem": "2026_0015.xlsx"
+    },
+    {
+      "cnpjCpf": "366.176.019-04",
+      "cnpjClean": "36617601904",
+      "linha": 10,
+      "nome": "MS",
+      "estabelecimento": "",
+      "uf": "2024",
+      "origem": "2026_0015.xlsx"
+    },
+    {
+      "cnpjCpf": "002.116.201-81",
+      "cnpjClean": "00211620181",
+      "linha": 11,
+      "nome": "MS",
+      "estabelecimento": "",
+      "uf": "2025",
+      "origem": "2026_0015.xlsx"
+    },
+    {
+      "cnpjCpf": "19.079.237/0001-38",
+      "cnpjClean": "19079237000138",
+      "linha": 12,
+      "nome": "PB",
+      "estabelecimento": "",
+      "uf": "2025",
+      "origem": "2026_0015.xlsx"
+    },
+    {
+      "cnpjCpf": "19.079.237/0001-38",
+      "cnpjClean": "19079237000138",
+      "linha": 13,
+      "nome": "PB",
+      "estabelecimento": "",
+      "uf": "2025",
+      "origem": "2026_0015.xlsx"
+    },
+    {
+      "cnpjCpf": "05.776.652/0001-36",
+      "cnpjClean": "05776652000136",
+      "linha": 14,
+      "nome": "MG",
+      "estabelecimento": "",
+      "uf": "2025",
+      "origem": "2026_0015.xlsx"
+    },
+    {
+      "cnpjCpf": "07.693.988/0001-60",
+      "cnpjClean": "07693988000160",
+      "linha": 15,
+      "nome": "PE",
+      "estabelecimento": "",
+      "uf": "2024",
+      "origem": "2026_0015.xlsx"
+    },
+    {
+      "cnpjCpf": "185.109.656-68",
+      "cnpjClean": "18510965668",
+      "linha": 16,
+      "nome": "MG",
+      "estabelecimento": "",
+      "uf": "2025",
+      "origem": "2026_0015.xlsx"
+    },
+    {
+      "cnpjCpf": "31.085.644/0001-53",
+      "cnpjClean": "31085644000153",
+      "linha": 17,
+      "nome": "PB",
+      "estabelecimento": "",
+      "uf": "2025",
+      "origem": "2026_0015.xlsx"
+    },
+    {
+      "cnpjCpf": "12.366.476/0001-20",
+      "cnpjClean": "12366476000120",
+      "linha": 18,
+      "nome": "PR",
+      "estabelecimento": "",
+      "uf": "2024",
+      "origem": "2026_0015.xlsx"
+    },
+    {
+      "cnpjCpf": "42.198.516/0001-32",
+      "cnpjClean": "42198516000132",
+      "linha": 19,
+      "nome": "RS",
+      "estabelecimento": "",
+      "uf": "2023",
+      "origem": "2026_0015.xlsx"
+    },
+    {
+      "cnpjCpf": "246.365.840-15",
+      "cnpjClean": "24636584015",
+      "linha": 20,
+      "nome": "MT",
+      "estabelecimento": "",
+      "uf": "2022",
+      "origem": "2026_0015.xlsx"
+    }
+  ],
+  "trabalhoEscravo": [
+    {
+      "cnpjCpf": "41.297.068/0001-61",
+      "cnpjClean": "41297068000161",
+      "linha": 9,
+      "nome": "41.297.068 GILBERTO ELENO BATISTA DOS SANTOS",
+      "estabelecimento": "41.297.068/0001-61",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "48.937.720/0001-04",
+      "cnpjClean": "48937720000104",
+      "linha": 10,
+      "nome": "48.937.720 ROBERTO DOS SANTOS",
+      "estabelecimento": "48.937.720/0001-04",
+      "uf": "MT",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "50.964.355/0001-79",
+      "cnpjClean": "50964355000179",
+      "linha": 11,
+      "nome": "50.964.355 FLAVIO DONIZETI DOS SANTOS",
+      "estabelecimento": "50.964.355/0001-79",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "53.162.923/0001-06",
+      "cnpjClean": "53162923000106",
+      "linha": 12,
+      "nome": "53.162.923 EVAMBIVALDO FERREIRA GONCALVES",
+      "estabelecimento": "53.162.923/0001-06",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "54.890.003/0001-77",
+      "cnpjClean": "54890003000177",
+      "linha": 13,
+      "nome": "54.890.003 ALEXANDRE JUCELINO ZUKOVSKI",
+      "estabelecimento": "54.890.003/0001-77",
+      "uf": "PR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "57.299.132/0001-83",
+      "cnpjClean": "57299132000183",
+      "linha": 14,
+      "nome": "57.299.132 AIRTON DE ARAUJO GOMES",
+      "estabelecimento": "57.299.132/0001-83",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "54.951.803/0001-50",
+      "cnpjClean": "54951803000150",
+      "linha": 15,
+      "nome": "A2 ENGENHARIA LTDA",
+      "estabelecimento": "54.951.803/0001-50",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "076.802.477-30",
+      "cnpjClean": "07680247730",
+      "linha": 16,
+      "nome": "ABEL PIONA BERNABÉ",
+      "estabelecimento": "076.802.477-30",
+      "uf": "ES",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "53.093.685/0001-24",
+      "cnpjClean": "53093685000124",
+      "linha": 17,
+      "nome": "ACADEMIA ACTTIONOLINDA LTDA",
+      "estabelecimento": "53.093.685/0001-24",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "49.502.109/0001-16",
+      "cnpjClean": "49502109000116",
+      "linha": 18,
+      "nome": "A. C. DE S. MENDONCA LTDA",
+      "estabelecimento": "49.502.109/0001-16",
+      "uf": "DF",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "149.704.226-72",
+      "cnpjClean": "14970422672",
+      "linha": 19,
+      "nome": "ADELICIO BARBOSA DE ARAUJO",
+      "estabelecimento": "149.704.226-72",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "821.924.216-72",
+      "cnpjClean": "82192421672",
+      "linha": 20,
+      "nome": "ADELMO GOMES DA SILVA",
+      "estabelecimento": "821.924.216-72",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "468.596.401-20",
+      "cnpjClean": "46859640120",
+      "linha": 21,
+      "nome": "ADELSON NERES ALVES (*1)",
+      "estabelecimento": "468.596.401-20",
+      "uf": "ADELSON NERES ALVES (*1)",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "010.829.816-72",
+      "cnpjClean": "01082981672",
+      "linha": 22,
+      "nome": "ADENIR ALVES DOS SANTOS",
+      "estabelecimento": "010.829.816-72",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "229.888.818-39",
+      "cnpjClean": "22988881839",
+      "linha": 23,
+      "nome": "ADILSON FERRAZ GOMES DA SILVA",
+      "estabelecimento": "229.888.818-39",
+      "uf": "DF",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "812.170.999-72",
+      "cnpjClean": "81217099972",
+      "linha": 24,
+      "nome": "ADILSON ROGERIO LEHMKUHL",
+      "estabelecimento": "812.170.999-72",
+      "uf": "SC",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "267.149.038-04",
+      "cnpjClean": "26714903804",
+      "linha": 25,
+      "nome": "ADRIANO GOMES LEAL",
+      "estabelecimento": "267.149.038-04",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "392.028.365-15",
+      "cnpjClean": "39202836515",
+      "linha": 26,
+      "nome": "AELSON CERQUEIRA DE SOUZA",
+      "estabelecimento": "392.028.365-15",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "184.908.818-71",
+      "cnpjClean": "18490881871",
+      "linha": 27,
+      "nome": "AGNALDO MOREIRA DA SILVA MARQUES",
+      "estabelecimento": "184.908.818-71",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "290.168.018-63",
+      "cnpjClean": "29016801863",
+      "linha": 28,
+      "nome": "AGNES MEGUMI HORIGUCHI",
+      "estabelecimento": "290.168.018-63",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "920.373.485-68",
+      "cnpjClean": "92037348568",
+      "linha": 29,
+      "nome": "AGRIPINO MARTINS CARVALHO",
+      "estabelecimento": "920.373.485-68",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "10.525.337/0001-76",
+      "cnpjClean": "10525337000176",
+      "linha": 30,
+      "nome": "AGROFLORESTAL SERRA DAS ABELHAS LTDA",
+      "estabelecimento": "10.525.337/0001-76",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "17.326.694/0001-54",
+      "cnpjClean": "17326694000154",
+      "linha": 31,
+      "nome": "AGROPECUARIA FORMOSA LTDA",
+      "estabelecimento": "17.326.694/0001-54",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "34.180.456/0001-00",
+      "cnpjClean": "34180456000100",
+      "linha": 32,
+      "nome": "AGROPECUARIA HARMONIA LTDA",
+      "estabelecimento": "34.180.456/0001-00",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "04.746.187/0002-09",
+      "cnpjClean": "04746187000209",
+      "linha": 33,
+      "nome": "AGROPECUARIA OURO FINO LTDA",
+      "estabelecimento": "04.746.187/0002-09",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "123.159.826-34",
+      "cnpjClean": "12315982634",
+      "linha": 34,
+      "nome": "AGUIMAR CARNEIRO DA SILVA",
+      "estabelecimento": "123.159.826-34",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "019.376.167-03",
+      "cnpjClean": "01937616703",
+      "linha": 35,
+      "nome": "ALBERIQUE CORREA DE OLIVEIRA",
+      "estabelecimento": "019.376.167-03",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "892.408.631-68",
+      "cnpjClean": "89240863168",
+      "linha": 36,
+      "nome": "ALBERTO JUNIOR PELLIN",
+      "estabelecimento": "892.408.631-68",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "111.250.125-87",
+      "cnpjClean": "11125012587",
+      "linha": 37,
+      "nome": "ALBERTO JURAMAR LEMOS ANDRADE",
+      "estabelecimento": "111.250.125-87",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "170.906.956-20",
+      "cnpjClean": "17090695620",
+      "linha": 38,
+      "nome": "ALBINO NUNES NASCENTES",
+      "estabelecimento": "170.906.956-20",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "32.373.267/0001-10",
+      "cnpjClean": "32373267000110",
+      "linha": 39,
+      "nome": "ALEGRO SERVICOS AUTOMOTIVOS LTDA",
+      "estabelecimento": "32.373.267/0001-10",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "512.686.041-00",
+      "cnpjClean": "51268604100",
+      "linha": 40,
+      "nome": "ALEXANDRE DUNGUEL PEREIRA",
+      "estabelecimento": "512.686.041-00",
+      "uf": "DF",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "023.748.449-86",
+      "cnpjClean": "02374844986",
+      "linha": 41,
+      "nome": "ALEXSANDRO MARCOTI",
+      "estabelecimento": "023.748.449-86",
+      "uf": "PR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "630.600.609-59",
+      "cnpjClean": "63060060959",
+      "linha": 42,
+      "nome": "ALTEMAR ESTEVAM",
+      "estabelecimento": "630.600.609-59",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "13.165.805/0001-37",
+      "cnpjClean": "13165805000137",
+      "linha": 43,
+      "nome": "ALTENHOFEN COMÉRCIO DE HORTIFRUTIGRANJEIROS LTDA",
+      "estabelecimento": "13.165.805/0001-37",
+      "uf": "SC",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "41.732.445/0002-24",
+      "cnpjClean": "41732445000224",
+      "linha": 44,
+      "nome": "ALTO FORTE FLORESTAS LTDA",
+      "estabelecimento": "41.732.445/0002-24",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "157.103.007-72",
+      "cnpjClean": "15710300772",
+      "linha": 45,
+      "nome": "ALVARO SIMOES ( ESPÓLIO)",
+      "estabelecimento": "157.103.007-72",
+      "uf": "ES",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "360.145.591-91",
+      "cnpjClean": "36014559191",
+      "linha": 46,
+      "nome": "AMADEU LUIZ DA SILVA",
+      "estabelecimento": "360.145.591-91",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "136.752.061-49",
+      "cnpjClean": "13675206149",
+      "linha": 47,
+      "nome": "AMADO RODRIGUES BATISTA",
+      "estabelecimento": "136.752.061-49",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "136.752.061-49",
+      "cnpjClean": "13675206149",
+      "linha": 48,
+      "nome": "AMADO RODRIGUES BATISTA",
+      "estabelecimento": "136.752.061-49",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "75.784.140/0004-40",
+      "cnpjClean": "75784140000440",
+      "linha": 49,
+      "nome": "AMAFIL INDUSTRIA E COMERCIO DE ALIMENTOS LTDA",
+      "estabelecimento": "75.784.140/0004-40",
+      "uf": "PR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "14.302.981/0001-36",
+      "cnpjClean": "14302981000136",
+      "linha": 50,
+      "nome": "AMATERRA INDUSTRIA LTDA",
+      "estabelecimento": "14.302.981/0001-36",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "14.302.981/0001-36",
+      "cnpjClean": "14302981000136",
+      "linha": 51,
+      "nome": "AMATERRA INDÚSTRIA LTDA",
+      "estabelecimento": "14.302.981/0001-36",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "57.072.919/0001-08",
+      "cnpjClean": "57072919000108",
+      "linha": 52,
+      "nome": "AMBIENTAL HABITACIONAL SOUZA LTDA",
+      "estabelecimento": "57.072.919/0001-08",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "342.179.599-15",
+      "cnpjClean": "34217959915",
+      "linha": 53,
+      "nome": "ANA CRISTINA GAYOTTO DE BORBA",
+      "estabelecimento": "342.179.599-15",
+      "uf": "SC",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "976.868.086-53",
+      "cnpjClean": "97686808653",
+      "linha": 54,
+      "nome": "ANA FLAVIA DE OLIVEIRA LEITE",
+      "estabelecimento": "976.868.086-53",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "142.700.174-06",
+      "cnpjClean": "14270017406",
+      "linha": 55,
+      "nome": "ANDRE ALMEIDA DA SILVA",
+      "estabelecimento": "142.700.174-06",
+      "uf": "AL",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "381.581.081-72",
+      "cnpjClean": "38158108172",
+      "linha": 56,
+      "nome": "ANDREA VALERIA CARVALHO DA SILVA",
+      "estabelecimento": "381.581.081-72",
+      "uf": "DF",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "549.097.166-53",
+      "cnpjClean": "54909716653",
+      "linha": 57,
+      "nome": "ANDRE FERNANDO ROCHA",
+      "estabelecimento": "549.097.166-53",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "247.738.808-80",
+      "cnpjClean": "24773880880",
+      "linha": 58,
+      "nome": "ANDRE OKANO",
+      "estabelecimento": "247.738.808-80",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "067.115.216-50",
+      "cnpjClean": "06711521650",
+      "linha": 59,
+      "nome": "ANDRE PEREIRA ALVES",
+      "estabelecimento": "067.115.216-50",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "017.950.467-32",
+      "cnpjClean": "01795046732",
+      "linha": 60,
+      "nome": "ANGELA MARIA AMARAL DA SILVEIRA",
+      "estabelecimento": "017.950.467-32",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "099.783.727-68",
+      "cnpjClean": "09978372768",
+      "linha": 61,
+      "nome": "ANGELA MARIA PAOLINO REBORDOES",
+      "estabelecimento": "099.783.727-68",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "08.220.332/0001-93",
+      "cnpjClean": "08220332000193",
+      "linha": 62,
+      "nome": "ANTIX CONFECCOES LTDA",
+      "estabelecimento": "08.220.332/0001-93",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "384.640.806-97",
+      "cnpjClean": "38464080697",
+      "linha": 63,
+      "nome": "ANTONIO ALONSO DE PAIVA BORGES",
+      "estabelecimento": "384.640.806-97",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "349.598.316-34",
+      "cnpjClean": "34959831634",
+      "linha": 64,
+      "nome": "ANTONIO ALVES DE FREITAS",
+      "estabelecimento": "349.598.316-34",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "065.388.436-20",
+      "cnpjClean": "06538843620",
+      "linha": 65,
+      "nome": "ANTONIO AUGUSTO DE JESUS",
+      "estabelecimento": "065.388.436-20",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "414.025.961-20",
+      "cnpjClean": "41402596120",
+      "linha": 66,
+      "nome": "ANTONIO BORGES BELFORT",
+      "estabelecimento": "414.025.961-20",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "105.122.906-52",
+      "cnpjClean": "10512290652",
+      "linha": 67,
+      "nome": "ANTONIO CARLOS DE SOUZA MARTINS",
+      "estabelecimento": "105.122.906-52",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "411.463.016-34",
+      "cnpjClean": "41146301634",
+      "linha": 68,
+      "nome": "ANTONIO CARLOS MACHADO DA FONSECA",
+      "estabelecimento": "411.463.016-34",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "083.151.188-54",
+      "cnpjClean": "08315118854",
+      "linha": 69,
+      "nome": "ANTONIO DA SILVA LISBOA",
+      "estabelecimento": "083.151.188-54",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "002.301.984-06",
+      "cnpjClean": "00230198406",
+      "linha": 70,
+      "nome": "ANTONIO GUILHERME GUSMAO ROCHA",
+      "estabelecimento": "002.301.984-06",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "215.573.907-97",
+      "cnpjClean": "21557390797",
+      "linha": 71,
+      "nome": "ANTONIO JOSE BROZEGUINI",
+      "estabelecimento": "215.573.907-97",
+      "uf": "ES",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "931.822.108-82",
+      "cnpjClean": "93182210882",
+      "linha": 72,
+      "nome": "ANTONIO JOSE QUESSADA NETO",
+      "estabelecimento": "931.822.108-82",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "295.986.645-20",
+      "cnpjClean": "29598664520",
+      "linha": 73,
+      "nome": "ANTONIO MARCELINO SOUSA ROCHA",
+      "estabelecimento": "295.986.645-20",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "515.479.611-04",
+      "cnpjClean": "51547961104",
+      "linha": 74,
+      "nome": "ANTONIO MARCONE QUEIROZ COUTINHO",
+      "estabelecimento": "515.479.611-04",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "262.667.681-00",
+      "cnpjClean": "26266768100",
+      "linha": 75,
+      "nome": "ANTÔNIO SILVÉRIO DOS REIS",
+      "estabelecimento": "262.667.681-00",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "555.740.179-20",
+      "cnpjClean": "55574017920",
+      "linha": 76,
+      "nome": "APARECIDO CHRISTOFOLLI",
+      "estabelecimento": "555.740.179-20",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "988.096.876-04",
+      "cnpjClean": "98809687604",
+      "linha": 77,
+      "nome": "APARECIDO GONCALVES DE FARIA",
+      "estabelecimento": "988.096.876-04",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "878.849.684-87",
+      "cnpjClean": "87884968487",
+      "linha": 78,
+      "nome": "ARIELE PACIFICO GOMES",
+      "estabelecimento": "878.849.684-87",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "074.401.539-10",
+      "cnpjClean": "07440153910",
+      "linha": 79,
+      "nome": "ARIEL FERNANDO SCHOENHALS RITTER",
+      "estabelecimento": "074.401.539-10",
+      "uf": "SC",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "008.438.915-05",
+      "cnpjClean": "00843891505",
+      "linha": 80,
+      "nome": "ARINALDO OLIVEIRA DO NASCIMENTO",
+      "estabelecimento": "008.438.915-05",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "008.438.915-05",
+      "cnpjClean": "00843891505",
+      "linha": 81,
+      "nome": "ARINALDO OLIVEIRA DO NASCIMENTO",
+      "estabelecimento": "008.438.915-05",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "008.438.915-05",
+      "cnpjClean": "00843891505",
+      "linha": 82,
+      "nome": "ARINALDO OLIVEIRA DO NASCIMENTO",
+      "estabelecimento": "008.438.915-05",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "112.899.292-20",
+      "cnpjClean": "11289929220",
+      "linha": 83,
+      "nome": "ARISTIDES FORMIGHIERI JUNIOR",
+      "estabelecimento": "112.899.292-20",
+      "uf": "AC",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "112.899.292-20",
+      "cnpjClean": "11289929220",
+      "linha": 84,
+      "nome": "ARISTIDES FORMIGHIERI JUNIOR",
+      "estabelecimento": "112.899.292-20",
+      "uf": "AC",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "37.194.000/0001-80",
+      "cnpjClean": "37194000000180",
+      "linha": 85,
+      "nome": "ARMANDO CALICHO MONTANO 23476562875",
+      "estabelecimento": "37.194.000/0001-80",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "017.937.215-72",
+      "cnpjClean": "01793721572",
+      "linha": 86,
+      "nome": "ARMANDO PIO DE AZEVEDO FILHO",
+      "estabelecimento": "017.937.215-72",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "233.173.700-25",
+      "cnpjClean": "23317370025",
+      "linha": 87,
+      "nome": "ARNO DILSON POSPICHIL",
+      "estabelecimento": "233.173.700-25",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "283.718.952-91",
+      "cnpjClean": "28371895291",
+      "linha": 88,
+      "nome": "ARQUIMEDES FRANCISCO ZEFERINO",
+      "estabelecimento": "283.718.952-91",
+      "uf": "RO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "22.376.653/0001-02",
+      "cnpjClean": "22376653000102",
+      "linha": 89,
+      "nome": "ASA BRANCA COMERCIO DE GENEROS ALIMENTICIOS EIRELI",
+      "estabelecimento": "22.376.653/0001-02",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "044.343.646-00",
+      "cnpjClean": "04434364600",
+      "linha": 90,
+      "nome": "ATALIBA FERREIRA NETO",
+      "estabelecimento": "044.343.646-00",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "508.670.329-87",
+      "cnpjClean": "50867032987",
+      "linha": 91,
+      "nome": "AUGUSTO CESAR NASCIMENTO LOUREIRO",
+      "estabelecimento": "508.670.329-87",
+      "uf": "SC",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "290.679.361-20",
+      "cnpjClean": "29067936120",
+      "linha": 92,
+      "nome": "AURELIANO JOSE INACIO",
+      "estabelecimento": "290.679.361-20",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "27.095.036/0001-52",
+      "cnpjClean": "27095036000152",
+      "linha": 93,
+      "nome": "BANGLA JEANS COMERCIO DE ROUPAS EIRELI",
+      "estabelecimento": "27.095.036/0001-52",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "383.769.705-34",
+      "cnpjClean": "38376970534",
+      "linha": 94,
+      "nome": "BENEDITA SEBASTIANA SANTOS OLIVEIRA",
+      "estabelecimento": "383.769.705-34",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "268.267.716-91",
+      "cnpjClean": "26826771691",
+      "linha": 95,
+      "nome": "BERNARDINO AMERICO SOARES GUIMARAES",
+      "estabelecimento": "268.267.716-91",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "779.695.963-04",
+      "cnpjClean": "77969596304",
+      "linha": 96,
+      "nome": "BEZALIEL MOURA DE LIMA",
+      "estabelecimento": "779.695.963-04",
+      "uf": "CE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "54.684.689/0001-40",
+      "cnpjClean": "54684689000140",
+      "linha": 97,
+      "nome": "BIG BOI COMERCIO DE MADEIRAS E TRANSPORTES LTDA",
+      "estabelecimento": "54.684.689/0001-40",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "124.874.140-49",
+      "cnpjClean": "12487414049",
+      "linha": 98,
+      "nome": "BRENO ARMINDO MULLER",
+      "estabelecimento": "124.874.140-49",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "652.601.636-72",
+      "cnpjClean": "65260163672",
+      "linha": 99,
+      "nome": "BRENO MAGLIONI DO VALE",
+      "estabelecimento": "652.601.636-72",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "33.432.463/0001-81",
+      "cnpjClean": "33432463000181",
+      "linha": 100,
+      "nome": "BRUNO ROGERIO PORTELA FIGUEIREDO LTDA",
+      "estabelecimento": "33.432.463/0001-81",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "12.349.284/0001-05",
+      "cnpjClean": "12349284000105",
+      "linha": 101,
+      "nome": "BRUVAL TRANSPORTES E SERVICOS AGRICOLAS LTDA",
+      "estabelecimento": "12.349.284/0001-05",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "12.349.284/0001-05",
+      "cnpjClean": "12349284000105",
+      "linha": 102,
+      "nome": "BRUVAL TRANSPORTES E SERVICOS AGRICOLAS LTDA",
+      "estabelecimento": "12.349.284/0001-05",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "59.379.513/0001-06",
+      "cnpjClean": "59379513000106",
+      "linha": 103,
+      "nome": "CAMILO HF PRESTACAO DE SERVICOS LTDA",
+      "estabelecimento": "59.379.513/0001-06",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "201.409.328-87",
+      "cnpjClean": "20140932887",
+      "linha": 104,
+      "nome": "CARLOS ALBERTO DE BARROS ANTUNES",
+      "estabelecimento": "201.409.328-87",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "578.569.666-53",
+      "cnpjClean": "57856966653",
+      "linha": 105,
+      "nome": "CELSO ALIET BATISTA",
+      "estabelecimento": "578.569.666-53",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "723.659.439-34",
+      "cnpjClean": "72365943934",
+      "linha": 106,
+      "nome": "CELSO VINO COSTA JÚNIOR",
+      "estabelecimento": "723.659.439-34",
+      "uf": "PR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "02.896.264/0001-09",
+      "cnpjClean": "02896264000109",
+      "linha": 107,
+      "nome": "CENTROALCOOL S/A (EM RECUPERACAO JUDICIAL)",
+      "estabelecimento": "02.896.264/0001-09",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "02.896.264/0001-09",
+      "cnpjClean": "02896264000109",
+      "linha": 108,
+      "nome": "CENTROALCOOL S/A (EM RECUPERACAO JUDICIAL)",
+      "estabelecimento": "02.896.264/0001-09",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "02.896.264/0001-09",
+      "cnpjClean": "02896264000109",
+      "linha": 109,
+      "nome": "CENTROALCOOL S/A (EM RECUPERACAO JUDICIAL)",
+      "estabelecimento": "02.896.264/0001-09",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "24.985.857/0001-76",
+      "cnpjClean": "24985857000176",
+      "linha": 110,
+      "nome": "CERAMICA REI MINAS LTDA",
+      "estabelecimento": "24.985.857/0001-76",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "081.609.965-00",
+      "cnpjClean": "08160996500",
+      "linha": 111,
+      "nome": "CESAR JONES LEMOS",
+      "estabelecimento": "081.609.965-00",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "21.876.474/0001-71",
+      "cnpjClean": "21876474000171",
+      "linha": 112,
+      "nome": "C F T CONSTRUCOES E INCORPORACOES LTDA",
+      "estabelecimento": "21.876.474/0001-71",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "161.925.321-68",
+      "cnpjClean": "16192532168",
+      "linha": 113,
+      "nome": "CHRISTIAN JAUNE",
+      "estabelecimento": "161.925.321-68",
+      "uf": "MT",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "178.507.204-82",
+      "cnpjClean": "17850720482",
+      "linha": 114,
+      "nome": "CICERO ANTONIO LOBO CRUZ",
+      "estabelecimento": "178.507.204-82",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "917.974.384-68",
+      "cnpjClean": "91797438468",
+      "linha": 115,
+      "nome": "CICERO RODRIGUES DA SILVA",
+      "estabelecimento": "917.974.384-68",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "087.652.838-80",
+      "cnpjClean": "08765283880",
+      "linha": 116,
+      "nome": "CLAUDINEI LEITE DE QUEIROZ",
+      "estabelecimento": "087.652.838-80",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "673.359.420-04",
+      "cnpjClean": "67335942004",
+      "linha": 117,
+      "nome": "CLAUDIO LUIZ LOPES DE MORAES",
+      "estabelecimento": "673.359.420-04",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "33.931.178/0001-05",
+      "cnpjClean": "33931178000105",
+      "linha": 118,
+      "nome": "CLAUDIO MARTINHO ROJAS",
+      "estabelecimento": "33.931.178/0001-05",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "966.036.668-04",
+      "cnpjClean": "96603666804",
+      "linha": 119,
+      "nome": "CLEIDE NUNES VENEZIANO",
+      "estabelecimento": "966.036.668-04",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "253.233.003-10",
+      "cnpjClean": "25323300310",
+      "linha": 120,
+      "nome": "CLEOMILSON CARNEIRO DE MIRANDA",
+      "estabelecimento": "253.233.003-10",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "52.518.963/0001-85",
+      "cnpjClean": "52518963000185",
+      "linha": 121,
+      "nome": "CLINICA EM CENTRO TERAPEUTICO MAANAIM LTDA",
+      "estabelecimento": "52.518.963/0001-85",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "123.736.804-91",
+      "cnpjClean": "12373680491",
+      "linha": 122,
+      "nome": "CLISTHENES JOSE PEREIRA DE ANDRADE LIMA",
+      "estabelecimento": "123.736.804-91",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "96.727.656/0001-80",
+      "cnpjClean": "96727656000180",
+      "linha": 123,
+      "nome": "COMERCIAL DE ESTIVAS SEIS IRMAOS LTDA",
+      "estabelecimento": "96.727.656/0001-80",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "26.760.224/0001-95",
+      "cnpjClean": "26760224000195",
+      "linha": 124,
+      "nome": "COMUNIDADE TERAPEUTICA TENDA DO ENCONTRO",
+      "estabelecimento": "26.760.224/0001-95",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "21.513.094/0001-72",
+      "cnpjClean": "21513094000172",
+      "linha": 125,
+      "nome": "CONDOMINIO RESIDENCIAL PIRACICABA II",
+      "estabelecimento": "21.513.094/0001-72",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "43.473.963/0001-15",
+      "cnpjClean": "43473963000115",
+      "linha": 126,
+      "nome": "CONFECCOES ANDERSON LTDA",
+      "estabelecimento": "43.473.963/0001-15",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "17.620.703/0001-15",
+      "cnpjClean": "17620703000115",
+      "linha": 127,
+      "nome": "CONSTRUTORA APODI LTDA",
+      "estabelecimento": "17.620.703/0001-15",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "44.703.178/0001-74",
+      "cnpjClean": "44703178000174",
+      "linha": 128,
+      "nome": "CONSTRUTORA GOIS LTDA",
+      "estabelecimento": "44.703.178/0001-74",
+      "uf": "PI",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "27.708.298/0001-45",
+      "cnpjClean": "27708298000145",
+      "linha": 129,
+      "nome": "CONSTRUTORA JG LTDA",
+      "estabelecimento": "27.708.298/0001-45",
+      "uf": "PR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "30.421.632/0002-70",
+      "cnpjClean": "30421632000270",
+      "linha": 130,
+      "nome": "CONSTRUTORA NEO LTDA",
+      "estabelecimento": "30.421.632/0002-70",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "042.097.536-53",
+      "cnpjClean": "04209753653",
+      "linha": 131,
+      "nome": "COSMO DAMIAO DA SILVA",
+      "estabelecimento": "042.097.536-53",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "003.956.152-67",
+      "cnpjClean": "00395615267",
+      "linha": 132,
+      "nome": "CRISLANE DOS SANTOS CORREIA",
+      "estabelecimento": "003.956.152-67",
+      "uf": "RR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "030.103.019-79",
+      "cnpjClean": "03010301979",
+      "linha": 133,
+      "nome": "CRISTIANO DA SILVA",
+      "estabelecimento": "030.103.019-79",
+      "uf": "SC",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "11.495.771/0001-13",
+      "cnpjClean": "11495771000113",
+      "linha": 134,
+      "nome": "D2 CONSTRUTORA E TRANSPORTE LTDA",
+      "estabelecimento": "11.495.771/0001-13",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "016.801.370-34",
+      "cnpjClean": "01680137034",
+      "linha": 135,
+      "nome": "DALTRO DOS REIS",
+      "estabelecimento": "016.801.370-34",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "656.364.492-91",
+      "cnpjClean": "65636449291",
+      "linha": 136,
+      "nome": "DALVA DA ROCHA VIANA",
+      "estabelecimento": "656.364.492-91",
+      "uf": "RR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "996.860.154-34",
+      "cnpjClean": "99686015434",
+      "linha": 137,
+      "nome": "DANIEL FELIX DE ARAUJO",
+      "estabelecimento": "996.860.154-34",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "077.478.061-40",
+      "cnpjClean": "07747806140",
+      "linha": 138,
+      "nome": "DANIEL MATEUS MARQUES SANTOS",
+      "estabelecimento": "077.478.061-40",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "607.893.483-06",
+      "cnpjClean": "60789348306",
+      "linha": 139,
+      "nome": "DANIEL RUFINO DOS SANTOS",
+      "estabelecimento": "607.893.483-06",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "23.650.623/0001-05",
+      "cnpjClean": "23650623000105",
+      "linha": 140,
+      "nome": "DDR AGROFLORESTAL - COMERCIO DE PRODUTOS DE ORIGEM FLOR",
+      "estabelecimento": "23.650.623/0001-05",
+      "uf": "RO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "796.013.911-34",
+      "cnpjClean": "79601391134",
+      "linha": 141,
+      "nome": "DENIS RODRIGO PALHARES",
+      "estabelecimento": "796.013.911-34",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "72.638.307/0001-23",
+      "cnpjClean": "72638307000123",
+      "linha": 142,
+      "nome": "DEPOSITO DE CARVAO BRASEIRO LTDA",
+      "estabelecimento": "72.638.307/0001-23",
+      "uf": "DF",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "666.486.026-00",
+      "cnpjClean": "66648602600",
+      "linha": 143,
+      "nome": "DEVANI RESENDE DE OLIVEIRA",
+      "estabelecimento": "666.486.026-00",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "34.100.075/0001-66",
+      "cnpjClean": "34100075000166",
+      "linha": 144,
+      "nome": "DIEGO ARMANDO MOLINARI 06071785901",
+      "estabelecimento": "34.100.075/0001-66",
+      "uf": "PR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "731.396.536-20",
+      "cnpjClean": "73139653620",
+      "linha": 145,
+      "nome": "DILMA GOMIDE CORREA",
+      "estabelecimento": "731.396.536-20",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "489.435.505-10",
+      "cnpjClean": "48943550510",
+      "linha": 146,
+      "nome": "DILTON DIAS DE OLIVEIRA",
+      "estabelecimento": "489.435.505-10",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "05.894.441/0001-06",
+      "cnpjClean": "05894441000106",
+      "linha": 147,
+      "nome": "DIOGENES MESSIAS SILVA ALVES E SOUZA-SALINAS CHICO ROMAO E CHICO BRITO",
+      "estabelecimento": "05.894.441/0001-06",
+      "uf": "RN",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "023.672.602-14",
+      "cnpjClean": "02367260214",
+      "linha": 148,
+      "nome": "DIONE CHAVES SOUSA (*2)",
+      "estabelecimento": "023.672.602-14",
+      "uf": "DIONE CHAVES SOUSA (*2)",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "021.489.160-76",
+      "cnpjClean": "02148916076",
+      "linha": 149,
+      "nome": "DIRLEU DE ARAUJO",
+      "estabelecimento": "021.489.160-76",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "04.604.549/0001-46",
+      "cnpjClean": "04604549000146",
+      "linha": 150,
+      "nome": "DISTRIBUIDORA SO VERDURAS LTDA",
+      "estabelecimento": "04.604.549/0001-46",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "20.433.078/0001-07",
+      "cnpjClean": "20433078000107",
+      "linha": 151,
+      "nome": "DIVINA GRILL MEIRELES LTDA",
+      "estabelecimento": "20.433.078/0001-07",
+      "uf": "CE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "07.952.018/0001-32",
+      "cnpjClean": "07952018000132",
+      "linha": 152,
+      "nome": "DIVINO IGARAPAVA TRANSPORTES E COMERCIO DE AUTOPECAS LT",
+      "estabelecimento": "07.952.018/0001-32",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "420.655.773-04",
+      "cnpjClean": "42065577304",
+      "linha": 153,
+      "nome": "DOMINGOS LAURENTINO NETO",
+      "estabelecimento": "420.655.773-04",
+      "uf": "PI",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "236.456.106-00",
+      "cnpjClean": "23645610600",
+      "linha": 154,
+      "nome": "DOMINGOS SAVIO DE ANDRADE",
+      "estabelecimento": "236.456.106-00",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "071.770.688-56",
+      "cnpjClean": "07177068856",
+      "linha": 155,
+      "nome": "DONIZETE CLAUDIO VILHENA",
+      "estabelecimento": "071.770.688-56",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "968.317.231-87",
+      "cnpjClean": "96831723187",
+      "linha": 156,
+      "nome": "DOURIVAN CONCEICAO DE SOUSA",
+      "estabelecimento": "968.317.231-87",
+      "uf": "TO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "10.842.734/0001-71",
+      "cnpjClean": "10842734000171",
+      "linha": 157,
+      "nome": "DUVALE PROJETOS E CONSTRUCOES LTDA - CNO 90.019.82963/70",
+      "estabelecimento": "10.842.734/0001-71",
+      "uf": "CE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "09.578.064/0001-49",
+      "cnpjClean": "09578064000149",
+      "linha": 158,
+      "nome": "EAJ ENGENHARIA LTDA",
+      "estabelecimento": "09.578.064/0001-49",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "38.088.842/0001-10",
+      "cnpjClean": "38088842000110",
+      "linha": 159,
+      "nome": "ECM ENGENHARIA LTDA",
+      "estabelecimento": "38.088.842/0001-10",
+      "uf": "AL",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "26.169.682/0001-54",
+      "cnpjClean": "26169682000154",
+      "linha": 160,
+      "nome": "ECM - FUNDACOES E CONSTRUCOES EIRELI",
+      "estabelecimento": "26.169.682/0001-54",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "19.257.358/0001-22",
+      "cnpjClean": "19257358000122",
+      "linha": 161,
+      "nome": "EDEMAR PORTO ALIMENTOS E BEBIDAS LTDA",
+      "estabelecimento": "19.257.358/0001-22",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "186.978.872-91",
+      "cnpjClean": "18697887291",
+      "linha": 162,
+      "nome": "EDEUVALDO GOMES DOS SANTOS",
+      "estabelecimento": "186.978.872-91",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "667.655.604-91",
+      "cnpjClean": "66765560491",
+      "linha": 163,
+      "nome": "EDILEUZA DIAS PORTELA",
+      "estabelecimento": "667.655.604-91",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "689.932.265-04",
+      "cnpjClean": "68993226504",
+      "linha": 164,
+      "nome": "EDILTON COSTA DA SILVA",
+      "estabelecimento": "689.932.265-04",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "558.497.763-20",
+      "cnpjClean": "55849776320",
+      "linha": 165,
+      "nome": "EDIMAR DO MONTE ARRAIS",
+      "estabelecimento": "558.497.763-20",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "087.090.175-34",
+      "cnpjClean": "08709017534",
+      "linha": 166,
+      "nome": "EDINEA OLIVEIRA JAQUEIRA DA CRUZ",
+      "estabelecimento": "087.090.175-34",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "527.029.446-04",
+      "cnpjClean": "52702944604",
+      "linha": 167,
+      "nome": "EDMARIO SILVA SANTOS",
+      "estabelecimento": "527.029.446-04",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "750.958.903-72",
+      "cnpjClean": "75095890372",
+      "linha": 168,
+      "nome": "EDMILSON DA SILVA MONTE",
+      "estabelecimento": "750.958.903-72",
+      "uf": "PI",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "465.150.621-68",
+      "cnpjClean": "46515062168",
+      "linha": 169,
+      "nome": "EDMUR MIGLIOLI JUNIOR",
+      "estabelecimento": "465.150.621-68",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "542.838.094-20",
+      "cnpjClean": "54283809420",
+      "linha": 170,
+      "nome": "EDNA ROLIM DOS SANTOS",
+      "estabelecimento": "542.838.094-20",
+      "uf": "AL",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "848.181.826-72",
+      "cnpjClean": "84818182672",
+      "linha": 171,
+      "nome": "EDSON LUIZ RODRIGUES SANTANA",
+      "estabelecimento": "848.181.826-72",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "566.137.256-68",
+      "cnpjClean": "56613725668",
+      "linha": 172,
+      "nome": "EDSON SOUTO FERREIRA",
+      "estabelecimento": "566.137.256-68",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "491.585.466-34",
+      "cnpjClean": "49158546634",
+      "linha": 173,
+      "nome": "EDUARDO AMANCIO ALVES",
+      "estabelecimento": "491.585.466-34",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "078.967.898-50",
+      "cnpjClean": "07896789850",
+      "linha": 174,
+      "nome": "EDUARDO ANTONIO BARROS DA SILVA",
+      "estabelecimento": "078.967.898-50",
+      "uf": "MT",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "000.147.811-74",
+      "cnpjClean": "00014781174",
+      "linha": 175,
+      "nome": "EDUARDO LOPES PEREIRA",
+      "estabelecimento": "000.147.811-74",
+      "uf": "TO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "699.097.841-49",
+      "cnpjClean": "69909784149",
+      "linha": 176,
+      "nome": "EDUARDO MARTINS ROSAL",
+      "estabelecimento": "699.097.841-49",
+      "uf": "PI",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "288.321.338-06",
+      "cnpjClean": "28832133806",
+      "linha": 177,
+      "nome": "EDUARDO NATANAEL DE JESUS",
+      "estabelecimento": "288.321.338-06",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "112.212.258-63",
+      "cnpjClean": "11221225863",
+      "linha": 178,
+      "nome": "EDUARDO RIBEIRO LIMA",
+      "estabelecimento": "112.212.258-63",
+      "uf": "CE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "48.966.967/0001-59",
+      "cnpjClean": "48966967000159",
+      "linha": 179,
+      "nome": "EDUARDO ROCHA DE CARVALHO LTDA",
+      "estabelecimento": "48.966.967/0001-59",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "668.511.145-34",
+      "cnpjClean": "66851114534",
+      "linha": 180,
+      "nome": "EDUARDO VELLOSO DANTAS AZI",
+      "estabelecimento": "668.511.145-34",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "030.828.544-19",
+      "cnpjClean": "03082854419",
+      "linha": 181,
+      "nome": "EDVALDO FARIAS GURJAO",
+      "estabelecimento": "030.828.544-19",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "581.341.586-68",
+      "cnpjClean": "58134158668",
+      "linha": 182,
+      "nome": "ELENCASTER CORREA SOBRAL",
+      "estabelecimento": "581.341.586-68",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "37.195.442/0001-40",
+      "cnpjClean": "37195442000140",
+      "linha": 183,
+      "nome": "ELIANE P DOS REIS-EXTRACAO LENHA LTDA",
+      "estabelecimento": "37.195.442/0001-40",
+      "uf": "DF",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "592.676.315-00",
+      "cnpjClean": "59267631500",
+      "linha": 184,
+      "nome": "ELSON SANTOS DE OLIVEIRA",
+      "estabelecimento": "592.676.315-00",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "037.456.766-29",
+      "cnpjClean": "03745676629",
+      "linha": 185,
+      "nome": "ELZA MARIA MAGALHAES DE FREITAS",
+      "estabelecimento": "037.456.766-29",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "172.582.435-34",
+      "cnpjClean": "17258243534",
+      "linha": 186,
+      "nome": "EMANOEL CARLOS FERRAZ MEIRA",
+      "estabelecimento": "172.582.435-34",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "26.061.900/0001-32",
+      "cnpjClean": "26061900000132",
+      "linha": 187,
+      "nome": "E M B DA SILVA TRANSPORTES E SERVICOS LTDA",
+      "estabelecimento": "26.061.900/0001-32",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "372.485.101-49",
+      "cnpjClean": "37248510149",
+      "linha": 188,
+      "nome": "ERNANI LUIZ SCHUCK",
+      "estabelecimento": "372.485.101-49",
+      "uf": "RR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "613.020.582-15",
+      "cnpjClean": "61302058215",
+      "linha": 189,
+      "nome": "ERNESTO HIROSHI HARAYASHIKI",
+      "estabelecimento": "613.020.582-15",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "081.865.372-87",
+      "cnpjClean": "08186537287",
+      "linha": 190,
+      "nome": "ERONIDES DOS SANTOS DUTRA",
+      "estabelecimento": "081.865.372-87",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "023.215.494-59",
+      "cnpjClean": "02321549459",
+      "linha": 191,
+      "nome": "ESMERALDA LUCIA VIEIRA FIALHO",
+      "estabelecimento": "023.215.494-59",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "374.970.576-34",
+      "cnpjClean": "37497057634",
+      "linha": 192,
+      "nome": "ESPÓLIO DE RAIMUNDA BARROS",
+      "estabelecimento": "374.970.576-34",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "026.224.701-18",
+      "cnpjClean": "02622470118",
+      "linha": 193,
+      "nome": "EULALIO ORLANDO DUARTE",
+      "estabelecimento": "026.224.701-18",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "056.291.101-44",
+      "cnpjClean": "05629110144",
+      "linha": 194,
+      "nome": "EURIPEDES GONZAGA DOS SANTOS",
+      "estabelecimento": "056.291.101-44",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "597.969.875-20",
+      "cnpjClean": "59796987520",
+      "linha": 195,
+      "nome": "EVANDRO DO VALE SANTOS",
+      "estabelecimento": "597.969.875-20",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "799.269.246-20",
+      "cnpjClean": "79926924620",
+      "linha": 196,
+      "nome": "EVANIO CAETANO DA SILVA",
+      "estabelecimento": "799.269.246-20",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "645.388.340-68",
+      "cnpjClean": "64538834068",
+      "linha": 197,
+      "nome": "EVERTON GIRELLI",
+      "estabelecimento": "645.388.340-68",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "858.800.439-91",
+      "cnpjClean": "85880043991",
+      "linha": 198,
+      "nome": "FABIANO MANABU OGAWA",
+      "estabelecimento": "858.800.439-91",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "10.501.574/0001-05",
+      "cnpjClean": "10501574000105",
+      "linha": 199,
+      "nome": "FAM CONSTRUTORA LTDA",
+      "estabelecimento": "10.501.574/0001-05",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "182.026.757-15",
+      "cnpjClean": "18202675715",
+      "linha": 200,
+      "nome": "FATIMA LUCIA AMARO DE LACERDA",
+      "estabelecimento": "182.026.757-15",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "17.713.469/0001-70",
+      "cnpjClean": "17713469000170",
+      "linha": 201,
+      "nome": "FAZENDA SERRADINHO LTDA",
+      "estabelecimento": "17.713.469/0001-70",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "21.610.272/0002-64",
+      "cnpjClean": "21610272000264",
+      "linha": 202,
+      "nome": "FAZENDAS KLEM IMPORTACAO E EXPORTACAO DE CAFE LTDA",
+      "estabelecimento": "21.610.272/0002-64",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "35.960.502/0001-49",
+      "cnpjClean": "35960502000149",
+      "linha": 203,
+      "nome": "FAZENDAS REUNIDAS SAO BENTO - BOVINOS E CARVAO LTDA",
+      "estabelecimento": "35.960.502/0001-49",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "48.759.988/0001-01",
+      "cnpjClean": "48759988000101",
+      "linha": 204,
+      "nome": "FBC BACKSTAGE EVENTOS LTDA",
+      "estabelecimento": "48.759.988/0001-01",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "074.954.996-30",
+      "cnpjClean": "07495499630",
+      "linha": 205,
+      "nome": "FELIPE FARIA REIS",
+      "estabelecimento": "074.954.996-30",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "038.517.494-21",
+      "cnpjClean": "03851749421",
+      "linha": 206,
+      "nome": "FERNANDO GUSTAVO XAVIER DOS SANTOS",
+      "estabelecimento": "038.517.494-21",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "264.149.105-20",
+      "cnpjClean": "26414910520",
+      "linha": 207,
+      "nome": "FERNANDO SANTANA LIMA",
+      "estabelecimento": "264.149.105-20",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "07.024.593/0001-75",
+      "cnpjClean": "07024593000175",
+      "linha": 208,
+      "nome": "FERRARI CONSTRUCOES E SERVICOS LTDA",
+      "estabelecimento": "07.024.593/0001-75",
+      "uf": "RR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "23.001.742/0001-37",
+      "cnpjClean": "23001742000137",
+      "linha": 209,
+      "nome": "FLAVIO ANTONIO GIASSON 07786794115",
+      "estabelecimento": "23.001.742/0001-37",
+      "uf": "PR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "179.195.179-15",
+      "cnpjClean": "17919517915",
+      "linha": 210,
+      "nome": "FLAVIO WALTER MEYER",
+      "estabelecimento": "179.195.179-15",
+      "uf": "SC",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "45.177.412/0001-30",
+      "cnpjClean": "45177412000130",
+      "linha": 211,
+      "nome": "FLORESTAL SAO BENTO LTDA",
+      "estabelecimento": "45.177.412/0001-30",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "341.218.463-20",
+      "cnpjClean": "34121846320",
+      "linha": 212,
+      "nome": "FRANCISCO DAS CHAGAS DIAS ROSAL JUNIOR",
+      "estabelecimento": "341.218.463-20",
+      "uf": "PI",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "602.333.063-07",
+      "cnpjClean": "60233306307",
+      "linha": 213,
+      "nome": "FRANCISCO DE ASSIS DOS SANTOS",
+      "estabelecimento": "602.333.063-07",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "048.361.411-41",
+      "cnpjClean": "04836141141",
+      "linha": 214,
+      "nome": "FRANCISCO JACKSON DOS SANTOS NETO",
+      "estabelecimento": "048.361.411-41",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "060.120.613-40",
+      "cnpjClean": "06012061340",
+      "linha": 215,
+      "nome": "FRANCISCO RAIMUNDO CARNEIRO",
+      "estabelecimento": "060.120.613-40",
+      "uf": "CE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "112.212.318-39",
+      "cnpjClean": "11221231839",
+      "linha": 216,
+      "nome": "FRANCISCO RIBEIRO LIMA FILHO",
+      "estabelecimento": "112.212.318-39",
+      "uf": "CE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "384.437.858-88",
+      "cnpjClean": "38443785888",
+      "linha": 217,
+      "nome": "FREDDIE PEREIRA COSTA",
+      "estabelecimento": "384.437.858-88",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "472.112.617-49",
+      "cnpjClean": "47211261749",
+      "linha": 218,
+      "nome": "FREDERICO AZEVEDO GAMA",
+      "estabelecimento": "472.112.617-49",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "138.735.478-72",
+      "cnpjClean": "13873547872",
+      "linha": 219,
+      "nome": "FUAD FELIPE",
+      "estabelecimento": "138.735.478-72",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "13.458.334/0001-55",
+      "cnpjClean": "13458334000155",
+      "linha": 220,
+      "nome": "G10 OLIVEIRA CONSTRUCOES LTDA",
+      "estabelecimento": "13.458.334/0001-55",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "022.897.153-52",
+      "cnpjClean": "02289715352",
+      "linha": 221,
+      "nome": "GABRIELLYAGUIAR ARRUDA",
+      "estabelecimento": "022.897.153-52",
+      "uf": "DF",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "080.714.385-53",
+      "cnpjClean": "08071438553",
+      "linha": 222,
+      "nome": "GERALDO AVELINO DA SILVA",
+      "estabelecimento": "080.714.385-53",
+      "uf": "AL",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "018.626.185-34",
+      "cnpjClean": "01862618534",
+      "linha": 223,
+      "nome": "GERALDO DE ARAGAO BULCAO",
+      "estabelecimento": "018.626.185-34",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "088.811.979-87",
+      "cnpjClean": "08881197987",
+      "linha": 224,
+      "nome": "GERALDO DONI JUNIOR",
+      "estabelecimento": "088.811.979-87",
+      "uf": "PR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "291.029.527-34",
+      "cnpjClean": "29102952734",
+      "linha": 225,
+      "nome": "GERALDO PINHO",
+      "estabelecimento": "291.029.527-34",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "27.518.021/0001-50",
+      "cnpjClean": "27518021000150",
+      "linha": 226,
+      "nome": "GEREZIM MINERACAO LTDA",
+      "estabelecimento": "27.518.021/0001-50",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "889.449.728-34",
+      "cnpjClean": "88944972834",
+      "linha": 227,
+      "nome": "GERONIMO JOAQUIM PEREIRA",
+      "estabelecimento": "889.449.728-34",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "635.125.720-49",
+      "cnpjClean": "63512572049",
+      "linha": 228,
+      "nome": "GERUZA DOS SANTOS REIS",
+      "estabelecimento": "635.125.720-49",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "018.346.083-92",
+      "cnpjClean": "01834608392",
+      "linha": 229,
+      "nome": "GILBERTO COSTA SILVA",
+      "estabelecimento": "018.346.083-92",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "264.556.847-53",
+      "cnpjClean": "26455684753",
+      "linha": 230,
+      "nome": "GILBERTO RESTUM SIQUEIRA",
+      "estabelecimento": "264.556.847-53",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "38.529.914/0001-17",
+      "cnpjClean": "38529914000117",
+      "linha": 231,
+      "nome": "GILBERTO SILVA CERQUEIRA 00035563443",
+      "estabelecimento": "38.529.914/0001-17",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "359.775.582-87",
+      "cnpjClean": "35977558287",
+      "linha": 232,
+      "nome": "GILCIMAR MODESTO DA SILVA",
+      "estabelecimento": "359.775.582-87",
+      "uf": "AM",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "468.105.445-34",
+      "cnpjClean": "46810544534",
+      "linha": 233,
+      "nome": "GILDO MOTA DE ALMEIDA",
+      "estabelecimento": "468.105.445-34",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "706.144.075-91",
+      "cnpjClean": "70614407591",
+      "linha": 234,
+      "nome": "GILSON LUIZ ALVES DE JESUS",
+      "estabelecimento": "706.144.075-91",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "646.111.595-15",
+      "cnpjClean": "64611159515",
+      "linha": 235,
+      "nome": "GILVAN LEAL DOS SANTOS",
+      "estabelecimento": "646.111.595-15",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "023.918.055-00",
+      "cnpjClean": "02391805500",
+      "linha": 236,
+      "nome": "GIOVANI BATISTA SPAGNUOLO",
+      "estabelecimento": "023.918.055-00",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "44.115.600/0001-70",
+      "cnpjClean": "44115600000170",
+      "linha": 237,
+      "nome": "GUEDES DOS SANTOS HOLDING LTDA",
+      "estabelecimento": "44.115.600/0001-70",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "36.912.947/0001-16",
+      "cnpjClean": "36912947000116",
+      "linha": 238,
+      "nome": "GUIZARDI JUNIOR CONSTRUTORA E INCORPORADORA LTDA",
+      "estabelecimento": "36.912.947/0001-16",
+      "uf": "MT",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "46.510.975/0001-60",
+      "cnpjClean": "46510975000160",
+      "linha": 239,
+      "nome": "GUZZI ENGENHARIA E ARQUITETURA LTDA",
+      "estabelecimento": "46.510.975/0001-60",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "763.926.784-68",
+      "cnpjClean": "76392678468",
+      "linha": 240,
+      "nome": "HAROLDO DOS SANTOS ALVES",
+      "estabelecimento": "763.926.784-68",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "991.097.357-04",
+      "cnpjClean": "99109735704",
+      "linha": 241,
+      "nome": "HELENIO JOSE DE CARVALHO",
+      "estabelecimento": "991.097.357-04",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "238.285.103-10",
+      "cnpjClean": "23828510310",
+      "linha": 242,
+      "nome": "HELIO BATISTA DOS SANTOS",
+      "estabelecimento": "238.285.103-10",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "460.226.430-15",
+      "cnpjClean": "46022643015",
+      "linha": 243,
+      "nome": "HILARIO HENRIQUE DA SILVA",
+      "estabelecimento": "460.226.430-15",
+      "uf": "SC",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "223.828.108-82",
+      "cnpjClean": "22382810882",
+      "linha": 244,
+      "nome": "HILKIAS KEMPVICZ LINS",
+      "estabelecimento": "223.828.108-82",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "577.940.143-87",
+      "cnpjClean": "57794014387",
+      "linha": 245,
+      "nome": "HILO ROCHA GUIMARAES JUNIOR",
+      "estabelecimento": "577.940.143-87",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "33.711.795/0001-03",
+      "cnpjClean": "33711795000103",
+      "linha": 246,
+      "nome": "HORTIFRUTIGRANJEIROS VACARIA LTDA",
+      "estabelecimento": "33.711.795/0001-03",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "67.473.348/0001-77",
+      "cnpjClean": "67473348000177",
+      "linha": 247,
+      "nome": "HOTEL LEPETIT LTDA",
+      "estabelecimento": "67.473.348/0001-77",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "22.224.062/0001-10",
+      "cnpjClean": "22224062000110",
+      "linha": 248,
+      "nome": "H S DE MENEZES",
+      "estabelecimento": "22.224.062/0001-10",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "428.598.165-34",
+      "cnpjClean": "42859816534",
+      "linha": 249,
+      "nome": "HUDSON PRIMO COELHO",
+      "estabelecimento": "428.598.165-34",
+      "uf": "AC",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "714.953.381-77",
+      "cnpjClean": "71495338177",
+      "linha": 250,
+      "nome": "HUSSEIN AL SABBAGH",
+      "estabelecimento": "714.953.381-77",
+      "uf": "DF",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "107.168.839-10",
+      "cnpjClean": "10716883910",
+      "linha": 251,
+      "nome": "IAN GERALDO PEDRINI",
+      "estabelecimento": "107.168.839-10",
+      "uf": "DF",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "043.135.345-04",
+      "cnpjClean": "04313534504",
+      "linha": 252,
+      "nome": "IDALIA SANTOS PEREIRA",
+      "estabelecimento": "043.135.345-04",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "40.368.429/0001-50",
+      "cnpjClean": "40368429000150",
+      "linha": 253,
+      "nome": "ILSON JOSÉ DA SILVA",
+      "estabelecimento": "40.368.429/0001-50",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "24.750.691/0002-90",
+      "cnpjClean": "24750691000290",
+      "linha": 254,
+      "nome": "IMPERIO VERDE INDUSTRIA E EMPREENDIMENTOS LTDA",
+      "estabelecimento": "24.750.691/0002-90",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "04.539.645/0001-58",
+      "cnpjClean": "04539645000158",
+      "linha": 255,
+      "nome": "INDÚSTRIA DE ERVA MATE MACEDO LTDA.",
+      "estabelecimento": "04.539.645/0001-58",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "14.454.243/0001-04",
+      "cnpjClean": "14454243000104",
+      "linha": 256,
+      "nome": "INVICTA COMERCIO E EMPREENDIMENTOS EIRELI",
+      "estabelecimento": "14.454.243/0001-04",
+      "uf": "RR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "040.139.484-00",
+      "cnpjClean": "04013948400",
+      "linha": 257,
+      "nome": "IREMAR SILVA LIMA",
+      "estabelecimento": "040.139.484-00",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "66.459.314/0001-65",
+      "cnpjClean": "66459314000165",
+      "linha": 258,
+      "nome": "IVAN TELES OLIVEIRA",
+      "estabelecimento": "66.459.314/0001-65",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "280.869.457-15",
+      "cnpjClean": "28086945715",
+      "linha": 259,
+      "nome": "IVO DA GAMA PIRES",
+      "estabelecimento": "280.869.457-15",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "449.878.975-04",
+      "cnpjClean": "44987897504",
+      "linha": 260,
+      "nome": "IZA MARIA MONTEIRO NASCIMENTO BARRETO",
+      "estabelecimento": "449.878.975-04",
+      "uf": "SE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "28.763.237/0001-43",
+      "cnpjClean": "28763237000143",
+      "linha": 261,
+      "nome": "J A C BRANDAO LTDA",
+      "estabelecimento": "28.763.237/0001-43",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "022.886.100-42",
+      "cnpjClean": "02288610042",
+      "linha": 262,
+      "nome": "JACIARA PINTO DE LIMA DE FREITAS",
+      "estabelecimento": "022.886.100-42",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "413.806.655-15",
+      "cnpjClean": "41380665515",
+      "linha": 263,
+      "nome": "JACKSON SOBRAL DE ALMEIDA",
+      "estabelecimento": "413.806.655-15",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "442.648.447-20",
+      "cnpjClean": "44264844720",
+      "linha": 264,
+      "nome": "JACY PEREIRA DE SIQUEIRA",
+      "estabelecimento": "442.648.447-20",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "23.529.951/0001-58",
+      "cnpjClean": "23529951000158",
+      "linha": 265,
+      "nome": "JAICO CONSTRUTORA E DISTRIBUIDORA LTDA",
+      "estabelecimento": "23.529.951/0001-58",
+      "uf": "PI",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "039.080.701-04",
+      "cnpjClean": "03908070104",
+      "linha": 266,
+      "nome": "JAIME RODRIGUES DA CUNHA",
+      "estabelecimento": "039.080.701-04",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "04.345.274/0006-88",
+      "cnpjClean": "04345274000688",
+      "linha": 267,
+      "nome": "J C CONSTRUCOES E IMOBILIARIA EIRELI",
+      "estabelecimento": "04.345.274/0006-88",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "04.345.274/0003-35",
+      "cnpjClean": "04345274000335",
+      "linha": 268,
+      "nome": "J C CONSTRUÇÕES E IMOBILIÁRIA LTDA",
+      "estabelecimento": "04.345.274/0003-35",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "481.259.202-00",
+      "cnpjClean": "48125920200",
+      "linha": 269,
+      "nome": "JEAN KASSIO ALVES SOUZA",
+      "estabelecimento": "481.259.202-00",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "241.452.688-22",
+      "cnpjClean": "24145268822",
+      "linha": 270,
+      "nome": "JENRY ADAN RAMOS",
+      "estabelecimento": "241.452.688-22",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "379.868.304-25",
+      "cnpjClean": "37986830425",
+      "linha": 271,
+      "nome": "JESILA MEYRE DE FRANCA ALBUQUERQUE",
+      "estabelecimento": "379.868.304-25",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "233.459.758-90",
+      "cnpjClean": "23345975890",
+      "linha": 272,
+      "nome": "JESSICA APARECIDA DOS SANTOS",
+      "estabelecimento": "233.459.758-90",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "710.146.952-36",
+      "cnpjClean": "71014695236",
+      "linha": 273,
+      "nome": "JESUS RAMON LEONETT LEONETT",
+      "estabelecimento": "710.146.952-36",
+      "uf": "RR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "50.170.856/0001-83",
+      "cnpjClean": "50170856000183",
+      "linha": 274,
+      "nome": "JL PRODUCOES AGROFLORESTAIS LTDA",
+      "estabelecimento": "50.170.856/0001-83",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "293.457.108-41",
+      "cnpjClean": "29345710841",
+      "linha": 275,
+      "nome": "JOABE EDSON MIGOTTO",
+      "estabelecimento": "293.457.108-41",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "860.265.266-68",
+      "cnpjClean": "86026526668",
+      "linha": 276,
+      "nome": "JOANA D‘ARC GONÇALVES DA SILVA",
+      "estabelecimento": "860.265.266-68",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "049.713.194-33",
+      "cnpjClean": "04971319433",
+      "linha": 277,
+      "nome": "JOAO ANTONIO DA SILVA",
+      "estabelecimento": "049.713.194-33",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "177.072.425-72",
+      "cnpjClean": "17707242572",
+      "linha": 278,
+      "nome": "JOAO DANIEL MACHADO DE CASTRO",
+      "estabelecimento": "177.072.425-72",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "255.007.798-93",
+      "cnpjClean": "25500779893",
+      "linha": 279,
+      "nome": "JOAO ERALDO MOREIRA DA SILVA",
+      "estabelecimento": "255.007.798-93",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "555.729.526-72",
+      "cnpjClean": "55572952672",
+      "linha": 280,
+      "nome": "JOAO FELICIANO DA SILVA",
+      "estabelecimento": "555.729.526-72",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "620.999.735-04",
+      "cnpjClean": "62099973504",
+      "linha": 281,
+      "nome": "JOAO MARQUES PEREIRA DA COSTA E SILVA",
+      "estabelecimento": "620.999.735-04",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "014.037.335-70",
+      "cnpjClean": "01403733570",
+      "linha": 282,
+      "nome": "JOAO MIGUEL GOMES ANDRADE",
+      "estabelecimento": "014.037.335-70",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "36.553.189/0001-97",
+      "cnpjClean": "36553189000197",
+      "linha": 283,
+      "nome": "JOAO MILTON DE OLIVEIRA BALDEZ 04880725579",
+      "estabelecimento": "36.553.189/0001-97",
+      "uf": "MT",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "772.906.582-72",
+      "cnpjClean": "77290658272",
+      "linha": 284,
+      "nome": "JOAO PAULO NUNES DA SILVA",
+      "estabelecimento": "772.906.582-72",
+      "uf": "AC",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "059.378.228-38",
+      "cnpjClean": "05937822838",
+      "linha": 285,
+      "nome": "JOAO SILVA DE SOUZA",
+      "estabelecimento": "059.378.228-38",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "451.478.689-68",
+      "cnpjClean": "45147868968",
+      "linha": 286,
+      "nome": "JOAO VALDEMAR LOPES",
+      "estabelecimento": "451.478.689-68",
+      "uf": "PR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "725.335.017-00",
+      "cnpjClean": "72533501700",
+      "linha": 287,
+      "nome": "JOAQUIM ALVES DE ASSUNÇÃO",
+      "estabelecimento": "725.335.017-00",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "257.677.205-68",
+      "cnpjClean": "25767720568",
+      "linha": 288,
+      "nome": "JOAQUIM NERI NETO",
+      "estabelecimento": "257.677.205-68",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "02.910.540/0002-19",
+      "cnpjClean": "02910540000219",
+      "linha": 289,
+      "nome": "JOCA PARTICIPAÇÕES S/A",
+      "estabelecimento": "02.910.540/0002-19",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "421.826.033-87",
+      "cnpjClean": "42182603387",
+      "linha": 290,
+      "nome": "JOCELIO BARBOSA GONDIM",
+      "estabelecimento": "421.826.033-87",
+      "uf": "CE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "10.137.644/0001-80",
+      "cnpjClean": "10137644000180",
+      "linha": 291,
+      "nome": "JOCKEY CLUB RORAIMENSE",
+      "estabelecimento": "10.137.644/0001-80",
+      "uf": "RR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "008.594.806-31",
+      "cnpjClean": "00859480631",
+      "linha": 292,
+      "nome": "JOEL CARLOS DE MORAES",
+      "estabelecimento": "008.594.806-31",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "707.772.312-71",
+      "cnpjClean": "70777231271",
+      "linha": 293,
+      "nome": "JOEL DOS REIS CRUZ",
+      "estabelecimento": "707.772.312-71",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "010.673.286-29",
+      "cnpjClean": "01067328629",
+      "linha": 294,
+      "nome": "JORGE FELIX GAVIOLI DO COUTO",
+      "estabelecimento": "010.673.286-29",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "218.612.138-75",
+      "cnpjClean": "21861213875",
+      "linha": 295,
+      "nome": "JOSE ADEILSON RODRIGUES",
+      "estabelecimento": "218.612.138-75",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "706.861.655-00",
+      "cnpjClean": "70686165500",
+      "linha": 296,
+      "nome": "JOSE ALECIO ROCHA MONTENEGRO",
+      "estabelecimento": "706.861.655-00",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "953.923.514-68",
+      "cnpjClean": "95392351468",
+      "linha": 297,
+      "nome": "JOSE BELO DA SILVA NETO",
+      "estabelecimento": "953.923.514-68",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "004.789.386-91",
+      "cnpjClean": "00478938691",
+      "linha": 298,
+      "nome": "JOSE CAETANO BORGES NETO",
+      "estabelecimento": "004.789.386-91",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "000.853.815-86",
+      "cnpjClean": "00085381586",
+      "linha": 299,
+      "nome": "JOSE CARDOSO DE OLIVEIRA",
+      "estabelecimento": "000.853.815-86",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "454.984.314-49",
+      "cnpjClean": "45498431449",
+      "linha": 300,
+      "nome": "JOSE CARLOS PEIXOTO DE OLIVEIRA",
+      "estabelecimento": "454.984.314-49",
+      "uf": "AL",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "671.361.172-91",
+      "cnpjClean": "67136117291",
+      "linha": 301,
+      "nome": "JOSE CARLOS RIBEIRO DOS SANTOS",
+      "estabelecimento": "671.361.172-91",
+      "uf": "RO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "214.643.597-68",
+      "cnpjClean": "21464359768",
+      "linha": 302,
+      "nome": "JOSE DAVID BONINSENHA",
+      "estabelecimento": "214.643.597-68",
+      "uf": "ES",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "342.598.309-10",
+      "cnpjClean": "34259830910",
+      "linha": 303,
+      "nome": "JOSÉ DAVID MOROTSKOSKI",
+      "estabelecimento": "342.598.309-10",
+      "uf": "SC",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "096.332.355-53",
+      "cnpjClean": "09633235553",
+      "linha": 304,
+      "nome": "JOSE DE JESUS",
+      "estabelecimento": "096.332.355-53",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "908.799.376-53",
+      "cnpjClean": "90879937653",
+      "linha": 305,
+      "nome": "JOSE EDSON RIBEIRO",
+      "estabelecimento": "908.799.376-53",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "330.695.814-04",
+      "cnpjClean": "33069581404",
+      "linha": 306,
+      "nome": "JOSE FABIO MARTINS DA SILVA",
+      "estabelecimento": "330.695.814-04",
+      "uf": "RR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "658.614.506-68",
+      "cnpjClean": "65861450668",
+      "linha": 307,
+      "nome": "JOSE GERALDO DE ALMEIDA",
+      "estabelecimento": "658.614.506-68",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "366.461.806-87",
+      "cnpjClean": "36646180687",
+      "linha": 308,
+      "nome": "JOSE LINO RABELO",
+      "estabelecimento": "366.461.806-87",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "488.825.007-30",
+      "cnpjClean": "48882500730",
+      "linha": 309,
+      "nome": "JOSE MARIA PIMENTEL BARCELLOS",
+      "estabelecimento": "488.825.007-30",
+      "uf": "ES",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "022.727.124-60",
+      "cnpjClean": "02272712460",
+      "linha": 310,
+      "nome": "JOSEMAR JOSE DA SILVA",
+      "estabelecimento": "022.727.124-60",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "118.869.946-68",
+      "cnpjClean": "11886994668",
+      "linha": 311,
+      "nome": "JOSE PAULO TEIXEIRA",
+      "estabelecimento": "118.869.946-68",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "39.617.992/0001-36",
+      "cnpjClean": "39617992000136",
+      "linha": 312,
+      "nome": "JOSE RODRIGO PANAMA MOROCHO 23862099890",
+      "estabelecimento": "39.617.992/0001-36",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "064.386.605-15",
+      "cnpjClean": "06438660515",
+      "linha": 313,
+      "nome": "JOSE SIMOES AMARAL",
+      "estabelecimento": "064.386.605-15",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "322.485.636-04",
+      "cnpjClean": "32248563604",
+      "linha": 314,
+      "nome": "JOSE TARCISIO DE SOUZA",
+      "estabelecimento": "322.485.636-04",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "114.321.207-00",
+      "cnpjClean": "11432120700",
+      "linha": 315,
+      "nome": "JOSE VAGNER GUIMARAES BARBOSA JUNIOR",
+      "estabelecimento": "114.321.207-00",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "560.633.427-53",
+      "cnpjClean": "56063342753",
+      "linha": 316,
+      "nome": "JOSE VALENTIN FRACAROLI",
+      "estabelecimento": "560.633.427-53",
+      "uf": "ES",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "566.288.201-06",
+      "cnpjClean": "56628820106",
+      "linha": 317,
+      "nome": "JOSE VIRGINIO DOS SANTOS FILHO",
+      "estabelecimento": "566.288.201-06",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "213.225.035-91",
+      "cnpjClean": "21322503591",
+      "linha": 318,
+      "nome": "JOSE WILSON NUNES MOURA",
+      "estabelecimento": "213.225.035-91",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "55.535.614/0001-60",
+      "cnpjClean": "55535614000160",
+      "linha": 319,
+      "nome": "J O SILVA EMPREITEIRA DE MAO DE OBRA LTDA",
+      "estabelecimento": "55.535.614/0001-60",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "072.199.213-73",
+      "cnpjClean": "07219921373",
+      "linha": 320,
+      "nome": "JOSSIE THALIS LINHARES DA ROCHA",
+      "estabelecimento": "072.199.213-73",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "188.726.626-72",
+      "cnpjClean": "18872662672",
+      "linha": 321,
+      "nome": "JOSUE BEGALI DA LUZ",
+      "estabelecimento": "188.726.626-72",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "074.266.150-49",
+      "cnpjClean": "07426615049",
+      "linha": 322,
+      "nome": "JOVITA ESQUINA ANNES SALLES",
+      "estabelecimento": "074.266.150-49",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "673.863.775-68",
+      "cnpjClean": "67386377568",
+      "linha": 323,
+      "nome": "JUBERTO FERREIRA ALVES",
+      "estabelecimento": "673.863.775-68",
+      "uf": "PI",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "329.282.158-40",
+      "cnpjClean": "32928215840",
+      "linha": 324,
+      "nome": "JULIANO APARECIDO DA FONSECA BARALDI",
+      "estabelecimento": "329.282.158-40",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "092.217.187-43",
+      "cnpjClean": "09221718743",
+      "linha": 325,
+      "nome": "JULIANO DA CONCEICAO CABRAL",
+      "estabelecimento": "092.217.187-43",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "205.553.758-03",
+      "cnpjClean": "20555375803",
+      "linha": 326,
+      "nome": "JULIANO DO CARMO FELTRAN",
+      "estabelecimento": "205.553.758-03",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "26.399.179/0001-95",
+      "cnpjClean": "26399179000195",
+      "linha": 327,
+      "nome": "JULIAN ZEGARRA MAMANI",
+      "estabelecimento": "26.399.179/0001-95",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "003.441.640-47",
+      "cnpjClean": "00344164047",
+      "linha": 328,
+      "nome": "JULINEI CAMARGO TAVARES",
+      "estabelecimento": "003.441.640-47",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "525.211.175-87",
+      "cnpjClean": "52521117587",
+      "linha": 329,
+      "nome": "JÚLIO KLEBER COELHO DE ANDRADE",
+      "estabelecimento": "525.211.175-87",
+      "uf": "RO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "863.171.056-34",
+      "cnpjClean": "86317105634",
+      "linha": 330,
+      "nome": "JURACI DE BESSA PEREIRA",
+      "estabelecimento": "863.171.056-34",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "11.578.843/0001-96",
+      "cnpjClean": "11578843000196",
+      "linha": 331,
+      "nome": "JURANDI MONTEIRO DA SILVA",
+      "estabelecimento": "11.578.843/0001-96",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "364.066.603-82",
+      "cnpjClean": "36406660382",
+      "linha": 332,
+      "nome": "JUSCELINO DE SOUSA RESENDE",
+      "estabelecimento": "364.066.603-82",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "883.931.009-68",
+      "cnpjClean": "88393100968",
+      "linha": 333,
+      "nome": "JUSINEI ORTIZ DE CARVALHO",
+      "estabelecimento": "883.931.009-68",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "08.672.027/0001-32",
+      "cnpjClean": "08672027000132",
+      "linha": 334,
+      "nome": "J W SOUSA LIMA LTDA",
+      "estabelecimento": "08.672.027/0001-32",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "105.599.679-69",
+      "cnpjClean": "10559967969",
+      "linha": 335,
+      "nome": "KAIO CESAR RODRIGUES RUBIO",
+      "estabelecimento": "105.599.679-69",
+      "uf": "PR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "11.306.141/0001-53",
+      "cnpjClean": "11306141000153",
+      "linha": 336,
+      "nome": "KANOVA ENGENHARIA E CONSTRUCOES LTDA",
+      "estabelecimento": "11.306.141/0001-53",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "235.349.298-37",
+      "cnpjClean": "23534929837",
+      "linha": 337,
+      "nome": "KATIA NINETH PORCEL ROSALES",
+      "estabelecimento": "235.349.298-37",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "016.710.572-87",
+      "cnpjClean": "01671057287",
+      "linha": 338,
+      "nome": "KUNIO KOBAYASHI",
+      "estabelecimento": "016.710.572-87",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "51.082.126/0001-93",
+      "cnpjClean": "51082126000193",
+      "linha": 339,
+      "nome": "KYUDO SUSHI RESTAURANTE LTDA",
+      "estabelecimento": "51.082.126/0001-93",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "996.860.745-20",
+      "cnpjClean": "99686074520",
+      "linha": 340,
+      "nome": "LAELSON FERREIRA DE OLIVEIRA",
+      "estabelecimento": "996.860.745-20",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "08.282.290/0001-15",
+      "cnpjClean": "08282290000115",
+      "linha": 341,
+      "nome": "LAMENHA CONSTRUCOES, INCORPORACOES E EMPREENDIMENTOS LTDA",
+      "estabelecimento": "08.282.290/0001-15",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "32.897.989/0001-74",
+      "cnpjClean": "32897989000174",
+      "linha": 342,
+      "nome": "LANDSEA SERVICOS TERRESTRES E MARITIMOS LTDA",
+      "estabelecimento": "32.897.989/0001-74",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "05.089.196/0001-56",
+      "cnpjClean": "05089196000156",
+      "linha": 343,
+      "nome": "LAURENCIO RIOS DOS SANTOS",
+      "estabelecimento": "05.089.196/0001-56",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "077.580.446-03",
+      "cnpjClean": "07758044603",
+      "linha": 344,
+      "nome": "LEANDRO APARECIDO MACHADO",
+      "estabelecimento": "077.580.446-03",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "853.169.035-87",
+      "cnpjClean": "85316903587",
+      "linha": 345,
+      "nome": "LEANDRO DA SILVA OLIVEIRA",
+      "estabelecimento": "853.169.035-87",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "097.226.216-45",
+      "cnpjClean": "09722621645",
+      "linha": 346,
+      "nome": "LENE FRANCISCO VILELA SILVA",
+      "estabelecimento": "097.226.216-45",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "775.527.411-04",
+      "cnpjClean": "77552741104",
+      "linha": 347,
+      "nome": "LEOMAR MESSIAS DE OLIVEIRA",
+      "estabelecimento": "775.527.411-04",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "563.000.341-00",
+      "cnpjClean": "56300034100",
+      "linha": 348,
+      "nome": "LEONICE VILHARGA DE BRITO",
+      "estabelecimento": "563.000.341-00",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "045.382.558-31",
+      "cnpjClean": "04538255831",
+      "linha": 349,
+      "nome": "LEONILDO MARLINS BARBOSA DE CASTRO",
+      "estabelecimento": "045.382.558-31",
+      "uf": "MT",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "20.199.244/0001-52",
+      "cnpjClean": "20199244000152",
+      "linha": 350,
+      "nome": "LILIANE CARVALHO DE BRITO",
+      "estabelecimento": "20.199.244/0001-52",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "43.242.925/0001-51",
+      "cnpjClean": "43242925000151",
+      "linha": 351,
+      "nome": "LITORAL SUL CHURRASCARIA LTDA",
+      "estabelecimento": "43.242.925/0001-51",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "27.350.494/0001-90",
+      "cnpjClean": "27350494000190",
+      "linha": 352,
+      "nome": "LITORANEA LOCACOES LTDA",
+      "estabelecimento": "27.350.494/0001-90",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "44.988.138/0001-16",
+      "cnpjClean": "44988138000116",
+      "linha": 353,
+      "nome": "LLB PRESTADORA DE SERVICOS LTDA",
+      "estabelecimento": "44.988.138/0001-16",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "30.846.560/0001-22",
+      "cnpjClean": "30846560000122",
+      "linha": 354,
+      "nome": "LOTEAMENTO JOCKEY CLUB SPE LTDA",
+      "estabelecimento": "30.846.560/0001-22",
+      "uf": "RR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "092.230.816-02",
+      "cnpjClean": "09223081602",
+      "linha": 355,
+      "nome": "LUCAS RODRIGO GARCIA PIRES",
+      "estabelecimento": "092.230.816-02",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "159.712.458-30",
+      "cnpjClean": "15971245830",
+      "linha": 356,
+      "nome": "LUCIANA COZAC SAQUY",
+      "estabelecimento": "159.712.458-30",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "091.001.130-34",
+      "cnpjClean": "09100113034",
+      "linha": 357,
+      "nome": "LUCIA REGINA DIAS DELL AGLIO",
+      "estabelecimento": "091.001.130-34",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "952.844.353-20",
+      "cnpjClean": "95284435320",
+      "linha": 358,
+      "nome": "LUDJALMA DE SOUSA ARAUJO",
+      "estabelecimento": "952.844.353-20",
+      "uf": "PI",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "396.572.641-20",
+      "cnpjClean": "39657264120",
+      "linha": 359,
+      "nome": "LUIS ALBERTO DE SOUZA",
+      "estabelecimento": "396.572.641-20",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "175.605.783-49",
+      "cnpjClean": "17560578349",
+      "linha": 360,
+      "nome": "LUIS MARTINS DE SOUSA",
+      "estabelecimento": "175.605.783-49",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "117.748.947-34",
+      "cnpjClean": "11774894734",
+      "linha": 361,
+      "nome": "LUIZ APOLONIO",
+      "estabelecimento": "117.748.947-34",
+      "uf": "ES",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "783.820.419-49",
+      "cnpjClean": "78382041949",
+      "linha": 362,
+      "nome": "LUIZ CARLOS DE OLIVEIRA",
+      "estabelecimento": "783.820.419-49",
+      "uf": "PR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "471.603.496-87",
+      "cnpjClean": "47160349687",
+      "linha": 363,
+      "nome": "LUIZ CARLOS MOREIRA",
+      "estabelecimento": "471.603.496-87",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "387.219.884-04",
+      "cnpjClean": "38721988404",
+      "linha": 364,
+      "nome": "LUIZ FAGUNDES DA SILVA",
+      "estabelecimento": "387.219.884-04",
+      "uf": "AL",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "603.947.496-34",
+      "cnpjClean": "60394749634",
+      "linha": 365,
+      "nome": "LUIZ HENRIQUE BERNARDES",
+      "estabelecimento": "603.947.496-34",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "46.313.739/0001-54",
+      "cnpjClean": "46313739000154",
+      "linha": 366,
+      "nome": "M &amp; A DISTRIBUIDORA &amp; CONVENIENCIA LTDA",
+      "estabelecimento": "46.313.739/0001-54",
+      "uf": "DF",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "719.047.196-00",
+      "cnpjClean": "71904719600",
+      "linha": 367,
+      "nome": "MAISA DE PAULA PIRES CAPUZZO FERREIRA",
+      "estabelecimento": "719.047.196-00",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "34.244.876/0001-03",
+      "cnpjClean": "34244876000103",
+      "linha": 368,
+      "nome": "MAKAY INDUSTRIA DE COSMETICOS LTDA",
+      "estabelecimento": "34.244.876/0001-03",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "05.972.538/0001-81",
+      "cnpjClean": "05972538000181",
+      "linha": 369,
+      "nome": "M. ALBERT. G. FERREIRA LTDA",
+      "estabelecimento": "05.972.538/0001-81",
+      "uf": "RR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "053.245.127-96",
+      "cnpjClean": "05324512796",
+      "linha": 370,
+      "nome": "MANOEL DOS SANTOS",
+      "estabelecimento": "053.245.127-96",
+      "uf": "ES",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "474.792.801-49",
+      "cnpjClean": "47479280149",
+      "linha": 371,
+      "nome": "MANOEL DOS SANTOS",
+      "estabelecimento": "474.792.801-49",
+      "uf": "MT",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "112.486.296-04",
+      "cnpjClean": "11248629604",
+      "linha": 372,
+      "nome": "MANOEL MIGUEL DE OLIVEIRA VALENTE",
+      "estabelecimento": "112.486.296-04",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "733.723.233-00",
+      "cnpjClean": "73372323300",
+      "linha": 373,
+      "nome": "MANOEL NASCIMENTO CARVALHO",
+      "estabelecimento": "733.723.233-00",
+      "uf": "PI",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "009.011.638-05",
+      "cnpjClean": "00901163805",
+      "linha": 374,
+      "nome": "MANOEL SANTANA DOS SANTOS",
+      "estabelecimento": "009.011.638-05",
+      "uf": "AL",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "19.456.998/0001-61",
+      "cnpjClean": "19456998000161",
+      "linha": 375,
+      "nome": "MANUANE DE LIMA VOGAS",
+      "estabelecimento": "19.456.998/0001-61",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "645.940.414-34",
+      "cnpjClean": "64594041434",
+      "linha": 376,
+      "nome": "MANUEL GOMES BARBOSA",
+      "estabelecimento": "645.940.414-34",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "54.208.800/0001-21",
+      "cnpjClean": "54208800000121",
+      "linha": 377,
+      "nome": "MANUTEC MANUTENCAO E CONSERVACAO LTDA",
+      "estabelecimento": "54.208.800/0001-21",
+      "uf": "PR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "130.890.565-34",
+      "cnpjClean": "13089056534",
+      "linha": 378,
+      "nome": "MARA RUBIA DE ANDRADE SANTANA JARA",
+      "estabelecimento": "130.890.565-34",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "15.268.537/0001-04",
+      "cnpjClean": "15268537000104",
+      "linha": 379,
+      "nome": "MARCELO BOTASSINI AMBIENTAL LTDA",
+      "estabelecimento": "15.268.537/0001-04",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "813.262.973-68",
+      "cnpjClean": "81326297368",
+      "linha": 380,
+      "nome": "MARCELO PEREIRA FEITOSA",
+      "estabelecimento": "813.262.973-68",
+      "uf": "CE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "011.998.400-84",
+      "cnpjClean": "01199840084",
+      "linha": 381,
+      "nome": "MARCELO QUOOS",
+      "estabelecimento": "011.998.400-84",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "014.832.851-20",
+      "cnpjClean": "01483285120",
+      "linha": 382,
+      "nome": "MARCILIO FELIX MORAES",
+      "estabelecimento": "014.832.851-20",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "034.108.988-59",
+      "cnpjClean": "03410898859",
+      "linha": 383,
+      "nome": "MARCIO ANTONIO DE CARVALHO",
+      "estabelecimento": "034.108.988-59",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "12.052.561/0001-13",
+      "cnpjClean": "12052561000113",
+      "linha": 384,
+      "nome": "MARCIO ANTONIO NANTES",
+      "estabelecimento": "12.052.561/0001-13",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "598.407.142-87",
+      "cnpjClean": "59840714287",
+      "linha": 385,
+      "nome": "MARCIO FERNANDES BARBOSA",
+      "estabelecimento": "598.407.142-87",
+      "uf": "AM",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "255.041.696-15",
+      "cnpjClean": "25504169615",
+      "linha": 386,
+      "nome": "MARCIO FERREIRA DE ASSUNCAO",
+      "estabelecimento": "255.041.696-15",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "47.627.543/0001-05",
+      "cnpjClean": "47627543000105",
+      "linha": 387,
+      "nome": "MARCO AURELIO FLORES DOS SANTOS",
+      "estabelecimento": "47.627.543/0001-05",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "33.444.215/0001-50",
+      "cnpjClean": "33444215000150",
+      "linha": 388,
+      "nome": "MARCONDES ENGENHARIA E CONSTRUCAO LTDA",
+      "estabelecimento": "33.444.215/0001-50",
+      "uf": "ES",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "42.142.659/0001-22",
+      "cnpjClean": "42142659000122",
+      "linha": 389,
+      "nome": "MARCOS ANTONIO DE LIMA JUNIOR",
+      "estabelecimento": "42.142.659/0001-22",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "049.727.276-83",
+      "cnpjClean": "04972727683",
+      "linha": 390,
+      "nome": "MARCOS FLORIO DE SOUZA",
+      "estabelecimento": "049.727.276-83",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "080.776.574-00",
+      "cnpjClean": "08077657400",
+      "linha": 391,
+      "nome": "MARCOS JOSE DE FRANCA LEITE",
+      "estabelecimento": "080.776.574-00",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "124.122.436-62",
+      "cnpjClean": "12412243662",
+      "linha": 392,
+      "nome": "MARCOS PARREIRA",
+      "estabelecimento": "124.122.436-62",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "156.831.528-79",
+      "cnpjClean": "15683152879",
+      "linha": 393,
+      "nome": "MARCOS ROBERTO TORRES",
+      "estabelecimento": "156.831.528-79",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "654.186.380-68",
+      "cnpjClean": "65418638068",
+      "linha": 394,
+      "nome": "MARCUS ROGERIO SILVA DE SOUZA",
+      "estabelecimento": "654.186.380-68",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "45.458.182/0001-87",
+      "cnpjClean": "45458182000187",
+      "linha": 395,
+      "nome": "M A RESENDE SILVA CONFECCOES E COMERCIO DE ROUPAS LTDA",
+      "estabelecimento": "45.458.182/0001-87",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "29.163.580/0001-10",
+      "cnpjClean": "29163580000110",
+      "linha": 396,
+      "nome": "MARIA APARECIDA HERMINIO",
+      "estabelecimento": "29.163.580/0001-10",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "086.278.515-49",
+      "cnpjClean": "08627851549",
+      "linha": 397,
+      "nome": "MARIA CONCEICAO OLIVEIRA",
+      "estabelecimento": "086.278.515-49",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "990.734.478-87",
+      "cnpjClean": "99073447887",
+      "linha": 398,
+      "nome": "MARIA DE FATIMA NOGUEIRA PAIXAO",
+      "estabelecimento": "990.734.478-87",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "446.400.992-15",
+      "cnpjClean": "44640099215",
+      "linha": 399,
+      "nome": "MARIA DE JESUS SILVA LIMA",
+      "estabelecimento": "446.400.992-15",
+      "uf": "RR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "451.663.826-68",
+      "cnpjClean": "45166382668",
+      "linha": 400,
+      "nome": "MARIA DE LOURDES SILVA COLARES",
+      "estabelecimento": "451.663.826-68",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "068.173.584-85",
+      "cnpjClean": "06817358485",
+      "linha": 401,
+      "nome": "MARIA ELIDA SANTANA DE ATAIDE",
+      "estabelecimento": "068.173.584-85",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "771.704.822-15",
+      "cnpjClean": "77170482215",
+      "linha": 402,
+      "nome": "MARIA IRISMAR LAGO DE LIMA (*3)",
+      "estabelecimento": "771.704.822-15",
+      "uf": "MARIA IRISMAR LAGO DE LIMA (*3)",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "437.456.443-87",
+      "cnpjClean": "43745644387",
+      "linha": 403,
+      "nome": "MARIA JURACY ALVES DE ARAUJO",
+      "estabelecimento": "437.456.443-87",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "094.282.915-87",
+      "cnpjClean": "09428291587",
+      "linha": 404,
+      "nome": "MARIA LIDIA SAPUCAIA CALABRICH",
+      "estabelecimento": "094.282.915-87",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "311.138.458-64",
+      "cnpjClean": "31113845864",
+      "linha": 405,
+      "nome": "MARIA PERPETUO LADEIRA OLIVEIRA",
+      "estabelecimento": "311.138.458-64",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "155.470.436-72",
+      "cnpjClean": "15547043672",
+      "linha": 406,
+      "nome": "MARINHO PEREIRA BRAGA",
+      "estabelecimento": "155.470.436-72",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "018.656.518-69",
+      "cnpjClean": "01865651869",
+      "linha": 407,
+      "nome": "MARISA APARECIDA MELAZI",
+      "estabelecimento": "018.656.518-69",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "337.220.800-53",
+      "cnpjClean": "33722080053",
+      "linha": 408,
+      "nome": "MARISTELA ZAMBAN DE PIERI",
+      "estabelecimento": "337.220.800-53",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "002.811.708-51",
+      "cnpjClean": "00281170851",
+      "linha": 409,
+      "nome": "MASAHIKO SOMA",
+      "estabelecimento": "002.811.708-51",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "32.102.290/0001-70",
+      "cnpjClean": "32102290000170",
+      "linha": 410,
+      "nome": "MATA FRIA INDUSTRIA E COMERCIO LTDA",
+      "estabelecimento": "32.102.290/0001-70",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "32.102.290/0003-32",
+      "cnpjClean": "32102290000332",
+      "linha": 411,
+      "nome": "MATA FRIA INDÚSTRIA E COMÉRCIO LTDA",
+      "estabelecimento": "32.102.290/0003-32",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "32.102.290/0004-13",
+      "cnpjClean": "32102290000413",
+      "linha": 412,
+      "nome": "MATA FRIA INDÚSTRIA E COMÉRCIO LTDA",
+      "estabelecimento": "32.102.290/0004-13",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "32.102.290/0001-70",
+      "cnpjClean": "32102290000170",
+      "linha": 413,
+      "nome": "MATA FRIA INDÚSTRIA E COMÉRCIO LTDA",
+      "estabelecimento": "32.102.290/0001-70",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "32.102.290/0004-13",
+      "cnpjClean": "32102290000413",
+      "linha": 414,
+      "nome": "MATA FRIA INDÚSTRIA E COMÉRCIO LTDA",
+      "estabelecimento": "32.102.290/0004-13",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "57.036.040/0001-00",
+      "cnpjClean": "57036040000100",
+      "linha": 415,
+      "nome": "MATEUS DA SILVA AMARAL LTDA",
+      "estabelecimento": "57.036.040/0001-00",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "312.024.114-87",
+      "cnpjClean": "31202411487",
+      "linha": 416,
+      "nome": "MAURO CESAR DE AQUINO",
+      "estabelecimento": "312.024.114-87",
+      "uf": "RN",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "09.074.930/0001-64",
+      "cnpjClean": "09074930000164",
+      "linha": 417,
+      "nome": "M B CINTRA E CIA LTDA",
+      "estabelecimento": "09.074.930/0001-64",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "04.990.070/0001-95",
+      "cnpjClean": "04990070000195",
+      "linha": 418,
+      "nome": "M &amp; D CHURRASCARIA LTDA",
+      "estabelecimento": "04.990.070/0001-95",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "46.427.146/0001-19",
+      "cnpjClean": "46427146000119",
+      "linha": 419,
+      "nome": "MFL CONSTRUCOES E INCORPORACAO SPE LTDA",
+      "estabelecimento": "46.427.146/0001-19",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "42.179.714/0001-59",
+      "cnpjClean": "42179714000159",
+      "linha": 420,
+      "nome": "MI &amp; CO CONFECCOES LTDA",
+      "estabelecimento": "42.179.714/0001-59",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "394.561.373-68",
+      "cnpjClean": "39456137368",
+      "linha": 421,
+      "nome": "MIGUEL PEREIRA DE FREITAS",
+      "estabelecimento": "394.561.373-68",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "534.265.258-87",
+      "cnpjClean": "53426525887",
+      "linha": 422,
+      "nome": "MILITAO ALBUQUERQUE E SOUSA FILHO",
+      "estabelecimento": "534.265.258-87",
+      "uf": "CE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "225.310.179-68",
+      "cnpjClean": "22531017968",
+      "linha": 423,
+      "nome": "MILTON HARTMANN",
+      "estabelecimento": "225.310.179-68",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "19.318.306/0001-19",
+      "cnpjClean": "19318306000119",
+      "linha": 424,
+      "nome": "MINISTERIO PENTECOSTAL NOVOS GIDEOES",
+      "estabelecimento": "19.318.306/0001-19",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "36.935.406/0001-03",
+      "cnpjClean": "36935406000103",
+      "linha": 425,
+      "nome": "MIRADOR INDÚSTRIA E COMÉRCIO DE CARVÃO LTDA",
+      "estabelecimento": "36.935.406/0001-03",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "15.052.296/0001-61",
+      "cnpjClean": "15052296000161",
+      "linha": 426,
+      "nome": "M. J. DOS SANTOS CUNHA CALCARIO LTDA",
+      "estabelecimento": "15.052.296/0001-61",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "500.472.215-34",
+      "cnpjClean": "50047221534",
+      "linha": 427,
+      "nome": "MOACIR BASTOS DE ARAUJO",
+      "estabelecimento": "500.472.215-34",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "043.054.177-58",
+      "cnpjClean": "04305417758",
+      "linha": 428,
+      "nome": "MOHAMMAD SEGALECHFAR",
+      "estabelecimento": "043.054.177-58",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "622.317.403-97",
+      "cnpjClean": "62231740397",
+      "linha": 429,
+      "nome": "MOISES ALVES DA SILVA",
+      "estabelecimento": "622.317.403-97",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "51.294.402/0001-87",
+      "cnpjClean": "51294402000187",
+      "linha": 430,
+      "nome": "MRJ PRESTADORA DE SERVICOS LTDA",
+      "estabelecimento": "51.294.402/0001-87",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "660.549.403-25",
+      "cnpjClean": "66054940325",
+      "linha": 431,
+      "nome": "NATAL ALVES BARROSO",
+      "estabelecimento": "660.549.403-25",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "31.901.713/0001-50",
+      "cnpjClean": "31901713000150",
+      "linha": 432,
+      "nome": "NAVEGACAO MANSUR SA",
+      "estabelecimento": "31.901.713/0001-50",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "219.856.007-06",
+      "cnpjClean": "21985600706",
+      "linha": 433,
+      "nome": "NELI MAURO GUIMARAES",
+      "estabelecimento": "219.856.007-06",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "328.616.996-04",
+      "cnpjClean": "32861699604",
+      "linha": 434,
+      "nome": "NELSON LUIZ FEITAL",
+      "estabelecimento": "328.616.996-04",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "850.881.964-15",
+      "cnpjClean": "85088196415",
+      "linha": 435,
+      "nome": "NICKOLAS KERENSKY SANTIAGO REGIS",
+      "estabelecimento": "850.881.964-15",
+      "uf": "RN",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "073.400.886-44",
+      "cnpjClean": "07340088644",
+      "linha": 436,
+      "nome": "NILCEU PATROCINIO MUNIZ JUNIOR",
+      "estabelecimento": "073.400.886-44",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "335.973.241-34",
+      "cnpjClean": "33597324134",
+      "linha": 437,
+      "nome": "NILSON PEREIRA BENTO",
+      "estabelecimento": "335.973.241-34",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "42.092.927/0001-49",
+      "cnpjClean": "42092927000149",
+      "linha": 438,
+      "nome": "NILTON DE ARAUJO GOMES 49699725168",
+      "estabelecimento": "42.092.927/0001-49",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "12.628.499/0001-65",
+      "cnpjClean": "12628499000165",
+      "linha": 439,
+      "nome": "NUXX CONFECCOES DE ROUPAS LTDA",
+      "estabelecimento": "12.628.499/0001-65",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "321.872.117-20",
+      "cnpjClean": "32187211720",
+      "linha": 440,
+      "nome": "ODACIR ANTONIO VALENTE",
+      "estabelecimento": "321.872.117-20",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "007.694.325-90",
+      "cnpjClean": "00769432590",
+      "linha": 441,
+      "nome": "ORLANDO EMMANUEL DE CASTRO CAVALCANTE BARBOSA",
+      "estabelecimento": "007.694.325-90",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "218.180.965-87",
+      "cnpjClean": "21818096587",
+      "linha": 442,
+      "nome": "ORLANDO PESSOA PRIMO",
+      "estabelecimento": "218.180.965-87",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "722.229.568-20",
+      "cnpjClean": "72222956820",
+      "linha": 443,
+      "nome": "ORNELAS RODRIGUES BORBA",
+      "estabelecimento": "722.229.568-20",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "764.550.179-00",
+      "cnpjClean": "76455017900",
+      "linha": 444,
+      "nome": "OSMAIR MARCELINO",
+      "estabelecimento": "764.550.179-00",
+      "uf": "PR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "402.565.531-49",
+      "cnpjClean": "40256553149",
+      "linha": 445,
+      "nome": "OSMAN ELIAS DE SOUZA SOBRINHO",
+      "estabelecimento": "402.565.531-49",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "200.861.806-49",
+      "cnpjClean": "20086180649",
+      "linha": 446,
+      "nome": "OSVALDO FROTA MACHADO SOUTO",
+      "estabelecimento": "200.861.806-49",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "05.360.521/0001-73",
+      "cnpjClean": "05360521000173",
+      "linha": 447,
+      "nome": "O VELHO CASARAO B RESTAURANTE LTDA",
+      "estabelecimento": "05.360.521/0001-73",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "21.592.778/0006-11",
+      "cnpjClean": "21592778000611",
+      "linha": 448,
+      "nome": "OZIAS DOS SANTOS RIBEIRO",
+      "estabelecimento": "21.592.778/0006-11",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "086.180.937-85",
+      "cnpjClean": "08618093785",
+      "linha": 449,
+      "nome": "PABLO DO NASCIMENTO TESSAROLO",
+      "estabelecimento": "086.180.937-85",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "34.577.910/0001-53",
+      "cnpjClean": "34577910000153",
+      "linha": 450,
+      "nome": "PACHECO ENGENHARIA E CONSTRUCOES LTDA",
+      "estabelecimento": "34.577.910/0001-53",
+      "uf": "TO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "31.759.842/0004-06",
+      "cnpjClean": "31759842000406",
+      "linha": 451,
+      "nome": "PANTANAL RC FLORESTAS LTDA",
+      "estabelecimento": "31.759.842/0004-06",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "46.418.384/0001-68",
+      "cnpjClean": "46418384000168",
+      "linha": 452,
+      "nome": "PANTANAL SUL FLORESTAS LTDA",
+      "estabelecimento": "46.418.384/0001-68",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "18.785.644/0001-06",
+      "cnpjClean": "18785644000106",
+      "linha": 453,
+      "nome": "PASTELARIA RECANTO DA PRAIA DO LEME LTDA",
+      "estabelecimento": "18.785.644/0001-06",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "026.866.563-01",
+      "cnpjClean": "02686656301",
+      "linha": 454,
+      "nome": "PATRICIA DE FREITAS FRANCA PINHEIRO",
+      "estabelecimento": "026.866.563-01",
+      "uf": "CE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "031.387.750-55",
+      "cnpjClean": "03138775055",
+      "linha": 455,
+      "nome": "PATRICK BERNARDO VEIGA GARCIA REISS",
+      "estabelecimento": "031.387.750-55",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "539.637.760-72",
+      "cnpjClean": "53963776072",
+      "linha": 456,
+      "nome": "PAULINO PERUCHIN",
+      "estabelecimento": "539.637.760-72",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "276.396.168-16",
+      "cnpjClean": "27639616816",
+      "linha": 457,
+      "nome": "PAULO CESAR DE OLIVEIRA",
+      "estabelecimento": "276.396.168-16",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "462.797.509-06",
+      "cnpjClean": "46279750906",
+      "linha": 458,
+      "nome": "PAULO MARCELO GIGLI",
+      "estabelecimento": "462.797.509-06",
+      "uf": "DF",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "001.723.317-81",
+      "cnpjClean": "00172331781",
+      "linha": 459,
+      "nome": "PAULO RAMOS DOS SANTOS",
+      "estabelecimento": "001.723.317-81",
+      "uf": "ES",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "651.087.365-68",
+      "cnpjClean": "65108736568",
+      "linha": 460,
+      "nome": "PAULO ROBERTO VICENTE LIMA",
+      "estabelecimento": "651.087.365-68",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "024.701.108-82",
+      "cnpjClean": "02470110882",
+      "linha": 461,
+      "nome": "PEDRO ARIGONI NETO",
+      "estabelecimento": "024.701.108-82",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "129.011.107-38",
+      "cnpjClean": "12901110738",
+      "linha": 462,
+      "nome": "PEDRO MARCEU MATOS LOPES MEDEIROS",
+      "estabelecimento": "129.011.107-38",
+      "uf": "DF",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "032.562.756-80",
+      "cnpjClean": "03256275680",
+      "linha": 463,
+      "nome": "PETRONIO MACEDO CESAR",
+      "estabelecimento": "032.562.756-80",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "26.614.132/0001-05",
+      "cnpjClean": "26614132000105",
+      "linha": 464,
+      "nome": "P FELIX DE ANDRADE LTDA",
+      "estabelecimento": "26.614.132/0001-05",
+      "uf": "PI",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "53.816.205/0001-06",
+      "cnpjClean": "53816205000106",
+      "linha": 465,
+      "nome": "PLS GESTAO E ADMINISTRACAO LTDA",
+      "estabelecimento": "53.816.205/0001-06",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "16.973.969/0001-89",
+      "cnpjClean": "16973969000189",
+      "linha": 466,
+      "nome": "POLO CONSTRUCOES LTDA",
+      "estabelecimento": "16.973.969/0001-89",
+      "uf": "CE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "45.152.351/0001-56",
+      "cnpjClean": "45152351000156",
+      "linha": 467,
+      "nome": "PORTELA E MATOS CONSTRUTORA E INCORPORADORA LTDA",
+      "estabelecimento": "45.152.351/0001-56",
+      "uf": "CE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "10.230.467/0001-81",
+      "cnpjClean": "10230467000181",
+      "linha": 468,
+      "nome": "POSTO DOM PEDRO SALES OLIVEIRA LTDA",
+      "estabelecimento": "10.230.467/0001-81",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "39.671.825/0001-73",
+      "cnpjClean": "39671825000173",
+      "linha": 469,
+      "nome": "PP PODAS DE ARVORES E REMOCAO DE ENTULHO LTDA",
+      "estabelecimento": "39.671.825/0001-73",
+      "uf": "DF",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "51.546.825/0001-47",
+      "cnpjClean": "51546825000147",
+      "linha": 470,
+      "nome": "PREMIUM LADY LTDA",
+      "estabelecimento": "51.546.825/0001-47",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "50.217.810/0001-72",
+      "cnpjClean": "50217810000172",
+      "linha": 471,
+      "nome": "PSN - SERVICOS AGRICOLA LTDA",
+      "estabelecimento": "50.217.810/0001-72",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "108.080.707-11",
+      "cnpjClean": "10808070711",
+      "linha": 472,
+      "nome": "RAFAEL ARAUJO DE OLIVEIRA CELESTINO",
+      "estabelecimento": "108.080.707-11",
+      "uf": "DF",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "934.017.792-49",
+      "cnpjClean": "93401779249",
+      "linha": 473,
+      "nome": "RAFAEL BEMERGUY SEFER",
+      "estabelecimento": "934.017.792-49",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "045.322.946-81",
+      "cnpjClean": "04532294681",
+      "linha": 474,
+      "nome": "RAFAEL SALDANHA JUNIOR",
+      "estabelecimento": "045.322.946-81",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "052.193.963-15",
+      "cnpjClean": "05219396315",
+      "linha": 475,
+      "nome": "RAIMUNDA AIRTES DE BRITO CABRAL",
+      "estabelecimento": "052.193.963-15",
+      "uf": "CE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "581.600.355-00",
+      "cnpjClean": "58160035500",
+      "linha": 476,
+      "nome": "RAIMUNDO SOUZA DE JESUS",
+      "estabelecimento": "581.600.355-00",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "581.600.355-00",
+      "cnpjClean": "58160035500",
+      "linha": 477,
+      "nome": "RAIMUNDO SOUZA DE JESUS",
+      "estabelecimento": "581.600.355-00",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "013.953.616-73",
+      "cnpjClean": "01395361673",
+      "linha": 478,
+      "nome": "RAPHAEL MACIEL MAGINA",
+      "estabelecimento": "013.953.616-73",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "103.389.967-45",
+      "cnpjClean": "10338996745",
+      "linha": 479,
+      "nome": "RAUL ALVES ROBERTI",
+      "estabelecimento": "103.389.967-45",
+      "uf": "ES",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "24.675.070/0001-08",
+      "cnpjClean": "24675070000108",
+      "linha": 480,
+      "nome": "RBC COMERCIO &amp; EMPREENDIMENTOS AGRICOLAS LTDA",
+      "estabelecimento": "24.675.070/0001-08",
+      "uf": "DF",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "28.414.673/0001-07",
+      "cnpjClean": "28414673000107",
+      "linha": 481,
+      "nome": "RC DISTRIBUIDORA LTDA",
+      "estabelecimento": "28.414.673/0001-07",
+      "uf": "TO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "894.080.801-06",
+      "cnpjClean": "89408080106",
+      "linha": 482,
+      "nome": "REGINALDO ALVES SILVA",
+      "estabelecimento": "894.080.801-06",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "122.155.558-82",
+      "cnpjClean": "12215555882",
+      "linha": 483,
+      "nome": "RENATO FERRARI DOS REIS",
+      "estabelecimento": "122.155.558-82",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "122.155.558-82",
+      "cnpjClean": "12215555882",
+      "linha": 484,
+      "nome": "RENATO FERRARI DOS REIS - CEI Nº 512185972687",
+      "estabelecimento": "122.155.558-82",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "75.177.857/0001-80",
+      "cnpjClean": "75177857000180",
+      "linha": 485,
+      "nome": "RENUKA VALE DO IVAI S.A. - EM RECUPERACAO JUDICIAL",
+      "estabelecimento": "75.177.857/0001-80",
+      "uf": "PR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "36.211.318/0001-69",
+      "cnpjClean": "36211318000169",
+      "linha": 486,
+      "nome": "RESTAURANTE GAUCHAO PRIME LTDA",
+      "estabelecimento": "36.211.318/0001-69",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "56.127.165/0001-83",
+      "cnpjClean": "56127165000183",
+      "linha": 487,
+      "nome": "RESTAURANTES ARGENTINOS LTDA",
+      "estabelecimento": "56.127.165/0001-83",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "54.480.890/0001-05",
+      "cnpjClean": "54480890000105",
+      "linha": 488,
+      "nome": "RESTAURANTE SUSHI MARAJOARA LTDA",
+      "estabelecimento": "54.480.890/0001-05",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "054.626.526-07",
+      "cnpjClean": "05462652607",
+      "linha": 489,
+      "nome": "RICARDO YOSHIO MURAOKA",
+      "estabelecimento": "054.626.526-07",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "005.034.703-92",
+      "cnpjClean": "00503470392",
+      "linha": 490,
+      "nome": "RICHEL DE OLIVEIRA BRITO",
+      "estabelecimento": "005.034.703-92",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "07.887.135/0001-60",
+      "cnpjClean": "07887135000160",
+      "linha": 491,
+      "nome": "RIPOM - AGRONEGOCIOS LTDA",
+      "estabelecimento": "07.887.135/0001-60",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "589.240.866-34",
+      "cnpjClean": "58924086634",
+      "linha": 492,
+      "nome": "RITA DE CASSIA VIEIRA",
+      "estabelecimento": "589.240.866-34",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "550.329.666-49",
+      "cnpjClean": "55032966649",
+      "linha": 493,
+      "nome": "RIUSON VITOR DE OLIVEIRA",
+      "estabelecimento": "550.329.666-49",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "611.046.636-00",
+      "cnpjClean": "61104663600",
+      "linha": 494,
+      "nome": "ROBERTO GONCALVES FERNANDES",
+      "estabelecimento": "611.046.636-00",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "528.987.846-72",
+      "cnpjClean": "52898784672",
+      "linha": 495,
+      "nome": "ROBERTO MURILO LEITE CARDOSO",
+      "estabelecimento": "528.987.846-72",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "452.875.975-68",
+      "cnpjClean": "45287597568",
+      "linha": 496,
+      "nome": "ROBERTO OLIVEIRA CARNEIRO DOS SANTOS",
+      "estabelecimento": "452.875.975-68",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "21.797.537/0001-02",
+      "cnpjClean": "21797537000102",
+      "linha": 497,
+      "nome": "ROBIEN ACHI CHOQUE QUISPE CONFECCOES",
+      "estabelecimento": "21.797.537/0001-02",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "040.657.256-90",
+      "cnpjClean": "04065725690",
+      "linha": 498,
+      "nome": "ROBSON SOARES RODRIGUES",
+      "estabelecimento": "040.657.256-90",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "246.591.028-07",
+      "cnpjClean": "24659102807",
+      "linha": 499,
+      "nome": "RODINEY EMILIANO",
+      "estabelecimento": "246.591.028-07",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "061.220.266-62",
+      "cnpjClean": "06122026662",
+      "linha": 500,
+      "nome": "RODRIGO ADRIANO DE SOUZA",
+      "estabelecimento": "061.220.266-62",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "001.003.692-00",
+      "cnpjClean": "00100369200",
+      "linha": 501,
+      "nome": "ROGERIO ALMEIDA DA CUNHA",
+      "estabelecimento": "001.003.692-00",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "231.797.166-49",
+      "cnpjClean": "23179716649",
+      "linha": 502,
+      "nome": "ROGERIO APARECIDO DE FARIA",
+      "estabelecimento": "231.797.166-49",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "687.888.510-87",
+      "cnpjClean": "68788851087",
+      "linha": 503,
+      "nome": "ROGERIO ROGALSKI",
+      "estabelecimento": "687.888.510-87",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "251.801.265-68",
+      "cnpjClean": "25180126568",
+      "linha": 504,
+      "nome": "ROGERIO SILVA DANTAS",
+      "estabelecimento": "251.801.265-68",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "518.310.906-00",
+      "cnpjClean": "51831090600",
+      "linha": 505,
+      "nome": "RONALDO EUSTAQUIO CARDOSO",
+      "estabelecimento": "518.310.906-00",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "783.956.077-68",
+      "cnpjClean": "78395607768",
+      "linha": 506,
+      "nome": "RONALDO GUIMARAES DO NASCIMENTO",
+      "estabelecimento": "783.956.077-68",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "22.447.888/0001-48",
+      "cnpjClean": "22447888000148",
+      "linha": 507,
+      "nome": "RORAIMA VERDE INDUSTRIA E COMERCIO DE MADEIRAS LTDA",
+      "estabelecimento": "22.447.888/0001-48",
+      "uf": "RR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "526.889.764-00",
+      "cnpjClean": "52688976400",
+      "linha": 508,
+      "nome": "ROSA CASSIMIRO DOS SANTOS",
+      "estabelecimento": "526.889.764-00",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "672.816.720-04",
+      "cnpjClean": "67281672004",
+      "linha": 509,
+      "nome": "ROSENA DA SILVA DUTRA",
+      "estabelecimento": "672.816.720-04",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "191.892.061-34",
+      "cnpjClean": "19189206134",
+      "linha": 510,
+      "nome": "ROSILENE ALVES",
+      "estabelecimento": "191.892.061-34",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "431.622.584-72",
+      "cnpjClean": "43162258472",
+      "linha": 511,
+      "nome": "RUBEM GOMES SOARES",
+      "estabelecimento": "431.622.584-72",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "42.765.803/0001-87",
+      "cnpjClean": "42765803000187",
+      "linha": 512,
+      "nome": "RUBEN DARIO VILLARROEL FUENTES",
+      "estabelecimento": "42.765.803/0001-87",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "128.195.897-23",
+      "cnpjClean": "12819589723",
+      "linha": 513,
+      "nome": "SANDRO SERRA ARAUJO",
+      "estabelecimento": "128.195.897-23",
+      "uf": "DF",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "03.343.213/0001-04",
+      "cnpjClean": "03343213000104",
+      "linha": 514,
+      "nome": "SANTUARIO NACIONAL DO BOM JESUS",
+      "estabelecimento": "03.343.213/0001-04",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "066.759.323-30",
+      "cnpjClean": "06675932330",
+      "linha": 515,
+      "nome": "SAVIO BRITO DE PINHO",
+      "estabelecimento": "066.759.323-30",
+      "uf": "PI",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "44.667.363/0001-50",
+      "cnpjClean": "44667363000150",
+      "linha": 516,
+      "nome": "SD CONSTRUCOES E REFORMAS LTDA",
+      "estabelecimento": "44.667.363/0001-50",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "40.475.315/0001-00",
+      "cnpjClean": "40475315000100",
+      "linha": 517,
+      "nome": "SEBASTIANA DA SILVA MERGULHAO GRANJA",
+      "estabelecimento": "40.475.315/0001-00",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "133.310.864-87",
+      "cnpjClean": "13331086487",
+      "linha": 518,
+      "nome": "SEBASTIAO FARIAS GURJAO",
+      "estabelecimento": "133.310.864-87",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "019.886.648-88",
+      "cnpjClean": "01988664888",
+      "linha": 519,
+      "nome": "SERGIO DONIZETI PERON",
+      "estabelecimento": "019.886.648-88",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "41.713.582/0001-30",
+      "cnpjClean": "41713582000130",
+      "linha": 520,
+      "nome": "SERRA BRANCA LOTEAMENTO DE IMOVEIS LTDA",
+      "estabelecimento": "41.713.582/0001-30",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "169.335.081-53",
+      "cnpjClean": "16933508153",
+      "linha": 521,
+      "nome": "SILVIO DONIZETH VAZ DOS SANTOS",
+      "estabelecimento": "169.335.081-53",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "254.782.810-34",
+      "cnpjClean": "25478281034",
+      "linha": 522,
+      "nome": "SILVIO ORGANDINO SCHROEDER",
+      "estabelecimento": "254.782.810-34",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "219.210.398-09",
+      "cnpjClean": "21921039809",
+      "linha": 523,
+      "nome": "SIMONE FEITOSA BOLFARINI",
+      "estabelecimento": "219.210.398-09",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "735.042.467-15",
+      "cnpjClean": "73504246715",
+      "linha": 524,
+      "nome": "SIMONE REZENDE RODRIGUES CABRAL",
+      "estabelecimento": "735.042.467-15",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "04.363.966/0001-44",
+      "cnpjClean": "04363966000144",
+      "linha": 525,
+      "nome": "SIPASA SERINGA INDUSTRIAL DO PARA SA",
+      "estabelecimento": "04.363.966/0001-44",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "07.329.645/0001-11",
+      "cnpjClean": "07329645000111",
+      "linha": 526,
+      "nome": "SISTEMA ELETRONICO DE SEGURANCA CERTA LTDA",
+      "estabelecimento": "07.329.645/0001-11",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "04.490.916/0001-28",
+      "cnpjClean": "04490916000128",
+      "linha": 527,
+      "nome": "S.K.R.RATES LTDA",
+      "estabelecimento": "04.490.916/0001-28",
+      "uf": "RO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "15.530.189/0001-00",
+      "cnpjClean": "15530189000100",
+      "linha": 528,
+      "nome": "SR CONSTRUCOES LTDA",
+      "estabelecimento": "15.530.189/0001-00",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "41.402.235/0001-97",
+      "cnpjClean": "41402235000197",
+      "linha": 529,
+      "nome": "S&amp;S NASCIMENTO SERVICOS E TRANSPORTES LTDA",
+      "estabelecimento": "41.402.235/0001-97",
+      "uf": "GO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "12.782.279/0001-91",
+      "cnpjClean": "12782279000191",
+      "linha": 530,
+      "nome": "STF EMPREENDIMENTOS IMOBILIÁRIOS LTDA.",
+      "estabelecimento": "12.782.279/0001-91",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "29.083.926/0001-70",
+      "cnpjClean": "29083926000170",
+      "linha": 531,
+      "nome": "SUÍNOS DO VALE LTDA.",
+      "estabelecimento": "29.083.926/0001-70",
+      "uf": "PR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "42.618.620/0001-39",
+      "cnpjClean": "42618620000139",
+      "linha": 532,
+      "nome": "SUMAIA CARVAO VEGETAL LTDA",
+      "estabelecimento": "42.618.620/0001-39",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "68.449.073/0001-07",
+      "cnpjClean": "68449073000107",
+      "linha": 533,
+      "nome": "SUPERMERCADO IRMAOS OLIVEIRA LTDA",
+      "estabelecimento": "68.449.073/0001-07",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "196.362.531-53",
+      "cnpjClean": "19636253153",
+      "linha": 534,
+      "nome": "TADEU CAETANO ANTUNES",
+      "estabelecimento": "196.362.531-53",
+      "uf": "MT",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "52.007.130/0001-50",
+      "cnpjClean": "52007130000150",
+      "linha": 535,
+      "nome": "TAYNAN WAGNER MIRANDA",
+      "estabelecimento": "52.007.130/0001-50",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "57.840.953/0001-85",
+      "cnpjClean": "57840953000185",
+      "linha": 536,
+      "nome": "TECIO CARLOS DOS SANTOS LTDA",
+      "estabelecimento": "57.840.953/0001-85",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "973.610.383-87",
+      "cnpjClean": "97361038387",
+      "linha": 537,
+      "nome": "THAIS LOPES DO VALE",
+      "estabelecimento": "973.610.383-87",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "519.645.203-63",
+      "cnpjClean": "51964520363",
+      "linha": 538,
+      "nome": "THALES MOTA ARARUNA",
+      "estabelecimento": "519.645.203-63",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "017.196.752-60",
+      "cnpjClean": "01719675260",
+      "linha": 539,
+      "nome": "THALINY NASCIMENTO ANDRADE",
+      "estabelecimento": "017.196.752-60",
+      "uf": "RR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "17.869.920/0001-43",
+      "cnpjClean": "17869920000143",
+      "linha": 540,
+      "nome": "THOR MECANIZACAO AGRICOLA LTDA",
+      "estabelecimento": "17.869.920/0001-43",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "982.232.595-91",
+      "cnpjClean": "98223259591",
+      "linha": 541,
+      "nome": "UILSON MOREIRA DA SILVA",
+      "estabelecimento": "982.232.595-91",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "45.483.146/0001-73",
+      "cnpjClean": "45483146000173",
+      "linha": 542,
+      "nome": "USINA SANTA ROSA LTDA EM RECUPERACAO JUDICIAL",
+      "estabelecimento": "45.483.146/0001-73",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "048.386.346-76",
+      "cnpjClean": "04838634676",
+      "linha": 543,
+      "nome": "VAGNER FREIRE DA SILVA",
+      "estabelecimento": "048.386.346-76",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "10.786.375/0001-82",
+      "cnpjClean": "10786375000182",
+      "linha": 544,
+      "nome": "VALDECI ANTONIO DE OLIVEIRA TRANSPORTE LTDA",
+      "estabelecimento": "10.786.375/0001-82",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "031.897.986-13",
+      "cnpjClean": "03189798613",
+      "linha": 545,
+      "nome": "VALDEMI COELHO DE ANDRADE",
+      "estabelecimento": "031.897.986-13",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "58.534.254/0001-70",
+      "cnpjClean": "58534254000170",
+      "linha": 546,
+      "nome": "VALDENIR ALVES DE REZENDE",
+      "estabelecimento": "58.534.254/0001-70",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "490.909.921-20",
+      "cnpjClean": "49090992120",
+      "linha": 547,
+      "nome": "VALDENOR BORGES DE ANDRADE",
+      "estabelecimento": "490.909.921-20",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "688.196.173-15",
+      "cnpjClean": "68819617315",
+      "linha": 548,
+      "nome": "VALDINA GONÇALVES DE SOUSA",
+      "estabelecimento": "688.196.173-15",
+      "uf": "PI",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "277.418.948-97",
+      "cnpjClean": "27741894897",
+      "linha": 549,
+      "nome": "VALDINEI APARECIDO ROQUE",
+      "estabelecimento": "277.418.948-97",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "539.132.569-20",
+      "cnpjClean": "53913256920",
+      "linha": 550,
+      "nome": "VALDIR FERNANDES PESSOA",
+      "estabelecimento": "539.132.569-20",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "544.740.940-34",
+      "cnpjClean": "54474094034",
+      "linha": 551,
+      "nome": "VALDIR SCHROPFER",
+      "estabelecimento": "544.740.940-34",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "236.390.558-02",
+      "cnpjClean": "23639055802",
+      "linha": 552,
+      "nome": "VALERIA CHURATA TININI",
+      "estabelecimento": "236.390.558-02",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "219.736.012-49",
+      "cnpjClean": "21973601249",
+      "linha": 553,
+      "nome": "VALFREDO LUIZ PINTO",
+      "estabelecimento": "219.736.012-49",
+      "uf": "RO",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "374.704.506-53",
+      "cnpjClean": "37470450653",
+      "linha": 554,
+      "nome": "VALMIRO CALAZANI",
+      "estabelecimento": "374.704.506-53",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "596.690.040-04",
+      "cnpjClean": "59669004004",
+      "linha": 555,
+      "nome": "VANDERLEI LUIZ DA SILVA",
+      "estabelecimento": "596.690.040-04",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "650.452.202-25",
+      "cnpjClean": "65045220225",
+      "linha": 556,
+      "nome": "VANDERSON AYRES DA SILVA",
+      "estabelecimento": "650.452.202-25",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "066.975.778-00",
+      "cnpjClean": "06697577800",
+      "linha": 557,
+      "nome": "VANIO JOSE REIS E OUTRO",
+      "estabelecimento": "066.975.778-00",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "601.005.165-72",
+      "cnpjClean": "60100516572",
+      "linha": 558,
+      "nome": "VERA EUNICE DA SILVA FRANCA",
+      "estabelecimento": "601.005.165-72",
+      "uf": "BA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "733.844.373-49",
+      "cnpjClean": "73384437349",
+      "linha": 559,
+      "nome": "VERINALDO OLIVEIRA MILHOMEM",
+      "estabelecimento": "733.844.373-49",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "00.638.595/0001-05",
+      "cnpjClean": "00638595000105",
+      "linha": 560,
+      "nome": "VIABRAS ENGENHARIA EIRELI",
+      "estabelecimento": "00.638.595/0001-05",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "000.309.127-92",
+      "cnpjClean": "00030912792",
+      "linha": 561,
+      "nome": "VICTOR PAULO MEIRELLES DA SILVA",
+      "estabelecimento": "000.309.127-92",
+      "uf": "RJ",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "12.331.172/0001-27",
+      "cnpjClean": "12331172000127",
+      "linha": 562,
+      "nome": "VIESTRE ENGENHARIA LTDA",
+      "estabelecimento": "12.331.172/0001-27",
+      "uf": "PB",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "205.543.899-91",
+      "cnpjClean": "20554389991",
+      "linha": 563,
+      "nome": "VILMAR FRANCISCO OGLIARI",
+      "estabelecimento": "205.543.899-91",
+      "uf": "PR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "743.678.706-34",
+      "cnpjClean": "74367870634",
+      "linha": 564,
+      "nome": "VILSON AGUIAR RIBEIRO",
+      "estabelecimento": "743.678.706-34",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "420.572.139-00",
+      "cnpjClean": "42057213900",
+      "linha": 565,
+      "nome": "VILSON BALOTIN",
+      "estabelecimento": "420.572.139-00",
+      "uf": "MT",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "046.908.848-62",
+      "cnpjClean": "04690884862",
+      "linha": 566,
+      "nome": "VIRGILIO METTIFOGO",
+      "estabelecimento": "046.908.848-62",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "10.861.617/0001-55",
+      "cnpjClean": "10861617000155",
+      "linha": 567,
+      "nome": "VIVA BEM PENSIONATO PARA TERCEIRA IDADE LTDA",
+      "estabelecimento": "10.861.617/0001-55",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "08.829.344/0001-10",
+      "cnpjClean": "08829344000110",
+      "linha": 568,
+      "nome": "VIVER BEM - RESIDENCIAL PARA IDOSOS S/S LTDA",
+      "estabelecimento": "08.829.344/0001-10",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "07.954.125/0001-08",
+      "cnpjClean": "07954125000108",
+      "linha": 569,
+      "nome": "VULCANO EXPORT MINERACAO EXPORTACAO E IMPORTACAO LTDA",
+      "estabelecimento": "07.954.125/0001-08",
+      "uf": "CE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "29.986.236/0001-20",
+      "cnpjClean": "29986236000120",
+      "linha": 570,
+      "nome": "VW CONSULTORIA E CONSTRUCAO CIVIL EIRELI",
+      "estabelecimento": "29.986.236/0001-20",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "378.133.902-53",
+      "cnpjClean": "37813390253",
+      "linha": 571,
+      "nome": "WANDERLEIA PEREIRA DE LIMA RAPOSO",
+      "estabelecimento": "378.133.902-53",
+      "uf": "RR",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "20.382.865/0001-77",
+      "cnpjClean": "20382865000177",
+      "linha": 572,
+      "nome": "WANDERLEI LOPES",
+      "estabelecimento": "20.382.865/0001-77",
+      "uf": "MS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "375.721.481-15",
+      "cnpjClean": "37572148115",
+      "linha": 573,
+      "nome": "WANDERLEY DIAS VIEIRA",
+      "estabelecimento": "375.721.481-15",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "621.919.243-52",
+      "cnpjClean": "62191924352",
+      "linha": 574,
+      "nome": "WANGRE BRITO DE JESUS",
+      "estabelecimento": "621.919.243-52",
+      "uf": "MA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "794.586.454-68",
+      "cnpjClean": "79458645468",
+      "linha": 575,
+      "nome": "WEDJO RODRIGUES MACHADO",
+      "estabelecimento": "794.586.454-68",
+      "uf": "PE",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "965.429.936-49",
+      "cnpjClean": "96542993649",
+      "linha": 576,
+      "nome": "WELITON JOSE ANTUNES",
+      "estabelecimento": "965.429.936-49",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "576.300.111-72",
+      "cnpjClean": "57630011172",
+      "linha": 577,
+      "nome": "WELLINGTON GUIMARAES",
+      "estabelecimento": "576.300.111-72",
+      "uf": "PA",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "000.422.561-94",
+      "cnpjClean": "00042256194",
+      "linha": 578,
+      "nome": "WELMISTON APARECIDO OLIVEIRA BORGES",
+      "estabelecimento": "000.422.561-94",
+      "uf": "MT",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "27.987.265/0001-81",
+      "cnpjClean": "27987265000181",
+      "linha": 579,
+      "nome": "WESDEY DE SOUSA WS CONSTRUTORA",
+      "estabelecimento": "27.987.265/0001-81",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "269.895.736-00",
+      "cnpjClean": "26989573600",
+      "linha": 580,
+      "nome": "WILSON JOSE DE ANDRADE GUEDES",
+      "estabelecimento": "269.895.736-00",
+      "uf": "MT",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "483.977.090-53",
+      "cnpjClean": "48397709053",
+      "linha": 581,
+      "nome": "WLADIMIR AZEVEDO REQUIAO",
+      "estabelecimento": "483.977.090-53",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "12.464.089/0001-26",
+      "cnpjClean": "12464089000126",
+      "linha": 582,
+      "nome": "WL CONSTRUCOES E SERVICOS LTDA",
+      "estabelecimento": "12.464.089/0001-26",
+      "uf": "ES",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "03.594.916/0001-05",
+      "cnpjClean": "03594916000105",
+      "linha": 583,
+      "nome": "WL INDUSTRIA COMERCIO SERVICOS DE MAQUINAS E EQUIPAMENT",
+      "estabelecimento": "03.594.916/0001-05",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "45.431.952/0001-06",
+      "cnpjClean": "45431952000106",
+      "linha": 584,
+      "nome": "WM SERVICOS FLORESTAIS LTDA",
+      "estabelecimento": "45.431.952/0001-06",
+      "uf": "DF",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "415.413.246-68",
+      "cnpjClean": "41541324668",
+      "linha": 585,
+      "nome": "XISTO ANDRADE DE OLIVEIRA JUNIOR",
+      "estabelecimento": "415.413.246-68",
+      "uf": "MG",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "32.264.221/0001-63",
+      "cnpjClean": "32264221000163",
+      "linha": 586,
+      "nome": "YS COMÉRCIO DE ALIMENTOS, BEBIDAS E PRODUÇÃO DE EVENTOS LTDA",
+      "estabelecimento": "32.264.221/0001-63",
+      "uf": "SP",
+      "origem": "cadastro_de_empregadores.xlsx"
+    },
+    {
+      "cnpjCpf": "88.764.576/0001-76",
+      "cnpjClean": "88764576000176",
+      "linha": 587,
+      "nome": "ZORAIDE CLEBE LUMERTZ SANTOS",
+      "estabelecimento": "88.764.576/0001-76",
+      "uf": "RS",
+      "origem": "cadastro_de_empregadores.xlsx"
+    }
+  ],
+  "totalRecords": 591,
+  "updatedAt": "2026-09-18T14:38:50.842Z"
+}

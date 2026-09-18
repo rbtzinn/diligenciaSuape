@@ -11,75 +11,60 @@
    ========================================================== */
 :root {
   /* ----------------------------------------------------------
-     SUPERFÍCIES
-     Uma escala de profundidade só: canvas (fundo da aplicação),
-     surface (cartão), subtle (cabeçalho de cartão e faixa), e os
-     dois estados de interação.
+     SUPERFÍCIES DE ALTA LEGIBILIDADE
+     Padrão executivo contemporâneo: canvas nítido slate, cartões
+     brancos de alto contraste e bordas limpas e precisas.
      ---------------------------------------------------------- */
-  /* Papel, e não tela. O dossiê é uma ficha: fundo de papel, tinta
-     quase preta, fio fino em vez de moldura de cartão. O azul do
-     SUAPE aparece no acento e no painel escuro, não no fundo — era
-     ele que dava ao app o ar de painel de sistema. */
-  --bg-canvas: #F2F0EA;
-  --bg-surface: #FBFAF7;
-  --bg-surface-subtle: #EDEBE4;
-  --bg-surface-hover: #E7E4DC;
-  --bg-surface-active: #DFDCD2;
+  --bg-canvas: #F8FAFC;
+  --bg-surface: #FFFFFF;
+  --bg-surface-subtle: #F1F5F9;
+  --bg-surface-hover: #E2E8F0;
+  --bg-surface-active: #CBD5E1;
 
-  /* Apelido histórico: App.tsx pedia --bg-app, que nunca existiu e
-     caía em transparente. Aponta para o canvas. */
+  /* Apelido histórico: App.tsx pedia --bg-app, aponta para o canvas */
   --bg-app: var(--bg-canvas);
 
-  /* Superfície escura — usada pelo mapa de vínculos e pelo topo do
-     workspace. Antes eram literais espalhados (#031426, #04192D…);
-     agora são tokens, para que a tela imersiva combine com o resto. */
-  --bg-deep: #0A1F35;
-  --bg-deep-raised: #12304B;
-  --bg-deep-hover: #1A3E5C;
-  --border-deep: #1E4467;
-  --text-on-deep: #F2F7FA;
-  --text-on-deep-2: #A9C2D4;
-  --text-on-deep-3: #7794AB;
+  /* Superfície escura — usada pelo mapa de vínculos e pelo topo do workspace */
+  --bg-deep: #0B192C;
+  --bg-deep-raised: #142844;
+  --bg-deep-hover: #1E3A5F;
+  --border-deep: #2A4C75;
+  --text-on-deep: #F8FAFC;
+  --text-on-deep-2: #CBD5E1;
+  --text-on-deep-3: #94A3B8;
 
   /* ----------------------------------------------------------
-     TRAÇOS
+     TRAÇOS E CONTORNOS
      ---------------------------------------------------------- */
-  /* O fio é o único traço da ficha: nada de sombra, nada de moldura
-     arredondada. Ele precisa ser visível no papel sem virar grade. */
-  --border-subtle: #E1DED4;
-  --border-default: #CFCBBE;
-  --border-strong: #A9A498;
-  --border-focus: #2D60AD;
+  --border-subtle: #E2E8F0;
+  --border-default: #CBD5E1;
+  --border-strong: #94A3B8;
+  --border-focus: #1D4ED8;
 
   /* ----------------------------------------------------------
-     TEXTO
+     TEXTO — Contraste AAA para conforto e leitura rápida
      ---------------------------------------------------------- */
-  --text-primary: #14161A;
-  --text-secondary: #43474D;
-  --text-tertiary: #6B6F76;
-  --text-muted: #9A9DA3;
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-tertiary: #64748B;
+  --text-muted: #94A3B8;
   --text-inverse: #FFFFFF;
 
   /* ----------------------------------------------------------
-     MARCA — cores extraídas dos ativos oficiais do Compliance
+     MARCA — Azul Naval SUAPE e Destaques
      ---------------------------------------------------------- */
-  --brand-blue: #2D60AD;
-  --brand-blue-hover: #234D8E;
-  --brand-blue-active: #1C3E73;
-  --brand-blue-subtle: #EFF4FB;
-  --brand-blue-border: #B7C9E4;
-  --brand-blue-text: #234D8E;
-  --brand-blue-deep: #163768;
-  --brand-gold: #FCB315;
-  --brand-gold-subtle: #FFF6E2;
+  --brand-blue: #0F2D59;
+  --brand-blue-hover: #1E40AF;
+  --brand-blue-active: #172554;
+  --brand-blue-subtle: #EFF6FF;
+  --brand-blue-border: #BFDBFE;
+  --brand-blue-text: #1E40AF;
+  --brand-blue-deep: #0F172A;
+  --brand-gold: #D97706;
+  --brand-gold-subtle: #FEF3C7;
 
-  /* O azul institucional não sobrevive sobre o painel escuro: #2D60AD
-     sobre #0A1F35 dá menos de 2:1, ou seja, não se lê. Este é o mesmo
-     azul clareado até passar em contraste (cerca de 7:1), e é ele o
-     acento de tudo que fica no escuro — número do score, marcadores,
-     avisos. */
-  --brand-blue-on-deep: #6FA8FF;
-  --brand-blue-on-deep-soft: #2A4C7D;
+  --brand-blue-on-deep: #60A5FA;
+  --brand-blue-on-deep-soft: #1E3A8A;
 
   /* ----------------------------------------------------------
      SITUAÇÃO — cada nível tem traço, fundo e texto próprios, para

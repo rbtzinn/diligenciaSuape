@@ -32,7 +32,13 @@ export const auth: Auth = getAuth(app);
 export async function getFirebaseIdToken(): Promise<string | null> {
   await auth.authStateReady();
   const currentUser = auth.currentUser;
-  if (!currentUser) return null;
+  if (!currentUser) {
+    if (import.meta.env.DEV) {
+      const devUser = localStorage.getItem('diligencia360_dev_user');
+      if (devUser) return 'dev-analyst-suape-token';
+    }
+    return null;
+  }
   try {
     return await currentUser.getIdToken();
   } catch {

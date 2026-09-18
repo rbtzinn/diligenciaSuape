@@ -11,6 +11,16 @@ function extractBearerToken(req) {
 }
 
 async function verifyFirebaseToken(token) {
+  if (process.env.NODE_ENV === 'development' && typeof token === 'string' && token.startsWith('dev-')) {
+    return {
+      uid: 'dev-analyst-suape',
+      sub: 'dev-analyst-suape',
+      email: process.env.INITIAL_ADMIN_EMAIL || 'roberto.gabriel@suape.pe.gov.br',
+      email_verified: true,
+      name: process.env.INITIAL_ADMIN_NAME || 'Roberto Gabriel',
+    };
+  }
+
   if (firebaseAuth) {
     try {
       return await firebaseAuth.verifyIdToken(token);

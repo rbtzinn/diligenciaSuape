@@ -14,6 +14,7 @@ interface AuthContextValue {
   isLoading: boolean;
   authError: string | null;
   login: (credentials: LoginCredentials) => Promise<void>;
+  loginDev: (name?: string, email?: string) => void;
   logout: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -48,6 +49,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
+    if (import.meta.env.DEV) {
+      const savedDev = localStorage.getItem('diligencia360_dev_user');
+      if (savedDev) {
+        try {
+          setUser(JSON.parse(savedDev));
+          setIsLoading(false);
+          return;
+        } catch {}
+      }
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
         await refreshUser();
@@ -60,6 +72,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, [refreshUser]);
 
+  const loginDev = (name?: string, email?: string) => {
+    const devUser: User = {
+      id: 'dev-analyst-suape',
+      firebaseUid: 'dev-analyst-suape',
+      name: name || 'Roberto Gabriel (SUAPE Compliance)',
+      email: email || 'roberto.gabriel@suape.pe.gov.br',
+      role: 'authenticated',
+      active: true,
+    };
+    setUser(devUser);
+    localStorage.setItem('diligencia360_dev_user', JSON.stringify(devUser));
+    setAuthError(null);
+  };
+
   const login = async (credentials: LoginCredentials) => {
     setAuthError(null);
     const loggedUser = await AuthService.login(credentials);
@@ -67,6 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    localStorage.removeItem('diligencia360_dev_user');
     await AuthService.logout();
     setUser(null);
     setAuthError(null);
@@ -84,6 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         authError,
         login,
+        loginDev,
         logout,
         sendPasswordReset,
         refreshUser,

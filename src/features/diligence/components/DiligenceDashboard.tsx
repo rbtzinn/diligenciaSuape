@@ -16,10 +16,12 @@ import { DossierView } from './dossier/DossierView';
 import { RiskOverrideModal } from './RiskOverrideModal';
 import { EvidenceCenterDrawer } from './EvidenceCenterDrawer';
 import { NewsWorkspace } from './NewsWorkspace';
+import { SuapeIntegrityEvaluationView } from './SuapeIntegrityEvaluationView';
 import { mergeNews } from '../utils/newsResults';
 import { request } from '../../../lib/api';
 import { calculateRisk } from '../utils/risk';
 import { ReportService } from '../../report/services/report.service';
+import { Icons } from '../../../components/ui/Icons';
 
 interface DiligenceDashboardProps {
   diligence: DiligenceItem;
@@ -43,8 +45,8 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isRefreshingMedia, setIsRefreshingMedia] = useState(false);
   const [mediaRefreshNotice, setMediaRefreshNotice] = useState<string | null>(null);
-  // Publicações abrem primeiro, com dossiê e mapa acessíveis pela navegação.
-  const [activeTab, setActiveTab] = useState<'noticias' | 'dossie' | 'mapa'>('noticias');
+  // A Avaliação de Integridade e Linha do Mapa de Risco abre como visão primária executiva.
+  const [activeTab, setActiveTab] = useState<'avaliacao' | 'mapa' | 'noticias' | 'dossie'>('avaliacao');
   const [newsProgress, setNewsProgress] = useState<Record<string, number | null>>({});
   const [savingNews, setSavingNews] = useState(false);
   const [savedNewsDiligence, setSavedNewsDiligence] = useState<DiligenceItem | null>(null);
@@ -212,17 +214,142 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
 
   return (
     <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <div className="shrink-0 border-b border-line bg-surface">
-      <nav aria-label="Visões da diligência" className="mx-auto flex w-full max-w-content min-w-0 gap-2 overflow-x-auto px-gutter py-3">
-        {([['noticias', 'Notícias e links'], ['dossie', 'Dossiê'], ['mapa', 'Mapa de vínculos']] as const).map(([id, label]) => (
-          <button key={id} type="button" aria-current={activeTab === id ? 'page' : undefined} onClick={() => setActiveTab(id)}
-            className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${activeTab === id ? 'bg-brand text-white shadow-sm' : 'text-brand hover:bg-brand-soft'}`}>{label}</button>
-        ))}
-      </nav>
+      {/* Barra Superior Executiva de Diligência — Cores Institucionais SUAPE */}
+      <div className="shrink-0 border-b border-[#1A3E6D] bg-[#0F2D59] text-white shadow-md">
+        <div className="mx-auto flex w-full max-w-content flex-col justify-between gap-3.5 px-gutter py-3.5 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              type="button"
+              onClick={onBack}
+              title="Voltar para nova busca de CNPJ"
+              className="flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20 transition-colors"
+            >
+              <Icons.ArrowLeft size={14} />
+              <span>Nova Busca</span>
+            </button>
+            <div className="h-6 w-px bg-white/20" />
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-mono text-sm font-black text-white">{displayDiligence.cnpjFmt}</span>
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-3xs font-black uppercase tracking-wider ${
+                    displayDiligence.empresa?.descricao_situacao_cadastral === 'ATIVA'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                  }`}
+                >
+                  {displayDiligence.empresa?.descricao_situacao_cadastral || 'ATIVA'}
+                </span>
+                {displayDiligence.empresa?.municipio && (
+                  <span className="text-2xs text-white/70">
+                    {displayDiligence.empresa.municipio}/{displayDiligence.empresa.uf}
+                  </span>
+                )}
+              </div>
+              <h1 className="text-sm font-extrabold text-white truncate max-w-xl">
+                {displayDiligence.razaoSocial}
+                {displayDiligence.nomeFantasia && (
+                  <span className="text-white/60 font-medium text-xs ml-1.5">({displayDiligence.nomeFantasia})</span>
+                )}
+              </h1>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            {/* Termômetro de Risco SUAPE */}
+            <div
+              onClick={() => setRiskModalOpen(true)}
+              className="flex h-11 cursor-pointer items-center gap-2.5 rounded-xl border border-white/20 bg-white/10 px-4 hover:bg-white/15 transition-all shadow-xs"
+              title="Clique para ajustar ou justificar o nível de risco"
+            >
+              <div className="flex flex-col items-end justify-center leading-tight">
+                <span className="text-3xs font-bold uppercase tracking-wider text-white/70">Índice SUAPE</span>
+                <span className={`text-xs font-black ${effectiveRisk.score >= 50 ? 'text-amber-300' : 'text-emerald-300'}`}>
+                  {effectiveRisk.score}/100 · {typeof effectiveRisk.classificacao === 'string' ? effectiveRisk.classificacao : (effectiveRisk.classificacao as any)?.label || 'Risco Baixo'}
+                </span>
+              </div>
+              <span
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-black shadow-xs ${
+                  effectiveRisk.score >= 50 ? 'bg-amber-400 text-slate-950' : 'bg-emerald-400 text-slate-950'
+                }`}
+              >
+                {effectiveRisk.score}
+              </span>
+            </div>
+
+            {/* Botão Exportar PDF — Altura e proporção idêntica ao Índice SUAPE */}
+            <button
+              type="button"
+              onClick={handleExportPdf}
+              disabled={isExportingPdf}
+              className="flex h-11 items-center gap-2 rounded-xl bg-[#D97706] hover:bg-[#B45309] px-4 text-xs font-black text-white shadow-sm transition-all hover:shadow-md active:scale-95 disabled:opacity-70"
+            >
+              <Icons.Download size={15} />
+              <span>{isExportingPdf ? 'Gerando…' : 'Exportar PDF'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Abas Executivas de Navegação — Cockpit SUAPE */}
+        <nav aria-label="Visões da diligência" className="mx-auto flex w-full max-w-content flex-wrap items-center gap-1.5 px-gutter pb-2 pt-0.5">
+          {[
+            ['avaliacao', 'Avaliação de Integridade & Mapa de Risco', <Icons.FileSpreadsheet key="a" size={14} />],
+            ['mapa', 'Grafo de Vínculos Societários', <Icons.Network key="m" size={14} />],
+            ['noticias', 'Pesquisa Reputacional (Item 3.3.2)', <Icons.Globe key="n" size={14} />],
+            ['dossie', 'Dossiê Executivo 360°', <Icons.ShieldCheck key="d" size={14} />],
+          ].map(([id, label, icon]) => {
+            const isActive = activeTab === id;
+            return (
+              <button
+                key={id as string}
+                type="button"
+                aria-current={isActive ? 'page' : undefined}
+                onClick={() => setActiveTab(id as any)}
+                className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all ${
+                  isActive
+                    ? 'bg-white text-[#0F2D59] shadow-sm font-black'
+                    : 'bg-transparent text-white/80 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                {icon}
+                <span>{label}</span>
+                {id === 'avaliacao' && (
+                  <span
+                    className={`rounded-full px-1.5 py-0.2 text-3xs font-black uppercase ${
+                      isActive ? 'bg-[#0F2D59]/15 text-[#0F2D59]' : 'bg-white/20 text-white'
+                    }`}
+                  >
+                    Oficial
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
       </div>
-      {activeTab === 'noticias' && <NewsWorkspace diligence={displayDiligence} busy={isRefreshingMedia} saving={savingNews}
-        progress={newsProgress} notice={mediaRefreshNotice} onSearch={handleNewsSearch} onSave={handleSaveNews}
-        onReview={handleMediaStatusChange} onAudit={() => setActiveDrawer('media')} />}
+
+      {activeTab === 'avaliacao' ? (
+        <SuapeIntegrityEvaluationView
+          diligence={displayDiligence}
+          discoveries={discoveries}
+          onOpenEvidence={() => setActiveDrawer('evidence')}
+          onOpenNetwork={() => setActiveTab('mapa')}
+        />
+      ) : null}
+
+      {activeTab === 'noticias' && (
+        <NewsWorkspace
+          diligence={displayDiligence}
+          busy={isRefreshingMedia}
+          saving={savingNews}
+          progress={newsProgress}
+          notice={mediaRefreshNotice}
+          onSearch={handleNewsSearch}
+          onSave={handleSaveNews}
+          onReview={handleMediaStatusChange}
+          onAudit={() => setActiveDrawer('media')}
+        />
+      )}
 
       {activeTab === 'dossie' ? (
         <DossierView
