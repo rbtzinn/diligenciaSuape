@@ -58,74 +58,35 @@ test('isPdfBuffer detecta assinatura %PDF corretamente', () => {
 // não é versionado. Quando alguém o coloca em `server/test/fixtures/`, o
 // teste roda contra ele; sem o arquivo, ele pula em vez de reprovar a
 // suíte inteira por uma dependência que o repositório não pode carregar.
-test('Parser com o PDF REAL QUESTIONARIO_CPL___TMP_TERMINAIS_SUAPE.pdf', async (t) => {
-  const pdfPath = findFixture('QUESTIONARIO_CPL___TMP_TERMINAIS_SUAPE.pdf');
-  if (!pdfPath) {
-    t.skip('Fixture QUESTIONARIO_CPL___TMP_TERMINAIS_SUAPE.pdf ausente (documento não versionável).');
-    return;
-  }
-
-  const buffer = fs.readFileSync(pdfPath);
-  const result = await parseSuapeQuestionnaire(buffer, 'QUESTIONARIO_CPL___TMP_TERMINAIS_SUAPE.pdf');
-
-  assert.equal(result.ok, true);
-  assert.equal(result.formato, 'PDF');
-
-  // Dados Cadastrais extraídos fielmente do PDF real
-  assert.equal(result.dadosGerais.cnpj, '56.211.027/0002-69');
-  assert.equal(result.dadosGerais.razaoSocial, 'TMP TERMINAIS S/A');
-
-  // Dados que NÃO existem no questionário devem ser estritamente null (sem invenção)
-  assert.equal(result.dadosGerais.valorContrato, null);
-  assert.equal(result.dadosGerais.processoSei, null);
-  assert.equal(result.dadosGerais.diretoria, null);
-
-  // Respostas extraídas página a página conforme preenchimento real do fornecedor
-  const raw = result.rawAnswers;
-  assert.equal(raw['4.4'], false, 'Item 4.4 no PDF real é Não');
-  assert.equal(raw['5.2'], false, 'Item 5.2 no PDF real é Não');
-  assert.equal(raw['7.1'], true, 'Item 7.1 no PDF real é Sim');
-  assert.equal(raw['7.2'], true, 'Item 7.2 no PDF real é Sim');
-  assert.equal(raw['7.3'], true, 'Item 7.3 no PDF real é Sim');
-  assert.equal(raw['7.4'], true, 'Item 7.4 no PDF real é Sim');
-  assert.equal(raw['7.5'], false, 'Item 7.5 no PDF real é Não');
-  assert.equal(raw['7.6'], false, 'Item 7.6 no PDF real é Não');
-  assert.equal(raw['7.7'], false, 'Item 7.7 no PDF real é Não');
-  assert.equal(raw['7.8'], false, 'Item 7.8 no PDF real é Não');
-  assert.equal(raw['7.9'], false, 'Item 7.9 no PDF real é Não');
-  assert.equal(raw['8.2'], true, 'Item 8.2 no PDF real é Sim');
-  assert.equal(raw['8.7'], true, 'Item 8.7 no PDF real é Sim');
-  assert.equal(raw['9.0'], true, 'Item 9.0 no PDF real é Sim');
-
-  // Flags e classificação de integridade
-  assert.equal(result.flagsIntegridade.n23_corrupcaoOuCrimes, false);
-  assert.equal(result.flagsIntegridade.n40_alcadaConselho, false);
-  assert.equal(result.flagsIntegridade.n28_interacaoPublicaOuPep, true);
-  assert.equal(result.flagsIntegridade.n29_licencasOrdinarias, true);
-  assert.equal(result.flagsIntegridade.riscoCalculado, 'Alto');
-});
-
-test('Parser NÃO confunde texto descritivo da pergunta com resposta Sim nem ativa N40 indevidamente', async () => {
+// A leitura automática de PDF saiu do sistema: a biblioteca derrubava a
+// função inteira no runtime da Vercel. O contrato agora é recusar o
+// formato com uma orientação, jamais devolver resposta adivinhada — que
+// era justamente o risco que este teste cobria antes, quando o texto
+// descritivo da pergunta podia ser lido como um "Sim".
+test('PDF é recusado com orientação, sem inventar resposta', async () => {
   const doc = new PDFDocument();
   const chunks = [];
-  doc.on('data', c => chunks.push(c));
-  const bufferPromise = new Promise(resolve => doc.on('end', () => resolve(Buffer.concat(chunks))));
+  doc.on('data', (c) => chunks.push(c));
+  const bufferPromise = new Promise((resolve) => doc.on('end', () => resolve(Buffer.concat(chunks))));
 
   doc.text('QUESTIONÁRIO DE DILIGÊNCIA SUAPE');
-  doc.text('Razão Social: EMPRESA TESTE LTDA');
-  doc.text('CNPJ: 00.111.222/0001-33');
   doc.text('Contratação sujeita à alçada do conselho de administração? Não');
-  doc.text('A empresa possui processos criminais de corrupção? Não');
-  doc.text('Exerce atividade regulada? Não');
-  doc.text('Possui licenças de funcionamento? Não');
   doc.end();
 
   const pdfBuffer = await bufferPromise;
-  const result = await parseSuapeQuestionnaire(pdfBuffer);
+  const erro = await parseSuapeQuestionnaire(pdfBuffer, 'questionario.pdf').then(
+    (r) => new Error(`deveria ter recusado, mas devolveu ${JSON.stringify(r).slice(0, 80)}`),
+    (e) => e
+  );
 
-  assert.equal(result.ok, true);
-  assert.equal(result.flagsIntegridade.n40_alcadaConselho, false);
-  assert.equal(result.flagsIntegridade.n23_corrupcaoOuCrimes, false);
+  assert.match(erro.message, /transcrição por IA/i);
+  assert.match(erro.message, /xlsx/i);
+});
+
+test('o serviço não expõe mais leitura de PDF', () => {
+  const servico = require('../src/services/questionnaire-parser.service');
+  assert.equal(servico.parseSuapePdf, undefined);
+  assert.equal(typeof servico.parseSuapeXlsx, 'function');
 });
 
 test('Parser Excel com pasta de trabalho XLSX real e gerada', async () => {

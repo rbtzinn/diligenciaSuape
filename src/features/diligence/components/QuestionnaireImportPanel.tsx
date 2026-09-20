@@ -56,7 +56,7 @@ type Mode = 'ia' | 'arquivo';
 
 const MODES: Array<{ id: Mode; label: string; hint: string }> = [
   { id: 'ia', label: 'Transcrever com IA', hint: 'PDF, foto ou digitalização' },
-  { id: 'arquivo', label: 'Leitura automática', hint: 'arquivo .xlsx' },
+  { id: 'arquivo', label: 'Leitura automática', hint: 'só .xlsx' },
 ];
 
 export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> = ({
@@ -127,13 +127,15 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
 
   const handleFileUpload = async (file: File) => {
     const name = file.name.toLowerCase();
-    const isPdf = name.endsWith('.pdf');
     const isExcel = name.endsWith('.xlsx') || name.endsWith('.xls');
 
-    if (!isPdf && !isExcel) {
+    // A leitura local vale para a planilha, onde cada resposta tem
+    // endereço de célula. PDF, foto e digitalização passam pela
+    // transcrição por IA.
+    if (!isExcel) {
       setNotice({
         tone: 'high',
-        text: 'Selecione .pdf, .xlsx ou .xls. Para foto do questionário, use a transcrição por IA.',
+        text: 'A leitura automática aceita .xlsx e .xls. Para PDF, foto ou digitalização, use a transcrição por IA.',
       });
       return;
     }
@@ -191,13 +193,6 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
         origem: `Leitura de ${file.name}`,
       });
       setAppliedFrom(file.name);
-
-      if (isPdf) {
-        setNotice({
-          tone: 'warn',
-          text: 'No PDF a ordem de leitura separa enunciado e marcação. Confira item a item no checklist, ou refaça pela transcrição por IA.',
-        });
-      }
     } catch (error) {
       setNotice({
         tone: 'high',
@@ -421,7 +416,7 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
             <input
               ref={fileInputRef}
               type="file"
-              accept=".xlsx,.xls,.pdf,application/pdf"
+              accept=".xlsx,.xls"
               className="hidden"
               onChange={(event) => {
                 if (event.target.files?.[0]) handleFileUpload(event.target.files[0]);
@@ -468,8 +463,8 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
               )}
             </button>
             <p className="text-2xs leading-relaxed text-ink-3">
-              Confiável no .xlsx original, onde cada resposta tem endereço de célula. Para PDF ou foto,
-              prefira a transcrição por IA.
+              Lê o .xlsx original, onde cada resposta tem endereço de célula. PDF, foto e digitalização
+              passam pela transcrição por IA.
             </p>
           </div>
         )}

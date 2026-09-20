@@ -57,16 +57,13 @@ test('o app responde sem depender da leitura de PDF', async () => {
   assert.equal(typeof app, 'function', 'o app precisa ser exportado e utilizável');
 });
 
-test('a falha da leitura de PDF fica contida e orienta o analista', async () => {
-  const { parseSuapeQuestionnaire } = require('../src/services/questionnaire-parser.service');
+test('pdf-parse não consta mais das dependências do backend', () => {
+  const pkg = require('../package.json');
+  const todas = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
 
-  // Um PDF sintético e inválido: o que importa é que a falha volte como
-  // erro tratado da rota, não como queda do processo.
-  const buffer = Buffer.from('%PDF-1.4\nconteudo invalido\n%%EOF');
-  const resultado = await parseSuapeQuestionnaire(buffer, 'questionario.pdf').catch((err) => err);
-
-  assert.ok(
-    resultado instanceof Error || resultado.ok === false || resultado.ok === true,
-    'a leitura de PDF precisa terminar em resultado ou erro tratado'
+  assert.equal(
+    todas['pdf-parse'],
+    undefined,
+    'a biblioteca derrubava a função inteira no runtime da Vercel; o que não está no bundle não quebra'
   );
 });
