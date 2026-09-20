@@ -10,6 +10,8 @@ import {
   evaluateIntegrityMaturity,
   evaluateSuapeIntegrity,
   generateRiskMapRow,
+  requiresReputationResearch,
+  SUAPE_QUESTIONARIO_VALOR_MINIMO,
   type IntegrityAnswers,
 } from './suapeRiskMapRowGenerator';
 import { countSuapeBusinessDays } from './suapeIntegrityCatalog';
@@ -351,5 +353,116 @@ describe('Dias úteis sem fim de semana e feriado', () => {
     expect(
       countSuapeBusinessDays(new Date('2026-09-28T00:00:00Z'), new Date('2026-09-30T00:00:00Z'))
     ).toBe(1);
+  });
+});
+
+// ==========================================================
+// Política de Contratação de Terceiros (Capítulo V, 2023)
+// ==========================================================
+
+describe('Grupos de risco da política (itens 3.2.1 a 3.2.4)', () => {
+  it('3.2.1 — Muito Alto só com resposta positiva em 4.4 e/ou 5.2', () => {
+    expect(evaluateSuapeIntegrity(baseDiligence, 0, { ...todasNao, '4.4': true }).calculatedRisk).toBe(
+      'Muito Alto'
+    );
+    expect(evaluateSuapeIntegrity(baseDiligence, 0, { ...todasNao, '5.2': true }).calculatedRisk).toBe(
+      'Muito Alto'
+    );
+  });
+
+  it('3.2.2 — Alto em 7.1, 7.3 a 7.9 e na alçada do Conselho', () => {
+    for (const item of ['7.1', '7.3', '7.4', '7.5', '7.6', '7.7', '7.8', '7.9'] as const) {
+      const evaluation = evaluateSuapeIntegrity(baseDiligence, 0, { ...todasNao, [item]: true });
+      expect(evaluation.calculatedRisk, `item ${item}`).toBe('Alto');
+    }
+    expect(
+      evaluateSuapeIntegrity(baseDiligence, 0, { ...todasNao, alcadaConselho: true }).calculatedRisk
+    ).toBe('Alto');
+  });
+
+  it('3.2.3 — Médio apenas com 7.2', () => {
+    expect(evaluateSuapeIntegrity(baseDiligence, 0, { ...todasNao, '7.2': true }).calculatedRisk).toBe(
+      'Médio'
+    );
+  });
+
+  it('3.2.4 — Baixo quando nenhuma hipótese se aplica', () => {
+    expect(evaluateSuapeIntegrity(baseDiligence, 0, todasNao).calculatedRisk).toBe('Baixo');
+  });
+
+  it('3.2 — predomina sempre a classificação mais elevada', () => {
+    // 7.2 (Médio) + 7.4 (Alto) + 4.4 (Muito Alto) convivendo.
+    const evaluation = evaluateSuapeIntegrity(baseDiligence, 0, {
+      ...todasNao,
+      '7.2': true,
+      '7.4': true,
+      '4.4': true,
+    });
+    expect(evaluation.calculatedRisk).toBe('Muito Alto');
+    expect(evaluation.triggeredRisks).toHaveLength(3);
+  });
+});
+
+describe('Pesquisas exigidas pelo item 3.3', () => {
+  it('só são obrigatórias em risco alto ou muito alto', () => {
+    expect(requiresReputationResearch('Muito Alto')).toBe(true);
+    expect(requiresReputationResearch('Alto')).toBe(true);
+    expect(requiresReputationResearch('Médio')).toBe(false);
+    expect(requiresReputationResearch('Baixo')).toBe(false);
+    expect(requiresReputationResearch(null)).toBe(false);
+  });
+
+  it('a avaliação sinaliza a exigência junto da classificação', () => {
+    expect(evaluateSuapeIntegrity(baseDiligence, 0, { ...todasNao, '7.4': true }).researchRequired).toBe(
+      true
+    );
+    expect(evaluateSuapeIntegrity(baseDiligence, 0, todasNao).researchRequired).toBe(false);
+  });
+});
+
+describe('Cadastros do item 3.3.3', () => {
+  it('lista os 8 cadastros da política', () => {
+    const evaluation = evaluateSuapeIntegrity(baseDiligence, 0, todasNao);
+    expect(evaluation.registryCoverage).toHaveLength(8);
+    expect(evaluation.registryCoverage.map((registry) => registry.key)).toEqual([
+      'ceis',
+      'cnep',
+      'cepim',
+      'improbidadeCnj',
+      'tcu',
+      'tcePe',
+      'trabalhoEscravo',
+      'decisoesAdversas',
+    ]);
+  });
+
+  it('não passa cadastro não consultado por "nada consta"', () => {
+    const evaluation = evaluateSuapeIntegrity(baseDiligence, 0, todasNao);
+    const cepim = evaluation.registryCoverage.find((registry) => registry.key === 'cepim')!;
+    const tcu = evaluation.registryCoverage.find((registry) => registry.key === 'tcu')!;
+
+    expect(cepim.status).toBe('nao-consultado');
+    expect(tcu.status).toBe('nao-consultado');
+    expect(cepim.detail).toContain('manual');
+  });
+
+  it('marca como "consta" o cadastro em que a empresa aparece', () => {
+    const comSancao = {
+      ...baseDiligence,
+      ceis: { registros: [{ nome: 'TMP Terminais S/A' }] },
+      cnep: { registros: [] },
+    } as unknown as DiligenceItem;
+
+    const evaluation = evaluateSuapeIntegrity(comSancao, 0, todasNao);
+    expect(evaluation.registryCoverage.find((registry) => registry.key === 'ceis')!.status).toBe('consta');
+    expect(evaluation.registryCoverage.find((registry) => registry.key === 'cnep')!.status).toBe(
+      'nada-consta'
+    );
+  });
+});
+
+describe('Obrigatoriedade do questionário (item 3.3.1)', () => {
+  it('fixa o limite de R$ 50.000,00 para dispensa e inexigibilidade', () => {
+    expect(SUAPE_QUESTIONARIO_VALOR_MINIMO).toBe(50000);
   });
 });

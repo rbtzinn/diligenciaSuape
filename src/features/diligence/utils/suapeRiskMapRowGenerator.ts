@@ -27,6 +27,7 @@ import {
   SUAPE_RESPONSAVEL_PADRAO,
   SUAPE_RISK_BY_ITEM,
   SUAPE_RISK_CATALOG,
+  SUAPE_REGISTRIES,
   SUAPE_RISK_MAP_RECOMMENDATIONS,
   countSuapeBusinessDays,
   evaluateIntegrityMaturity,
@@ -42,6 +43,7 @@ import {
 export {
   SUAPE_DIRETORIAS,
   SUAPE_MATURITY_ITEMS,
+  SUAPE_SENSITIVE_POINTS,
   SUAPE_OFFICIAL_ACTIONS,
   SUAPE_QUESTION_TEXTS,
   SUAPE_REGISTRIES,
@@ -51,6 +53,7 @@ export {
   evaluateIntegrityMaturity,
 } from './suapeIntegrityCatalog';
 export type {
+  SuapeSensitivePoint,
   QuestionnaireAnswer,
   SuapeCalculatedRisk,
   SuapeIntegrityItemKey,
@@ -91,6 +94,21 @@ export interface SuapeAnswerContradiction {
   item: SuapeIntegrityItemKey;
   declared: 'Sim' | 'Não';
   evidence: string;
+}
+
+/**
+ * Situação de cada um dos 8 cadastros do item 3.3.3 da política. O
+ * sistema consulta alguns automaticamente e não alcança outros; dizer
+ * "não consultado" é obrigatório, porque tratar fonte não consultada
+ * como fonte limpa é o falso negativo que este projeto trata como
+ * defeito grave.
+ */
+export interface SuapeRegistryCoverage {
+  key: SuapeRegistryKey;
+  label: string;
+  url?: string;
+  status: 'consta' | 'nada-consta' | 'nao-consultado';
+  detail?: string;
 }
 
 export interface SuapeTriggeredRisk {
@@ -142,13 +160,17 @@ export interface SuapeIntegrityEvaluationResult {
   evidenceSignals: SuapeEvidenceSignal[];
   contradictions: SuapeAnswerContradiction[];
 
+  /** Item 3.3.3: os 8 cadastros desabonadores e o que se sabe de cada. */
+  registryCoverage: SuapeRegistryCoverage[];
+  /** Pesquisas dos itens 3.3.2 e 3.3.3 exigidas pela classificação. */
+  researchRequired: boolean;
+
   maturity: SuapeMaturityResult;
 
   /**
-   * A planilha se contradiz na alçada do Conselho: a fórmula J16 joga N40
-   * em "Muito Alto", mas a tabela de critérios e as 555 linhas do Mapa
-   * tratam como "Risco Alto". Adotamos a prática registrada e expomos a
-   * divergência em vez de escondê-la.
+   * A fórmula J16 da planilha diverge da política nesta hipótese. Quem
+   * decide é a política (item 3.2.2), não a célula; a divergência fica
+   * exposta em vez de escondida.
    */
   alcadaDivergence: { literal: SuapeCalculatedRisk; adopted: SuapeCalculatedRisk; note: string } | null;
 
@@ -158,11 +180,29 @@ export interface SuapeIntegrityEvaluationResult {
 export const SUAPE_J16_FORMULA =
   '=SE(OU(N23;N40);"Muito Alto";SE(N28;"Alto";SE(N29;"Médio";"Baixo")))';
 
+/**
+ * Item 3.3.1 da política: o preenchimento do Questionário de Diligência é
+ * mandatório na fase de habilitação dos processos licitatórios e, em
+ * dispensa ou inexigibilidade, quando o valor passa de R$ 50.000,00.
+ */
+export const SUAPE_QUESTIONARIO_VALOR_MINIMO = 50_000;
+
+/**
+ * Item 3.3 da política: classificado o terceiro em risco alto ou muito
+ * alto, as pesquisas dos itens 3.3.2 (reputação) e 3.3.3 (cadastros
+ * desabonadores) DEVERÃO ser realizadas. Abaixo disso não são exigidas.
+ */
+export function requiresReputationResearch(risk: SuapeCalculatedRisk | null): boolean {
+  return risk === 'Alto' || risk === 'Muito Alto';
+}
+
 const ALCADA_DIVERGENCE_NOTE =
-  'A fórmula literal da célula J16 classificaria a alçada do Conselho como "Muito Alto". ' +
-  'A tabela de critérios da própria planilha e as 555 linhas já registradas no Mapa de Risco ' +
-  'tratam a alçada como "Risco Alto" — inclusive contratações de R$ 33 milhões. ' +
-  'O sistema adota a prática registrada.';
+  'A fórmula da célula J16 classificaria a alçada do Conselho como "Muito Alto", mas está em ' +
+  'desacordo com a norma: o item 3.2.2 da Política de Contratação de Terceiros (Capítulo V, 2023) ' +
+  'lista a contratação autorizada por alçada do Conselho de Administração dentro do Grupo de ' +
+  'Risco ALTO, e reserva o Muito Alto à resposta positiva nos itens 4.4 e/ou 5.2 (item 3.2.1). ' +
+  'A tabela de critérios da própria planilha e as 555 linhas do Mapa de Risco seguem a política. ' +
+  'O sistema classifica como Alto.';
 
 // ==========================================================
 // SINAIS DE EVIDÊNCIA DA PESQUISA
@@ -259,6 +299,48 @@ export function collectEvidenceSignals(diligence: DiligenceItem): {
   return { signals, registryHits, mteMatch };
 }
 
+/**
+ * Item 3.3.3 da política: os 8 cadastros desabonadores. O sistema cobre
+ * CEIS, CNEP, TCE-PE e o cadastro de trabalho escravo do MTE; CEPIM,
+ * improbidade do CNJ e inidôneos do TCU continuam sendo consulta manual,
+ * e a tela diz isso em vez de deixar a lacuna passar por "nada consta".
+ */
+export function buildRegistryCoverage(
+  diligence: DiligenceItem,
+  registryHits: Partial<Record<SuapeRegistryKey, boolean>>
+): SuapeRegistryCoverage[] {
+  const tcePe = diligence.tcePe as { ok?: boolean } | undefined;
+  const consultado: Partial<Record<SuapeRegistryKey, boolean>> = {
+    ceis: Boolean(diligence.ceis),
+    cnep: Boolean(diligence.cnep),
+    tcePe: Boolean(tcePe),
+    // A base do MTE viaja embarcada no pacote, então está sempre consultada.
+    trabalhoEscravo: true,
+    decisoesAdversas: Array.isArray(diligence.processosDescobertos),
+  };
+
+  return SUAPE_REGISTRIES.map((registry) => {
+    if (registryHits[registry.key]) {
+      return { key: registry.key, label: registry.text, url: registry.url, status: 'consta' as const };
+    }
+    if (consultado[registry.key]) {
+      return {
+        key: registry.key,
+        label: registry.text,
+        url: registry.url,
+        status: 'nada-consta' as const,
+      };
+    }
+    return {
+      key: registry.key,
+      label: registry.text,
+      url: registry.url,
+      status: 'nao-consultado' as const,
+      detail: 'Não consultado automaticamente — verificação manual necessária.',
+    };
+  });
+}
+
 // ==========================================================
 // GATILHOS DA PLANILHA
 //
@@ -327,9 +409,18 @@ export function calculateN29(answers: IntegrityAnswers = {}): {
 }
 
 /**
- * Precedência da classificação. Difere da fórmula literal em um ponto,
- * documentado em `ALCADA_DIVERGENCE_NOTE`: N40 leva a "Alto", não a
- * "Muito Alto".
+ * Precedência da classificação, conforme o item 3.2 da política: "podendo
+ * o Terceiro se enquadrar em mais de uma classificação, predominando
+ * sempre a classificação mais elevada".
+ *
+ *  - 3.2.1 Muito Alto: resposta positiva em 4.4 e/ou 5.2.
+ *  - 3.2.2 Alto: resposta positiva em 7.1, 7.3 a 7.9, OU obrigações
+ *    autorizadas por alçada do Conselho de Administração.
+ *  - 3.2.3 Médio: resposta positiva em 7.2.
+ *  - 3.2.4 Baixo: nenhuma das hipóteses acima.
+ *
+ * Difere da fórmula literal da planilha em um ponto, documentado em
+ * `ALCADA_DIVERGENCE_NOTE`: N40 leva a "Alto", não a "Muito Alto".
  */
 function classify(n23: boolean, n40: boolean, n28: boolean, n29: boolean): SuapeCalculatedRisk {
   if (n23) return 'Muito Alto';
@@ -438,6 +529,8 @@ export function evaluateSuapeIntegrity(
     triggers: { n23Reasons, n40Reasons, n28Reasons, n29Reasons },
     evidenceSignals: signals,
     contradictions,
+    registryCoverage: buildRegistryCoverage(diligence, registryHits),
+    researchRequired: requiresReputationResearch(calculatedRisk),
     maturity,
     alcadaDivergence,
     mteMatch,

@@ -12,6 +12,15 @@
 //      aba "Apoio": catálogo Risco 1..12 (L10:O21), diretorias (J2:J9)
 //      e recomendações (O2:O4);
 //      aba "Mapa de Risco": cabeçalho A2:AN2 das 40 colunas.
+//  - "Política de Contratação de Terceiros" (Capítulo V do Programa de
+//      Integridade, versão de setembro de 2023): itens 3.2.1 a 3.2.4
+//      (grupos de risco), 3.3.1 (obrigatoriedade do questionário),
+//      3.3.2 (pesquisa de reputação), 3.3.3 (cadastros desabonadores)
+//      e 3.5 (riscos e pontos sensíveis).
+//
+// Onde a planilha e a política divergirem, vale a política: a planilha é
+// ferramenta, a política é a norma. A única divergência encontrada está
+// na alçada do Conselho, tratada em `suapeRiskMapRowGenerator.ts`.
 //
 // Quem alterar um texto daqui precisa conferir contra a planilha: a
 // linha colada no Mapa de Risco tem que casar com o que já está lá.
@@ -465,7 +474,50 @@ export function evaluateIntegrityMaturity(
 }
 
 // ==========================================================
-// 6. DIAS ÚTEIS (coluna "TEMPO DECORRIDO - SEM FIM DE SEMANA E FERIADO")
+// 6. RISCOS E PONTOS SENSÍVEIS (item 3.5 da política)
+//
+// Alertas que a política manda o colaborador observar na contratação.
+// Nenhum deles sai de fonte consultável: quem percebe é quem conduz o
+// processo, então entram como marcação do analista e ficam no parecer.
+// ==========================================================
+
+export interface SuapeSensitivePoint {
+  key: string;
+  /** Letra do item 3.5 da política. */
+  letter: string;
+  text: string;
+}
+
+export const SUAPE_SENSITIVE_POINTS: SuapeSensitivePoint[] = [
+  {
+    key: 'semEstrutura',
+    letter: 'a',
+    text: 'A identificação de terceiro que carece de recursos estruturais e laborais (mão de obra, instalações físicas, etc.) ou técnica para executar os serviços.',
+  },
+  {
+    key: 'evitaEtapas',
+    letter: 'b',
+    text: 'Quando o terceiro tenta evitar ou impedir a execução regular de quaisquer das etapas desta Política, como na recusa ou imposição de atrasos desnecessários para responder questionários ou para realizar qualquer outra solicitação de Suape.',
+  },
+  {
+    key: 'procedimentoAtipico',
+    letter: 'c',
+    text: 'Inobservância de procedimentos usuais de contratação de terceiros.',
+  },
+  {
+    key: 'evitaFormalizacao',
+    letter: 'd',
+    text: 'Nos casos em que o terceiro evite comunicações por escrito, tentando dirigir-se a membros de comissão de licitação ou responsáveis pela contratação por meios pessoais, ou não apresente em tempo devido os relatórios das atividades desenvolvidas.',
+  },
+  {
+    key: 'outraViolacao',
+    letter: 'e',
+    text: 'Qualquer outra violação às demais Políticas de Suape.',
+  },
+];
+
+// ==========================================================
+// 7. DIAS ÚTEIS (coluna "TEMPO DECORRIDO - SEM FIM DE SEMANA E FERIADO")
 //
 // A aba Apoio traz listas fixas de feriados de 2020 a 2024 e para por
 // aí. Em vez de congelar mais um ano, o cálculo deriva o calendário:

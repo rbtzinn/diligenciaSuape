@@ -7,7 +7,9 @@ import {
   SUAPE_DIRETORIAS,
   SUAPE_MATURITY_ITEMS,
   SUAPE_QUESTION_TEXTS,
+  SUAPE_QUESTIONARIO_VALOR_MINIMO,
   SUAPE_REQUIRED_ITEMS,
+  SUAPE_SENSITIVE_POINTS,
   type SuapeCalculatedRisk,
   type QuestionnaireAnswer,
   type IntegrityAnswers,
@@ -81,6 +83,11 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
 
   // Origem das respostas em vigor, para o rodapé de auditoria.
   const [answerSource, setAnswerSource] = useState<string | null>(null);
+
+  // Item 3.5 da política: alertas que só quem conduz o processo percebe.
+  // Nenhuma fonte responde por eles, então são marcação do analista e
+  // viajam para a coluna OBSERVAÇÕES do Mapa.
+  const [sensitivePoints, setSensitivePoints] = useState<string[]>([]);
 
   // A diretoria demandante costuma se repetir entre diligências do
   // mesmo analista, então vale guardar; o gestor muda a cada contrato.
@@ -159,6 +166,14 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
     return evaluateSuapeIntegrity(diligence, valorNumerico, questionAnswers);
   }, [diligence, valorNumerico, questionAnswers]);
 
+  const observacoes = useMemo(() => {
+    if (sensitivePoints.length === 0) return '';
+    const marcados = SUAPE_SENSITIVE_POINTS.filter((point) => sensitivePoints.includes(point.key));
+    return `Pontos sensíveis (item 3.5 da política): ${marcados
+      .map((point) => `(${point.letter}) ${point.text}`)
+      .join(' ')}`;
+  }, [sensitivePoints]);
+
   const riskMapRow = useMemo(() => {
     const formattedValor =
       valorNumerico > 0
@@ -180,6 +195,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
       valorContrato: formattedValor,
       notaTecnica,
       processoSei,
+      observacoes,
       answers: questionAnswers,
       customEvaluation: evaluation,
     });
@@ -196,6 +212,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
     valorContratoStr,
     notaTecnica,
     processoSei,
+    observacoes,
     questionAnswers,
     evaluation,
   ]);
@@ -838,13 +855,14 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                     <Icons.Search size={15} />
                   </span>
                   <h2 className="text-sm font-black text-amber-900">
-                    {evaluation.riskDisplay} — aprofundamento da pesquisa
+                    {evaluation.riskDisplay} — pesquisas obrigatórias (itens 3.3.2 e 3.3.3)
                   </h2>
                 </div>
                 <p className="mt-1.5 max-w-2xl text-xs leading-relaxed text-amber-900">
-                  A classificação apurada exige varredura reputacional ampliada antes do parecer. A
-                  busca é a mesma que a diligência já executa, reiniciada com foco no terceiro e nos
-                  fatores que dispararam a classificação.
+                  Item 3.3 da Política de Contratação de Terceiros: classificado o terceiro em risco
+                  alto ou muito alto, as pesquisas de reputação (3.3.2) e a verificação nos cadastros
+                  desabonadores (3.3.3) <strong>deverão</strong> ser realizadas. A busca abaixo é a
+                  mesma que a diligência já executa, reiniciada com foco no terceiro.
                 </p>
 
                 {evaluation.triggeredRisks.length > 0 && (
@@ -895,6 +913,57 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                 </div>
               ))}
             </dl>
+
+            {/* Item 3.3.3 — os 8 cadastros desabonadores da política. */}
+            <div className="mt-4 rounded-xl border border-amber-200 bg-white p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-3xs font-black uppercase tracking-wider text-slate-500">
+                  Item 3.3.3 — Cadastros e bancos de dados
+                </span>
+                <span className="rounded bg-slate-100 px-2 py-0.5 text-3xs font-bold text-slate-600">
+                  {evaluation.registryCoverage.filter((r) => r.status !== 'nao-consultado').length} de{' '}
+                  {evaluation.registryCoverage.length} consultados
+                </span>
+              </div>
+              <ul className="mt-2 space-y-1">
+                {evaluation.registryCoverage.map((registry) => (
+                  <li key={registry.key} className="flex items-start gap-2 text-2xs">
+                    <span
+                      className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 font-black ${
+                        registry.status === 'consta'
+                          ? 'bg-rose-100 text-rose-900'
+                          : registry.status === 'nada-consta'
+                            ? 'bg-emerald-100 text-emerald-900'
+                            : 'bg-amber-100 text-amber-900'
+                      }`}
+                    >
+                      {registry.status === 'consta'
+                        ? 'CONSTA'
+                        : registry.status === 'nada-consta'
+                          ? 'NADA CONSTA'
+                          : 'NÃO CONSULTADO'}
+                    </span>
+                    <span className="min-w-0 text-slate-700">
+                      {registry.url ? (
+                        <a
+                          href={registry.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline decoration-slate-300 underline-offset-2 hover:text-[#0F2D59]"
+                        >
+                          {registry.label}
+                        </a>
+                      ) : (
+                        registry.label
+                      )}
+                      {registry.detail ? (
+                        <span className="text-amber-800"> — {registry.detail}</span>
+                      ) : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
             {researchNotice && (
               <p className="mt-3 rounded-lg border border-amber-300 bg-white p-2.5 text-2xs font-semibold text-amber-900">
@@ -1015,6 +1084,58 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
               </div>
             </div>
           </div>
+        </section>
+
+        {/* SEÇÃO 3B: RISCOS E PONTOS SENSÍVEIS (ITEM 3.5 DA POLÍTICA) */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+          <div className="flex flex-col gap-2 border-b border-slate-100 pb-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-sm font-black text-[#0F2D59]">
+                Riscos e pontos sensíveis (item 3.5 da política)
+              </h2>
+              <p className="mt-0.5 text-2xs text-slate-500">
+                Situações que a política manda observar na contratação. Nenhuma sai de fonte
+                consultável — quem percebe é quem conduz o processo. O que for marcado vai para a
+                coluna OBSERVAÇÕES do Mapa de Risco.
+              </p>
+            </div>
+            {sensitivePoints.length > 0 && (
+              <span className="shrink-0 rounded-lg bg-amber-100 px-2.5 py-1 text-2xs font-black text-amber-900">
+                {sensitivePoints.length} marcado(s)
+              </span>
+            )}
+          </div>
+
+          <ul className="mt-3 space-y-2">
+            {SUAPE_SENSITIVE_POINTS.map((point) => {
+              const marked = sensitivePoints.includes(point.key);
+              return (
+                <li key={point.key}>
+                  <label
+                    className={`flex cursor-pointer items-start gap-2.5 rounded-xl border p-3 transition-colors ${
+                      marked ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white hover:bg-slate-50'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={marked}
+                      onChange={() =>
+                        setSensitivePoints((previous) =>
+                          previous.includes(point.key)
+                            ? previous.filter((key) => key !== point.key)
+                            : [...previous, point.key]
+                        )
+                      }
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-amber-600"
+                    />
+                    <span className="min-w-0 text-2xs leading-relaxed text-slate-700">
+                      <strong className="text-slate-900">({point.letter})</strong> {point.text}
+                    </span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
         </section>
 
         {/* SEÇÃO 4: PARÂMETROS EDITÁVEIS DA LINHA DO MAPA DE RISCO */}
@@ -1212,6 +1333,18 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                   className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs font-bold text-slate-800 shadow-2xs transition-all focus:border-[#0F2D59] focus:ring-2 focus:ring-[#0F2D59]/10 focus:outline-hidden"
                 />
               </div>
+              {valorNumerico > 0 && valorNumerico <= SUAPE_QUESTIONARIO_VALOR_MINIMO && (
+                <p className="mt-1 text-3xs leading-snug text-slate-500">
+                  Item 3.3.1: em dispensa ou inexigibilidade, o questionário só é mandatório acima de
+                  R$ 50.000,00. Em processo licitatório, é exigido na habilitação independente do valor.
+                </p>
+              )}
+              {valorNumerico >= 10000000 && (
+                <p className="mt-1 text-3xs font-semibold leading-snug text-amber-800">
+                  Valor atinge o patamar de alçada do Conselho. Confirme no checklist se as obrigações
+                  foram autorizadas por alçada — o item é marcação, não dedução pelo valor.
+                </p>
+              )}
             </div>
 
             {/* 9. PROCESSO SEI */}

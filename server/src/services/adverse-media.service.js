@@ -16,16 +16,25 @@ const {
 // identidade, e resultado classificado como FALSO POSITIVO deixa de entrar no
 // dossiê. O número da versão faz parte da chave de cache: sem trocá-lo, uma
 // execução anterior devolveria os candidatos descartados por esta regra.
-const QUERY_PLAN_VERSION = 'adverse-media-v7';
+// v8: o dicionário ganhou "esquema", "crime" e "lava-jato", nomeados pelo item
+// 3.3.2 da política. Sem trocar a versão, diligências em cache continuariam
+// respondendo com o plano antigo, sem esses termos.
+const QUERY_PLAN_VERSION = 'adverse-media-v8';
+// O item 3.3.2 da Política de Contratação de Terceiros nomeia os termos
+// que a pesquisa de reputação deve empregar: "Corrupção, esquema, propina,
+// lavagem de dinheiro, condenado, lava-jato, crime, etc.". Todos estão
+// abaixo; a lista é maior que a da política porque ela diz "tais como,
+// mas não somente".
 const SEARCH_DICTIONARY = {
   integrity: [
     'corrupção', 'fraude', 'suborno', 'improbidade', 'propina', 'desvio',
     'lavagem de dinheiro', 'licitação fraudulenta', 'cartel', 'conluio',
+    'esquema',
   ],
   criminal: [
     'investigação', 'investigado', 'operação', 'denúncia', 'denunciado',
     'condenação', 'condenado', 'ação penal', 'polícia federal', 'mandado',
-    'prisão', 'organização criminosa',
+    'prisão', 'organização criminosa', 'crime', 'lava-jato',
   ],
   judicial: [
     'ação civil pública', 'processo', 'execução fiscal', 'falência',
