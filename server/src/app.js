@@ -6,7 +6,6 @@
 const express = require('express');
 const cors = require('cors');
 const { rateLimit } = require('express-rate-limit');
-const path = require('path');
 
 const authRoutes = require('./routes/auth.routes');
 const workflowRoutes = require('./routes/workflow.routes');
@@ -22,6 +21,11 @@ const statusRoutes = require('./routes/status.routes');
 const aiRoutes = require('./routes/ai.routes');
 const pncpRoutes = require('./routes/pncp.routes');
 
+// Este processo é só API. A SPA é servida pelo nginx no contêiner e por
+// um projeto próprio na Vercel; o Express chegou a montar `dist` aqui,
+// mas isso dava ao backend a capacidade de responder a página do site —
+// e um HTML vindo da API é indistinguível, de fora, de uma API fora do
+// ar. Essa ambiguidade atrasou horas de diagnóstico.
 const app = express();
 
 const configuredOrigins = String(process.env.CORS_ALLOWED_ORIGINS || '')
@@ -104,9 +108,6 @@ const aiRateLimit = rateLimit({
   message: { ok: false, erro: 'Limite temporário de análises por IA atingido. Aguarde alguns minutos.' },
 });
 app.use('/api/ai', aiRateLimit);
-
-// Servir arquivos estáticos da SPA
-app.use(express.static(path.join(__dirname, '..', '..', 'dist')));
 
 // Rotas de API
 app.use('/api/auth', authRoutes);

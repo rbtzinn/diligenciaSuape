@@ -126,17 +126,26 @@ test('o vercel.json do backend não declara cabeçalhos de CORS', () => {
 // Superfície pública da API
 // ==========================================================
 
-test('a raiz se identifica em vez de devolver página em branco', async () => {
+test('a raiz se identifica como API, nunca com a página do site', async () => {
   const res = await requisitar({ method: 'GET', caminho: '/', headers: {} });
 
-  // Com a SPA ao lado, a raiz serve o index.html; publicada sozinha, como
-  // na Vercel, precisa dizer o que é e onde está o diagnóstico.
-  const tipo = String(res.headers['content-type'] || '');
   assert.equal(res.status, 200);
-  assert.ok(
-    tipo.includes('application/json') || tipo.includes('text/html'),
-    `a raiz precisa responder algo legível, veio "${tipo}"`
+  assert.match(
+    String(res.headers['content-type'] || ''),
+    /application\/json/,
+    'a API não serve HTML: página vinda daqui é indistinguível de API fora do ar'
   );
+});
+
+test('nenhuma rota da API responde HTML', async () => {
+  for (const caminho of ['/api/status', '/api/empresa/56211027000269', '/api/caminho-inexistente']) {
+    const res = await requisitar({ method: 'GET', caminho, headers: {} });
+    assert.doesNotMatch(
+      String(res.headers['content-type'] || ''),
+      /text\/html/,
+      `${caminho} devolveu HTML; o cliente trata isso como resposta inválida`
+    );
+  }
 });
 
 test('rota de API inexistente devolve JSON, não página de erro', async () => {
