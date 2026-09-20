@@ -8,7 +8,36 @@
 // ==========================================================
 
 const xlsx = require('xlsx');
-const { PDFParse } = require('pdf-parse');
+
+/**
+ * `pdf-parse` embute o pdf.js, que avalia `DOMMatrix` — uma API de
+ * navegador — já ao ser carregado. No Node ele tenta suprir isso com
+ * `@napi-rs/canvas`, que não está instalado; o polyfill falha e o módulo
+ * lança `ReferenceError: DOMMatrix is not defined`.
+ *
+ * No topo deste arquivo, esse erro derrubava a função inteira na Vercel:
+ * a cadeia `app.js → diligence.routes.js → este serviço` roda em todo
+ * boot, então QUALQUER rota respondia 500 FUNCTION_INVOCATION_FAILED,
+ * inclusive `/api/status`. Localmente não aparecia, porque no Node desta
+ * máquina o mesmo require carrega sem erro.
+ *
+ * Carregar sob demanda mantém a falha dentro da leitura de PDF, que é o
+ * único lugar que precisa da biblioteca — e que já era o caminho menos
+ * confiável, com a transcrição por IA cobrindo PDF e foto.
+ */
+function loadPdfParser() {
+  try {
+    // eslint-disable-next-line global-require
+    const { PDFParse } = require('pdf-parse');
+    return PDFParse;
+  } catch (err) {
+    const motivo = String(err && err.message ? err.message : err).split('\n')[0];
+    throw new Error(
+      `A leitura automática de PDF não está disponível neste ambiente (${motivo}). ` +
+        'Use a transcrição por IA, que aceita PDF, foto e digitalização, ou envie o questionário em .xlsx.'
+    );
+  }
+}
 
 /**
  * Normaliza respostas para tri-state:
@@ -40,6 +69,8 @@ function isPdfBuffer(buffer) {
  * @param {Buffer} buffer - Buffer do PDF
  */
 async function parseSuapePdf(buffer) {
+  const PDFParse = loadPdfParser();
+
   let fullText = '';
   try {
     const parser = new PDFParse({ data: buffer });
