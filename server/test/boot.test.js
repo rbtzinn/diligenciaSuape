@@ -67,3 +67,27 @@ test('pdf-parse não consta mais das dependências do backend', () => {
     'a biblioteca derrubava a função inteira no runtime da Vercel; o que não está no bundle não quebra'
   );
 });
+
+// ==========================================================
+// Build na Vercel
+//
+// Sem `buildCommand` no `vercel.json`, a Vercel roda `npm run
+// vercel-build`. O script não existia e o build morria com
+// `Missing script: "vercel-build"` — nenhum deploy subia, e a produção
+// ficou servindo um build antigo por horas enquanto os commits
+// chegavam ao repositório sem efeito nenhum.
+// ==========================================================
+
+test('o backend expõe o script que a Vercel executa no build', () => {
+  const pkg = require('../package.json');
+
+  assert.equal(
+    typeof pkg.scripts['vercel-build'],
+    'string',
+    'sem este script a Vercel falha o build e mantém no ar o deployment anterior'
+  );
+  assert.ok(
+    pkg.scripts['vercel-build'].trim().length > 0,
+    'o script precisa ter um comando de verdade'
+  );
+});
