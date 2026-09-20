@@ -268,25 +268,18 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           do botão e os tokens `on-deep`. */}
       <div className="shrink-0 border-b border-deep-line bg-deep text-on-deep">
         <div className="mx-auto flex w-full max-w-content items-center gap-2 px-gutter py-2 sm:gap-3 sm:py-3">
+          {/* Só a seta, em qualquer largura: o rótulo "Nova busca"
+              repetia o que a seta já diz e, no celular, empurrava o
+              CNPJ para fora. */}
           <Button
             size="sm"
             variant="deep"
             iconOnly
             aria-label="Voltar para nova busca"
-            icon={<Icons.ArrowLeft size={14} />}
-            onClick={onBack}
-            className="sm:hidden"
-          />
-          <Button
-            size="sm"
-            variant="deep"
-            icon={<Icons.ArrowLeft size={14} />}
-            onClick={onBack}
             title="Voltar para nova busca"
-            className="hidden sm:inline-flex"
-          >
-            Nova busca
-          </Button>
+            icon={<Icons.ArrowLeft size={16} />}
+            onClick={onBack}
+          />
 
           <div className="hidden h-6 w-px shrink-0 bg-deep-line sm:block" />
 
@@ -330,26 +323,22 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
               <span className="num text-xs font-bold text-brand-on-deep">{effectiveRisk.score}/100</span>
             </button>
 
+            {/* Um botão só. Passar `hidden` no `className` não esconde
+                nada aqui: a classe base do botão já traz `inline-flex`,
+                e `cn` não resolve conflito entre utilitários — quem
+                decide é a ordem no CSS gerado. Quem some no celular é o
+                rótulo, como já se faz na barra do aplicativo. */}
             <Button
               size="sm"
               variant="deep"
-              iconOnly
-              aria-label="Exportar dossiê em PDF"
-              icon={<Icons.Download size={15} />}
-              isLoading={isExportingPdf}
-              onClick={handleExportPdf}
-              className="sm:hidden"
-            />
-            <Button
-              size="sm"
-              variant="deep"
-              icon={<Icons.Download size={15} />}
+              title="Exportar dossiê em PDF"
+              icon={<Icons.Download size={16} />}
               isLoading={isExportingPdf}
               loadingLabel="Gerando…"
               onClick={handleExportPdf}
-              className="hidden sm:inline-flex"
             >
-              Exportar PDF
+              <span className="hidden sm:inline">Exportar PDF</span>
+              <span className="sr-only sm:hidden">Exportar dossiê em PDF</span>
             </Button>
           </div>
         </div>

@@ -44,8 +44,29 @@ describe('barra da diligência', () => {
     expect(barra).not.toContain('flex-col');
   });
 
-  it('no celular os botões da barra ficam só com o ícone', () => {
+  it('voltar é só a seta, sem rótulo repetindo o que o ícone diz', () => {
     expect(fonte).toContain('aria-label="Voltar para nova busca"');
-    expect(fonte).toContain('aria-label="Exportar dossiê em PDF"');
+    expect(fonte).not.toContain('Nova busca\n          </Button>');
+  });
+
+  // `cn` não resolve conflito entre utilitários e a classe base do
+  // botão já traz `inline-flex`: passar `hidden` no `className` de um
+  // Button não esconde nada, e o par "um para celular, outro para
+  // desktop" aparecia inteiro na tela — duas setas e um "Exportar PDF"
+  // cortado na borda. Quem some no celular é o rótulo, não o botão.
+  it('nenhum Button da barra tenta se esconder pelo className', () => {
+    const barra = fonte.slice(
+      fonte.indexOf('<div className="shrink-0 border-b border-deep-line bg-deep'),
+      fonte.indexOf('</nav>')
+    );
+
+    const aberturasDeBotao = [...barra.matchAll(/<Button\b[\s\S]*?>/g)].map((m) => m[0]);
+    expect(aberturasDeBotao.length).toBeGreaterThan(0);
+
+    for (const abertura of aberturasDeBotao) {
+      const classe = abertura.match(/className="([^"]*)"/)?.[1] || '';
+      expect(classe.split(/\s+/)).not.toContain('hidden');
+      expect(classe.split(/\s+/)).not.toContain('sm:hidden');
+    }
   });
 });
