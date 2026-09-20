@@ -197,13 +197,26 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
     setSavingNews(true);
     try {
       const automaticRisk = calculateRisk({ ...displayDiligence, discoveries });
-      const response = await request<{ ok: boolean; data: DiligenceItem }>(`/api/diligences/${diligence.id}/media`, {
+      const response = await request<{
+        ok: boolean;
+        data: DiligenceItem;
+        planilhaDeNoticias?: { ok: boolean; linhas?: number; aba?: string; erro?: string };
+      }>(`/api/diligences/${diligence.id}/media`, {
         method: 'PATCH', body: JSON.stringify({ adverseMedia, automaticRisk }),
       });
       const saved = response.data;
       setSavedNewsDiligence(saved);
       setLocalRisk(null);
-      setMediaRefreshNotice('Publicações e revisões salvas no histórico; indicador automático atualizado.');
+      // A aba legível da planilha pode falhar sozinha, com o histórico já
+      // gravado. Dizer só "salvo" esconderia que a planilha ficou para trás.
+      const planilha = response.planilhaDeNoticias;
+      setMediaRefreshNotice(
+        planilha?.ok
+          ? `Publicações e revisões salvas no histórico e na aba ${planilha.aba} da planilha (${planilha.linhas} linha(s)); indicador automático atualizado.`
+          : planilha
+            ? `Salvo no histórico, mas a aba ${planilha.aba} da planilha não foi atualizada: ${planilha.erro || 'motivo não informado'}.`
+            : 'Publicações e revisões salvas no histórico; indicador automático atualizado.'
+      );
     } catch (error) {
       setMediaRefreshNotice(error instanceof Error ? error.message : 'Não foi possível salvar as publicações.');
     } finally { setSavingNews(false); }

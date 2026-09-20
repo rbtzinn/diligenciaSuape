@@ -3,7 +3,6 @@ import type { AdverseMediaStatus, DiligenceItem } from '../types';
 import { Button } from '../../../components/ui/Button';
 import { Select, TextField } from '../../../components/ui/Field';
 import { AdverseMediaCard } from './AdverseMediaCard';
-import { AiNewsSearch } from './AiNewsSearch';
 import { newsSubjects, safeNewsUrl } from '../utils/newsResults';
 
 interface Props {
@@ -75,7 +74,6 @@ export function NewsWorkspace({ diligence, busy, saving, notice, progress, onSea
       <p className="mt-2 text-xs text-ink-3">Sem API paga nesta busca. As fontes gratuitas podem limitar ou interromper consultas.</p>
     </div>
 
-    <AiNewsSearch key={diligence.id} diligence={diligence} subject={subject} />
     {notice && <p role="status" className="rounded-md border border-line p-3 text-sm text-ink-2">{notice}</p>}
     {(!media?.ok || media.consultaParcial || failed > 0) && <div className="rounded-md border border-line p-3 text-sm text-ink-2">
       <strong>Cobertura incompleta.</strong> {failed > 0 ? `${failed} consultas com falha ou resposta parcial. ` : ''}{media?.aviso || 'Não foi possível verificar todas as fontes.'}

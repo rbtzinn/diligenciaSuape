@@ -4,6 +4,7 @@
 
 const express = require('express');
 const { DiligenceHistoryService } = require('../services/diligence-history.service');
+const { NewsRepository } = require('../repositories/news.repository');
 const { EvidenceCenterService } = require('../services/evidence-center.service');
 const { authenticate } = require('../middlewares/auth.middleware');
 const { isScoreWithinLevel } = require('../services/risk-assessment.service');
@@ -110,7 +111,23 @@ router.patch('/:id/media', async (req, res) => {
   }
   try {
     const data = await DiligenceHistoryService.saveMedia(req.params.id, adverseMedia, automaticRisk, req.user);
-    return res.json({ ok: true, data });
+
+    // A aba de publicações é um espelho legível do que já foi salvo no
+    // retrato. Ela vem depois e não entra no `try` do histórico: se a
+    // planilha recusar a aba, o dado de verdade já está gravado, e o
+    // analista precisa saber disso em vez de ver um erro de salvamento.
+    const espelho = await NewsRepository.salvarPublicacoes({
+      diligencia: { id: req.params.id, cnpj: data?.cnpj, razaoSocial: data?.razaoSocial },
+      publicacoes: adverseMedia.results,
+    });
+
+    return res.json({
+      ok: true,
+      data,
+      planilhaDeNoticias: espelho.ok
+        ? { ok: true, linhas: espelho.linhas, aba: NewsRepository.ABA, abaCriada: espelho.abaCriada }
+        : { ok: false, aba: NewsRepository.ABA, erro: espelho.erro },
+    });
   } catch (error) {
     return res.status(503).json({ ok: false, erro: 'Não foi possível salvar no histórico. As publicações continuam nesta tela.' });
   }

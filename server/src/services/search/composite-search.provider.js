@@ -7,6 +7,7 @@ const { SearchProvider } = require('./search.provider');
 const { withDeadline } = require('../../utils/deadline');
 const { BraveSearchProvider } = require('./brave-search.provider');
 const { GoogleNewsRssProvider } = require('./google-news-rss.provider');
+const { BingNewsRssProvider } = require('./bing-news-rss.provider');
 const { GdeltDocProvider } = require('./gdelt-doc.provider');
 const { SearxngProvider } = require('./searxng.provider');
 const { DuckDuckGoLiteProvider } = require('./duckduckgo-lite.provider');
@@ -161,6 +162,7 @@ class CompositeSearchProvider extends SearchProvider {
     this.providers = normalizedOptions.providers || [
       ...(normalizedOptions.freeOnly ? [] : [new BraveSearchProvider(normalizedOptions.brave)]),
       new GoogleNewsRssProvider(normalizedOptions.googleNewsRss),
+      new BingNewsRssProvider(normalizedOptions.bingNewsRss),
       new GdeltDocProvider(normalizedOptions.gdelt),
       new SearxngProvider(normalizedOptions.searxng),
       new DuckDuckGoLiteProvider(normalizedOptions.duckduckgo),

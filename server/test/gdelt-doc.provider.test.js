@@ -183,6 +183,9 @@ test('busca composta registra os provedores na ordem de preferência', () => {
 
   assert.deepEqual(
     provider.providers.map((source) => source.id),
-    ['brave', 'google-news-rss', 'gdelt-doc', 'searxng', 'duckduckgo-lite'],
+    // As duas fontes de notícia vêm juntas e antes das genéricas: elas
+    // indexam imprensa diferente, e o resultado de uma não substitui o
+    // da outra.
+    ['brave', 'google-news-rss', 'bing-news-rss', 'gdelt-doc', 'searxng', 'duckduckgo-lite'],
   );
 });

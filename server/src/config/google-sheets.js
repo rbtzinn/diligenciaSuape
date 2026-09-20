@@ -9,6 +9,18 @@ const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const API_BASE = 'https://sheets.googleapis.com/v4/spreadsheets';
 
+/** 1 -> A, 26 -> Z, 27 -> AA: notação de coluna da planilha. */
+function columnLetter(index) {
+  let resto = Math.max(1, Math.floor(index));
+  let letras = '';
+  while (resto > 0) {
+    const atual = (resto - 1) % 26;
+    letras = String.fromCharCode(65 + atual) + letras;
+    resto = Math.floor((resto - 1) / 26);
+  }
+  return letras;
+}
+
 function encodeBase64Url(value) {
   return Buffer.from(value).toString('base64url');
 }
@@ -29,6 +41,7 @@ class GoogleSheetsClient {
     this.fetch = options.fetch || globalThis.fetch;
     this.accessToken = null;
     this.accessTokenExpiresAt = 0;
+    this.abasGarantidas = new Set();
   }
 
   isConfigured() {
@@ -137,6 +150,49 @@ class GoogleSheetsClient {
     });
   }
 
+  async clearValues(range) {
+    return await this.request(`/values/${encodeURIComponent(range)}:clear`, { method: 'POST', body: {} });
+  }
+
+  /**
+   * Garante que a aba existe, criando-a com o cabeçalho quando faltar.
+   *
+   * Sem isto, toda aba nova vira uma instrução manual: "abra a planilha,
+   * crie a aba com este nome exato e digite estas colunas na ordem". É
+   * trabalho que a própria API faz, e um nome digitado errado quebra a
+   * gravação de um jeito difícil de diagnosticar.
+   *
+   * @param {string} title nome da aba
+   * @param {string[]} headers cabeçalho da primeira linha
+   * @returns {Promise<boolean>} verdadeiro se a aba foi criada agora
+   */
+  async ensureSheet(title, headers = []) {
+    if (this.abasGarantidas.has(title)) return false;
+
+    const metadados = await this.request('', { query: { fields: 'sheets.properties.title' } });
+    const existentes = (metadados.sheets || [])
+      .map((aba) => aba?.properties?.title)
+      .filter(Boolean);
+
+    if (existentes.includes(title)) {
+      this.abasGarantidas.add(title);
+      return false;
+    }
+
+    await this.request(':batchUpdate', {
+      method: 'POST',
+      body: { requests: [{ addSheet: { properties: { title } } }] },
+    });
+
+    if (headers.length > 0) {
+      const ultimaColuna = columnLetter(headers.length);
+      await this.updateValues(`${title}!A1:${ultimaColuna}1`, [headers]);
+    }
+
+    this.abasGarantidas.add(title);
+    return true;
+  }
+
   async healthCheck() {
     const values = await this.getValues('Configuracao!A1:C2');
     const valid = values?.[0]?.[0] === 'chave' && values?.[1]?.[0] === 'schema_version';
@@ -175,6 +231,7 @@ async function checkGoogleSheetsHealth() {
 }
 
 module.exports = {
+  columnLetter,
   GoogleSheetsClient,
   getGoogleSheetsClient,
   setGoogleSheetsClientForTests,
