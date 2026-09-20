@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { AdverseMediaStatus, DiligenceItem } from '../types';
 import { Button } from '../../../components/ui/Button';
+import { Select, TextField } from '../../../components/ui/Field';
 import { AdverseMediaCard } from './AdverseMediaCard';
 import { AiNewsSearch } from './AiNewsSearch';
 import { newsSubjects, safeNewsUrl } from '../utils/newsResults';
@@ -40,7 +41,6 @@ export function NewsWorkspace({ diligence, busy, saving, notice, progress, onSea
     : Number(b.matchStrength === 'high') - Number(a.matchStrength === 'high') || b.matchedTerms.length - a.matchedTerms.length),
   [results, subject, domain, kind, text, sort]);
   const finished = progress[subject] === null;
-  const fieldClass = 'w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink';
   const failed = media?.queriesExecuted?.filter((q) => !q.ok || q.partial).length || 0;
 
   return <section className="mx-auto w-full max-w-content min-w-0 space-y-6 overflow-y-auto px-gutter py-6" aria-label="Notícias e links">
@@ -55,13 +55,17 @@ export function NewsWorkspace({ diligence, busy, saving, notice, progress, onSea
 
     <div className="rounded-lg border border-line bg-surface p-4">
       <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-        <label className="min-w-0 text-xs font-semibold text-ink-2">Quem você quer pesquisar?
-          <select className={`${fieldClass} mt-1`} value={subject} disabled={busy || saving} onChange={(e) => { setSubject(e.target.value); setLimit(20); }}>
-            <option value="">Empresa e todas as pessoas</option>
-            <option value={diligence.razaoSocial}>{diligence.razaoSocial} (empresa)</option>
-            {people.map((name) => <option key={name} value={name}>{name}</option>)}
-          </select>
-        </label>
+        <Select
+          label="Quem você quer pesquisar?"
+          value={subject}
+          disabled={busy || saving}
+          onChange={(value) => { setSubject(value); setLimit(20); }}
+          options={[
+            { value: '', label: 'Empresa e todas as pessoas' },
+            { value: diligence.razaoSocial, label: `${diligence.razaoSocial} (empresa)` },
+            ...people.map((name) => ({ value: name, label: name })),
+          ]}
+        />
         <Button variant="secondary" onClick={() => onSearch(subject, finished)} disabled={saving} isLoading={busy} loadingLabel="Buscando publicações…">
           {finished ? 'Pesquisar novamente' : progress[subject] === undefined ? 'Ampliar busca gratuita' : 'Continuar busca gratuita'}
         </Button>
@@ -79,18 +83,41 @@ export function NewsWorkspace({ diligence, busy, saving, notice, progress, onSea
     </div>}
 
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <label className="text-xs font-semibold text-ink-2">Filtrar publicações
-        <input className={`${fieldClass} mt-1`} placeholder="Nome, palavra ou assunto" value={text} onChange={(e) => { setText(e.target.value); setLimit(20); }} />
-      </label>
-      <label className="text-xs font-semibold text-ink-2">Fonte
-        <select className={`${fieldClass} mt-1`} value={domain} onChange={(e) => { setDomain(e.target.value); setLimit(20); }}><option value="">Todas as fontes</option>{domains.map((d) => <option key={d}>{d}</option>)}</select>
-      </label>
-      <label className="text-xs font-semibold text-ink-2">Conteúdo
-        <select className={`${fieldClass} mt-1`} value={kind} onChange={(e) => { setKind(e.target.value); setLimit(20); }}><option value="all">Todas as menções</option><option value="attention">Com termos de atenção</option><option value="discarded">Descartadas na revisão</option></select>
-      </label>
-      <label className="text-xs font-semibold text-ink-2">Ordenação
-        <select className={`${fieldClass} mt-1`} value={sort} onChange={(e) => setSort(e.target.value)}><option value="relevance">Correlação e termos</option><option value="date">Mais recentes primeiro</option></select>
-      </label>
+      <TextField
+        label="Filtrar publicações"
+        controlSize="sm"
+        placeholder="Nome, palavra ou assunto"
+        value={text}
+        onChange={(e) => { setText(e.target.value); setLimit(20); }}
+      />
+      <Select
+        label="Fonte"
+        controlSize="sm"
+        value={domain}
+        onChange={(value) => { setDomain(value); setLimit(20); }}
+        options={[{ value: '', label: 'Todas as fontes' }, ...domains.map((d) => ({ value: d, label: d }))]}
+      />
+      <Select
+        label="Conteúdo"
+        controlSize="sm"
+        value={kind}
+        onChange={(value) => { setKind(value); setLimit(20); }}
+        options={[
+          { value: 'all', label: 'Todas as menções' },
+          { value: 'attention', label: 'Com termos de atenção' },
+          { value: 'discarded', label: 'Descartadas na revisão' },
+        ]}
+      />
+      <Select
+        label="Ordenação"
+        controlSize="sm"
+        value={sort}
+        onChange={setSort}
+        options={[
+          { value: 'relevance', label: 'Correlação e termos' },
+          { value: 'date', label: 'Mais recentes primeiro' },
+        ]}
+      />
     </div>
 
     <div className="space-y-3" aria-busy={busy}>
