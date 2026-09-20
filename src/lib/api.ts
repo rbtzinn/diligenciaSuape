@@ -81,6 +81,28 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
       headers,
     });
 
+    // Resposta que não é JSON não pode ser engolida como objeto vazio.
+    // O site reescreve toda rota desconhecida para `index.html` e devolve
+    // HTTP 200, então uma chamada de API que caia nele volta como página,
+    // não como erro. Sem esta checagem o `{}` seguia adiante e a tela
+    // exibia só "não foi possível consultar", sem dizer o que houve —
+    // que foi exatamente o que escondeu uma falha de configuração.
+    // `headers` pode não existir em resposta simulada; nesse caso a
+    // checagem é pulada e o corpo segue para o parse normal.
+    const contentType = response.headers?.get('content-type') || '';
+    if (response.ok && contentType && !contentType.includes('json')) {
+      const amostra = (await response.text().catch(() => '')).trim().slice(0, 120);
+      const pareceHtml = /^<!doctype html|^<html/i.test(amostra);
+      throw new ApiError(
+        pareceHtml
+          ? 'O endereço da API está respondendo com a página do site em vez de dados. '
+            + 'Confira a variável VITE_API_BASE_URL do frontend: sem ela, as chamadas ficam no próprio site.'
+          : `O servidor respondeu em formato inesperado (${contentType || 'sem tipo declarado'}).`,
+        response.status,
+        'RESPOSTA_NAO_JSON'
+      );
+    }
+
     const data = await abortable(response.json().catch(() => ({})), controller.signal);
     if (controller.signal.aborted) throw new DOMException('Abortado', 'AbortError');
 

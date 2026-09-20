@@ -38,3 +38,42 @@ describe('requisições autenticadas da IA', () => {
     await expect(request('/api/ai/news-research/plan', { requireAuth: true, timeoutMs: 10 })).rejects.toMatchObject({ code: 'TIMEOUT' });
   });
 });
+
+describe('resposta que não é JSON', () => {
+  // O site reescreve toda rota desconhecida para index.html e devolve 200.
+  // Sem VITE_API_BASE_URL, a chamada de API cai nele: a resposta é uma
+  // página, e antes disto seguia adiante como objeto vazio — a tela
+  // mostrava "não foi possível consultar" sem dizer o motivo.
+  it('HTML do site vira erro que aponta a configuração, não objeto vazio', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(
+      '<!doctype html><html><head><title>Diligência 360</title></head></html>',
+      { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } },
+    )));
+
+    await expect(request('/api/empresa/56211027000269')).rejects.toMatchObject({
+      code: 'RESPOSTA_NAO_JSON',
+    });
+    await expect(request('/api/empresa/56211027000269')).rejects.toThrow(/VITE_API_BASE_URL/);
+  });
+
+  it('outro formato inesperado também é recusado', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('texto solto', {
+      status: 200,
+      headers: { 'content-type': 'text/plain' },
+    })));
+
+    await expect(request('/api/empresa/1')).rejects.toMatchObject({ code: 'RESPOSTA_NAO_JSON' });
+  });
+
+  it('JSON normal continua passando', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ ok: true, data: { razao_social: 'X' } })));
+
+    await expect(request('/api/empresa/1')).resolves.toMatchObject({ ok: true });
+  });
+
+  it('erro HTTP com corpo JSON preserva a mensagem do servidor', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ ok: false, erro: 'CNPJ não encontrado' }, { status: 404 })));
+
+    await expect(request('/api/empresa/1')).rejects.toThrow('CNPJ não encontrado');
+  });
+});
