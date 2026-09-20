@@ -5,6 +5,7 @@
 const express = require('express');
 const { DiligenceHistoryService } = require('../services/diligence-history.service');
 const { NewsRepository } = require('../repositories/news.repository');
+const { RiskMapRepository } = require('../repositories/risk-map.repository');
 const { EvidenceCenterService } = require('../services/evidence-center.service');
 const { authenticate } = require('../middlewares/auth.middleware');
 const { isScoreWithinLevel } = require('../services/risk-assessment.service');
@@ -131,6 +132,41 @@ router.patch('/:id/media', async (req, res) => {
   } catch (error) {
     return res.status(503).json({ ok: false, erro: 'Não foi possível salvar no histórico. As publicações continuam nesta tela.' });
   }
+});
+
+// ==========================================================
+// Mapa de Risco — a linha de 40 colunas da avaliação de integridade
+//
+// O cabeçalho vem do cliente junto com os valores, e não daqui: o
+// layout oficial mora no gerador da linha, no frontend, e duplicá-lo no
+// servidor criaria duas verdades que envelhecem em ritmos diferentes. O
+// repositório compara o cabeçalho recebido com o que já está na aba e
+// recusa a gravação quando divergem.
+// ==========================================================
+router.post('/:id/mapa-de-risco', async (req, res) => {
+  const { cabecalho, valores } = req.body || {};
+  const tamanhoEsperado = RiskMapRepository.COLUNAS_OFICIAIS;
+  const listaDeTextos = (valor) => Array.isArray(valor)
+    && valor.length === tamanhoEsperado
+    && valor.every((item) => typeof item === 'string');
+
+  if (!listaDeTextos(cabecalho) || !listaDeTextos(valores)) {
+    return res.status(400).json({
+      ok: false,
+      erro: `Informe cabeçalho e valores com ${tamanhoEsperado} colunas de texto.`,
+    });
+  }
+
+  const resultado = await RiskMapRepository.salvarLinha({
+    diligenciaId: req.params.id,
+    cabecalho,
+    valores,
+  });
+
+  return res.status(resultado.ok ? 200 : 503).json({
+    ...resultado,
+    aba: RiskMapRepository.ABA,
+  });
 });
 
 router.get('/', async (req, res) => {

@@ -47,6 +47,12 @@ interface SuapeIntegrityEvaluationViewProps {
   valorContratoStr: string;
   onValorContratoChange: (value: string) => void;
   onOpenEvidence?: () => void;
+  /**
+   * Grava a linha de 40 colunas na aba do Mapa de Risco. Recebe os
+   * títulos junto com os valores porque o layout oficial é definido
+   * aqui, pelo gerador da linha, e não no servidor.
+   */
+  onSaveRiskMapRow?: (linha: { cabecalho: string[]; valores: string[] }) => Promise<string>;
   onOpenNetwork?: () => void;
   onDeepenResearch?: () => void;
   isResearching?: boolean;
@@ -124,6 +130,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
   valorContratoStr,
   onValorContratoChange,
   onOpenEvidence,
+  onSaveRiskMapRow,
   onOpenNetwork,
   onDeepenResearch,
   isResearching = false,
@@ -242,6 +249,28 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
   // Sem classificação não há linha a registrar: o Mapa guarda o resultado
   // da diligência, não o que ainda falta apurar.
   const copyBlocked = evaluation.calculatedRisk === null;
+
+  const [savingRow, setSavingRow] = useState(false);
+  const [rowNotice, setRowNotice] = useState<string | null>(null);
+
+  const handleSaveRow = async () => {
+    if (copyBlocked || !onSaveRiskMapRow || savingRow) return;
+    setSavingRow(true);
+    setRowNotice(null);
+    try {
+      const aviso = await onSaveRiskMapRow({
+        cabecalho: riskMapRow.columns.map((column) => column.name),
+        valores: riskMapRow.columns.map((column) => column.value),
+      });
+      setRowNotice(aviso);
+    } catch (error) {
+      setRowNotice(
+        error instanceof Error ? error.message : 'Não foi possível gravar a linha na planilha.'
+      );
+    } finally {
+      setSavingRow(false);
+    }
+  };
 
   const handleCopyRow = async () => {
     if (copyBlocked) return;
@@ -714,6 +743,20 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
               >
                 {copied ? 'Linha copiada' : 'Copiar linha'}
               </Button>
+              {onSaveRiskMapRow ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Icons.Database size={15} />}
+                  disabled={copyBlocked}
+                  isLoading={savingRow}
+                  loadingLabel="Gravando…"
+                  title={copyBlocked ? 'Importe o questionário para liberar a linha.' : undefined}
+                  onClick={handleSaveRow}
+                >
+                  Salvar no Mapa de Risco
+                </Button>
+              ) : null}
               <Button
                 size="sm"
                 variant="ghost"
@@ -723,6 +766,8 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                 {showColumns ? 'Ocultar colunas' : 'Conferir as 40 colunas'}
               </Button>
             </div>
+
+            {rowNotice ? <Note role="status">{rowNotice}</Note> : null}
 
             {showColumns ? (
               <div className="overflow-hidden rounded-[var(--radius-card)] border border-line">

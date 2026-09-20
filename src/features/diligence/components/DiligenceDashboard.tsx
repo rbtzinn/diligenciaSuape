@@ -192,6 +192,36 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
     } finally { setIsRefreshingMedia(false); }
   };
 
+  /**
+   * Grava a linha da avaliação na aba do Mapa de Risco.
+   *
+   * Devolve a frase que a tela mostra em vez de um booleano: "gravada na
+   * linha 14" e "atualizada a linha 14" são resultados diferentes para
+   * quem vai conferir a planilha, e ambos precisam ser ditos.
+   */
+  const handleSaveRiskMapRow = async (linha: { cabecalho: string[]; valores: string[] }) => {
+    const resposta = await request<{
+      ok: boolean;
+      aba: string;
+      linha?: number;
+      criada?: boolean;
+      abaCriada?: boolean;
+      erro?: string;
+    }>(`/api/diligences/${diligence.id}/mapa-de-risco`, {
+      method: 'POST',
+      body: JSON.stringify(linha),
+    });
+
+    if (!resposta.ok) {
+      throw new Error(resposta.erro || 'A planilha não aceitou a linha.');
+    }
+
+    const aba = resposta.abaCriada ? `Aba ${resposta.aba} criada. ` : '';
+    return resposta.criada
+      ? `${aba}Linha gravada na aba ${resposta.aba}, linha ${resposta.linha}.`
+      : `${aba}Linha ${resposta.linha} da aba ${resposta.aba} atualizada com esta avaliação.`;
+  };
+
   const handleSaveNews = async () => {
     if (savingNews || isRefreshingMedia) return;
     setSavingNews(true);
@@ -401,6 +431,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           valorContratoStr={contractValueStr}
           onValorContratoChange={setContractValueStr}
           onOpenEvidence={() => setActiveDrawer('evidence')}
+          onSaveRiskMapRow={handleSaveRiskMapRow}
           onOpenNetwork={() => setActiveTab('mapa')}
           onDeepenResearch={handleDeepenResearch}
           isResearching={isRefreshingMedia}
