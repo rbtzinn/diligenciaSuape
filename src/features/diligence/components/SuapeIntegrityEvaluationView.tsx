@@ -31,6 +31,14 @@ interface SuapeIntegrityEvaluationViewProps {
   onValorContratoChange: (value: string) => void;
   onOpenEvidence?: () => void;
   onOpenNetwork?: () => void;
+  /**
+   * Risco Alto e Muito Alto exigem aprofundamento. A varredura é a que a
+   * diligência já executa — aqui ela é apenas reexecutada com foco,
+   * em vez de o analista ter que lembrar de ir até a aba de notícias.
+   */
+  onDeepenResearch?: () => void;
+  isResearching?: boolean;
+  researchNotice?: string | null;
 }
 
 /** Enunciados dos itens de maturidade, para o checklist de governança. */
@@ -47,6 +55,9 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
   onValorContratoChange: setValorContratoStr,
   onOpenEvidence,
   onOpenNetwork,
+  onDeepenResearch,
+  isResearching = false,
+  researchNotice,
 }) => {
   // Parâmetros editáveis da linha do Mapa de Risco (sem valores hardcoded fictícios)
   const [gestor, setGestor] = useState('');
@@ -816,6 +827,82 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
             </div>
           )}
         </div>
+
+        {/* SEÇÃO 2B: APROFUNDAMENTO EXIGIDO POR RISCO ALTO E MUITO ALTO */}
+        {(evaluation.calculatedRisk === 'Alto' || evaluation.calculatedRisk === 'Muito Alto') && (
+          <section className="rounded-2xl border-2 border-amber-300 bg-amber-50/60 p-5 shadow-xs">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-600 text-white">
+                    <Icons.Search size={15} />
+                  </span>
+                  <h2 className="text-sm font-black text-amber-900">
+                    {evaluation.riskDisplay} — aprofundamento da pesquisa
+                  </h2>
+                </div>
+                <p className="mt-1.5 max-w-2xl text-xs leading-relaxed text-amber-900">
+                  A classificação apurada exige varredura reputacional ampliada antes do parecer. A
+                  busca é a mesma que a diligência já executa, reiniciada com foco no terceiro e nos
+                  fatores que dispararam a classificação.
+                </p>
+
+                {evaluation.triggeredRisks.length > 0 && (
+                  <ul className="mt-2.5 space-y-1">
+                    {evaluation.triggeredRisks.map((risk) => (
+                      <li key={risk.slot} className="flex items-start gap-2 text-2xs text-amber-900">
+                        <span className="mt-0.5 shrink-0 rounded bg-amber-200 px-1.5 py-0.5 font-black text-amber-900">
+                          Risco {risk.slot}
+                        </span>
+                        <span className="line-clamp-2" title={risk.text}>
+                          {risk.text}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {onDeepenResearch && (
+                <button
+                  type="button"
+                  onClick={onDeepenResearch}
+                  disabled={isResearching}
+                  className="flex h-10 shrink-0 items-center gap-2 rounded-xl bg-amber-600 px-4 text-xs font-bold text-white shadow-sm transition-all hover:bg-amber-700 active:scale-95 disabled:opacity-60"
+                >
+                  {isResearching ? (
+                    <Icons.RefreshCw size={15} className="animate-spin" />
+                  ) : (
+                    <Icons.Search size={15} />
+                  )}
+                  <span>{isResearching ? 'Pesquisando…' : 'Ampliar pesquisa reputacional'}</span>
+                </button>
+              )}
+            </div>
+
+            {/* O que a pesquisa já trouxe, para o analista não achar que
+                está começando do zero. */}
+            <dl className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-amber-200 bg-amber-200 sm:grid-cols-4">
+              {[
+                ['Publicações', diligence.adverseMedia?.results?.length || 0],
+                ['Processos', discoveries.length],
+                ['Diários oficiais', diligence.officialGazettes?.results?.length || 0],
+                ['Contratos PNCP', diligence.pncp?.resumo?.confirmados || 0],
+              ].map(([label, count]) => (
+                <div key={label as string} className="bg-white px-3 py-2.5 text-center">
+                  <dt className="text-3xs font-bold uppercase tracking-wider text-slate-500">{label}</dt>
+                  <dd className="text-lg font-black text-[#0F2D59]">{count as number}</dd>
+                </div>
+              ))}
+            </dl>
+
+            {researchNotice && (
+              <p className="mt-3 rounded-lg border border-amber-300 bg-white p-2.5 text-2xs font-semibold text-amber-900">
+                {researchNotice}
+              </p>
+            )}
+          </section>
+        )}
 
         {/* SEÇÃO 3: CHECKLIST AUDITÁVEL DAS PERGUNTAS DO QUESTIONÁRIO (INTERATIVO) */}
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">

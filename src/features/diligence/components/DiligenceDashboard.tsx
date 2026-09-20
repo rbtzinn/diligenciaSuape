@@ -207,6 +207,17 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
     } finally { setSavingNews(false); }
   };
 
+  /**
+   * Aprofundamento pedido pela classificação Alto ou Muito Alto: reinicia
+   * a varredura reputacional sobre a razão social e leva o analista até
+   * os resultados. Nenhuma busca nova foi inventada — é a mesma rota que
+   * a aba de notícias usa.
+   */
+  const handleDeepenResearch = async () => {
+    setActiveTab('noticias');
+    await handleNewsSearch(displayDiligence.razaoSocial, true);
+  };
+
   const handleExportPdf = async () => {
     if (isExportingPdf) return;
     setIsExportingPdf(true);
@@ -364,6 +375,9 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           onValorContratoChange={setContractValueStr}
           onOpenEvidence={() => setActiveDrawer('evidence')}
           onOpenNetwork={() => setActiveTab('mapa')}
+          onDeepenResearch={handleDeepenResearch}
+          isResearching={isRefreshingMedia}
+          researchNotice={mediaRefreshNotice}
         />
       ) : null}
 
