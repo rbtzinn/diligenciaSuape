@@ -254,45 +254,66 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   return (
     <main className="flex min-h-0 min-w-0 flex-1 flex-col">
       {/* ---- Barra da diligência ----
+          No celular esta barra ocupava quatro fileiras: identificação e
+          ações empilhavam uma sobre a outra, e as quatro abas quebravam
+          em duas linhas. Somada à barra do aplicativo, sobrava menos de
+          metade da tela para o conteúdo da diligência.
+
+          Agora são duas fileiras em qualquer largura: uma de
+          identificação e ação, com os botões reduzidos ao ícone no
+          celular, e a fita de abas, que rola na horizontal em vez de
+          quebrar — a mesma regra já usada nos eixos do dossiê.
+
           Sobre a superfície escura, os controles usam a variante `deep`
-          do botão e os tokens `on-deep`. Antes eram cores em hexadecimal
-          soltas aqui, que não acompanhavam o tema. */}
+          do botão e os tokens `on-deep`. */}
       <div className="shrink-0 border-b border-deep-line bg-deep text-on-deep">
-        <div className="mx-auto flex w-full max-w-content flex-col justify-between gap-3 px-gutter py-3 sm:flex-row sm:items-center">
-          <div className="flex min-w-0 items-center gap-3">
-            <Button
-              size="sm"
-              variant="deep"
-              icon={<Icons.ArrowLeft size={14} />}
-              onClick={onBack}
-              title="Voltar para nova busca"
-            >
-              Nova busca
-            </Button>
+        <div className="mx-auto flex w-full max-w-content items-center gap-2 px-gutter py-2 sm:gap-3 sm:py-3">
+          <Button
+            size="sm"
+            variant="deep"
+            iconOnly
+            aria-label="Voltar para nova busca"
+            icon={<Icons.ArrowLeft size={14} />}
+            onClick={onBack}
+            className="sm:hidden"
+          />
+          <Button
+            size="sm"
+            variant="deep"
+            icon={<Icons.ArrowLeft size={14} />}
+            onClick={onBack}
+            title="Voltar para nova busca"
+            className="hidden sm:inline-flex"
+          >
+            Nova busca
+          </Button>
 
-            <div className="h-6 w-px shrink-0 bg-deep-line" />
+          <div className="hidden h-6 w-px shrink-0 bg-deep-line sm:block" />
 
-            <div className="min-w-0">
-              <div className="flex min-w-0 flex-wrap items-center gap-2">
-                <span className="font-mono text-xs font-bold text-on-deep">{displayDiligence.cnpjFmt}</span>
-                <Chip
-                  size="sm"
-                  tone={
-                    displayDiligence.empresa?.descricao_situacao_cadastral === 'ATIVA' ? 'ok' : 'warn'
-                  }
-                >
-                  {displayDiligence.empresa?.descricao_situacao_cadastral || 'ATIVA'}
-                </Chip>
-                {displayDiligence.empresa?.municipio ? (
-                  <span className="text-2xs text-on-deep-3">
-                    {displayDiligence.empresa.municipio}/{displayDiligence.empresa.uf}
-                  </span>
-                ) : null}
-              </div>
-              <h1 className="truncate text-xs font-bold text-on-deep">
-                {displayDiligence.razaoSocial}
-              </h1>
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="truncate font-mono text-2xs font-bold text-on-deep sm:text-xs">
+                {displayDiligence.cnpjFmt}
+              </span>
+              <Chip
+                size="sm"
+                tone={
+                  displayDiligence.empresa?.descricao_situacao_cadastral === 'ATIVA' ? 'ok' : 'warn'
+                }
+              >
+                {displayDiligence.empresa?.descricao_situacao_cadastral || 'ATIVA'}
+              </Chip>
+              {/* O município já aparece no cabeçalho do dossiê; no
+                  celular ele só disputaria espaço com o CNPJ. */}
+              {displayDiligence.empresa?.municipio ? (
+                <span className="hidden text-2xs text-on-deep-3 sm:inline">
+                  {displayDiligence.empresa.municipio}/{displayDiligence.empresa.uf}
+                </span>
+              ) : null}
             </div>
+            <h1 className="truncate text-xs font-bold text-on-deep">
+              {displayDiligence.razaoSocial}
+            </h1>
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
@@ -302,12 +323,23 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
               type="button"
               onClick={() => setRiskModalOpen(true)}
               title="Ajustar ou justificar o índice de atenção"
-              className="flex min-h-[var(--control-height-sm)] items-center gap-2 rounded-[var(--control-radius-sm)] border border-deep-line bg-deep-raised px-3 text-left transition-colors hover:bg-deep-hover"
+              aria-label={`Índice de atenção ${effectiveRisk.score} de 100; ajustar ou justificar`}
+              className="flex min-h-[var(--control-height-sm)] items-center gap-2 rounded-[var(--control-radius-sm)] border border-deep-line bg-deep-raised px-2 text-left transition-colors hover:bg-deep-hover sm:px-3"
             >
-              <span className="text-2xs text-on-deep-3">Atenção</span>
-              <span className="text-xs font-bold text-brand-on-deep">{effectiveRisk.score}/100</span>
+              <span className="hidden text-2xs text-on-deep-3 sm:inline">Atenção</span>
+              <span className="num text-xs font-bold text-brand-on-deep">{effectiveRisk.score}/100</span>
             </button>
 
+            <Button
+              size="sm"
+              variant="deep"
+              iconOnly
+              aria-label="Exportar dossiê em PDF"
+              icon={<Icons.Download size={15} />}
+              isLoading={isExportingPdf}
+              onClick={handleExportPdf}
+              className="sm:hidden"
+            />
             <Button
               size="sm"
               variant="deep"
@@ -315,40 +347,46 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
               isLoading={isExportingPdf}
               loadingLabel="Gerando…"
               onClick={handleExportPdf}
+              className="hidden sm:inline-flex"
             >
               Exportar PDF
             </Button>
           </div>
         </div>
 
+        {/* A fita rola em vez de quebrar; `--scroll-fade` acompanha a
+            superfície escura para que a máscara das pontas não apareça
+            como um retângulo claro. */}
         <nav
           aria-label="Visões da diligência"
-          className="mx-auto flex w-full max-w-content flex-wrap items-center gap-1 px-gutter pb-2"
+          className="scroll-fita mx-auto w-full max-w-content touch-pan-x px-gutter pb-2 [--scroll-fade:var(--bg-deep)]"
         >
-          {([
-            ['avaliacao', 'Avaliação', <Icons.FileSpreadsheet key="a" size={14} />],
-            ['mapa', 'Vínculos', <Icons.Network key="m" size={14} />],
-            ['noticias', 'Reputação', <Icons.Globe key="n" size={14} />],
-            ['dossie', 'Dossiê', <Icons.ShieldCheck key="d" size={14} />],
-          ] as const).map(([id, label, icon]) => {
-            const isActive = activeTab === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                aria-current={isActive ? 'page' : undefined}
-                onClick={() => setActiveTab(id)}
-                className={`flex min-h-[var(--control-height-sm)] items-center gap-1.5 rounded-[var(--control-radius-sm)] px-3 text-xs font-semibold transition-colors ${
-                  isActive
-                    ? 'bg-surface text-brand'
-                    : 'text-on-deep-3 hover:bg-deep-hover hover:text-on-deep'
-                }`}
-              >
-                {icon}
-                <span>{label}</span>
-              </button>
-            );
-          })}
+          <div className="flex w-max items-center gap-1">
+            {([
+              ['avaliacao', 'Avaliação', <Icons.FileSpreadsheet key="a" size={14} />],
+              ['mapa', 'Vínculos', <Icons.Network key="m" size={14} />],
+              ['noticias', 'Reputação', <Icons.Globe key="n" size={14} />],
+              ['dossie', 'Dossiê', <Icons.ShieldCheck key="d" size={14} />],
+            ] as const).map(([id, label, icon]) => {
+              const isActive = activeTab === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  aria-current={isActive ? 'page' : undefined}
+                  onClick={() => setActiveTab(id)}
+                  className={`flex min-h-[var(--control-height-sm)] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[var(--control-radius-sm)] px-3 text-xs font-semibold transition-colors ${
+                    isActive
+                      ? 'bg-surface text-brand'
+                      : 'text-on-deep-3 hover:bg-deep-hover hover:text-on-deep'
+                  }`}
+                >
+                  {icon}
+                  <span>{label}</span>
+                </button>
+              );
+            })}
+          </div>
         </nav>
       </div>
 
