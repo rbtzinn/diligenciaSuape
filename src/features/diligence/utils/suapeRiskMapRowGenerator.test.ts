@@ -11,6 +11,8 @@ import {
   evaluateSuapeIntegrity,
   generateRiskMapRow,
   requiresReputationResearch,
+  resolveNextStep,
+  SUAPE_PRAZO_AVALIACAO_DIAS_UTEIS,
   SUAPE_QUESTIONARIO_VALOR_MINIMO,
   type IntegrityAnswers,
 } from './suapeRiskMapRowGenerator';
@@ -79,15 +81,15 @@ describe('Classificação oficial (célula J16)', () => {
     expect(evaluation.calculatedRisk).toBe('Muito Alto');
   });
 
-  it('classifica Alto na alçada do Conselho e expõe a divergência da planilha', () => {
+  // A fórmula J16 da planilha jogaria a alçada em "Muito Alto"; a política
+  // (item 3.2.2) a coloca no grupo Alto, e é ela que vale.
+  it('classifica Alto na alçada do Conselho, contra a fórmula da planilha', () => {
     const evaluation = evaluateSuapeIntegrity(baseDiligence, 33_000_000, {
       ...todasNao,
       alcadaConselho: true,
     });
     expect(evaluation.n40).toBe(true);
     expect(evaluation.calculatedRisk).toBe('Alto');
-    expect(evaluation.alcadaDivergence).not.toBeNull();
-    expect(evaluation.alcadaDivergence?.literal).toBe('Muito Alto');
   });
 
   it('classifica Alto por interação com a administração pública (N28)', () => {
@@ -464,5 +466,77 @@ describe('Cadastros do item 3.3.3', () => {
 describe('Obrigatoriedade do questionário (item 3.3.1)', () => {
   it('fixa o limite de R$ 50.000,00 para dispensa e inexigibilidade', () => {
     expect(SUAPE_QUESTIONARIO_VALOR_MINIMO).toBe(50000);
+  });
+});
+
+// ==========================================================
+// Fluxograma do processo (Anexo I da política)
+// ==========================================================
+
+describe('Próximo passo do processo', () => {
+  it('sem questionário, o processo ainda espera o terceiro (A02/A03)', () => {
+    const evaluation = evaluateSuapeIntegrity(baseDiligence, 0, {});
+    expect(evaluation.nextStep.step).toBe('aguardando-questionario');
+    expect(evaluation.nextStep.activities).toContain('A03');
+  });
+
+  it('item em aberto reprova o gateway A05 e devolve ao terceiro (A06)', () => {
+    const evaluation = evaluateSuapeIntegrity(baseDiligence, 0, { '7.2': true });
+    expect(evaluation.status).toBe('parcial');
+    expect(evaluation.nextStep.step).toBe('devolver-ao-terceiro');
+    expect(evaluation.nextStep.activities).toContain('A06');
+  });
+
+  it('alto e muito alto seguem para pesquisa e declaração de risco (A09/A10)', () => {
+    for (const answers of [
+      { ...todasNao, '7.4': true },
+      { ...todasNao, '4.4': true },
+    ] as IntegrityAnswers[]) {
+      const evaluation = evaluateSuapeIntegrity(baseDiligence, 0, answers);
+      expect(evaluation.nextStep.step).toBe('pesquisa-e-declaracao');
+      expect(evaluation.nextStep.activities).toEqual(['A09', 'A10']);
+    }
+  });
+
+  it('médio e baixo pulam a pesquisa e vão à nota orientativa (A11)', () => {
+    for (const answers of [{ ...todasNao, '7.2': true }, todasNao] as IntegrityAnswers[]) {
+      const evaluation = evaluateSuapeIntegrity(baseDiligence, 0, answers);
+      expect(evaluation.nextStep.step).toBe('nota-orientativa');
+      expect(evaluation.nextStep.activities).toContain('A11');
+    }
+  });
+
+  it('resolveNextStep cobre cada combinação de estado e risco', () => {
+    expect(resolveNextStep('pendente', null).step).toBe('aguardando-questionario');
+    expect(resolveNextStep('parcial', 'Alto').step).toBe('devolver-ao-terceiro');
+    expect(resolveNextStep('completo', 'Muito Alto').step).toBe('pesquisa-e-declaracao');
+    expect(resolveNextStep('completo', 'Baixo').step).toBe('nota-orientativa');
+  });
+});
+
+describe('Prazo de avaliação do questionário (atividade A04)', () => {
+  it('são 10 dias úteis', () => {
+    expect(SUAPE_PRAZO_AVALIACAO_DIAS_UTEIS).toBe(10);
+  });
+
+  it('avisa quando o prazo estoura, sem impedir a linha', () => {
+    const dentro = generateRiskMapRow(baseDiligence, {
+      answers: todasNao,
+      diretoriaDemandante: 'DGP',
+      gestor: 'Fulano',
+      dataInicio: '01/09/2026',
+      dataFim: '11/09/2026',
+    });
+    const fora = generateRiskMapRow(baseDiligence, {
+      answers: todasNao,
+      diretoriaDemandante: 'DGP',
+      gestor: 'Fulano',
+      dataInicio: '01/09/2026',
+      dataFim: '30/09/2026',
+    });
+
+    expect(dentro.blockers.some((blocker) => blocker.includes('prazo'))).toBe(false);
+    expect(fora.blockers.some((blocker) => blocker.includes('prazo'))).toBe(true);
+    expect(fora.rawLine.split('\t')).toHaveLength(40);
   });
 });

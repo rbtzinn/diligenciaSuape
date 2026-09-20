@@ -332,7 +332,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           {[
             ['avaliacao', 'Avaliação de Integridade & Mapa de Risco', <Icons.FileSpreadsheet key="a" size={14} />],
             ['mapa', 'Grafo de Vínculos Societários', <Icons.Network key="m" size={14} />],
-            ['noticias', 'Pesquisa Reputacional (Item 3.3.2)', <Icons.Globe key="n" size={14} />],
+            ['noticias', 'Pesquisa Reputacional', <Icons.Globe key="n" size={14} />],
             ['dossie', 'Dossiê Executivo 360°', <Icons.ShieldCheck key="d" size={14} />],
           ].map(([id, label, icon]) => {
             const isActive = activeTab === id;

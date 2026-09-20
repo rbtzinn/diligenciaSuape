@@ -98,7 +98,7 @@ export const ScorePanel: React.FC<ScorePanelProps> = ({
         <p className="mt-2 text-2xs leading-relaxed text-on-deep-3">
           {officialEvaluation.calculatedRisk
             ? officialEvaluation.riskMapRecommendation
-            : 'A planilha oficial classifica pelas respostas do terceiro. Até o questionário chegar, o que segue abaixo é o que a pesquisa apurou — não uma classificação.'}
+            : officialEvaluation.nextStep.label}
         </p>
 
         {officialEvaluation.contradictions.length > 0 ? (

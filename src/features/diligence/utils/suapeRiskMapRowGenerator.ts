@@ -41,6 +41,7 @@ import {
 } from './suapeIntegrityCatalog';
 
 export {
+  SUAPE_ALCADA_CONSELHO_VALOR,
   SUAPE_DIRETORIAS,
   SUAPE_MATURITY_ITEMS,
   SUAPE_SENSITIVE_POINTS,
@@ -160,19 +161,14 @@ export interface SuapeIntegrityEvaluationResult {
   evidenceSignals: SuapeEvidenceSignal[];
   contradictions: SuapeAnswerContradiction[];
 
-  /** Item 3.3.3: os 8 cadastros desabonadores e o que se sabe de cada. */
+  /** Os 8 cadastros desabonadores e o que se sabe de cada. */
   registryCoverage: SuapeRegistryCoverage[];
+  /** Onde o processo está e o que vem a seguir, pelo fluxograma. */
+  nextStep: SuapeNextStep;
   /** Pesquisas dos itens 3.3.2 e 3.3.3 exigidas pela classificação. */
   researchRequired: boolean;
 
   maturity: SuapeMaturityResult;
-
-  /**
-   * A fórmula J16 da planilha diverge da política nesta hipótese. Quem
-   * decide é a política (item 3.2.2), não a célula; a divergência fica
-   * exposta em vez de escondida.
-   */
-  alcadaDivergence: { literal: SuapeCalculatedRisk; adopted: SuapeCalculatedRisk; note: string } | null;
 
   mteMatch?: { tipo: 'trabalho_escravo'; detalhes: string };
 }
@@ -188,6 +184,71 @@ export const SUAPE_J16_FORMULA =
 export const SUAPE_QUESTIONARIO_VALOR_MINIMO = 50_000;
 
 /**
+ * Prazo da atividade A04 do fluxograma (Anexo I): a Unidade de Compliance
+ * tem 10 dias úteis para avaliar o questionário recebido. É o que a
+ * coluna "TEMPO DECORRIDO" do Mapa mede.
+ */
+export const SUAPE_PRAZO_AVALIACAO_DIAS_UTEIS = 10;
+
+/**
+ * Próximo passo do processo, conforme o fluxograma do Anexo I. Codifica
+ * o caminho A03 → A04 → A05 → (A06 | A07) → A08 → (A09, A10 | A11):
+ *
+ *  - sem questionário, o processo ainda não saiu de A02;
+ *  - questionário com itens em aberto reprova o gateway A05 ("resposta
+ *    satisfatória?") e volta ao terceiro por A06 — o Anexo III é
+ *    expresso: "a ausência de respostas e justificativas será
+ *    interpretada como preenchimento insatisfatório";
+ *  - classificado em alto ou muito alto, passa por A09 (pesquisa) e A10
+ *    (declaração de ciência de risco);
+ *  - médio e baixo vão direto a A11, a nota orientativa.
+ */
+export type SuapeProcessStep =
+  | 'aguardando-questionario'
+  | 'devolver-ao-terceiro'
+  | 'pesquisa-e-declaracao'
+  | 'nota-orientativa';
+
+export interface SuapeNextStep {
+  step: SuapeProcessStep;
+  label: string;
+  /** Atividades do fluxograma que este passo cobre. */
+  activities: string[];
+}
+
+export function resolveNextStep(
+  status: SuapeEvaluationStatus,
+  risk: SuapeCalculatedRisk | null
+): SuapeNextStep {
+  if (status === 'pendente') {
+    return {
+      step: 'aguardando-questionario',
+      label: 'Aguardando o questionário preenchido pelo terceiro',
+      activities: ['A02', 'A03'],
+    };
+  }
+  if (status === 'parcial') {
+    return {
+      step: 'devolver-ao-terceiro',
+      label: 'Resposta incompleta: devolver ao terceiro para complementar',
+      activities: ['A05', 'A06'],
+    };
+  }
+  if (requiresReputationResearch(risk)) {
+    return {
+      step: 'pesquisa-e-declaracao',
+      label: 'Realizar pesquisa de reputação e cadastros, e emitir a declaração de ciência de risco',
+      activities: ['A09', 'A10'],
+    };
+  }
+  return {
+    step: 'nota-orientativa',
+    label: 'Emitir a nota orientativa e cadastrar o terceiro no Mapa de Risco',
+    activities: ['A11', 'A13'],
+  };
+}
+
+/**
  * Item 3.3 da política: classificado o terceiro em risco alto ou muito
  * alto, as pesquisas dos itens 3.3.2 (reputação) e 3.3.3 (cadastros
  * desabonadores) DEVERÃO ser realizadas. Abaixo disso não são exigidas.
@@ -195,14 +256,6 @@ export const SUAPE_QUESTIONARIO_VALOR_MINIMO = 50_000;
 export function requiresReputationResearch(risk: SuapeCalculatedRisk | null): boolean {
   return risk === 'Alto' || risk === 'Muito Alto';
 }
-
-const ALCADA_DIVERGENCE_NOTE =
-  'A fórmula da célula J16 classificaria a alçada do Conselho como "Muito Alto", mas está em ' +
-  'desacordo com a norma: o item 3.2.2 da Política de Contratação de Terceiros (Capítulo V, 2023) ' +
-  'lista a contratação autorizada por alçada do Conselho de Administração dentro do Grupo de ' +
-  'Risco ALTO, e reserva o Muito Alto à resposta positiva nos itens 4.4 e/ou 5.2 (item 3.2.1). ' +
-  'A tabela de critérios da própria planilha e as 555 linhas do Mapa de Risco seguem a política. ' +
-  'O sistema classifica como Alto.';
 
 // ==========================================================
 // SINAIS DE EVIDÊNCIA DA PESQUISA
@@ -489,11 +542,6 @@ export function evaluateSuapeIntegrity(
     isProvisional = status === 'parcial' && calculatedRisk !== 'Muito Alto';
   }
 
-  const alcadaDivergence =
-    n40 && !n23
-      ? { literal: 'Muito Alto' as const, adopted: 'Alto' as const, note: ALCADA_DIVERGENCE_NOTE }
-      : null;
-
   const statusLabel =
     calculatedRisk === null
       ? 'Classificação pendente de questionário'
@@ -530,9 +578,9 @@ export function evaluateSuapeIntegrity(
     evidenceSignals: signals,
     contradictions,
     registryCoverage: buildRegistryCoverage(diligence, registryHits),
+    nextStep: resolveNextStep(status, calculatedRisk),
     researchRequired: requiresReputationResearch(calculatedRisk),
     maturity,
-    alcadaDivergence,
     mteMatch,
   };
 }
@@ -760,6 +808,12 @@ export function generateRiskMapRow(
   if (evaluation.contradictions.length > 0) {
     blockers.push(
       `${evaluation.contradictions.length} resposta(s) do terceiro contrariam fonte oficial consultada.`
+    );
+  }
+  const diasDecorridos = Number(tempoDecorrido);
+  if (Number.isFinite(diasDecorridos) && diasDecorridos > SUAPE_PRAZO_AVALIACAO_DIAS_UTEIS) {
+    blockers.push(
+      `${diasDecorridos} dias úteis decorridos, acima do prazo de ${SUAPE_PRAZO_AVALIACAO_DIAS_UTEIS} para avaliar o questionário.`
     );
   }
   if (!columnValueMap.diretoria) blockers.push('Diretoria demandante não informada.');

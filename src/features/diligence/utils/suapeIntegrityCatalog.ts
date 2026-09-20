@@ -483,34 +483,42 @@ export function evaluateIntegrityMaturity(
 
 export interface SuapeSensitivePoint {
   key: string;
-  /** Letra do item 3.5 da política. */
+  /** Letra do item 3.5 da política, para rastrear a origem da regra. */
   letter: string;
+  /** Rótulo curto, que é o que aparece na tela e vai para OBSERVAÇÕES. */
+  label: string;
+  /** Redação normativa, usada só como texto de apoio ao passar o mouse. */
   text: string;
 }
 
 export const SUAPE_SENSITIVE_POINTS: SuapeSensitivePoint[] = [
   {
     key: 'semEstrutura',
+    label: 'Sem estrutura ou capacidade técnica para executar',
     letter: 'a',
     text: 'A identificação de terceiro que carece de recursos estruturais e laborais (mão de obra, instalações físicas, etc.) ou técnica para executar os serviços.',
   },
   {
     key: 'evitaEtapas',
+    label: 'Recusa ou atrasa responder o questionário',
     letter: 'b',
     text: 'Quando o terceiro tenta evitar ou impedir a execução regular de quaisquer das etapas desta Política, como na recusa ou imposição de atrasos desnecessários para responder questionários ou para realizar qualquer outra solicitação de Suape.',
   },
   {
     key: 'procedimentoAtipico',
+    label: 'Contratação fora do procedimento usual',
     letter: 'c',
     text: 'Inobservância de procedimentos usuais de contratação de terceiros.',
   },
   {
     key: 'evitaFormalizacao',
+    label: 'Evita comunicação por escrito ou contato direto irregular',
     letter: 'd',
     text: 'Nos casos em que o terceiro evite comunicações por escrito, tentando dirigir-se a membros de comissão de licitação ou responsáveis pela contratação por meios pessoais, ou não apresente em tempo devido os relatórios das atividades desenvolvidas.',
   },
   {
     key: 'outraViolacao',
+    label: 'Violação a outra política de Suape',
     letter: 'e',
     text: 'Qualquer outra violação às demais Políticas de Suape.',
   },

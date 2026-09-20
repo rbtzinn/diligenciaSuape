@@ -7,7 +7,7 @@ import {
   SUAPE_DIRETORIAS,
   SUAPE_MATURITY_ITEMS,
   SUAPE_QUESTION_TEXTS,
-  SUAPE_QUESTIONARIO_VALOR_MINIMO,
+  SUAPE_ALCADA_CONSELHO_VALOR,
   SUAPE_REQUIRED_ITEMS,
   SUAPE_SENSITIVE_POINTS,
   type SuapeCalculatedRisk,
@@ -169,9 +169,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
   const observacoes = useMemo(() => {
     if (sensitivePoints.length === 0) return '';
     const marcados = SUAPE_SENSITIVE_POINTS.filter((point) => sensitivePoints.includes(point.key));
-    return `Pontos sensíveis (item 3.5 da política): ${marcados
-      .map((point) => `(${point.letter}) ${point.text}`)
-      .join(' ')}`;
+    return `Pontos de atenção: ${marcados.map((point) => point.label).join('; ')}.`;
   }, [sensitivePoints]);
 
   const riskMapRow = useMemo(() => {
@@ -534,13 +532,10 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                     Terceiro: <strong className="text-slate-800">{diligence.razaoSocial}</strong> ({diligence.cnpjFmt})
                   </span>
                 </div>
-                {evaluation.calculatedRisk === null && (
-                  <p className="mt-2 max-w-2xl text-xs text-slate-600">
-                    A planilha oficial classifica pelas respostas do terceiro. Enquanto o Questionário de
-                    Diligência não for importado acima, esta tela entrega as evidências da pesquisa e não
-                    arbitra um nível de risco.
-                  </p>
-                )}
+                <p className="mt-2 flex max-w-2xl items-center gap-1.5 text-xs font-semibold text-slate-700">
+                  <Icons.ArrowRight size={14} className="shrink-0 text-slate-400" />
+                  {evaluation.nextStep.label}
+                </p>
               </div>
 
               {/* FÓRMULA OFICIAL DA PLANILHA */}
@@ -696,23 +691,6 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
             </div>
           </div>
 
-          {/* DIVERGÊNCIA DA PRÓPRIA PLANILHA NA ALÇADA DO CONSELHO */}
-          {evaluation.alcadaDivergence && (
-            <div className="border-t border-amber-200 bg-amber-50/70 p-4">
-              <div className="flex items-start gap-2.5">
-                <Icons.AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-600" />
-                <div>
-                  <span className="text-3xs font-black uppercase tracking-wider text-amber-800">
-                    Divergência registrada na planilha oficial
-                  </span>
-                  <p className="mt-1 text-2xs leading-relaxed text-amber-900">
-                    {evaluation.alcadaDivergence.note}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* CONTRADIÇÃO ENTRE A DECLARAÇÃO DO TERCEIRO E A FONTE OFICIAL */}
           {evaluation.contradictions.length > 0 && (
             <div className="border-t border-rose-200 bg-rose-50 p-4">
@@ -855,14 +833,11 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                     <Icons.Search size={15} />
                   </span>
                   <h2 className="text-sm font-black text-amber-900">
-                    {evaluation.riskDisplay} — pesquisas obrigatórias (itens 3.3.2 e 3.3.3)
+                    {evaluation.riskDisplay} — pesquisa de reputação e cadastros
                   </h2>
                 </div>
                 <p className="mt-1.5 max-w-2xl text-xs leading-relaxed text-amber-900">
-                  Item 3.3 da Política de Contratação de Terceiros: classificado o terceiro em risco
-                  alto ou muito alto, as pesquisas de reputação (3.3.2) e a verificação nos cadastros
-                  desabonadores (3.3.3) <strong>deverão</strong> ser realizadas. A busca abaixo é a
-                  mesma que a diligência já executa, reiniciada com foco no terceiro.
+                  Esta classificação exige as duas verificações abaixo antes do parecer.
                 </p>
 
                 {evaluation.triggeredRisks.length > 0 && (
@@ -914,11 +889,11 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
               ))}
             </dl>
 
-            {/* Item 3.3.3 — os 8 cadastros desabonadores da política. */}
+            {/* Os 8 cadastros desabonadores exigidos nesta faixa de risco. */}
             <div className="mt-4 rounded-xl border border-amber-200 bg-white p-4">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-3xs font-black uppercase tracking-wider text-slate-500">
-                  Item 3.3.3 — Cadastros e bancos de dados
+                  Cadastros e bancos de dados
                 </span>
                 <span className="rounded bg-slate-100 px-2 py-0.5 text-3xs font-bold text-slate-600">
                   {evaluation.registryCoverage.filter((r) => r.status !== 'nao-consultado').length} de{' '}
@@ -1090,13 +1065,10 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
           <div className="flex flex-col gap-2 border-b border-slate-100 pb-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-sm font-black text-[#0F2D59]">
-                Riscos e pontos sensíveis (item 3.5 da política)
-              </h2>
+              <h2 className="text-sm font-black text-[#0F2D59]">Pontos de atenção observados</h2>
               <p className="mt-0.5 text-2xs text-slate-500">
-                Situações que a política manda observar na contratação. Nenhuma sai de fonte
-                consultável — quem percebe é quem conduz o processo. O que for marcado vai para a
-                coluna OBSERVAÇÕES do Mapa de Risco.
+                Nenhum sai de fonte consultável: quem percebe é quem conduz o processo. O que for
+                marcado vai para a coluna OBSERVAÇÕES do Mapa.
               </p>
             </div>
             {sensitivePoints.length > 0 && (
@@ -1128,8 +1100,8 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                       }
                       className="mt-0.5 h-4 w-4 shrink-0 accent-amber-600"
                     />
-                    <span className="min-w-0 text-2xs leading-relaxed text-slate-700">
-                      <strong className="text-slate-900">({point.letter})</strong> {point.text}
+                    <span className="min-w-0 text-2xs leading-relaxed text-slate-700" title={point.text}>
+                      {point.label}
                     </span>
                   </label>
                 </li>
@@ -1333,16 +1305,10 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                   className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs font-bold text-slate-800 shadow-2xs transition-all focus:border-[#0F2D59] focus:ring-2 focus:ring-[#0F2D59]/10 focus:outline-hidden"
                 />
               </div>
-              {valorNumerico > 0 && valorNumerico <= SUAPE_QUESTIONARIO_VALOR_MINIMO && (
-                <p className="mt-1 text-3xs leading-snug text-slate-500">
-                  Item 3.3.1: em dispensa ou inexigibilidade, o questionário só é mandatório acima de
-                  R$ 50.000,00. Em processo licitatório, é exigido na habilitação independente do valor.
-                </p>
-              )}
-              {valorNumerico >= 10000000 && (
+              {valorNumerico >= SUAPE_ALCADA_CONSELHO_VALOR && (
                 <p className="mt-1 text-3xs font-semibold leading-snug text-amber-800">
-                  Valor atinge o patamar de alçada do Conselho. Confirme no checklist se as obrigações
-                  foram autorizadas por alçada — o item é marcação, não dedução pelo valor.
+                  Atinge a alçada do Conselho. Confirme no checklist se as obrigações foram
+                  autorizadas por alçada.
                 </p>
               )}
             </div>
