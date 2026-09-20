@@ -53,7 +53,11 @@ describe('resposta que não é JSON', () => {
     await expect(request('/api/empresa/56211027000269')).rejects.toMatchObject({
       code: 'RESPOSTA_NAO_JSON',
     });
-    await expect(request('/api/empresa/56211027000269')).rejects.toThrow(/VITE_API_BASE_URL/);
+    // Sem VITE_API_BASE_URL no build, a chamada é relativa e a mensagem
+    // precisa dizer isso — é o que separa "API mal configurada" de "API
+    // devolvendo página".
+    await expect(request('/api/empresa/56211027000269')).rejects.toThrow(/VITE_API_BASE_URL não entrou/);
+    await expect(request('/api/empresa/56211027000269')).rejects.toThrow(/endereço relativo/);
   });
 
   it('outro formato inesperado também é recusado', async () => {

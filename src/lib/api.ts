@@ -75,7 +75,8 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
       headers['Authorization'] = `Bearer ${idToken}`;
     }
 
-    const response = await fetch(resolveApiUrl(endpoint), {
+    const url = resolveApiUrl(endpoint);
+    const response = await fetch(url, {
       ...fetchOptions,
       signal: controller.signal,
       headers,
@@ -93,11 +94,22 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
     if (response.ok && contentType && !contentType.includes('json')) {
       const amostra = (await response.text().catch(() => '')).trim().slice(0, 120);
       const pareceHtml = /^<!doctype html|^<html/i.test(amostra);
+
+      // O endereço chamado vai na mensagem porque é ele que distingue as
+      // duas causas possíveis, e sem essa informação o diagnóstico vira
+      // adivinhação: endereço relativo significa que a API não foi
+      // configurada no build; endereço absoluto significa que a API é que
+      // está devolvendo página.
+      const origem = typeof window !== 'undefined' ? window.location.origin : '';
+      const alvo = /^https?:\/\//i.test(url) ? url : `${origem}${url} (endereço relativo)`;
+
       throw new ApiError(
         pareceHtml
-          ? 'O endereço da API está respondendo com a página do site em vez de dados. '
-            + 'Confira a variável VITE_API_BASE_URL do frontend: sem ela, as chamadas ficam no próprio site.'
-          : `O servidor respondeu em formato inesperado (${contentType || 'sem tipo declarado'}).`,
+          ? `A chamada foi para ${alvo} e voltou a página do site, não dados. `
+            + (API_BASE_URL
+              ? 'A API está devolvendo HTML nesse caminho.'
+              : 'A variável VITE_API_BASE_URL não entrou neste build do site.')
+          : `O servidor respondeu em formato inesperado (${contentType || 'sem tipo declarado'}) em ${alvo}.`,
         response.status,
         'RESPOSTA_NAO_JSON'
       );
