@@ -118,3 +118,27 @@ test('o vercel.json do backend não declara cabeçalhos de CORS', () => {
     'o rewrite para /index.js precisa existir para o Express receber todas as rotas'
   );
 });
+
+// ==========================================================
+// Superfície pública da API
+// ==========================================================
+
+test('a raiz se identifica em vez de devolver página em branco', async () => {
+  const res = await requisitar({ method: 'GET', caminho: '/', headers: {} });
+
+  // Com a SPA ao lado, a raiz serve o index.html; publicada sozinha, como
+  // na Vercel, precisa dizer o que é e onde está o diagnóstico.
+  const tipo = String(res.headers['content-type'] || '');
+  assert.equal(res.status, 200);
+  assert.ok(
+    tipo.includes('application/json') || tipo.includes('text/html'),
+    `a raiz precisa responder algo legível, veio "${tipo}"`
+  );
+});
+
+test('rota de API inexistente devolve JSON, não página de erro', async () => {
+  const res = await requisitar({ method: 'GET', caminho: '/api/rota-que-nao-existe', headers: {} });
+
+  assert.equal(res.status, 404);
+  assert.match(String(res.headers['content-type'] || ''), /application\/json/);
+});

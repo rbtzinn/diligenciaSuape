@@ -123,6 +123,24 @@ app.use('/api/status', statusRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/pncp', pncpRoutes);
 
+// A raiz do domínio da API devolvia página em branco quando o backend é
+// publicado sozinho, sem a SPA ao lado — o que não distingue "no ar" de
+// "fora do ar" para quem está conferindo pelo navegador. Agora ela se
+// identifica e aponta o diagnóstico.
+app.get('/', (req, res) => {
+  res.json({
+    ok: true,
+    service: 'Diligência 360 — API',
+    diagnostico: '/api/status',
+  });
+});
+
+// Rota de API inexistente devolve JSON, não a página de erro do Express:
+// o cliente sempre espera JSON e trata a mensagem.
+app.use('/api', (req, res) => {
+  res.status(404).json({ ok: false, erro: `Rota não encontrada: ${req.method} ${req.originalUrl}` });
+});
+
 app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
   if (err?.type === 'entity.too.large' || err?.status === 413) {
