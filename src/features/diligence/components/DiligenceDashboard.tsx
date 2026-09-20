@@ -16,6 +16,7 @@ import { DossierView } from './dossier/DossierView';
 import { RiskOverrideModal } from './RiskOverrideModal';
 import { EvidenceCenterDrawer } from './EvidenceCenterDrawer';
 import { NewsWorkspace } from './NewsWorkspace';
+import { NarrativeReportView } from './NarrativeReportView';
 import { SuapeIntegrityEvaluationView } from './SuapeIntegrityEvaluationView';
 import {
   evaluateSuapeIntegrity,
@@ -52,7 +53,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const [isRefreshingMedia, setIsRefreshingMedia] = useState(false);
   const [mediaRefreshNotice, setMediaRefreshNotice] = useState<string | null>(null);
   // A Avaliação de Integridade e Linha do Mapa de Risco abre como visão primária executiva.
-  const [activeTab, setActiveTab] = useState<'avaliacao' | 'mapa' | 'noticias' | 'dossie'>('avaliacao');
+  const [activeTab, setActiveTab] = useState<'avaliacao' | 'mapa' | 'noticias' | 'dossie' | 'relatorio'>('avaliacao');
   const [newsProgress, setNewsProgress] = useState<Record<string, number | null>>({});
   const [savingNews, setSavingNews] = useState(false);
   const [savedNewsDiligence, setSavedNewsDiligence] = useState<DiligenceItem | null>(null);
@@ -399,6 +400,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
               ['mapa', 'Vínculos', <Icons.Network key="m" size={14} />],
               ['noticias', 'Reputação', <Icons.Globe key="n" size={14} />],
               ['dossie', 'Dossiê', <Icons.ShieldCheck key="d" size={14} />],
+              ['relatorio', 'Relatório', <Icons.FileText key="r" size={14} />],
             ] as const).map(([id, label, icon]) => {
               const isActive = activeTab === id;
               return (
@@ -469,6 +471,10 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
       {/* Ao sair do mapa, desmontamos o Cytoscape. Quando o analista
           volta, o ramo inicial é recalculado e enquadrado no espaço
           disponível, sem herdar zoom e pan do nó anterior. */}
+      {activeTab === 'relatorio' ? (
+        <NarrativeReportView diligence={displayDiligence} evaluation={officialEvaluation} />
+      ) : null}
+
       {activeTab === 'mapa' ? (
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <ImmersiveNetworkTab
