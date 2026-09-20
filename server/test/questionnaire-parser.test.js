@@ -53,9 +53,17 @@ test('isPdfBuffer detecta assinatura %PDF corretamente', () => {
   assert.equal(isPdfBuffer(Buffer.alloc(0)), false);
 });
 
-test('Parser com o PDF REAL QUESTIONARIO_CPL___TMP_TERMINAIS_SUAPE.pdf', async () => {
+// O questionário devolvido pelo TMP Terminais é documento real de um
+// fornecedor, com nome, RG e e-mail de pessoas identificadas, e por isso
+// não é versionado. Quando alguém o coloca em `server/test/fixtures/`, o
+// teste roda contra ele; sem o arquivo, ele pula em vez de reprovar a
+// suíte inteira por uma dependência que o repositório não pode carregar.
+test('Parser com o PDF REAL QUESTIONARIO_CPL___TMP_TERMINAIS_SUAPE.pdf', async (t) => {
   const pdfPath = findFixture('QUESTIONARIO_CPL___TMP_TERMINAIS_SUAPE.pdf');
-  assert.ok(pdfPath, 'Arquivo QUESTIONARIO_CPL___TMP_TERMINAIS_SUAPE.pdf deve existir para teste');
+  if (!pdfPath) {
+    t.skip('Fixture QUESTIONARIO_CPL___TMP_TERMINAIS_SUAPE.pdf ausente (documento não versionável).');
+    return;
+  }
 
   const buffer = fs.readFileSync(pdfPath);
   const result = await parseSuapeQuestionnaire(buffer, 'QUESTIONARIO_CPL___TMP_TERMINAIS_SUAPE.pdf');

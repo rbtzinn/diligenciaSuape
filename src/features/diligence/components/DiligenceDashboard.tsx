@@ -17,11 +17,17 @@ import { RiskOverrideModal } from './RiskOverrideModal';
 import { EvidenceCenterDrawer } from './EvidenceCenterDrawer';
 import { NewsWorkspace } from './NewsWorkspace';
 import { SuapeIntegrityEvaluationView } from './SuapeIntegrityEvaluationView';
+import {
+  evaluateSuapeIntegrity,
+  type IntegrityAnswers,
+} from '../utils/suapeRiskMapRowGenerator';
 import { mergeNews } from '../utils/newsResults';
 import { request } from '../../../lib/api';
 import { calculateRisk } from '../utils/risk';
 import { ReportService } from '../../report/services/report.service';
 import { Icons } from '../../../components/ui/Icons';
+import { Button } from '../../../components/ui/Button';
+import { Chip } from '../../../components/ui/Chip';
 
 interface DiligenceDashboardProps {
   diligence: DiligenceItem;
@@ -50,6 +56,13 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const [newsProgress, setNewsProgress] = useState<Record<string, number | null>>({});
   const [savingNews, setSavingNews] = useState(false);
   const [savedNewsDiligence, setSavedNewsDiligence] = useState<DiligenceItem | null>(null);
+  // A Avaliação de Integridade é a única classificação oficial da
+  // diligência, então as respostas do questionário moram aqui e descem
+  // para a aba de avaliação, o dossiê e o grafo. Antes cada tela tinha o
+  // seu cálculo, e o analista via dois níveis de risco diferentes para o
+  // mesmo terceiro.
+  const [integrityAnswers, setIntegrityAnswers] = useState<IntegrityAnswers>({});
+  const [contractValueStr, setContractValueStr] = useState('');
   const [riskModalOpen, setRiskModalOpen] = useState(false);
   const [riskSaving, setRiskSaving] = useState(false);
   const [localRisk, setLocalRisk] = useState<{ diligenceId: string; risk: RiskAssessment } | null>(null);
@@ -61,9 +74,24 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const effectiveRisk = localRisk?.diligenceId === diligence.id ? localRisk.risk : savedNewsDiligence?.risco || diligence.risco;
   const effectiveEvidenceCenter = localEvidence?.diligenceId === diligence.id ? localEvidence.evidenceCenter : diligence.evidenceCenter;
   const effectiveEgos = localEvidence?.diligenceId === diligence.id ? localEvidence.egos : savedNewsDiligence?.egos || diligence.egos;
+  const contractValue = useMemo(() => {
+    if (!contractValueStr.trim()) return 0;
+    const clean = contractValueStr
+      .replace(/[^\d,.-]/g, '')
+      .replace(/\.(?=\d{3}\b)/g, '')
+      .replace(',', '.');
+    return parseFloat(clean) || 0;
+  }, [contractValueStr]);
+
   const displayDiligence = useMemo(
     () => ({ ...diligence, ...savedNewsDiligence, status: workflowStatus, risco: effectiveRisk, adverseMedia, evidenceCenter: effectiveEvidenceCenter, egos: effectiveEgos }),
     [adverseMedia, diligence, savedNewsDiligence, workflowStatus, effectiveEgos, effectiveEvidenceCenter, effectiveRisk],
+  );
+
+  /** Classificação oficial SUAPE: a mesma em toda a diligência. */
+  const officialEvaluation = useMemo(
+    () => evaluateSuapeIntegrity(displayDiligence, contractValue, integrityAnswers),
+    [displayDiligence, contractValue, integrityAnswers],
   );
 
   const handleEnrichDiscovery = async (discovery: ProcessDiscovery) => {
@@ -181,6 +209,17 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
     } finally { setSavingNews(false); }
   };
 
+  /**
+   * Aprofundamento pedido pela classificação Alto ou Muito Alto: reinicia
+   * a varredura reputacional sobre a razão social e leva o analista até
+   * os resultados. Nenhuma busca nova foi inventada — é a mesma rota que
+   * a aba de notícias usa.
+   */
+  const handleDeepenResearch = async () => {
+    setActiveTab('noticias');
+    await handleNewsSearch(displayDiligence.razaoSocial, true);
+  };
+
   const handleExportPdf = async () => {
     if (isExportingPdf) return;
     setIsExportingPdf(true);
@@ -214,114 +253,99 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
 
   return (
     <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-      {/* Barra Superior Executiva de Diligência — Cores Institucionais SUAPE */}
-      <div className="shrink-0 border-b border-[#1A3E6D] bg-[#0F2D59] text-white shadow-md">
-        <div className="mx-auto flex w-full max-w-content flex-col justify-between gap-3.5 px-gutter py-3.5 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              type="button"
+      {/* ---- Barra da diligência ----
+          Sobre a superfície escura, os controles usam a variante `deep`
+          do botão e os tokens `on-deep`. Antes eram cores em hexadecimal
+          soltas aqui, que não acompanhavam o tema. */}
+      <div className="shrink-0 border-b border-deep-line bg-deep text-on-deep">
+        <div className="mx-auto flex w-full max-w-content flex-col justify-between gap-3 px-gutter py-3 sm:flex-row sm:items-center">
+          <div className="flex min-w-0 items-center gap-3">
+            <Button
+              size="sm"
+              variant="deep"
+              icon={<Icons.ArrowLeft size={14} />}
               onClick={onBack}
-              title="Voltar para nova busca de CNPJ"
-              className="flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20 transition-colors"
+              title="Voltar para nova busca"
             >
-              <Icons.ArrowLeft size={14} />
-              <span>Nova Busca</span>
-            </button>
-            <div className="h-6 w-px bg-white/20" />
+              Nova busca
+            </Button>
+
+            <div className="h-6 w-px shrink-0 bg-deep-line" />
+
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-sm font-black text-white">{displayDiligence.cnpjFmt}</span>
-                <span
-                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-3xs font-black uppercase tracking-wider ${
-                    displayDiligence.empresa?.descricao_situacao_cadastral === 'ATIVA'
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                  }`}
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <span className="font-mono text-xs font-bold text-on-deep">{displayDiligence.cnpjFmt}</span>
+                <Chip
+                  size="sm"
+                  tone={
+                    displayDiligence.empresa?.descricao_situacao_cadastral === 'ATIVA' ? 'ok' : 'warn'
+                  }
                 >
                   {displayDiligence.empresa?.descricao_situacao_cadastral || 'ATIVA'}
-                </span>
-                {displayDiligence.empresa?.municipio && (
-                  <span className="text-2xs text-white/70">
+                </Chip>
+                {displayDiligence.empresa?.municipio ? (
+                  <span className="text-2xs text-on-deep-3">
                     {displayDiligence.empresa.municipio}/{displayDiligence.empresa.uf}
                   </span>
-                )}
+                ) : null}
               </div>
-              <h1 className="text-sm font-extrabold text-white truncate max-w-xl">
+              <h1 className="truncate text-xs font-bold text-on-deep">
                 {displayDiligence.razaoSocial}
-                {displayDiligence.nomeFantasia && (
-                  <span className="text-white/60 font-medium text-xs ml-1.5">({displayDiligence.nomeFantasia})</span>
-                )}
               </h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            {/* Termômetro de Risco SUAPE */}
-            <div
-              onClick={() => setRiskModalOpen(true)}
-              className="flex h-11 cursor-pointer items-center gap-2.5 rounded-xl border border-white/20 bg-white/10 px-4 hover:bg-white/15 transition-all shadow-xs"
-              title="Clique para ajustar ou justificar o nível de risco"
-            >
-              <div className="flex flex-col items-end justify-center leading-tight">
-                <span className="text-3xs font-bold uppercase tracking-wider text-white/70">Índice SUAPE</span>
-                <span className={`text-xs font-black ${effectiveRisk.score >= 50 ? 'text-amber-300' : 'text-emerald-300'}`}>
-                  {effectiveRisk.score}/100 · {typeof effectiveRisk.classificacao === 'string' ? effectiveRisk.classificacao : (effectiveRisk.classificacao as any)?.label || 'Risco Baixo'}
-                </span>
-              </div>
-              <span
-                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-black shadow-xs ${
-                  effectiveRisk.score >= 50 ? 'bg-amber-400 text-slate-950' : 'bg-emerald-400 text-slate-950'
-                }`}
-              >
-                {effectiveRisk.score}
-              </span>
-            </div>
-
-            {/* Botão Exportar PDF — Altura e proporção idêntica ao Índice SUAPE */}
+          <div className="flex shrink-0 items-center gap-2">
+            {/* Índice de atenção da pesquisa — não é a classificação
+                oficial, que vive na aba de avaliação e no dossiê. */}
             <button
               type="button"
-              onClick={handleExportPdf}
-              disabled={isExportingPdf}
-              className="flex h-11 items-center gap-2 rounded-xl bg-[#D97706] hover:bg-[#B45309] px-4 text-xs font-black text-white shadow-sm transition-all hover:shadow-md active:scale-95 disabled:opacity-70"
+              onClick={() => setRiskModalOpen(true)}
+              title="Ajustar ou justificar o índice de atenção"
+              className="flex min-h-[var(--control-height-sm)] items-center gap-2 rounded-[var(--control-radius-sm)] border border-deep-line bg-deep-raised px-3 text-left transition-colors hover:bg-deep-hover"
             >
-              <Icons.Download size={15} />
-              <span>{isExportingPdf ? 'Gerando…' : 'Exportar PDF'}</span>
+              <span className="text-2xs text-on-deep-3">Atenção</span>
+              <span className="text-xs font-bold text-brand-on-deep">{effectiveRisk.score}/100</span>
             </button>
+
+            <Button
+              size="sm"
+              variant="deep"
+              icon={<Icons.Download size={15} />}
+              isLoading={isExportingPdf}
+              loadingLabel="Gerando…"
+              onClick={handleExportPdf}
+            >
+              Exportar PDF
+            </Button>
           </div>
         </div>
 
-        {/* Abas Executivas de Navegação — Cockpit SUAPE */}
-        <nav aria-label="Visões da diligência" className="mx-auto flex w-full max-w-content flex-wrap items-center gap-1.5 px-gutter pb-2 pt-0.5">
-          {[
-            ['avaliacao', 'Avaliação de Integridade & Mapa de Risco', <Icons.FileSpreadsheet key="a" size={14} />],
-            ['mapa', 'Grafo de Vínculos Societários', <Icons.Network key="m" size={14} />],
-            ['noticias', 'Pesquisa Reputacional (Item 3.3.2)', <Icons.Globe key="n" size={14} />],
-            ['dossie', 'Dossiê Executivo 360°', <Icons.ShieldCheck key="d" size={14} />],
-          ].map(([id, label, icon]) => {
+        <nav
+          aria-label="Visões da diligência"
+          className="mx-auto flex w-full max-w-content flex-wrap items-center gap-1 px-gutter pb-2"
+        >
+          {([
+            ['avaliacao', 'Avaliação', <Icons.FileSpreadsheet key="a" size={14} />],
+            ['mapa', 'Vínculos', <Icons.Network key="m" size={14} />],
+            ['noticias', 'Reputação', <Icons.Globe key="n" size={14} />],
+            ['dossie', 'Dossiê', <Icons.ShieldCheck key="d" size={14} />],
+          ] as const).map(([id, label, icon]) => {
             const isActive = activeTab === id;
             return (
               <button
-                key={id as string}
+                key={id}
                 type="button"
                 aria-current={isActive ? 'page' : undefined}
-                onClick={() => setActiveTab(id as any)}
-                className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all ${
+                onClick={() => setActiveTab(id)}
+                className={`flex min-h-[var(--control-height-sm)] items-center gap-1.5 rounded-[var(--control-radius-sm)] px-3 text-xs font-semibold transition-colors ${
                   isActive
-                    ? 'bg-white text-[#0F2D59] shadow-sm font-black'
-                    : 'bg-transparent text-white/80 hover:bg-white/10 hover:text-white'
+                    ? 'bg-surface text-brand'
+                    : 'text-on-deep-3 hover:bg-deep-hover hover:text-on-deep'
                 }`}
               >
                 {icon}
                 <span>{label}</span>
-                {id === 'avaliacao' && (
-                  <span
-                    className={`rounded-full px-1.5 py-0.2 text-3xs font-black uppercase ${
-                      isActive ? 'bg-[#0F2D59]/15 text-[#0F2D59]' : 'bg-white/20 text-white'
-                    }`}
-                  >
-                    Oficial
-                  </span>
-                )}
               </button>
             );
           })}
@@ -332,8 +356,15 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         <SuapeIntegrityEvaluationView
           diligence={displayDiligence}
           discoveries={discoveries}
+          answers={integrityAnswers}
+          onAnswersChange={setIntegrityAnswers}
+          valorContratoStr={contractValueStr}
+          onValorContratoChange={setContractValueStr}
           onOpenEvidence={() => setActiveDrawer('evidence')}
           onOpenNetwork={() => setActiveTab('mapa')}
+          onDeepenResearch={handleDeepenResearch}
+          isResearching={isRefreshingMedia}
+          researchNotice={mediaRefreshNotice}
         />
       ) : null}
 
@@ -354,6 +385,8 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
       {activeTab === 'dossie' ? (
         <DossierView
           diligence={displayDiligence}
+          officialEvaluation={officialEvaluation}
+          onOpenIntegrity={() => setActiveTab('avaliacao')}
           isExportingPdf={isExportingPdf}
           onBack={onBack}
           onExportPdf={handleExportPdf}

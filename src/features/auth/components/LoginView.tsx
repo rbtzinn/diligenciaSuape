@@ -184,7 +184,7 @@ export const LoginView: React.FC = () => {
               >
                 Acesso Rápido Local (Analista SUAPE)
               </Button>
-              <p className="text-center text-3xs text-ink-3">
+              <p className="text-center text-2xs text-ink-3">
                 Modo local de desenvolvimento ativo · Conectado ao backend local
               </p>
             </div>
