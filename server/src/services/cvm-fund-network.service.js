@@ -9,16 +9,19 @@ const crypto = require('node:crypto');
 const AdmZip = require('adm-zip');
 const { parse } = require('csv-parse/sync');
 const { safeFetch } = require('../utils/safeFetch');
+const { resolveCacheDir } = require('../utils/cacheDir');
 const CompanyService = require('./company.service');
 
 const DATA_URL = 'https://dados.cvm.gov.br/dados/FI/CAD/DADOS/registro_fundo_classe.zip';
 const { SOURCE_STATUS } = require('../domain/source-status');
 const SOURCE_PAGE = 'https://dados.cvm.gov.br/dataset/fi-cad';
-const CACHE_DIR = path.join(__dirname, '..', '..', '.cache', 'cvm-funds');
-const CACHE_FILE = path.join(CACHE_DIR, 'registro_fundo_classe.zip');
+const cacheFile = () => path.join(resolveCacheDir('cvm-funds'), 'registro_fundo_classe.zip');
 const CACHE_TTL_MS = 24 * 60 * 60 * 1_000;
 const MEMORY_TTL_MS = 6 * 60 * 60 * 1_000;
-const DOWNLOAD_TIMEOUT_MS = 120_000;
+// O download precisa caber no tempo máximo da função na Vercel (60 s).
+// Um prazo de 120 s nunca era alcançado: a função morria antes, e a
+// consulta aparecia como fonte indisponível sem motivo declarado.
+const DOWNLOAD_TIMEOUT_MS = Number(process.env.CVM_DOWNLOAD_TIMEOUT_MS || 40_000);
 
 let indexCache = null;
 let indexJob = null;
@@ -75,7 +78,7 @@ function relationshipType(qualification, isCompany) {
 
 async function freshCacheFile() {
   try {
-    const stat = await fs.stat(CACHE_FILE);
+    const stat = await fs.stat(cacheFile());
     return stat.isFile() && stat.size > 1_000 && Date.now() - stat.mtimeMs < CACHE_TTL_MS;
   } catch {
     return false;
@@ -83,8 +86,8 @@ async function freshCacheFile() {
 }
 
 async function getDatasetBuffer() {
-  await fs.mkdir(CACHE_DIR, { recursive: true });
-  if (await freshCacheFile()) return fs.readFile(CACHE_FILE);
+  const destino = cacheFile();
+  if (await freshCacheFile()) return fs.readFile(destino);
 
   const response = await safeFetch(DATA_URL, { timeoutMs: DOWNLOAD_TIMEOUT_MS });
   if (!response.ok) throw new Error(`Cadastro de Fundos/CVM: HTTP ${response.status}`);
@@ -93,10 +96,16 @@ async function getDatasetBuffer() {
     throw new Error('Cadastro de Fundos/CVM: arquivo ZIP inválido');
   }
 
-  const temporary = `${CACHE_FILE}.part-${process.pid}-${Date.now()}`;
-  await fs.writeFile(temporary, buffer);
-  await fs.copyFile(temporary, CACHE_FILE);
-  await fs.unlink(temporary).catch(() => undefined);
+  // Gravar o cache é otimização: se falhar, a consulta já tem a resposta
+  // na memória e não pode ser derrubada por causa do disco.
+  try {
+    const temporary = `${destino}.part-${process.pid}-${Date.now()}`;
+    await fs.writeFile(temporary, buffer);
+    await fs.copyFile(temporary, destino);
+    await fs.unlink(temporary).catch(() => undefined);
+  } catch {
+    // segue com o buffer em memória
+  }
   return buffer;
 }
 

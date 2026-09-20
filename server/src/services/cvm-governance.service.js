@@ -9,11 +9,14 @@ const { Readable } = require('node:stream');
 const AdmZip = require('adm-zip');
 const { parse } = require('csv-parse');
 const { safeFetch } = require('../utils/safeFetch');
+const { resolveCacheDir } = require('../utils/cacheDir');
 
 const FRE_BASE_URL = 'https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/FRE/DADOS';
 const SOURCE_PAGE = `${FRE_BASE_URL}/`;
-const CACHE_DIR = path.join(__dirname, '..', '..', '.cache', 'cvm-fre');
-const DOWNLOAD_TIMEOUT_MS = 120_000;
+const cacheDir = () => resolveCacheDir('cvm-fre');
+// Mesmo limite da função na Vercel: prazo maior que o da plataforma não
+// é prazo, é queda sem explicação.
+const DOWNLOAD_TIMEOUT_MS = Number(process.env.CVM_DOWNLOAD_TIMEOUT_MS || 40_000);
 const downloadJobs = new Map();
 const resultCache = new Map();
 const RESULT_CACHE_TTL_MS = 6 * 60 * 60 * 1_000;
@@ -170,8 +173,7 @@ async function fileExists(filePath) {
 }
 
 async function downloadAnnualZip(year) {
-  await fs.mkdir(CACHE_DIR, { recursive: true });
-  const filePath = path.join(CACHE_DIR, `fre_cia_aberta_${year}.zip`);
+  const filePath = path.join(cacheDir(), `fre_cia_aberta_${year}.zip`);
   if (await fileExists(filePath)) return filePath;
 
   if (downloadJobs.has(year)) return downloadJobs.get(year);

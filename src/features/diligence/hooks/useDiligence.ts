@@ -10,6 +10,7 @@ import { DiligenceService } from '../services/diligence.service';
 import { calculateRisk } from '../utils/risk';
 import { generateAutomatedAnalysis } from '../utils/analyzer';
 import { DiscoveryEngine } from '../utils/discoveryEngine';
+import { describeSourceFailure } from '../utils/sourceFailure';
 import { HistoryStorage } from '../../history/services/history.storage';
 import {
   DiligenceItem,
@@ -115,7 +116,7 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           updateStep('governance', governanceHistory.coverageStatus === 'complete_public' ? 'done' : 'error', `${consulted}/5 exercício(s)`);
           log(`Histórico CVM: ${consulted} exercício(s) consultado(s), ${governanceHistory.directors || 0} integrante(s) da administração e ${governanceHistory.shareholders || 0} acionista(s) identificados.`, governanceHistory.coverageStatus === 'complete_public' ? 'info' : 'warning');
         } else {
-          updateStep('governance', 'error', 'Histórico oficial indisponível');
+          updateStep('governance', 'error', describeSourceFailure(governanceHistory.erro || governanceHistory.aviso));
           log(`Histórico CVM: ${governanceHistory.erro || governanceHistory.aviso || 'fonte indisponível'}.`, 'warning');
         }
 
@@ -128,7 +129,7 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
             ? `Rede societária: ${corporateNetwork.companies.length} empresa(s), ${corporateNetwork.relationships.length} vínculo(s) entre CNPJs e ${personLinks} por nome/CPF mascarado.`
             : 'Rede societária: o QSA disponível não contém empresa com CNPJ expansível.');
         } else {
-          updateStep('network', 'error', 'Expansão indisponível');
+          updateStep('network', 'error', describeSourceFailure(corporateNetwork.erro));
           log(`Rede societária: ${corporateNetwork.erro || 'fonte indisponível'}.`, 'warning');
         }
 
@@ -138,7 +139,7 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           updateStep('fund', 'done', 'Não se aplica a este CNPJ');
           log('Rede regulatória de fundos: CNPJ não consta como fundo ou classe no cadastro atual da CVM.');
         } else if (!fundNetwork.ok) {
-          updateStep('fund', 'error', 'Cadastro CVM indisponível');
+          updateStep('fund', 'error', describeSourceFailure(fundNetwork.erro));
           log(`Rede regulatória de fundos: ${fundNetwork.erro || 'fonte indisponível'}. Não é possível afirmar nem descartar estrutura de fundo.`, 'warning');
         } else if (fundNetwork.ok) {
           updateStep('fund', fundNetwork.consultaParcial ? 'error' : 'done', `${fundNetwork.directParties || 0} vínculo(s) direto(s)`);
@@ -274,7 +275,9 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           const detail = mediaRes.semChave
             ? 'Integração não configurada'
             : !mediaRes.ok
-              ? 'Fonte indisponível'
+              ? mediaRes.deadlineExceeded
+                ? 'Tempo esgotado no servidor'
+                : describeSourceFailure(mediaRes.aviso)
               : 'Nenhuma ocorrência';
           updateStep('media', unavailable ? 'error' : 'done', detail);
           log(
@@ -319,7 +322,7 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
             }
           }
         } else {
-          updateStep('gazettes', 'error', 'Fonte indisponível');
+          updateStep('gazettes', 'error', describeSourceFailure(officialGazettes.erro));
           log(`Diários Oficiais: ${officialGazettes.erro || 'fonte indisponível'}.`, 'warning');
         }
         if (tcePe.ok) {
@@ -451,12 +454,36 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           shareholders: socios,
         });
         if (offshore.ok) {
-          updateStep('offshore', 'done', offshore.candidates.length > 0 ? `${offshore.candidates.length} hipótese(s) para revisão` : 'Sem correspondência forte');
-          log(offshore.candidates.length > 0
-            ? `Offshore Leaks: ${offshore.candidates.length} correspondência(s) nominal(is) exigem revisão humana.`
-            : 'Offshore Leaks: nenhuma correspondência nominal forte localizada.');
+          // A consulta é feita em lotes: parte dos nomes pode ter ficado de
+          // fora. Dizer "sem correspondência" nesse caso afirmaria algo que
+          // não foi verificado.
+          const semConsulta = offshore.nomesNaoConsultados?.length || 0;
+          const achados = offshore.candidates.length;
+          updateStep(
+            'offshore',
+            semConsulta > 0 ? 'error' : 'done',
+            achados > 0
+              ? `${achados} hipótese(s) para revisão${semConsulta > 0 ? ` · ${semConsulta} nome(s) sem consulta` : ''}`
+              : semConsulta > 0
+                ? `${semConsulta} nome(s) sem consulta`
+                : 'Sem correspondência forte'
+          );
+          log(
+            achados > 0
+              ? `Offshore Leaks: ${achados} correspondência(s) nominal(is) exigem revisão humana.`
+              : 'Offshore Leaks: nenhuma correspondência nominal forte localizada.',
+            semConsulta > 0 ? 'warning' : 'info'
+          );
+          if (semConsulta > 0) {
+            log(
+              `Offshore Leaks: ${semConsulta} de ${offshore.totalQueries} nome(s) não chegaram a ser consultados `
+              + `(${offshore.nomesNaoConsultados?.slice(0, 3).join(', ')}${semConsulta > 3 ? '…' : ''}). `
+              + 'Esses nomes seguem sem verificação nesta base.',
+              'warning'
+            );
+          }
         } else {
-          updateStep('offshore', 'error', 'Fonte indisponível');
+          updateStep('offshore', 'error', describeSourceFailure(offshore.erro));
           log(`Offshore Leaks: ${offshore.erro || 'fonte indisponível'}.`, 'warning');
         }
 

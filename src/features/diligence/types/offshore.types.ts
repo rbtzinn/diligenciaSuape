@@ -20,4 +20,11 @@ export interface OffshoreSummary {
   consultadoEm: string;
   disclaimer?: string;
   erro?: string;
+  /** Nomes efetivamente reconciliados junto ao ICIJ. */
+  nomesConsultados?: number;
+  /** Nomes que ficaram sem consulta; nunca podem ser lidos como "nada consta". */
+  nomesNaoConsultados?: string[];
+  /** Verdadeiro quando parte dos nomes não foi consultada. */
+  parcial?: boolean;
+  avisos?: string[];
 }

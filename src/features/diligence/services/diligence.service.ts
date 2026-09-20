@@ -314,6 +314,11 @@ export const DiligenceService = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
+        // A reconciliação consulta o ICIJ uma vez por sócio; com o limite
+        // padrão de 15 s do cliente, o corte vinha antes de a fonte
+        // responder e a etapa aparecia como indisponível sem ter sido
+        // consultada de fato.
+        timeoutMs: 45_000,
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Falha na reconciliação offshore';
