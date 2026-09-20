@@ -17,6 +17,7 @@
 
 import React from 'react';
 import type { DiligenceItem } from '../../types';
+import type { SuapeIntegrityEvaluationResult } from '../../utils/suapeRiskMapRowGenerator';
 import type { StatusVariant } from '../../../../types';
 import { deriveRiskBreakdown } from './riskBreakdown';
 import { Stamp, StampTone } from '../../../../components/ui/Sheet';
@@ -24,10 +25,20 @@ import { cn } from '../../../../lib/cn';
 
 interface ScorePanelProps {
   diligence: DiligenceItem;
+  /** Classificação oficial SUAPE, calculada no dashboard. */
+  officialEvaluation: SuapeIntegrityEvaluationResult;
+  onOpenIntegrity: () => void;
   /** Fontes que não responderam, para a linha de cobertura. */
   unansweredSources: string[];
   className?: string;
 }
+
+const CLASSIFICACAO_TONE: Record<string, StampTone> = {
+  'Muito Alto': 'critical',
+  Alto: 'high',
+  'Médio': 'warn',
+  Baixo: 'ok',
+};
 
 const STAMP_TONE: Record<StatusVariant, StampTone> = {
   low: 'ok',
@@ -40,7 +51,13 @@ const STAMP_TONE: Record<StatusVariant, StampTone> = {
   neutral: 'neutral',
 };
 
-export const ScorePanel: React.FC<ScorePanelProps> = ({ diligence, unansweredSources, className }) => {
+export const ScorePanel: React.FC<ScorePanelProps> = ({
+  diligence,
+  officialEvaluation,
+  onOpenIntegrity,
+  unansweredSources,
+  className,
+}) => {
   const risco = diligence.risco;
   const breakdown = deriveRiskBreakdown(risco);
   const score = Math.max(0, Math.min(100, Number(risco?.score) || 0));
@@ -48,13 +65,57 @@ export const ScorePanel: React.FC<ScorePanelProps> = ({ diligence, unansweredSou
 
   return (
     <div className={cn('on-deep min-w-0 bg-deep px-4 py-4 text-on-deep sm:px-5 sm:py-5', className)}>
+      {/* ---- Classificação oficial SUAPE ----
+          A classificação vem do questionário respondido pelo terceiro,
+          pela fórmula da planilha. O índice logo abaixo é outra coisa:
+          mede o que a pesquisa levantou. Separar os dois foi o que
+          acabou com os dois níveis de risco concorrentes na mesma tela. */}
+      <div className="mb-4 border-b border-deep-line pb-4">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <div className="min-w-0">
+            <span className="ficha-label text-on-deep-3">Classificação oficial SUAPE</span>
+            <p className="mt-0.5 text-2xl font-extrabold leading-none text-on-deep">
+              {officialEvaluation.calculatedRisk
+                ? officialEvaluation.riskDisplay
+                : 'Pendente de questionário'}
+            </p>
+          </div>
+          {officialEvaluation.calculatedRisk ? (
+            <Stamp onDeep tone={CLASSIFICACAO_TONE[officialEvaluation.calculatedRisk] ?? 'neutral'}>
+              {officialEvaluation.isProvisional ? 'provisória' : 'apurada'}
+            </Stamp>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenIntegrity}
+              className="ficha-label border border-on-deep-3 px-2.5 py-1 text-on-deep transition-colors hover:bg-deep-hover"
+            >
+              Importar questionário
+            </button>
+          )}
+        </div>
+
+        <p className="mt-2 text-2xs leading-relaxed text-on-deep-3">
+          {officialEvaluation.calculatedRisk
+            ? officialEvaluation.riskMapRecommendation
+            : 'A planilha oficial classifica pelas respostas do terceiro. Até o questionário chegar, o que segue abaixo é o que a pesquisa apurou — não uma classificação.'}
+        </p>
+
+        {officialEvaluation.contradictions.length > 0 ? (
+          <p className="mt-2 font-mono text-2xs leading-relaxed text-brand-on-deep">
+            ! {officialEvaluation.contradictions.length} resposta(s) do terceiro contrariam fonte
+            oficial consultada.
+          </p>
+        ) : null}
+      </div>
+
       {/* ---- Número ---- */}
       <div className="flex min-w-0 flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <p className="flex min-w-0 items-baseline gap-2">
           <strong className="num text-[3.25rem] font-extrabold leading-[0.85] tracking-tight text-brand-on-deep">
             {risco ? score : '—'}
           </strong>
-          <span className="ficha-label text-on-deep-3">/100</span>
+          <span className="ficha-label text-on-deep-3">/100 · índice de atenção da pesquisa</span>
         </p>
 
         <Stamp onDeep tone={risco?.cor ? STAMP_TONE[risco.cor] ?? 'neutral' : 'neutral'}>

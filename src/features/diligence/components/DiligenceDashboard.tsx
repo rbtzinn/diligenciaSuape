@@ -17,6 +17,10 @@ import { RiskOverrideModal } from './RiskOverrideModal';
 import { EvidenceCenterDrawer } from './EvidenceCenterDrawer';
 import { NewsWorkspace } from './NewsWorkspace';
 import { SuapeIntegrityEvaluationView } from './SuapeIntegrityEvaluationView';
+import {
+  evaluateSuapeIntegrity,
+  type IntegrityAnswers,
+} from '../utils/suapeRiskMapRowGenerator';
 import { mergeNews } from '../utils/newsResults';
 import { request } from '../../../lib/api';
 import { calculateRisk } from '../utils/risk';
@@ -50,6 +54,13 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const [newsProgress, setNewsProgress] = useState<Record<string, number | null>>({});
   const [savingNews, setSavingNews] = useState(false);
   const [savedNewsDiligence, setSavedNewsDiligence] = useState<DiligenceItem | null>(null);
+  // A Avaliação de Integridade é a única classificação oficial da
+  // diligência, então as respostas do questionário moram aqui e descem
+  // para a aba de avaliação, o dossiê e o grafo. Antes cada tela tinha o
+  // seu cálculo, e o analista via dois níveis de risco diferentes para o
+  // mesmo terceiro.
+  const [integrityAnswers, setIntegrityAnswers] = useState<IntegrityAnswers>({});
+  const [contractValueStr, setContractValueStr] = useState('');
   const [riskModalOpen, setRiskModalOpen] = useState(false);
   const [riskSaving, setRiskSaving] = useState(false);
   const [localRisk, setLocalRisk] = useState<{ diligenceId: string; risk: RiskAssessment } | null>(null);
@@ -61,9 +72,24 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const effectiveRisk = localRisk?.diligenceId === diligence.id ? localRisk.risk : savedNewsDiligence?.risco || diligence.risco;
   const effectiveEvidenceCenter = localEvidence?.diligenceId === diligence.id ? localEvidence.evidenceCenter : diligence.evidenceCenter;
   const effectiveEgos = localEvidence?.diligenceId === diligence.id ? localEvidence.egos : savedNewsDiligence?.egos || diligence.egos;
+  const contractValue = useMemo(() => {
+    if (!contractValueStr.trim()) return 0;
+    const clean = contractValueStr
+      .replace(/[^\d,.-]/g, '')
+      .replace(/\.(?=\d{3}\b)/g, '')
+      .replace(',', '.');
+    return parseFloat(clean) || 0;
+  }, [contractValueStr]);
+
   const displayDiligence = useMemo(
     () => ({ ...diligence, ...savedNewsDiligence, status: workflowStatus, risco: effectiveRisk, adverseMedia, evidenceCenter: effectiveEvidenceCenter, egos: effectiveEgos }),
     [adverseMedia, diligence, savedNewsDiligence, workflowStatus, effectiveEgos, effectiveEvidenceCenter, effectiveRisk],
+  );
+
+  /** Classificação oficial SUAPE: a mesma em toda a diligência. */
+  const officialEvaluation = useMemo(
+    () => evaluateSuapeIntegrity(displayDiligence, contractValue, integrityAnswers),
+    [displayDiligence, contractValue, integrityAnswers],
   );
 
   const handleEnrichDiscovery = async (discovery: ProcessDiscovery) => {
@@ -332,6 +358,10 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         <SuapeIntegrityEvaluationView
           diligence={displayDiligence}
           discoveries={discoveries}
+          answers={integrityAnswers}
+          onAnswersChange={setIntegrityAnswers}
+          valorContratoStr={contractValueStr}
+          onValorContratoChange={setContractValueStr}
           onOpenEvidence={() => setActiveDrawer('evidence')}
           onOpenNetwork={() => setActiveTab('mapa')}
         />
@@ -354,6 +384,8 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
       {activeTab === 'dossie' ? (
         <DossierView
           diligence={displayDiligence}
+          officialEvaluation={officialEvaluation}
+          onOpenIntegrity={() => setActiveTab('avaliacao')}
           isExportingPdf={isExportingPdf}
           onBack={onBack}
           onExportPdf={handleExportPdf}

@@ -1,372 +1,355 @@
 import { describe, it, expect } from 'vitest';
 import {
-  generateRiskMapRow,
-  evaluateSuapeIntegrity,
+  RISK_MAP_COLUMNS_SCHEMA,
+  SUAPE_RISK_CATALOG,
   calculateN23,
-  calculateN40,
   calculateN28,
   calculateN29,
-  RISK_MAP_COLUMNS_SCHEMA,
+  calculateN40,
+  collectEvidenceSignals,
+  evaluateIntegrityMaturity,
+  evaluateSuapeIntegrity,
+  generateRiskMapRow,
   type IntegrityAnswers,
 } from './suapeRiskMapRowGenerator';
+import { countSuapeBusinessDays } from './suapeIntegrityCatalog';
 import type { DiligenceItem } from '../types';
 
-describe('SUAPE Risk Map Row & Official Integrity Evaluation Engine', () => {
-  const mockDiligence: DiligenceItem = {
-    id: 'dil-1',
-    cnpj: '56.211.027/0002-69',
-    cnpjFmt: '56.211.027/0002-69',
-    razaoSocial: 'TMP Terminais S/A',
-    nomeFantasia: '',
-    status: 'completed',
-    dataAnalise: '2026-09-18T10:00:00Z',
-    risco: { score: 75, nivel: 'Alto', cor: 'high', emoji: '⚠️', decisao: '', decisaoDesc: '', detalhes: [] },
-    timeline: [],
-    empresa: {
-      cnpj: '56211027000269',
-      razao_social: 'TMP Terminais S/A',
-      nome_fantasia: '',
-      natureza_juridica: 'Sociedade Anônima Fechada',
-      cnae_fiscal: '5231-1/02',
-      cnae_fiscal_descricao: 'Atividades do Operador Portuário',
-      data_inicio_atividade: '2015-05-10',
-      municipio: 'Ipojuca',
-      uf: 'PE',
-    },
-    socios: [
+const baseDiligence = {
+  id: 'dil-1',
+  cnpj: '56.211.027/0002-69',
+  cnpjFmt: '56.211.027/0002-69',
+  razaoSocial: 'TMP Terminais S/A',
+  nomeFantasia: '',
+  status: 'completed',
+  dataAnalise: '2026-09-18T10:00:00Z',
+  risco: { score: 0, nivel: 'Baixo', cor: 'low', emoji: '', decisao: '', decisaoDesc: '', detalhes: [] },
+  timeline: [],
+  empresa: {
+    cnpj: '56211027000269',
+    razao_social: 'TMP Terminais S/A',
+    nome_fantasia: '',
+    natureza_juridica: 'Sociedade Anônima Fechada',
+    cnae_fiscal: '5231-1/02',
+    cnae_fiscal_descricao: 'Atividades do Operador Portuário',
+    data_inicio_atividade: '2015-05-10',
+    municipio: 'Ipojuca',
+    uf: 'PE',
+  },
+  socios: [],
+  pepResults: [],
+} as unknown as DiligenceItem;
+
+/** Respostas completas "Não", ponto de partida de cada cenário. */
+const todasNao: IntegrityAnswers = {
+  '4.4': false,
+  '5.2': false,
+  '7.1': false,
+  '7.2': false,
+  '7.3': false,
+  '7.4': false,
+  '7.5': false,
+  '7.6': false,
+  '7.7': false,
+  '7.8': false,
+  '7.9': false,
+  alcadaConselho: false,
+};
+
+describe('Classificação oficial (célula J16)', () => {
+  it('não classifica enquanto o questionário não chega', () => {
+    const evaluation = evaluateSuapeIntegrity(baseDiligence, 0, {});
+    expect(evaluation.status).toBe('pendente');
+    expect(evaluation.calculatedRisk).toBeNull();
+    expect(evaluation.riskDisplay).toBe('');
+    expect(evaluation.statusLabel).toBe('Classificação pendente de questionário');
+  });
+
+  it('classifica Muito Alto quando o item 4.4 é positivo (N23)', () => {
+    const evaluation = evaluateSuapeIntegrity(baseDiligence, 0, { ...todasNao, '4.4': true });
+    expect(calculateN23({ ...todasNao, '4.4': true }).active).toBe(true);
+    expect(evaluation.calculatedRisk).toBe('Muito Alto');
+    expect(evaluation.riskDisplay).toBe('Risco Muito Alto');
+  });
+
+  it('classifica Muito Alto quando o item 5.2 é positivo (N23)', () => {
+    const evaluation = evaluateSuapeIntegrity(baseDiligence, 0, { ...todasNao, '5.2': true });
+    expect(evaluation.calculatedRisk).toBe('Muito Alto');
+  });
+
+  it('classifica Alto na alçada do Conselho e expõe a divergência da planilha', () => {
+    const evaluation = evaluateSuapeIntegrity(baseDiligence, 33_000_000, {
+      ...todasNao,
+      alcadaConselho: true,
+    });
+    expect(evaluation.n40).toBe(true);
+    expect(evaluation.calculatedRisk).toBe('Alto');
+    expect(evaluation.alcadaDivergence).not.toBeNull();
+    expect(evaluation.alcadaDivergence?.literal).toBe('Muito Alto');
+  });
+
+  it('classifica Alto por interação com a administração pública (N28)', () => {
+    const evaluation = evaluateSuapeIntegrity(baseDiligence, 0, { ...todasNao, '7.4': true });
+    expect(calculateN28({ ...todasNao, '7.4': true }).active).toBe(true);
+    expect(evaluation.calculatedRisk).toBe('Alto');
+  });
+
+  it('classifica Médio quando só o item 7.2 é positivo (N29)', () => {
+    const evaluation = evaluateSuapeIntegrity(baseDiligence, 0, { ...todasNao, '7.2': true });
+    expect(calculateN29({ ...todasNao, '7.2': true }).active).toBe(true);
+    expect(evaluation.calculatedRisk).toBe('Médio');
+  });
+
+  it('classifica Baixo quando nenhum gatilho é positivo', () => {
+    const evaluation = evaluateSuapeIntegrity(baseDiligence, 0, todasNao);
+    expect(evaluation.calculatedRisk).toBe('Baixo');
+    expect(evaluation.isProvisional).toBe(false);
+  });
+
+  it('N23 tem precedência sobre os demais gatilhos', () => {
+    const evaluation = evaluateSuapeIntegrity(baseDiligence, 50_000_000, {
+      ...todasNao,
+      '4.4': true,
+      '7.2': true,
+      '7.4': true,
+      alcadaConselho: true,
+    });
+    expect(evaluation.calculatedRisk).toBe('Muito Alto');
+  });
+});
+
+describe('Valor da contratação e alçada do Conselho', () => {
+  it('não liga N40 só porque o valor passa de R$ 10 milhões', () => {
+    const resultado = calculateN40(15_000_000, todasNao);
+    expect(resultado.active).toBe(false);
+    expect(resultado.suggestedByValue).toBe(true);
+  });
+
+  it('sugere a confirmação da alçada quando o valor atinge o patamar', () => {
+    const evaluation = evaluateSuapeIntegrity(baseDiligence, 15_000_000, todasNao);
+    expect(evaluation.calculatedRisk).toBe('Baixo');
+    expect(evaluation.evidenceSignals.some((signal) => signal.item === 'alcadaConselho')).toBe(true);
+  });
+});
+
+describe('Respostas parciais', () => {
+  it('marca como provisória a classificação com itens em aberto', () => {
+    const evaluation = evaluateSuapeIntegrity(baseDiligence, 0, { '7.2': true });
+    expect(evaluation.status).toBe('parcial');
+    expect(evaluation.calculatedRisk).toBe('Médio');
+    expect(evaluation.isProvisional).toBe(true);
+    expect(evaluation.unidentifiedItems).toContain('4.4');
+  });
+
+  it('não marca Muito Alto como provisório, por já ser o teto', () => {
+    const evaluation = evaluateSuapeIntegrity(baseDiligence, 0, { '4.4': true });
+    expect(evaluation.calculatedRisk).toBe('Muito Alto');
+    expect(evaluation.isProvisional).toBe(false);
+  });
+});
+
+describe('Pesquisa como evidência, não como resposta', () => {
+  const comSancao = {
+    ...baseDiligence,
+    ceis: { registros: [{ nome: 'TMP Terminais S/A' }] },
+  } as unknown as DiligenceItem;
+
+  it('sanção em CEIS não classifica sozinha', () => {
+    const evaluation = evaluateSuapeIntegrity(comSancao, 0, {});
+    expect(evaluation.calculatedRisk).toBeNull();
+    expect(evaluation.evidenceSignals.some((signal) => signal.item === '4.4')).toBe(true);
+  });
+
+  it('acusa contradição quando o terceiro nega o que a fonte oficial registra', () => {
+    const evaluation = evaluateSuapeIntegrity(comSancao, 0, todasNao);
+    expect(evaluation.calculatedRisk).toBe('Baixo');
+    expect(evaluation.contradictions).toHaveLength(1);
+    expect(evaluation.contradictions[0].item).toBe('4.4');
+  });
+
+  it('coleta sinais de PEP para o item 7.6', () => {
+    const comPep = {
+      ...baseDiligence,
+      pepResults: [{ nome: 'Fulano', encontrado: true }],
+    } as unknown as DiligenceItem;
+    const { signals } = collectEvidenceSignals(comPep);
+    expect(signals.some((signal) => signal.item === '7.6')).toBe(true);
+  });
+});
+
+describe('Maturidade do programa de integridade (bloco 04)', () => {
+  it('não pontua sem respostas do bloco 8/9', () => {
+    const maturity = evaluateIntegrityMaturity({}, {});
+    expect(maturity.score).toBeNull();
+    expect(maturity.level).toBeNull();
+  });
+
+  it('chega a 100% com todos os itens positivos e nenhum cadastro atingido', () => {
+    const maturity = evaluateIntegrityMaturity(
       {
-        nome_socio: 'Carlos Alberto Lima',
-        cnpj_cpf_do_socio: '12345678901',
-        qualificacao_socio: 'Diretor',
+        '8.1': true,
+        '8.2': true,
+        '8.3': true,
+        '8.4': true,
+        '8.5': true,
+        '8.6': true,
+        '8.7': true,
+        '8.8': true,
+        '8.9': true,
+        '9.0': true,
       },
-    ],
-    pepResults: [],
-  };
+      {}
+    );
+    expect(maturity.score).toBe(1);
+    expect(maturity.percent).toBe(100);
+    expect(maturity.level).toBe('Baixo');
+  });
 
-  const defaultAllNoAnswers: IntegrityAnswers = {
-    '4.4': false,
-    '5.2': false,
-    '7.1': false,
-    '7.2': false,
-    '7.3': false,
-    '7.4': false,
-    '7.5': false,
-    '7.6': false,
-    '7.7': false,
-    '7.8': false,
-    '7.9': false,
-    '8.2': false,
-    '8.7': false,
-    '9.0': false,
-    alcadaConselho: false,
-  };
+  it('aplica os pesos oficiais: só 8.1 vale 5 de 25, mais o bloco de cadastros', () => {
+    const maturity = evaluateIntegrityMaturity({ '8.1': true }, {});
+    // 5 pontos do item + 1 ponto dos 8 cadastros limpos = 6/25 = 24%
+    expect(maturity.pointsEarned).toBeCloseTo(6, 5);
+    expect(maturity.level).toBe('Muito Alto');
+  });
 
-  describe('Gatilhos Oficiais e Precedência da Fórmula J16', () => {
-    // 1. Somente N23 (Muito Alto)
-    it('1. Deve classificar "Muito Alto" quando apenas N23 está ativo', () => {
-      const answers: IntegrityAnswers = { ...defaultAllNoAnswers, '4.4': true };
-      const n23 = calculateN23(mockDiligence, answers);
-      const n40 = calculateN40(0, answers);
-      const n28 = calculateN28(mockDiligence, answers);
-      const n29 = calculateN29(answers);
+  it('reduz a nota conforme os cadastros atingidos (R231)', () => {
+    const limpo = evaluateIntegrityMaturity({ '8.1': true, '8.2': true, '8.7': true }, {});
+    const sujo = evaluateIntegrityMaturity(
+      { '8.1': true, '8.2': true, '8.7': true },
+      { ceis: true, cnep: true }
+    );
+    expect(sujo.score!).toBeLessThan(limpo.score!);
+    expect(sujo.registriesHit).toEqual(['ceis', 'cnep']);
+  });
+});
 
-      expect(n23.active).toBe(true);
-      expect(n40.active).toBe(false);
-      expect(n28.active).toBe(false);
-      expect(n29.active).toBe(false);
+describe('Linha do Mapa de Risco', () => {
+  it('mantém exatamente 40 colunas separadas por tabulação', () => {
+    const row = generateRiskMapRow(baseDiligence, { answers: todasNao });
+    expect(row.columns).toHaveLength(40);
+    expect(row.rawLine.split('\t')).toHaveLength(40);
+    expect(RISK_MAP_COLUMNS_SCHEMA).toHaveLength(40);
+  });
 
-      const evaluation = evaluateSuapeIntegrity(mockDiligence, 0, answers);
-      expect(evaluation.calculatedRisk).toBe('Muito Alto');
-      expect(evaluation.riskDisplay).toBe('Risco Muito Alto');
+  it('preserva as 40 colunas mesmo com todos os riscos disparados', () => {
+    const todosSim = Object.fromEntries(
+      SUAPE_RISK_CATALOG.map((entry) => [entry.item, true])
+    ) as IntegrityAnswers;
+    const row = generateRiskMapRow(baseDiligence, { answers: todosSim });
+    expect(row.rawLine.split('\t')).toHaveLength(40);
+  });
+
+  it('coloca cada risco no slot fixo do catálogo oficial', () => {
+    const row = generateRiskMapRow(baseDiligence, {
+      answers: { ...todasNao, '7.3': true, '7.2': true },
     });
+    const risco1 = row.columns.find((column) => column.key === 'risco1')!;
+    const risco12 = row.columns.find((column) => column.key === 'risco12')!;
+    const risco4 = row.columns.find((column) => column.key === 'risco4')!;
 
-    // 2. Somente N40 (Muito Alto - Fórmula Oficial da Célula J16)
-    it('2. Deve classificar "Muito Alto" quando apenas N40 está ativo (Fórmula Real J16: OR(N23, N40))', () => {
-      const answers: IntegrityAnswers = { ...defaultAllNoAnswers, alcadaConselho: true };
-      const n23 = calculateN23(mockDiligence, answers);
-      const n40 = calculateN40(0, answers);
-      const n28 = calculateN28(mockDiligence, answers);
-      const n29 = calculateN29(answers);
+    expect(risco1.value).toContain('É esperado obter (ou alterar ou renovar)');
+    expect(risco12.value).toContain('São necessárias autorizações, licenças');
+    expect(risco4.value).toBe('');
+  });
 
-      expect(n23.active).toBe(false);
-      expect(n40.active).toBe(true);
-      expect(n28.active).toBe(false);
-      expect(n29.active).toBe(false);
+  it('usa a frase curta do Mapa na coluna RECOMENDAÇÕES, não o plano integral', () => {
+    const alto = generateRiskMapRow(baseDiligence, { answers: { ...todasNao, '7.4': true } });
+    const baixo = generateRiskMapRow(baseDiligence, { answers: todasNao });
 
-      const evaluation = evaluateSuapeIntegrity(mockDiligence, 0, answers);
-      expect(evaluation.calculatedRisk).toBe('Muito Alto');
-      expect(evaluation.riskDisplay).toBe('Risco Muito Alto');
+    expect(
+      alto.columns.find((column) => column.key === 'recomendacoes')!.value
+    ).toBe('Diretor da Área demandante assinar a Declaração de Gestão de Contratos com Terceiros  de Risco Alto e Treinamento para Gestor e Diretor. ');
+    expect(baixo.columns.find((column) => column.key === 'recomendacoes')!.value).toBe(
+      'Comunicar ao Gestor e Arquivar Processo'
+    );
+    expect(alto.columns.find((column) => column.key === 'recomendacoes')!.value).not.toContain('\n');
+  });
 
-      // Testando também via valor monetário >= 10.000.000,00
-      const evaluationPorValor = evaluateSuapeIntegrity(mockDiligence, 10000000, defaultAllNoAnswers);
-      expect(evaluationPorValor.n40).toBe(true);
-      expect(evaluationPorValor.calculatedRisk).toBe('Muito Alto');
+  it('marca a declaração como "Não se aplica" em risco Baixo e não supõe assinatura em risco Alto', () => {
+    const baixo = generateRiskMapRow(baseDiligence, { answers: todasNao });
+    const alto = generateRiskMapRow(baseDiligence, { answers: { ...todasNao, '7.4': true } });
+
+    expect(baixo.columns.find((column) => column.key === 'declaracaoAssinada')!.value).toBe('Não se aplica');
+    expect(alto.columns.find((column) => column.key === 'declaracaoAssinada')!.value).toBe('');
+  });
+
+  it('calcula os dias úteis a partir das datas informadas', () => {
+    const row = generateRiskMapRow(baseDiligence, {
+      answers: todasNao,
+      dataInicio: '17/09/2026',
+      dataFim: '18/09/2026',
     });
+    expect(row.columns.find((column) => column.key === 'tempoDecorrido')!.value).toBe('1');
+  });
 
-    // 3. Somente N28 (Alto)
-    it('3. Deve classificar "Alto" quando apenas N28 está ativo (Itens 7.1, 7.3 a 7.9)', () => {
-      const answers: IntegrityAnswers = { ...defaultAllNoAnswers, '7.1': true };
-      const n23 = calculateN23(mockDiligence, answers);
-      const n40 = calculateN40(0, answers);
-      const n28 = calculateN28(mockDiligence, answers);
-      const n29 = calculateN29(answers);
+  it('bloqueia a cópia enquanto o questionário não foi importado', () => {
+    const row = generateRiskMapRow(baseDiligence, {});
+    expect(row.columns.find((column) => column.key === 'classificacao')!.value).toBe('');
+    expect(row.blockers.some((blocker) => blocker.includes('não importado'))).toBe(true);
+  });
 
-      expect(n23.active).toBe(false);
-      expect(n40.active).toBe(false);
-      expect(n28.active).toBe(true);
-      expect(n29.active).toBe(false);
-
-      const evaluation = evaluateSuapeIntegrity(mockDiligence, 0, answers);
-      expect(evaluation.calculatedRisk).toBe('Alto');
-      expect(evaluation.riskDisplay).toBe('Risco Alto');
-    });
-
-    // 4. Somente N29 (Médio)
-    it('4. Deve classificar "Médio" quando apenas N29 está ativo (Item 7.2)', () => {
-      const answers: IntegrityAnswers = { ...defaultAllNoAnswers, '7.2': true };
-      const n23 = calculateN23(mockDiligence, answers);
-      const n40 = calculateN40(0, answers);
-      const n28 = calculateN28(mockDiligence, answers);
-      const n29 = calculateN29(answers);
-
-      expect(n23.active).toBe(false);
-      expect(n40.active).toBe(false);
-      expect(n28.active).toBe(false);
-      expect(n29.active).toBe(true);
-
-      const evaluation = evaluateSuapeIntegrity(mockDiligence, 0, answers);
-      expect(evaluation.calculatedRisk).toBe('Médio');
-      expect(evaluation.riskDisplay).toBe('Risco Médio');
-    });
-
-    // 5. Nenhum gatilho (Baixo)
-    it('5. Deve classificar "Baixo" quando nenhum gatilho estiver ativo', () => {
-      const evaluation = evaluateSuapeIntegrity(mockDiligence, 50000, defaultAllNoAnswers);
-      expect(evaluation.n23).toBe(false);
-      expect(evaluation.n40).toBe(false);
-      expect(evaluation.n28).toBe(false);
-      expect(evaluation.n29).toBe(false);
-      expect(evaluation.calculatedRisk).toBe('Baixo');
-      expect(evaluation.riskDisplay).toBe('Risco Baixo');
-    });
-
-    // 6. N23 + N40 (Muito Alto)
-    it('6. Combinação N23 + N40 deve resultar em "Muito Alto"', () => {
-      const answers: IntegrityAnswers = { ...defaultAllNoAnswers, '5.2': true, alcadaConselho: true };
-      const evaluation = evaluateSuapeIntegrity(mockDiligence, 0, answers);
-      expect(evaluation.n23).toBe(true);
-      expect(evaluation.n40).toBe(true);
-      expect(evaluation.calculatedRisk).toBe('Muito Alto');
-    });
-
-    // 7. N40 + N28 (Muito Alto - N40 tem precedência sobre N28)
-    it('7. Combinação N40 + N28 deve resultar em "Muito Alto" (precedência da fórmula)', () => {
-      const answers: IntegrityAnswers = { ...defaultAllNoAnswers, alcadaConselho: true, '7.4': true };
-      const evaluation = evaluateSuapeIntegrity(mockDiligence, 0, answers);
-      expect(evaluation.n40).toBe(true);
-      expect(evaluation.n28).toBe(true);
-      expect(evaluation.calculatedRisk).toBe('Muito Alto');
-    });
-
-    // 8. N28 + N29 (Alto - N28 tem precedência sobre N29)
-    it('8. Combinação N28 + N29 deve resultar em "Alto" (precedência da fórmula)', () => {
-      const answers: IntegrityAnswers = { ...defaultAllNoAnswers, '7.3': true, '7.2': true };
-      const evaluation = evaluateSuapeIntegrity(mockDiligence, 0, answers);
-      expect(evaluation.n28).toBe(true);
-      expect(evaluation.n29).toBe(true);
-      expect(evaluation.calculatedRisk).toBe('Alto');
-    });
-
-    // 9. Todos simultaneamente (Muito Alto)
-    it('9. Todos os gatilhos simultaneamente devem resultar em "Muito Alto"', () => {
-      const answers: IntegrityAnswers = {
-        '4.4': true,
-        '5.2': true,
-        '7.1': true,
+  it('reproduz a linha real do TMP Terminais (registro 555 da planilha)', () => {
+    const row = generateRiskMapRow(baseDiligence, {
+      id: 555,
+      ano: 2026,
+      dataInicio: '17/09/2026',
+      dataFim: '18/09/2026',
+      diretoriaDemandante: 'DGP',
+      gestor: 'Nilson Monteiro',
+      valorContrato: 46056,
+      processoSei: 'SEI: 0050200077.001023/2024-54',
+      notaTecnica: 'GOVPE - Nota Técnica 154 (93986496)',
+      declaracaoAssinada: 'Sim',
+      answers: {
+        ...todasNao,
         '7.2': true,
         '7.3': true,
-        '7.4': true,
-        '7.5': true,
-        '7.6': true,
-        '7.7': true,
-        '7.8': true,
-        '7.9': true,
         '8.2': true,
         '8.7': true,
         '9.0': true,
-        alcadaConselho: true,
-      };
-      const evaluation = evaluateSuapeIntegrity(mockDiligence, 20000000, answers);
-      expect(evaluation.n23).toBe(true);
-      expect(evaluation.n40).toBe(true);
-      expect(evaluation.n28).toBe(true);
-      expect(evaluation.n29).toBe(true);
-      expect(evaluation.calculatedRisk).toBe('Muito Alto');
+      },
     });
+
+    const valorDe = (key: string) => row.columns.find((column) => column.key === key)!.value;
+
+    expect(valorDe('id')).toBe('555');
+    expect(valorDe('ano')).toBe('2026');
+    expect(valorDe('responsavel')).toBe('Compliance');
+    expect(valorDe('diretoria')).toBe('DGP');
+    expect(valorDe('gestor')).toBe('Nilson Monteiro');
+    expect(valorDe('empresa')).toBe('TMP Terminais S/A');
+    expect(valorDe('cnpj')).toBe('56.211.027/0002-69');
+    expect(valorDe('valor')).toBe(' R$  46.056,00 ');
+    expect(valorDe('classificacao')).toBe('Risco Alto');
+    expect(valorDe('codigoConduta')).toBe('Sim');
+    expect(valorDe('treinamentoGestao')).toBe('Sim');
+    expect(valorDe('profissionalAnticorrupcao')).toBe('Sim');
+    expect(valorDe('documentoControle')).toBe('SEI: 0050200077.001023/2024-54');
+    expect(valorDe('declaracaoAssinada')).toBe('Sim');
+  });
+});
+
+describe('Dias úteis sem fim de semana e feriado', () => {
+  it('conta zero no mesmo dia e um no dia seguinte', () => {
+    expect(
+      countSuapeBusinessDays(new Date('2026-09-04T00:00:00Z'), new Date('2026-09-04T00:00:00Z'))
+    ).toBe(0);
+    expect(
+      countSuapeBusinessDays(new Date('2026-09-17T00:00:00Z'), new Date('2026-09-18T00:00:00Z'))
+    ).toBe(1);
   });
 
-  describe('Sem Inferências Falsas e Resposta Tri-State', () => {
-    it('não inventa respostas com base em CNAE ou tipo societário S/A', () => {
-      // Diligência sem questionário preenchido (todas respostas null)
-      const evaluation = evaluateSuapeIntegrity(mockDiligence, 50000);
-      expect(evaluation.n28).toBe(false);
-      expect(evaluation.n29).toBe(false);
-      expect(evaluation.n23).toBe(false);
-      // Nenhuma inferência artificial de CNAE portuário ativou 7.1/7.2/7.3
-      expect(evaluation.unidentifiedItems.length).toBeGreaterThan(0);
-      expect(evaluation.unidentifiedItems).toContain('7.1');
-      expect(evaluation.unidentifiedItems).toContain('7.2');
-    });
-
-    it('sanções oficiais (CEIS/CNEP/TCE-PE/MTE) ativam N23 legitimamente', () => {
-      const sanctionDiligence: DiligenceItem = {
-        ...mockDiligence,
-        ceis: { ok: true, quantidade: 1, encontrado: true, fonte: 'CEIS', registros: [{ id: 's1' } as any] },
-      };
-      const evaluation = evaluateSuapeIntegrity(sanctionDiligence, 50000, defaultAllNoAnswers);
-      expect(evaluation.n23).toBe(true);
-      expect(evaluation.calculatedRisk).toBe('Muito Alto');
-      expect(evaluation.triggers.n23Reasons[0]).toContain('CEIS');
-    });
-
-    it('processos judiciais comuns que NÃO sejam das bases sancionatórias oficiais NÃO ativam N23', () => {
-      const cleanDiligence: DiligenceItem = {
-        ...mockDiligence,
-        ceis: { ok: true, quantidade: 0, encontrado: false, fonte: 'CEIS', registros: [] },
-        cnep: { ok: true, quantidade: 0, encontrado: false, fonte: 'CNEP', registros: [] },
-      };
-      const evaluation = evaluateSuapeIntegrity(cleanDiligence, 50000, defaultAllNoAnswers);
-      expect(evaluation.n23).toBe(false);
-    });
+  it('pula fim de semana', () => {
+    // Sexta 11/09/2026 a segunda 14/09/2026.
+    expect(
+      countSuapeBusinessDays(new Date('2026-09-11T00:00:00Z'), new Date('2026-09-14T00:00:00Z'))
+    ).toBe(1);
   });
 
-  describe('Planos de Ação Oficiais (Células O48, P48, Q48, R48)', () => {
-    it('reproduz fielmente o texto oficial do Plano de Ação para Baixo', () => {
-      const evaluation = evaluateSuapeIntegrity(mockDiligence, 1000, defaultAllNoAnswers);
-      expect(evaluation.recommendedAction).toContain('RISCO BAIXO');
-      expect(evaluation.recommendedAction).toContain('Comunicar ao Diretor Executivo da área demandante');
-      expect(evaluation.recommendedAction).toContain('Arquivamento do Formulário de Diligência de SUAPE');
-    });
-
-    it('reproduz fielmente o texto oficial do Plano de Ação para Médio', () => {
-      const evaluation = evaluateSuapeIntegrity(mockDiligence, 1000, { ...defaultAllNoAnswers, '7.2': true });
-      expect(evaluation.recommendedAction).toContain('RISCO MÉDIO');
-      expect(evaluation.recommendedAction).toContain('Comunicar ao Diretor Executivo da área demandante');
-    });
-
-    it('reproduz fielmente o texto oficial do Plano de Ação para Alto', () => {
-      const evaluation = evaluateSuapeIntegrity(mockDiligence, 1000, { ...defaultAllNoAnswers, '7.1': true });
-      expect(evaluation.recommendedAction).toContain('RISCO ALTO');
-      expect(evaluation.recommendedAction).toContain('Diretor Executivo da área demandante deverá assinar a Declaração de Gestão de Contratos com Terceiros de Risco');
-    });
-
-    it('reproduz fielmente o texto oficial do Plano de Ação para Muito Alto', () => {
-      const evaluation = evaluateSuapeIntegrity(mockDiligence, 15000000, defaultAllNoAnswers);
-      expect(evaluation.recommendedAction).toContain('RISCO MUITO ALTO');
-      expect(evaluation.recommendedAction).toContain('Prover treinamento e orientação para o gestor do contrato');
-    });
-  });
-
-  describe('Gerador do Mapa de Risco (40 Colunas Oficiais)', () => {
-    it('o schema possui exatamente 40 colunas mapeadas', () => {
-      expect(RISK_MAP_COLUMNS_SCHEMA.length).toBe(40);
-      expect(RISK_MAP_COLUMNS_SCHEMA[0].index).toBe(1);
-      expect(RISK_MAP_COLUMNS_SCHEMA[39].index).toBe(40);
-      expect(RISK_MAP_COLUMNS_SCHEMA[0].header).toBe('REGISTRO Nº');
-      expect(RISK_MAP_COLUMNS_SCHEMA[1].header).toBe('ANO');
-      expect(RISK_MAP_COLUMNS_SCHEMA[6].header).toBe('DIRETORIA');
-      expect(RISK_MAP_COLUMNS_SCHEMA[8].header).toBe('EMPRESA');
-      expect(RISK_MAP_COLUMNS_SCHEMA[10].header).toBe('CNPJ');
-      expect(RISK_MAP_COLUMNS_SCHEMA[11].header).toBe('VALOR');
-      expect(RISK_MAP_COLUMNS_SCHEMA[12].header).toBe('CLASSIFICAÇÃO');
-      expect(RISK_MAP_COLUMNS_SCHEMA[25].header).toBe('A EMPRESA POSSUI CÓDIGO DE CONDUTA?');
-      expect(RISK_MAP_COLUMNS_SCHEMA[26].header).toBe('A EMPRESA CONDUZ TREINAMENTO PARA GESTÃO SOCIETÁRIA ?');
-      expect(RISK_MAP_COLUMNS_SCHEMA[27].header).toBe('POSSUI PROFISSIONAL RESPONSÁVEL POR UM PROGRAMA OU POLÍTICA ANTICORRUPÇÃO?');
-      expect(RISK_MAP_COLUMNS_SCHEMA[28].header).toBe('NOTA ORIENTATIVA');
-      expect(RISK_MAP_COLUMNS_SCHEMA[29].header).toBe('RECOMENDAÇÕES');
-      expect(RISK_MAP_COLUMNS_SCHEMA[31].header).toBe('DOCUMENTO DE CONTROLE');
-    });
-
-    it('gera linha TSV com exatamente 40 colunas (rawLine.split("\\t").length === 40)', () => {
-      const answers: IntegrityAnswers = {
-        ...defaultAllNoAnswers,
-        '7.1': true,
-        '7.3': true,
-        '7.4': true,
-        '8.2': true,
-        '8.7': true,
-        '9.0': true,
-      };
-
-      const result = generateRiskMapRow(mockDiligence, {
-        id: '555',
-        ano: '2026',
-        area: 'Compliance',
-        dataInicio: '17/09/2026',
-        dataFim: '18/09/2026',
-        dias: '1',
-        diretoriaDemandante: 'DGP',
-        analistaResponsavel: 'Nilson Monteiro',
-        valorContrato: ' R$  46.056,00 ',
-        notaTecnica: 'GOVPE - Nota Técnica 154 (93986496)',
-        processoSei: 'SEI: 0050200077.001023/2024-54',
-        answers,
-      });
-
-      const parts = result.rawLine.split('\t');
-      expect(parts.length).toBe(40);
-      expect(parts[0]).toBe('555');
-      expect(parts[1]).toBe('2026');
-      expect(parts[2]).toBe('Compliance');
-      expect(parts[3]).toBe('17/09/2026');
-      expect(parts[4]).toBe('18/09/2026');
-      expect(parts[5]).toBe('1');
-      expect(parts[6]).toBe('DGP');
-      expect(parts[7]).toBe('Nilson Monteiro');
-      expect(parts[8]).toBe('TMP Terminais S/A');
-      expect(parts[10]).toBe('56.211.027/0002-69');
-      expect(parts[11]).toBe(' R$  46.056,00 ');
-      expect(parts[12]).toBe('Risco Alto');
-      expect(parts[13]).toContain('autorização, licença, registros ou permissão'); // Col 14: RISCO 1 (Fator 1)
-      expect(parts[25]).toBe('Sim'); // Item 8.2
-      expect(parts[26]).toBe('Sim'); // Item 8.7
-      expect(parts[27]).toBe('Sim'); // Item 9.0
-      expect(parts[28]).toBe('GOVPE - Nota Técnica 154 (93986496)');
-      expect(parts[29]).toContain('Diretor Executivo da área demandante deverá assinar a Declaração de Gestão de Contratos com Terceiros de Risco');
-      expect(parts[30]).toBe('Sim'); // Declaração assinada
-      expect(parts[31]).toBe('SEI: 0050200077.001023/2024-54');
-    });
-
-    it('quando processo SEI, valor ou diretoria não existem, mantém vazio sem inventar', () => {
-      const result = generateRiskMapRow(mockDiligence, {
-        answers: defaultAllNoAnswers,
-      });
-      const parts = result.rawLine.split('\t');
-      expect(parts.length).toBe(40);
-      expect(parts[0]).toBe(''); // ID
-      expect(parts[6]).toBe(''); // Diretoria
-      expect(parts[7]).toBe(''); // Analista
-      expect(parts[11]).toBe(''); // Valor Contrato
-      expect(parts[28]).toBe(''); // Nota Técnica
-      expect(parts[31]).toBe(''); // Processo SEI
-    });
-
-    it('não insere "Sim" hardcoded nas colunas 26, 27 e 28 se a resposta for desconhecida ou não', () => {
-      const resultNo = generateRiskMapRow(mockDiligence, {
-        answers: { ...defaultAllNoAnswers, '8.2': false, '8.7': false, '9.0': false },
-      });
-      const partsNo = resultNo.rawLine.split('\t');
-      expect(partsNo[25]).toBe('Não');
-      expect(partsNo[26]).toBe('Não');
-      expect(partsNo[27]).toBe('Não');
-
-      const resultUnset = generateRiskMapRow(mockDiligence, {
-        answers: { ...defaultAllNoAnswers, '8.2': null, '8.7': null, '9.0': null },
-      });
-      const partsUnset = resultUnset.rawLine.split('\t');
-      expect(partsUnset[25]).toBe('');
-      expect(partsUnset[26]).toBe('');
-      expect(partsUnset[27]).toBe('');
-    });
+  it('pula feriado de Ipojuca', () => {
+    // 29/09 é o padroeiro de Ipojuca; de 28/09 (seg) a 30/09 (qua) sobra um dia.
+    expect(
+      countSuapeBusinessDays(new Date('2026-09-28T00:00:00Z'), new Date('2026-09-30T00:00:00Z'))
+    ).toBe(1);
   });
 });

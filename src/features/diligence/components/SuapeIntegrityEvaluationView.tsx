@@ -1,37 +1,58 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { DiligenceItem, ProcessDiscovery } from '../types';
 import { Icons } from '../../../components/ui/Icons';
-import { getFirebaseIdToken } from '../../../lib/firebase';
 import {
   evaluateSuapeIntegrity,
   generateRiskMapRow,
+  SUAPE_DIRETORIAS,
+  SUAPE_MATURITY_ITEMS,
   SUAPE_QUESTION_TEXTS,
+  SUAPE_REQUIRED_ITEMS,
   type SuapeCalculatedRisk,
   type QuestionnaireAnswer,
   type IntegrityAnswers,
 } from '../utils/suapeRiskMapRowGenerator';
+import {
+  QuestionnaireImportPanel,
+  type QuestionnaireImportPayload,
+} from './QuestionnaireImportPanel';
 
 interface SuapeIntegrityEvaluationViewProps {
   diligence: DiligenceItem;
   discoveries?: ProcessDiscovery[];
+  /**
+   * As respostas moram no dashboard para que o dossiê, o grafo e esta
+   * tela mostrem a mesma classificação. Duas telas calculando risco por
+   * conta própria foi exatamente o que esta unificação desfez.
+   */
+  answers: IntegrityAnswers;
+  onAnswersChange: (answers: IntegrityAnswers) => void;
+  valorContratoStr: string;
+  onValorContratoChange: (value: string) => void;
   onOpenEvidence?: () => void;
   onOpenNetwork?: () => void;
 }
 
-const DIRETORIAS = ['DGP', 'DIRIN', 'DGO', 'DENG', 'PRESI', 'DAF', 'DPO'];
+/** Enunciados dos itens de maturidade, para o checklist de governança. */
+const MATURITY_TEXT_BY_KEY = Object.fromEntries(
+  SUAPE_MATURITY_ITEMS.map((item) => [item.key, item.text])
+) as Record<string, string>;
 
 export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationViewProps> = ({
   diligence,
   discoveries = [],
+  answers: questionAnswers,
+  onAnswersChange: setQuestionAnswers,
+  valorContratoStr,
+  onValorContratoChange: setValorContratoStr,
   onOpenEvidence,
   onOpenNetwork,
 }) => {
   // Parâmetros editáveis da linha do Mapa de Risco (sem valores hardcoded fictícios)
-  const [analista, setAnalista] = useState(() => localStorage.getItem('suape_analista_nome') || '');
+  const [gestor, setGestor] = useState('');
   const [diretoria, setDiretoria] = useState(() => localStorage.getItem('suape_diretoria') || '');
   const [registroId, setRegistroId] = useState('');
   const [anoExercicio, setAnoExercicio] = useState(() => String(new Date().getFullYear()));
-  const [valorContratoStr, setValorContratoStr] = useState('');
   const [processoSei, setProcessoSei] = useState('');
   const [notaTecnica, setNotaTecnica] = useState('');
 
@@ -44,25 +65,19 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
 
   const [dataInicio, setDataInicio] = useState(formatDate(yesterday));
   const [dataFim, setDataFim] = useState(formatDate(now));
-  const [diasUteis, setDiasUteis] = useState('1');
+  // Vazio deixa o gerador calcular os dias úteis a partir das datas.
+  const [diasUteis, setDiasUteis] = useState('');
 
-  // Estado do Arquivo de Questionário Anexado (.pdf ou .xlsx)
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [attachedFile, setAttachedFile] = useState<{
-    name: string;
-    size: number;
-    parsedAt: string;
-    sheetName: string;
-    detectedAnswersCount: number;
-    isPdf?: boolean;
-    aviso?: string | null;
-  } | null>(null);
+  // Origem das respostas em vigor, para o rodapé de auditoria.
+  const [answerSource, setAnswerSource] = useState<string | null>(null);
 
-  // Respostas detalhadas dos itens da Avaliação de Integridade oficial (tri-state: true | false | null)
-  const [questionAnswers, setQuestionAnswers] = useState<IntegrityAnswers>({
+  // A diretoria demandante costuma se repetir entre diligências do
+  // mesmo analista, então vale guardar; o gestor muda a cada contrato.
+  useEffect(() => {
+    if (diretoria) localStorage.setItem('suape_diretoria', diretoria);
+  }, [diretoria]);
+
+  const EMPTY_ANSWERS: IntegrityAnswers = {
     '4.4': null,
     '5.2': null,
     '7.1': null,
@@ -74,166 +89,58 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
     '7.7': null,
     '7.8': null,
     '7.9': null,
+    '8.1': null,
     '8.2': null,
+    '8.3': null,
+    '8.4': null,
+    '8.5': null,
+    '8.6': null,
     '8.7': null,
+    '8.8': null,
+    '8.9': null,
     '9.0': null,
     alcadaConselho: null,
-  });
-
-  // Salva analista e diretoria no localStorage
-  useEffect(() => {
-    if (analista) localStorage.setItem('suape_analista_nome', analista);
-  }, [analista]);
-
-  useEffect(() => {
-    if (diretoria) localStorage.setItem('suape_diretoria', diretoria);
-  }, [diretoria]);
-
-  // Função para processar o upload do questionário (.pdf ou .xlsx)
-  const handleFileUpload = async (file: File) => {
-    const safeName = file.name.toLowerCase();
-    const isPdf = safeName.endsWith('.pdf');
-    const isExcel = safeName.endsWith('.xlsx') || safeName.endsWith('.xls');
-
-    if (!isPdf && !isExcel) {
-      setUploadError('Por favor, selecione um arquivo válido em PDF (.pdf) ou Excel (.xlsx, .xls).');
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadError(null);
-
-    try {
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onload = () => {
-          const result = reader.result as string;
-          const base64 = result.includes(',') ? result.split(',')[1] : result;
-          resolve(base64);
-        };
-        reader.onerror = (e) => reject(e);
-      });
-      reader.readAsDataURL(file);
-      const fileBase64 = await base64Promise;
-
-      const token = await getFirebaseIdToken();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const response = await fetch('/api/diligences/parse-questionnaire', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ filename: file.name, fileBase64 }),
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data.ok) {
-        throw new Error(data.erro || 'Falha ao analisar o questionário.');
-      }
-
-      if (data.dadosGerais?.valorContrato && typeof data.dadosGerais.valorContrato === 'number') {
-        setValorContratoStr(
-          data.dadosGerais.valorContrato.toLocaleString('pt-BR', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })
-        );
-      }
-      if (data.dadosGerais?.processoSei) {
-        setProcessoSei(data.dadosGerais.processoSei);
-      }
-      if (data.dadosGerais?.diretoria) {
-        setDiretoria(data.dadosGerais.diretoria);
-      }
-
-      const detalhes = data.flagsIntegridade?.detalhes || {};
-      const newAnswers: IntegrityAnswers = {
-        '4.4': detalhes.q4_4_corrupcaoPJ ?? null,
-        '5.2': detalhes.q5_2_crimesSocios ?? null,
-        '7.1': detalhes.q7_1_atividadeRegulada ?? null,
-        '7.2': detalhes.q7_2_licencasOrdinarias ?? null,
-        '7.3': detalhes.q7_3_licencasContratuais ?? null,
-        '7.4': detalhes.q7_4_interacaoPoderPublico ?? null,
-        '7.5': detalhes.q7_5_representacaoTerceiros ?? null,
-        '7.6': detalhes.q7_6_pepSocio ?? null,
-        '7.7': detalhes.q7_7_pepFamiliar ?? null,
-        '7.8': detalhes.q7_8_parentescoSuape ?? null,
-        '7.9': detalhes.q7_9_participacaoGoverno ?? null,
-        '8.2': detalhes.q8_2_codigoConduta ?? null,
-        '8.7': detalhes.q8_7_treinamentoGestao ?? null,
-        '9.0': detalhes.q9_0_complianceOfficer ?? null,
-        alcadaConselho: detalhes.alcadaConselho ?? null,
-      };
-
-      setQuestionAnswers(newAnswers);
-
-      const answeredCount = Object.values(newAnswers).filter((v) => v !== null).length;
-      setAttachedFile({
-        name: file.name,
-        size: file.size,
-        parsedAt: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        sheetName: data.sheetIdentificada || (isPdf ? 'Documento PDF' : 'Questionário'),
-        detectedAnswersCount: answeredCount,
-        isPdf,
-        aviso: data.aviso || null,
-      });
-    } catch (err: any) {
-      console.error('Erro ao processar questionário:', err);
-      setUploadError(err.message || 'Erro ao processar o arquivo anexado.');
-    } finally {
-      setIsUploading(false);
-    }
   };
 
-  const handleRemoveFile = () => {
-    setAttachedFile(null);
-    setUploadError(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    setQuestionAnswers({
-      '4.4': null,
-      '5.2': null,
-      '7.1': null,
-      '7.2': null,
-      '7.3': null,
-      '7.4': null,
-      '7.5': null,
-      '7.6': null,
-      '7.7': null,
-      '7.8': null,
-      '7.9': null,
-      '8.2': null,
-      '8.7': null,
-      '9.0': null,
-      alcadaConselho: null,
-    });
+  /**
+   * Aplica o que veio da transcrição por IA ou da leitura do arquivo.
+   * Campos já preenchidos à mão pelo analista não são sobrescritos: o
+   * que ele digitou vale mais do que o que a extração deduziu.
+   */
+  const handleImportApply = (payload: QuestionnaireImportPayload) => {
+    setQuestionAnswers({ ...EMPTY_ANSWERS, ...payload.answers });
+    setAnswerSource(payload.origem);
+
+    if (payload.valorContrato !== null && !valorContratoStr.trim()) {
+      setValorContratoStr(
+        payload.valorContrato.toLocaleString('pt-BR', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
+      );
+    }
+    if (payload.processoSei && !processoSei.trim()) setProcessoSei(payload.processoSei);
+    if (payload.diretoria && !diretoria.trim() && SUAPE_DIRETORIAS.includes(payload.diretoria)) {
+      setDiretoria(payload.diretoria);
+    }
+    if (payload.gestor && !gestor.trim()) setGestor(payload.gestor);
+  };
+
+  const handleClearAnswers = () => {
+    setQuestionAnswers(EMPTY_ANSWERS);
+    setAnswerSource(null);
   };
 
   const handleSetAnswer = (key: keyof IntegrityAnswers, value: QuestionnaireAnswer) => {
-    setQuestionAnswers((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileUpload(e.dataTransfer.files[0]);
-    }
+    setQuestionAnswers({ ...questionAnswers, [key]: value });
   };
 
   const valorNumerico = useMemo(() => {
     if (!valorContratoStr.trim()) return 0;
-    const clean = valorContratoStr.replace(/[^\d,-]/g, '').replace(',', '.');
+    const clean = valorContratoStr
+      .replace(/[^\d,.-]/g, '')
+      .replace(/\.(?=\d{3}\b)/g, '')
+      .replace(',', '.');
     return parseFloat(clean) || 0;
   }, [valorContratoStr]);
 
@@ -252,24 +159,18 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
     return generateRiskMapRow(diligence, {
       id: registroId,
       ano: anoExercicio,
-      area: 'Compliance',
       dataInicio,
       dataFim,
       dias: diasUteis,
       diretoriaDemandante: diretoria,
-      analistaResponsavel: analista,
+      gestor,
       razaoSocial: diligence.razaoSocial,
-      nomeFantasia: diligence.nomeFantasia,
       cnpj: diligence.cnpjFmt,
       valorContrato: formattedValor,
       notaTecnica,
       processoSei,
       answers: questionAnswers,
       customEvaluation: evaluation,
-      customFatorRisco1: evaluation.fatorRisco1,
-      customFatorRisco2: evaluation.fatorRisco2,
-      customFatorRisco4: evaluation.fatorRisco4,
-      customPlanoAcao: evaluation.recommendedAction,
     });
   }, [
     diligence,
@@ -279,7 +180,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
     dataFim,
     diasUteis,
     diretoria,
-    analista,
+    gestor,
     valorNumerico,
     valorContratoStr,
     notaTecnica,
@@ -290,13 +191,29 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
 
   const [copied, setCopied] = useState(false);
 
+  const [copyError, setCopyError] = useState<string | null>(null);
+
+  /**
+   * Sem classificação não há linha a registrar: o Mapa de Risco é o
+   * registro do resultado da diligência, não do que ainda falta apurar.
+   * Os demais bloqueios são avisos, e o analista decide se prossegue.
+   */
+  const copyBlocked = evaluation.calculatedRisk === null;
+
   const handleCopyRow = async () => {
+    if (copyBlocked) {
+      setCopyError('Importe o Questionário de Diligência antes de gerar a linha do Mapa de Risco.');
+      setTimeout(() => setCopyError(null), 5000);
+      return;
+    }
     try {
       await navigator.clipboard.writeText(riskMapRow.rawLine);
       setCopied(true);
+      setCopyError(null);
       setTimeout(() => setCopied(false), 3500);
-    } catch (err) {
-      console.error('Falha ao copiar:', err);
+    } catch {
+      setCopyError('Não foi possível acessar a área de transferência. Copie a linha pelo painel abaixo.');
+      setTimeout(() => setCopyError(null), 5000);
     }
   };
 
@@ -330,7 +247,19 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
     },
   };
 
-  const badgeStyle = riskBadgeColors[evaluation.calculatedRisk];
+  const PENDING_BADGE = {
+    bg: 'bg-slate-100 border-slate-300 text-slate-700',
+    text: 'text-slate-800',
+    border: 'border-slate-300',
+    iconColor: 'text-slate-500',
+  };
+  const badgeStyle = evaluation.calculatedRisk
+    ? riskBadgeColors[evaluation.calculatedRisk]
+    : PENDING_BADGE;
+
+  const answeredCount = SUAPE_REQUIRED_ITEMS.filter(
+    (item) => questionAnswers[item] === true || questionAnswers[item] === false
+  ).length;
 
   const renderTriStateQuestion = (
     key: keyof IntegrityAnswers,
@@ -461,7 +390,13 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
               <button
                 type="button"
                 onClick={handleCopyRow}
-                className={`flex h-10 items-center gap-2.5 rounded-xl px-4 text-xs font-bold text-white shadow-sm transition-all active:scale-95 ${
+                disabled={copyBlocked}
+                title={
+                  copyBlocked
+                    ? 'Importe o Questionário de Diligência para liberar a linha do Mapa de Risco.'
+                    : undefined
+                }
+                className={`flex h-10 items-center gap-2.5 rounded-xl px-4 text-xs font-bold text-white shadow-sm transition-all active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:shadow-none disabled:active:scale-100 ${
                   copied
                     ? 'bg-emerald-600 shadow-emerald-600/25'
                     : 'bg-[#0F2D59] hover:bg-[#153e7a] shadow-[#0F2D59]/20 hover:shadow-md'
@@ -478,6 +413,35 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
         </div>
       </section>
 
+      {copyError && (
+        <div className="mx-auto mt-4 max-w-6xl px-4 sm:px-6">
+          <div className="flex items-center gap-2.5 rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-900">
+            <Icons.AlertTriangle size={16} className="shrink-0 text-rose-600" />
+            <span>{copyError}</span>
+          </div>
+        </div>
+      )}
+
+      {riskMapRow.blockers.length > 0 && !copyBlocked && (
+        <div className="mx-auto mt-4 max-w-6xl px-4 sm:px-6">
+          <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <Icons.AlertTriangle size={15} className="shrink-0 text-amber-600" />
+              <span className="text-xs font-black text-amber-900">
+                A linha pode ser copiada, mas revise antes de colar no Mapa:
+              </span>
+            </div>
+            <ul className="mt-1.5 space-y-0.5 pl-6">
+              {riskMapRow.blockers.map((blocker) => (
+                <li key={blocker} className="text-2xs text-amber-900">
+                  • {blocker}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
       {/* FEEDBACK TOAST DE CÓPIA */}
       {copied && (
         <div className="mx-auto mt-4 max-w-6xl px-4 sm:px-6">
@@ -489,7 +453,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
               <div>
                 <p className="text-xs font-black">Linha de 40 colunas copiada para a área de transferência!</p>
                 <p className="text-2xs text-emerald-700">
-                  Abra a planilha do Mapa de Risco no Excel (<code className="font-semibold">2026_0015.xlsx</code>), selecione a célula da primeira coluna da linha desejada e pressione <strong>Ctrl+V</strong>.
+                  Abra a planilha do Mapa de Risco no Excel (<code className="font-semibold">Mapa de Risco.xlsx</code>, aba <code className="font-semibold">Mapa de Risco</code>), selecione a célula da primeira coluna da linha desejada e pressione <strong>Ctrl+V</strong>.
                 </p>
               </div>
             </div>
@@ -506,124 +470,15 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
 
       {/* CONTEÚDO PRINCIPAL */}
       <main className="mx-auto mt-6 max-w-6xl px-4 sm:px-6 space-y-6">
-        {/* SEÇÃO 1: ANEXAR QUESTIONÁRIO DE DILIGÊNCIA (.PDF OU .XLSX) */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0F2D59] text-white">
-                <Icons.FileText size={18} />
-              </span>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-black text-[#0F2D59]">
-                    Questionário de Diligência Preenchido (.pdf ou .xlsx)
-                  </h2>
-                  <span className="rounded bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-3xs font-extrabold text-indigo-700">
-                    Extração Assistida · Validação Humana
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500">
-                  Anexe o questionário devolvido pelo terceiro (PDF assinado ou Excel) para extrair as respostas oficiais (4.4, 5.2, 7.1 a 7.9) com conferência humana obrigatória.
-                </p>
-              </div>
-            </div>
-
-            {attachedFile && (
-              <button
-                type="button"
-                onClick={handleRemoveFile}
-                className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors"
-              >
-                <Icons.Trash size={13} />
-                <span>Remover Anexo</span>
-              </button>
-            )}
-          </div>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.xls,.pdf,application/pdf"
-            className="hidden"
-            onChange={(e) => {
-              if (e.target.files && e.target.files[0]) {
-                handleFileUpload(e.target.files[0]);
-              }
-            }}
-          />
-
-          {uploadError && (
-            <div className="mt-3 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800">
-              <Icons.AlertTriangle size={16} className="text-rose-600 shrink-0" />
-              <span>{uploadError}</span>
-            </div>
-          )}
-
-          {attachedFile ? (
-            <div className="mt-4 space-y-2">
-              <div className="flex flex-col gap-3 rounded-xl border border-emerald-300 bg-emerald-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
-                    {attachedFile.isPdf ? <Icons.FileText size={20} /> : <Icons.FileSpreadsheet size={20} />}
-                  </span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-black text-slate-900">{attachedFile.name}</span>
-                      <span className="rounded bg-emerald-200/80 px-1.5 py-0.5 text-3xs font-bold text-emerald-900">
-                        {attachedFile.isPdf ? 'Formato: PDF' : `Aba: ${attachedFile.sheetName}`}
-                      </span>
-                    </div>
-                    <p className="text-2xs text-emerald-800 mt-0.5">
-                      Processado às {attachedFile.parsedAt} • {(attachedFile.size / 1024).toFixed(1)} KB • {attachedFile.detectedAnswersCount} respostas e gatilhos detectados.
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition-colors self-start sm:self-auto"
-                >
-                  <Icons.Upload size={13} />
-                  <span>Substituir Arquivo</span>
-                </button>
-              </div>
-
-              {attachedFile.aviso && (
-                <div className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs font-semibold text-amber-900">
-                  <Icons.AlertTriangle size={16} className="text-amber-600 shrink-0" />
-                  <span>{attachedFile.aviso}</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={`mt-4 flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 text-center cursor-pointer transition-colors ${
-                isDragging
-                  ? 'border-[#0F2D59] bg-[#0F2D59]/5'
-                  : 'border-slate-300 bg-slate-50 hover:border-slate-400 hover:bg-slate-100/60'
-              }`}
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-xs text-slate-500 mb-2">
-                {isUploading ? (
-                  <Icons.RefreshCw size={20} className="animate-spin text-[#0F2D59]" />
-                ) : (
-                  <Icons.Upload size={20} className="text-[#0F2D59]" />
-                )}
-              </span>
-              <p className="text-xs font-black text-slate-800">
-                {isUploading ? 'Processando questionário...' : 'Clique para selecionar ou arraste o questionário (.pdf ou .xlsx) preenchido'}
-              </p>
-              <p className="mt-1 text-2xs text-slate-500 max-w-lg">
-                Aceita tanto o PDF assinado/preenchido pelo terceiro quanto o modelo original em Excel (.xlsx). As respostas e valores detectados alimentarão diretamente o cálculo de risco oficial da SUAPE.
-              </p>
-            </div>
-          )}
-        </section>
+        {/* SEÇÃO 1: INGESTÃO DO QUESTIONÁRIO DE DILIGÊNCIA */}
+        <QuestionnaireImportPanel
+          razaoSocial={diligence.razaoSocial}
+          cnpj={diligence.cnpjFmt || diligence.cnpj}
+          answeredCount={answeredCount}
+          totalItems={SUAPE_REQUIRED_ITEMS.length}
+          onApply={handleImportApply}
+          onClear={handleClearAnswers}
+        />
 
         {/* SEÇÃO 2: RESULTADO OFICIAL — CÉLULA J16 & AS 4 CÉLULAS DA FÓRMULA */}
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
@@ -633,15 +488,31 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                 <span className="text-3xs font-black uppercase tracking-widest text-slate-400">
                   Resultado Oficial da Planilha SUAPE — Célula J16
                 </span>
-                <div className="mt-1 flex items-center gap-3">
+                <div className="mt-1 flex flex-wrap items-center gap-3">
                   <span className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-lg font-black shadow-xs ${badgeStyle.bg}`}>
-                    <Icons.ShieldAlert size={20} className={badgeStyle.iconColor} />
-                    {evaluation.riskDisplay}
+                    {evaluation.calculatedRisk ? (
+                      <Icons.ShieldAlert size={20} className={badgeStyle.iconColor} />
+                    ) : (
+                      <Icons.Clock size={20} className={badgeStyle.iconColor} />
+                    )}
+                    {evaluation.calculatedRisk ? evaluation.riskDisplay : 'Classificação pendente'}
                   </span>
+                  {evaluation.isProvisional && (
+                    <span className="rounded-lg bg-amber-100 px-2.5 py-1 text-2xs font-black text-amber-900">
+                      Provisório · {evaluation.unidentifiedItems.length} item(ns) sem resposta
+                    </span>
+                  )}
                   <span className="hidden text-xs text-slate-500 sm:inline">
                     Terceiro: <strong className="text-slate-800">{diligence.razaoSocial}</strong> ({diligence.cnpjFmt})
                   </span>
                 </div>
+                {evaluation.calculatedRisk === null && (
+                  <p className="mt-2 max-w-2xl text-xs text-slate-600">
+                    A planilha oficial classifica pelas respostas do terceiro. Enquanto o Questionário de
+                    Diligência não for importado acima, esta tela entrega as evidências da pesquisa e não
+                    arbitra um nível de risco.
+                  </p>
+                )}
               </div>
 
               {/* FÓRMULA OFICIAL DA PLANILHA */}
@@ -674,7 +545,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                 Fraude, Corrupção e Sanções
               </h3>
               <p className="mt-1 text-3xs text-slate-500">
-                Itens 4.4 (Corrupção PJ / CEIS / CNEP / MTE) ou 5.2 (Crimes Sócios).
+                Itens 4.4 (condenação da PJ) ou 5.2 (condenação de sócios), como respondidos pelo terceiro.
               </p>
               <div className="mt-2.5 rounded-lg border border-slate-200 bg-white/80 p-2 text-3xs">
                 {evaluation.triggers.n23Reasons.length > 0 ? (
@@ -684,8 +555,10 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                     ))}
                   </ul>
                 ) : (
-                  <span className="text-emerald-700 font-semibold">
-                    ✓ Nada Consta em CEIS, CNEP, TCE-PE, MTE ou Itens 4.4/5.2.
+                  <span className="font-semibold text-slate-600">
+                    {evaluation.status === 'pendente'
+                      ? 'Aguardando as respostas dos itens 4.4 e 5.2.'
+                      : 'Itens 4.4 e 5.2 respondidos negativamente pelo terceiro.'}
                   </span>
                 )}
               </div>
@@ -707,16 +580,22 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                 Alçada do Conselho de Adm.
               </h3>
               <p className="mt-1 text-3xs text-slate-500">
-                Row 40: Contratação autorizada pelo Conselho (valor a partir de R$ 10.000.000,00).
+                Linha 40: obrigações autorizadas por alçada do Conselho — um ato, não um valor. O
+                patamar de R$ 10.000.000,00 é indício, e a marcação continua sendo do questionário.
               </p>
               <div className="mt-2.5 rounded-lg border border-slate-200 bg-white/80 p-2 text-3xs">
                 {evaluation.n40 ? (
-                  <span className="text-rose-800 font-bold">
-                    ⚠️ Valor avaliado ({valorContratoStr || 'acima de R$ 10M'}) atinge a alçada do Conselho.
+                  <span className="font-bold text-amber-900">
+                    Contratação autorizada por alçada do Conselho de Administração.
+                  </span>
+                ) : valorNumerico >= 10000000 ? (
+                  <span className="font-bold text-amber-900">
+                    Valor atinge o patamar de alçada. Confirme no item correspondente se as obrigações
+                    foram de fato autorizadas pelo Conselho.
                   </span>
                 ) : (
-                  <span className="text-slate-600 font-medium">
-                    Valor contratual inferior a R$ 10.000.000,00.
+                  <span className="font-medium text-slate-600">
+                    Item não marcado no questionário.
                   </span>
                 )}
               </div>
@@ -789,27 +668,153 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
             </div>
           </div>
 
-          {/* PLANO DE AÇÃO RECOMENDADO (CÉLULA B48) */}
-          <div className="border-t border-slate-200 bg-slate-50/60 p-5">
-            <div className="flex items-start gap-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#0F2D59] text-white">
-                <Icons.CheckCircle size={16} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-3xs font-black uppercase tracking-wider text-slate-500">
-                    Plano de Ação Mitigatório Recomendado (Célula B48 da Planilha Oficial)
+          {/* DIVERGÊNCIA DA PRÓPRIA PLANILHA NA ALÇADA DO CONSELHO */}
+          {evaluation.alcadaDivergence && (
+            <div className="border-t border-amber-200 bg-amber-50/70 p-4">
+              <div className="flex items-start gap-2.5">
+                <Icons.AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-600" />
+                <div>
+                  <span className="text-3xs font-black uppercase tracking-wider text-amber-800">
+                    Divergência registrada na planilha oficial
                   </span>
-                  <span className="rounded bg-white px-2 py-0.5 text-3xs font-bold text-slate-600 border border-slate-200">
-                    Mitigação Obrigatória
-                  </span>
+                  <p className="mt-1 text-2xs leading-relaxed text-amber-900">
+                    {evaluation.alcadaDivergence.note}
+                  </p>
                 </div>
-                <p className="mt-1.5 text-xs font-extrabold leading-relaxed text-slate-900">
-                  {evaluation.recommendedAction}
-                </p>
               </div>
             </div>
+          )}
+
+          {/* CONTRADIÇÃO ENTRE A DECLARAÇÃO DO TERCEIRO E A FONTE OFICIAL */}
+          {evaluation.contradictions.length > 0 && (
+            <div className="border-t border-rose-200 bg-rose-50 p-4">
+              <div className="flex items-start gap-2.5">
+                <Icons.AlertTriangle size={16} className="mt-0.5 shrink-0 text-rose-600" />
+                <div className="min-w-0 flex-1">
+                  <span className="text-3xs font-black uppercase tracking-wider text-rose-800">
+                    O terceiro declarou "Não" onde a fonte oficial registra o contrário
+                  </span>
+                  <ul className="mt-1.5 space-y-1">
+                    {evaluation.contradictions.map((contradiction) => (
+                      <li key={contradiction.item + contradiction.evidence} className="text-2xs text-rose-900">
+                        <strong>Item {contradiction.item}:</strong> {contradiction.evidence}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-1.5 text-3xs text-rose-700">
+                    Resolva no checklist abaixo antes de gerar a linha do Mapa. Manter a resposta do
+                    terceiro exige justificativa no parecer.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* EVIDÊNCIAS QUE A PESQUISA TROUXE PARA OS ITENS DO QUESTIONÁRIO */}
+          {evaluation.evidenceSignals.length > 0 && (
+            <div className="border-t border-slate-200 bg-white p-5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-3xs font-black uppercase tracking-wider text-slate-500">
+                  Evidências da pesquisa para responder o questionário
+                </span>
+                <span className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 text-3xs font-bold text-slate-600">
+                  Não classificam sozinhas
+                </span>
+              </div>
+              <ul className="mt-2 space-y-1.5">
+                {evaluation.evidenceSignals.map((signal) => (
+                  <li
+                    key={signal.item + signal.source}
+                    className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50/60 p-2.5 text-2xs"
+                  >
+                    <span className="shrink-0 rounded bg-[#0F2D59]/10 px-1.5 py-0.5 font-black text-[#0F2D59]">
+                      {signal.item}
+                    </span>
+                    <span className="text-slate-700">
+                      <strong className="text-slate-900">{signal.source}:</strong> {signal.detail}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* BLOCO 04: MATURIDADE DO PROGRAMA DE INTEGRIDADE (L44 / M44) */}
+          <div className="border-t border-slate-200 bg-white p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span className="text-3xs font-black uppercase tracking-wider text-slate-500">
+                  Bloco 04 — Maturidade do Programa de Integridade
+                </span>
+                <p className="mt-0.5 font-mono text-3xs text-slate-500">{evaluation.maturity.formulaUsed}</p>
+              </div>
+              {evaluation.maturity.percent !== null ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-black text-[#0F2D59]">{evaluation.maturity.percent}%</span>
+                  <span
+                    className={`rounded-lg px-2.5 py-1 text-2xs font-black ${
+                      evaluation.maturity.level === 'Baixo'
+                        ? 'bg-emerald-100 text-emerald-900'
+                        : evaluation.maturity.level === 'Médio'
+                          ? 'bg-yellow-100 text-yellow-900'
+                          : evaluation.maturity.level === 'Alto'
+                            ? 'bg-amber-100 text-amber-900'
+                            : 'bg-rose-100 text-rose-900'
+                    }`}
+                  >
+                    Risco de maturidade: {evaluation.maturity.level}
+                  </span>
+                </div>
+              ) : (
+                <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-2xs font-bold text-slate-600">
+                  Sem respostas do bloco 8/9
+                </span>
+              )}
+            </div>
+
+            {evaluation.maturity.percent !== null && (
+              <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className="h-full rounded-full bg-[#0F2D59] transition-all"
+                  style={{ width: `${evaluation.maturity.percent}%` }}
+                />
+              </div>
+            )}
+
+            <p className="mt-2 text-3xs text-slate-500">
+              {evaluation.maturity.pointsEarned.toFixed(2)} de {evaluation.maturity.totalWeight} pontos.
+              {evaluation.maturity.unanswered.length > 0 &&
+                ` ${evaluation.maturity.unanswered.length} item(ns) do bloco 8/9 sem resposta não pontuam: a nota está incompleta, não necessariamente baixa.`}
+              {evaluation.maturity.registriesHit.length > 0 &&
+                ` Cadastros atingidos: ${evaluation.maturity.registriesHit.join(', ')}.`}
+            </p>
           </div>
+
+          {/* PLANO DE AÇÃO RECOMENDADO (CÉLULA B48) */}
+          {evaluation.recommendedAction && (
+            <div className="border-t border-slate-200 bg-slate-50/60 p-5">
+              <div className="flex items-start gap-3">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#0F2D59] text-white">
+                  <Icons.CheckCircle size={16} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-3xs font-black uppercase tracking-wider text-slate-500">
+                      Plano de Ação Mitigatório (Célula B48 da planilha oficial)
+                    </span>
+                    {answerSource && (
+                      <span className="rounded border border-slate-200 bg-white px-2 py-0.5 text-3xs font-bold text-slate-600">
+                        Origem: {answerSource}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1.5 whitespace-pre-line text-xs font-semibold leading-relaxed text-slate-900">
+                    {evaluation.recommendedAction}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* SEÇÃO 3: CHECKLIST AUDITÁVEL DAS PERGUNTAS DO QUESTIONÁRIO (INTERATIVO) */}
@@ -856,13 +861,13 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
             <div className="rounded-xl border border-rose-100 bg-rose-50/20 p-4 space-y-3">
               <div className="flex items-center justify-between border-b border-rose-100 pb-2">
                 <span className="text-3xs font-black uppercase tracking-wider text-rose-800">
-                  Gatilho Célula N40 → Risco Muito Alto (Fórmula Oficial J16)
+                  Gatilho Célula N40 → Risco Alto
                 </span>
                 <span className="rounded bg-rose-100 px-1.5 py-0.5 text-3xs font-bold text-rose-900">
                   N40 (Alçada Conselho)
                 </span>
               </div>
-              {renderTriStateQuestion('alcadaConselho', 'Row 40: Alçada do Conselho de Administração', SUAPE_QUESTION_TEXTS['conselho'])}
+              {renderTriStateQuestion('alcadaConselho', 'Row 40: Alçada do Conselho de Administração', SUAPE_QUESTION_TEXTS.alcadaConselho)}
             </div>
 
             {/* GRUPO N28: INTERAÇÃO PÚBLICA & PEP */}
@@ -904,16 +909,22 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
             <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4 space-y-3">
               <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                 <span className="text-3xs font-black uppercase tracking-wider text-[#0F2D59]">
-                  Governança e Integridade → Colunas 26, 27 e 28 do Mapa de Risco
+                  Bloco 8/9 — Maturidade do Programa de Integridade
                 </span>
                 <span className="rounded bg-[#0F2D59]/10 px-1.5 py-0.5 text-3xs font-extrabold text-[#0F2D59]">
-                  Colunas 26, 27, 28
+                  Células L44 e M44 · Colunas 26, 27 e 28
                 </span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {renderTriStateQuestion('8.2', 'Item 8.2 (Col 26): Código de Conduta / Ética', SUAPE_QUESTION_TEXTS['8.2'])}
-                {renderTriStateQuestion('8.7', 'Item 8.7 (Col 27): Treinamento Alta Administração', SUAPE_QUESTION_TEXTS['8.7'])}
-                {renderTriStateQuestion('9.0', 'Item 9.0 (Col 28): Profissional / Órgão Anticorrupção', SUAPE_QUESTION_TEXTS['9.0'])}
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                {SUAPE_MATURITY_ITEMS.map((item) => {
+                  const mapColumn =
+                    item.key === '8.2' ? ' (Col 26)' : item.key === '8.7' ? ' (Col 27)' : item.key === '9.0' ? ' (Col 28)' : '';
+                  return renderTriStateQuestion(
+                    item.key as keyof IntegrityAnswers,
+                    `Item ${item.key}${mapColumn} · peso ${item.weight}`,
+                    MATURITY_TEXT_BY_KEY[item.key]
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -1065,7 +1076,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                 className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-800 shadow-2xs transition-all focus:border-[#0F2D59] focus:ring-2 focus:ring-[#0F2D59]/10 focus:outline-hidden"
               >
                 <option value="">Selecione...</option>
-                {DIRETORIAS.map((d) => (
+                {SUAPE_DIRETORIAS.map((d) => (
                   <option key={d} value={d}>
                     {d}
                   </option>
@@ -1073,11 +1084,11 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
               </select>
             </div>
 
-            {/* 7. ANALISTA RESPONSÁVEL */}
+            {/* 7. GESTOR(A) DO CONTRATO */}
             <div className="flex flex-col">
               <div className="flex h-6 items-center justify-between mb-1.5">
                 <label className="text-2xs font-semibold uppercase tracking-wider text-slate-500 truncate">
-                  Analista
+                  Gestor(a)
                 </label>
                 <span className="rounded bg-slate-100 px-1.5 py-0.5 text-3xs font-extrabold text-slate-400">
                   Col 8
@@ -1085,9 +1096,9 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
               </div>
               <input
                 type="text"
-                value={analista}
-                onChange={(e) => setAnalista(e.target.value)}
-                placeholder="Ex: Seu Nome"
+                value={gestor}
+                onChange={(e) => setGestor(e.target.value)}
+                placeholder="Gestor(a) do contrato"
                 className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-800 shadow-2xs transition-all focus:border-[#0F2D59] focus:ring-2 focus:ring-[#0F2D59]/10 focus:outline-hidden"
               />
             </div>
