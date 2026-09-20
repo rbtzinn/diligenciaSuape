@@ -5,11 +5,5 @@
       "includeFiles": "data/**",
       "maxDuration": 60
     }
-  },
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.js"
-    }
-  ]
+  }
 }

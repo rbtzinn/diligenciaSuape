@@ -135,10 +135,18 @@ app.get('/', (req, res) => {
   });
 });
 
-// Rota de API inexistente devolve JSON, não a página de erro do Express:
-// o cliente sempre espera JSON e trata a mensagem.
-app.use('/api', (req, res) => {
-  res.status(404).json({ ok: false, erro: `Rota não encontrada: ${req.method} ${req.originalUrl}` });
+// Qualquer requisição que chegue até aqui não casou com nenhuma rota.
+// A resposta diz o caminho recebido de propósito: quando a borda da
+// Vercel reescreve o endereço antes de entregar à função, o caminho que
+// o Express vê deixa de ser o que o navegador pediu, e sem isso escrito
+// na resposta a diferença é invisível de fora.
+app.use((req, res) => {
+  res.status(404).json({
+    ok: false,
+    erro: `Rota não encontrada: ${req.method} ${req.originalUrl}`,
+    caminhoRecebido: req.originalUrl,
+    caminhoRoteado: req.url,
+  });
 });
 
 app.use((err, req, res, next) => {

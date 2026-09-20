@@ -111,11 +111,14 @@ test('o vercel.json do backend não declara cabeçalhos de CORS', () => {
     'CORS na borda soma com o do Express e duplica o cabeçalho; quem responde por CORS é o app'
   );
 
-  // O rewrite continua necessário: sem ele a função não recebe as rotas
-  // do Express, inclusive o OPTIONS do preflight.
-  assert.ok(
-    (config.rewrites || []).some((regra) => regra.destination === '/index.js'),
-    'o rewrite para /index.js precisa existir para o Express receber todas as rotas'
+  // O rewrite `/(.*) -> /index.js` saiu. A Vercel detecta o Express como
+  // backend framework e roteia nativamente; com o rewrite, o aviso do
+  // build diz que o caminho entregue à função passa a ser o destino, e
+  // não o que o navegador pediu — o que desvia /api/*.
+  assert.equal(
+    (config.rewrites || []).length,
+    0,
+    'o roteamento é nativo; rewrite aqui troca o caminho que o Express recebe'
   );
 });
 
