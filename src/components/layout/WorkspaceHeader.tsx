@@ -39,7 +39,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({ currentView, o
   const copy = VIEW_COPY[currentView];
 
   return (
-    <header className="flex min-w-0 shrink-0 items-center gap-3 border-b border-line-soft bg-surface px-gutter py-2.5">
+    <header className="flex min-w-0 shrink-0 items-center gap-4 border-b border-line-soft bg-[#F8FCFD] px-gutter py-3.5">
       <button
         type="button"
         onClick={onOpenMenu}
@@ -51,15 +51,16 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({ currentView, o
       </button>
 
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-base font-bold leading-tight text-ink">{copy.title}</h1>
+        <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-brand">Área de trabalho / SUAPE</p>
+        <h1 className="truncate text-lg font-bold leading-tight text-ink">{copy.title}</h1>
         <p className="truncate text-xs text-ink-3">{copy.description}</p>
       </div>
 
       <span
         title="Ambiente interno do Compliance"
-        className="hidden shrink-0 items-center gap-1.5 rounded-chip border border-ok-line bg-ok-bg px-2.5 py-1 text-2xs font-semibold text-ok-text sm:inline-flex"
+        className="hidden shrink-0 items-center gap-1.5 rounded-chip border border-brand-line bg-brand-soft px-3 py-1.5 text-2xs font-semibold text-brand sm:inline-flex"
       >
-        <span aria-hidden="true" className="size-1.5 rounded-full bg-ok" />
+        <span aria-hidden="true" className="size-1.5 rounded-full bg-[#0BA88A]" />
         Ambiente interno
       </span>
     </header>

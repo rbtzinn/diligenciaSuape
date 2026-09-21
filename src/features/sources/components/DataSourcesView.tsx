@@ -148,6 +148,7 @@ export const DataSourcesView: React.FC = () => {
   return (
     <Page>
       <PageHeader
+        className="harbor-page-header"
         eyebrow="Rastreabilidade da análise"
         title="Fontes de dados e evidências"
         subtitle="Veja a cobertura, a disponibilidade e os limites de cada consulta."

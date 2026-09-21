@@ -14,7 +14,6 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { DiligenceItem } from '../../types';
-import type { SuapeIntegrityEvaluationResult } from '../../utils/suapeRiskMapRowGenerator';
 import { AxisSection } from './AxisSection';
 import { IdentityCard } from './IdentityCard';
 import { ScorePanel } from './ScorePanel';
@@ -30,29 +29,20 @@ import { Formatters } from '../../../../lib/formatters';
 
 interface DossierViewProps {
   diligence: DiligenceItem;
-  /**
-   * Classificação oficial SUAPE, calculada uma vez no dashboard. O
-   * dossiê não recalcula risco: exibe o mesmo resultado da aba de
-   * Avaliação de Integridade.
-   */
-  officialEvaluation: SuapeIntegrityEvaluationResult;
   isExportingPdf: boolean;
   onBack: () => void;
   onExportPdf: () => void;
   onOpenNetwork: () => void;
   onOpenAudit: () => void;
-  onOpenIntegrity: () => void;
 }
 
 export const DossierView: React.FC<DossierViewProps> = ({
   diligence,
-  officialEvaluation,
   isExportingPdf,
   onBack,
   onExportPdf,
   onOpenNetwork,
   onOpenAudit,
-  onOpenIntegrity,
 }) => {
   const axes = useMemo(() => deriveDossierAxes(diligence), [diligence]);
   const coverage = useMemo(() => deriveSourceCoverage(diligence), [diligence]);
@@ -119,7 +109,7 @@ export const DossierView: React.FC<DossierViewProps> = ({
         width="content"
         onBack={onBack}
         backLabel="Voltar para a busca"
-        eyebrow="Dossiê de integridade"
+        eyebrow="Pesquisa automática"
         title={<span className="num font-mono">{diligence.cnpjFmt}</span>}
         subtitle={diligence.razaoSocial}
         actions={
@@ -186,14 +176,12 @@ export const DossierView: React.FC<DossierViewProps> = ({
 
         <SheetSection
           mark="B"
-          title="Classificação e índice de atenção"
+          title="Índice de atenção da pesquisa"
           meta={`${findings.length} achados`}
           flush
         >
           <ScorePanel
             diligence={diligence}
-            officialEvaluation={officialEvaluation}
-            onOpenIntegrity={onOpenIntegrity}
             unansweredSources={semResposta.map((item) => item.label)}
             className="mt-3"
           />

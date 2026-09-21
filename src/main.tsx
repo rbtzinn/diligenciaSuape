@@ -6,6 +6,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { AuthProvider } from './features/auth/context/AuthContext';
 import { App } from './app/App';
+import { BrowserRouter } from 'react-router-dom';
 
 // Ordem obrigatória. Os tokens vêm primeiro porque todo o resto os
 // consome; tailwind.css declara a ordem das camadas logo depois; e
@@ -13,6 +14,7 @@ import { App } from './app/App';
 import './styles/tokens.css';
 import './styles/tailwind.css';
 import './styles/base.css';
+import './styles/experience.css';
 
 const rootElement = document.getElementById('root');
 
@@ -22,8 +24,10 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </BrowserRouter>
   </React.StrictMode>
 );

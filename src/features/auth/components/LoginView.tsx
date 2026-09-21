@@ -83,20 +83,29 @@ export const LoginView: React.FC = () => {
   };
 
   return (
-    <main className="grid min-h-dvh w-full place-items-center bg-canvas px-4 py-8">
-      <div className="flex w-full max-w-[420px] flex-col gap-5 rounded-xl border border-line bg-surface p-6 shadow-sm sm:p-8">
-        <header className="flex flex-col items-center gap-1.5 text-center">
+    <main className="harbor-login">
+      <aside className="harbor-login-story" aria-hidden="true">
+        <div className="harbor-login-story-top"><span>SUAPE / COMPLIANCE</span><span>INTELIGÊNCIA DE INTEGRIDADE</span></div>
+        <div className="harbor-login-orbit"><span /><span /><span /><i /></div>
+        <div className="harbor-login-story-copy">
+          <p>UMA VISÃO MAIS CLARA</p>
+          <h2>Conexões revelam o contexto.</h2>
+          <span>Pesquisa pública, vínculos e evidências em uma jornada de investigação.</span>
+        </div>
+      </aside>
+      <section className="harbor-login-panel">
+      <div className="harbor-login-card">
+        <header className="flex flex-col items-start gap-1.5 text-left">
           <span
             aria-hidden="true"
             className="grid size-12 place-items-center rounded-lg border border-brand-line bg-brand-soft text-brand"
           >
             <Icons.Shield size={24} />
           </span>
-          <h1 className="mt-1 text-xl font-extrabold text-ink">Diligência 360</h1>
+          <p className="mt-5 text-2xs font-bold uppercase tracking-[0.16em] text-brand">Acesso ao ambiente</p>
+          <h1 className="mt-1 text-3xl font-extrabold text-ink">Bem-vindo à Diligência 360.</h1>
           <p className="text-xs leading-snug text-ink-2">
-            Compliance &amp; Due Diligence
-            <br />
-            <span className="text-ink-3">Complexo Portuário de Suape</span>
+            Entre para iniciar uma pesquisa ou retomar suas diligências.
           </p>
         </header>
 
@@ -209,6 +218,7 @@ export const LoginView: React.FC = () => {
           <span className="text-2xs text-ink-muted">Autenticação segura via Firebase • Gestão SUAPE</span>
         </footer>
       </div>
+      </section>
     </main>
   );
 };

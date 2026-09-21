@@ -324,15 +324,14 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
   };
 
   return (
-    <div className="w-full flex-1 overflow-x-hidden bg-canvas pb-12">
+    <div className="min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto bg-canvas pb-12">
       <div className="mx-auto flex w-full max-w-content flex-col gap-4 px-gutter pt-5">
         {/* ---- Cabeçalho ---- */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="truncate text-md font-bold text-ink">Avaliação de Integridade</h1>
-            <p className="truncate text-xs text-ink-3">
-              {diligence.razaoSocial} · {diligence.cnpjFmt}
-            </p>
+            <p className="text-2xs font-bold uppercase tracking-[0.14em] text-brand">Complemento SUAPE</p>
+            <h1 className="text-xl font-extrabold text-ink">Avaliação de integridade</h1>
+            <p className="text-xs text-ink-3">{diligence.razaoSocial} · {diligence.cnpjFmt}</p>
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
@@ -357,6 +356,11 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
               {copied ? 'Copiado' : 'Copiar linha'}
             </Button>
           </div>
+        </div>
+
+        <div className="rounded-xl border border-brand-line bg-brand-soft px-4 py-3 text-xs leading-relaxed text-ink-2">
+          <strong className="block text-sm text-brand">Do questionário à decisão</strong>
+          Anexe as respostas do terceiro, confira os dados extraídos e revise a classificação orientada pela Política de Contratação de Terceiros. Esta avaliação complementa a pesquisa pública e tem critérios próprios.
         </div>
 
         {copyError ? (

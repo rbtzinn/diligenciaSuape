@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import type { AdverseMediaStatus, AdverseMediaSummary, DiligenceItem, ProcessDiscovery, RiskAssessment } from '../types';
 import { DiligenceService } from '../services/diligence.service';
 import { DiscoveryEngine } from '../utils/discoveryEngine';
@@ -19,6 +20,7 @@ import { NewsWorkspace } from './NewsWorkspace';
 import { currencyToNumber } from '../../../lib/masks';
 import { NarrativeReportView } from './NarrativeReportView';
 import { SuapeIntegrityEvaluationView } from './SuapeIntegrityEvaluationView';
+import { ResearchOverviewView } from './ResearchOverviewView';
 import {
   evaluateSuapeIntegrity,
   type IntegrityAnswers,
@@ -37,11 +39,21 @@ interface DiligenceDashboardProps {
   onDrillCompany?: (cnpj: string, name: string) => void;
 }
 
+type DashboardSection = 'overview' | 'suape' | 'mapa' | 'noticias' | 'dossie' | 'relatorio';
+
+function isDashboardSection(section: string | undefined): section is DashboardSection {
+  return section === 'overview' || section === 'suape' || section === 'mapa'
+    || section === 'noticias' || section === 'dossie' || section === 'relatorio';
+}
+
 export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   diligence,
   onBack,
   onDrillCompany,
 }) => {
+  const navigate = useNavigate();
+  const { section } = useParams<{ section: string }>();
+  const activeTab: DashboardSection = isDashboardSection(section) ? section : 'overview';
   const [activeDrawer, setActiveDrawer] = useState<
     'shareholders' | 'media' | 'sanctions' | 'processes' | 'questionnaire' | 'audit' | 'evidence' | 'ai' | 'pncp' | null
   >(null);
@@ -53,16 +65,12 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isRefreshingMedia, setIsRefreshingMedia] = useState(false);
   const [mediaRefreshNotice, setMediaRefreshNotice] = useState<string | null>(null);
-  // A Avaliação de Integridade e Linha do Mapa de Risco abre como visão primária executiva.
-  const [activeTab, setActiveTab] = useState<'avaliacao' | 'mapa' | 'noticias' | 'dossie' | 'relatorio'>('avaliacao');
+  const [mobileSectionsOpen, setMobileSectionsOpen] = useState(false);
   const [newsProgress, setNewsProgress] = useState<Record<string, number | null>>({});
   const [savingNews, setSavingNews] = useState(false);
   const [savedNewsDiligence, setSavedNewsDiligence] = useState<DiligenceItem | null>(null);
-  // A Avaliação de Integridade é a única classificação oficial da
-  // diligência, então as respostas do questionário moram aqui e descem
-  // para a aba de avaliação, o dossiê e o grafo. Antes cada tela tinha o
-  // seu cálculo, e o analista via dois níveis de risco diferentes para o
-  // mesmo terceiro.
+  // Respostas e regras da política pertencem apenas ao complemento SUAPE.
+  // O índice da pesquisa continua vindo de diligence.risco.
   const [integrityAnswers, setIntegrityAnswers] = useState<IntegrityAnswers>({});
   const [contractValueStr, setContractValueStr] = useState('');
   const [riskModalOpen, setRiskModalOpen] = useState(false);
@@ -86,11 +94,24 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
     [adverseMedia, diligence, savedNewsDiligence, workflowStatus, effectiveEgos, effectiveEvidenceCenter, effectiveRisk],
   );
 
-  /** Classificação oficial SUAPE: a mesma em toda a diligência. */
+  /** Classificação da política SUAPE, independente do índice da pesquisa. */
   const officialEvaluation = useMemo(
     () => evaluateSuapeIntegrity(displayDiligence, contractValue, integrityAnswers),
     [displayDiligence, contractValue, integrityAnswers],
   );
+  const sections = [
+    { id: 'overview', label: 'Visão geral', detail: 'Índice e prioridades', icon: <Icons.BarChart size={17} /> },
+    { id: 'dossie', label: 'Dossiê completo', detail: 'Todas as fontes', icon: <Icons.ShieldCheck size={17} /> },
+    { id: 'mapa', label: 'Vínculos', detail: 'Pessoas e empresas', icon: <Icons.Network size={17} /> },
+    { id: 'noticias', label: 'Reputação', detail: 'Notícias e documentos', icon: <Icons.Globe size={17} /> },
+    { id: 'relatorio', label: 'Relatório', detail: 'Síntese para leitura', icon: <Icons.FileText size={17} /> },
+  ] as const;
+  const openSection = (id: DashboardSection) => {
+    if (id !== activeTab) {
+      navigate(`/diligence/${encodeURIComponent(diligence.id)}/${id}`);
+    }
+    setMobileSectionsOpen(false);
+  };
 
   const handleEnrichDiscovery = async (discovery: ProcessDiscovery) => {
     setEnrichingId(discovery.processNumber);
@@ -257,7 +278,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
    * a aba de notícias usa.
    */
   const handleDeepenResearch = async () => {
-    setActiveTab('noticias');
+    openSection('noticias');
     await handleNewsSearch(displayDiligence.razaoSocial, true);
   };
 
@@ -294,19 +315,8 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
 
   return (
     <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-      {/* ---- Barra da diligência ----
-          No celular esta barra ocupava quatro fileiras: identificação e
-          ações empilhavam uma sobre a outra, e as quatro abas quebravam
-          em duas linhas. Somada à barra do aplicativo, sobrava menos de
-          metade da tela para o conteúdo da diligência.
-
-          Agora são duas fileiras em qualquer largura: uma de
-          identificação e ação, com os botões reduzidos ao ícone no
-          celular, e a fita de abas, que rola na horizontal em vez de
-          quebrar — a mesma regra já usada nos eixos do dossiê.
-
-          Sobre a superfície escura, os controles usam a variante `deep`
-          do botão e os tokens `on-deep`. */}
+      {/* A identificação permanece fixa acima da navegação lateral.
+          No celular o menu de seções abre como gaveta. */}
       <div className="shrink-0 border-b border-deep-line bg-deep text-on-deep">
         <div className="mx-auto flex w-full max-w-content items-center gap-2 px-gutter py-2 sm:gap-3 sm:py-3">
           {/* Só a seta, em qualquer largura: o rótulo "Nova busca"
@@ -351,8 +361,17 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            {/* Índice de atenção da pesquisa — não é a classificação
-                oficial, que vive na aba de avaliação e no dossiê. */}
+            <button
+              type="button"
+              onClick={() => setMobileSectionsOpen(true)}
+              aria-label="Abrir seções da diligência"
+              aria-controls="diligence-sections"
+              aria-expanded={mobileSectionsOpen}
+              className="grid size-9 place-items-center rounded-md border border-deep-line bg-deep-raised text-on-deep lg:hidden"
+            >
+              <Icons.Menu size={17} />
+            </button>
+            {/* O índice da pesquisa mantém seu cálculo e ajuste próprios. */}
             <button
               type="button"
               onClick={() => setRiskModalOpen(true)}
@@ -384,44 +403,72 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           </div>
         </div>
 
-        {/* A fita rola em vez de quebrar; `--scroll-fade` acompanha a
-            superfície escura para que a máscara das pontas não apareça
-            como um retângulo claro. */}
-        <nav
-          aria-label="Visões da diligência"
-          className="scroll-fita mx-auto w-full max-w-content touch-pan-x px-gutter pb-2 [--scroll-fade:var(--bg-deep)]"
-        >
-          <div className="flex w-max items-center gap-1">
-            {([
-              ['avaliacao', 'Avaliação', <Icons.FileSpreadsheet key="a" size={14} />],
-              ['mapa', 'Vínculos', <Icons.Network key="m" size={14} />],
-              ['noticias', 'Reputação', <Icons.Globe key="n" size={14} />],
-              ['dossie', 'Dossiê', <Icons.ShieldCheck key="d" size={14} />],
-              ['relatorio', 'Relatório', <Icons.FileText key="r" size={14} />],
-            ] as const).map(([id, label, icon]) => {
-              const isActive = activeTab === id;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  aria-current={isActive ? 'page' : undefined}
-                  onClick={() => setActiveTab(id)}
-                  className={`flex min-h-[var(--control-height-sm)] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[var(--control-radius-sm)] px-3 text-xs font-semibold transition-colors ${
-                    isActive
-                      ? 'bg-surface text-brand'
-                      : 'text-on-deep-3 hover:bg-deep-hover hover:text-on-deep'
-                  }`}
-                >
-                  {icon}
-                  <span>{label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </nav>
       </div>
 
-      {activeTab === 'avaliacao' ? (
+      <div className="flex min-h-0 min-w-0 flex-1">
+        {mobileSectionsOpen ? (
+          <button
+            type="button"
+            onClick={() => setMobileSectionsOpen(false)}
+            aria-label="Fechar seções da diligência"
+            className="fixed inset-0 z-backdrop bg-[rgb(10_31_53/0.55)] lg:hidden"
+          />
+        ) : null}
+        <nav
+          id="diligence-sections"
+          aria-label="Seções da diligência"
+          className={`z-drawer fixed inset-y-0 left-0 flex w-[252px] shrink-0 flex-col overflow-y-auto border-r border-deep-line bg-deep px-3 py-5 text-on-deep transition-transform lg:static lg:visible lg:translate-x-0 ${mobileSectionsOpen ? 'visible translate-x-0' : 'invisible -translate-x-full'}`}
+        >
+          <div className="mb-6 flex items-start justify-between gap-2 px-2">
+            <div>
+              <p className="text-2xs font-bold uppercase tracking-[0.16em] text-brand-on-deep">Diligência 360</p>
+              <p className="mt-1 text-xs text-on-deep-2">Escolha o que deseja analisar</p>
+            </div>
+            <button type="button" onClick={() => setMobileSectionsOpen(false)} aria-label="Fechar menu" className="grid size-8 place-items-center rounded-md hover:bg-deep-hover lg:hidden"><Icons.Close size={16} /></button>
+          </div>
+          <p className="px-3 text-2xs font-bold uppercase tracking-[0.13em] text-on-deep-3">Pesquisa automática</p>
+          <div className="mt-2 space-y-1">
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                type="button"
+                aria-current={activeTab === section.id ? 'page' : undefined}
+                onClick={() => openSection(section.id)}
+                className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${activeTab === section.id ? 'bg-surface text-brand shadow-sm' : 'text-on-deep-2 hover:bg-deep-hover hover:text-on-deep'}`}
+              >
+                <span className="grid size-8 shrink-0 place-items-center rounded-md bg-deep-raised text-brand-on-deep group-[aria-current=page]:bg-brand-soft group-[aria-current=page]:text-brand">{section.icon}</span>
+                <span className="min-w-0"><span className="block text-xs font-bold">{section.label}</span><span className={`block truncate text-2xs ${activeTab === section.id ? 'text-ink-3' : 'text-on-deep-3'}`}>{section.detail}</span></span>
+              </button>
+            ))}
+          </div>
+          <div className="mt-6 border-t border-deep-line pt-5">
+            <p className="px-3 text-2xs font-bold uppercase tracking-[0.13em] text-on-deep-3">Complemento SUAPE</p>
+            <button
+              type="button"
+              aria-current={activeTab === 'suape' ? 'page' : undefined}
+              onClick={() => openSection('suape')}
+              className={`mt-2 flex w-full items-center gap-3 rounded-lg border px-3 py-3 text-left transition-colors ${activeTab === 'suape' ? 'border-brand-line bg-surface text-brand' : 'border-deep-line bg-deep-raised text-on-deep hover:border-brand-on-deep'}`}
+            >
+              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-gold-soft text-gold"><Icons.FileSpreadsheet size={17} /></span>
+              <span className="min-w-0"><span className="block text-xs font-bold">Avaliação de integridade</span><span className={`block text-2xs ${activeTab === 'suape' ? 'text-ink-3' : 'text-on-deep-3'}`}>{officialEvaluation.calculatedRisk ? officialEvaluation.riskDisplay : 'Anexar questionário'}</span></span>
+            </button>
+            <p className="px-3 pt-3 text-2xs leading-relaxed text-on-deep-3">Questionário + Política de Contratação de Terceiros.</p>
+          </div>
+          <div className="mt-auto border-t border-deep-line px-3 pt-4 text-2xs leading-relaxed text-on-deep-3">O índice da pesquisa e a avaliação SUAPE têm critérios próprios.</div>
+        </nav>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+
+      {activeTab === 'overview' ? (
+        <ResearchOverviewView
+          diligence={displayDiligence}
+          onOpenDossier={() => openSection('dossie')}
+          onOpenNetwork={() => openSection('mapa')}
+          onOpenReputation={() => openSection('noticias')}
+          onOpenSuape={() => openSection('suape')}
+        />
+      ) : null}
+
+      <div hidden={activeTab !== 'suape'} className="flex min-h-0 min-w-0 flex-1 flex-col">
         <SuapeIntegrityEvaluationView
           diligence={displayDiligence}
           discoveries={discoveries}
@@ -431,12 +478,12 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           onValorContratoChange={setContractValueStr}
           onOpenEvidence={() => setActiveDrawer('evidence')}
           onSaveRiskMapRow={handleSaveRiskMapRow}
-          onOpenNetwork={() => setActiveTab('mapa')}
+          onOpenNetwork={() => openSection('mapa')}
           onDeepenResearch={handleDeepenResearch}
           isResearching={isRefreshingMedia}
           researchNotice={mediaRefreshNotice}
         />
-      ) : null}
+      </div>
 
       {activeTab === 'noticias' && (
         <NewsWorkspace
@@ -455,12 +502,10 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
       {activeTab === 'dossie' ? (
         <DossierView
           diligence={displayDiligence}
-          officialEvaluation={officialEvaluation}
-          onOpenIntegrity={() => setActiveTab('avaliacao')}
           isExportingPdf={isExportingPdf}
           onBack={onBack}
           onExportPdf={handleExportPdf}
-          onOpenNetwork={() => setActiveTab('mapa')}
+          onOpenNetwork={() => openSection('mapa')}
           onOpenAudit={() => setActiveDrawer('audit')}
         />
       ) : null}
@@ -469,7 +514,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           volta, o ramo inicial é recalculado e enquadrado no espaço
           disponível, sem herdar zoom e pan do nó anterior. */}
       {activeTab === 'relatorio' ? (
-        <NarrativeReportView diligence={displayDiligence} evaluation={officialEvaluation} />
+        <NarrativeReportView diligence={displayDiligence} evaluation={null} />
       ) : null}
 
       {activeTab === 'mapa' ? (
@@ -493,10 +538,12 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
             onOpenAiAnalysis={() => setActiveDrawer('ai')}
             onOpenPncp={() => setActiveDrawer('pncp')}
             onDrillCompany={onDrillCompany}
-            onBackToDossier={() => setActiveTab('dossie')}
+            onBackToDossier={() => openSection('dossie')}
           />
         </div>
       ) : null}
+        </div>
+      </div>
 
       <ShareholdersDrawer
         isOpen={activeDrawer === 'shareholders'}

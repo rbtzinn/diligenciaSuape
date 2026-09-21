@@ -15,56 +15,56 @@
      Padrão executivo contemporâneo: canvas nítido slate, cartões
      brancos de alto contraste e bordas limpas e precisas.
      ---------------------------------------------------------- */
-  --bg-canvas: #F8FAFC;
+  --bg-canvas: #EFF6F8;
   --bg-surface: #FFFFFF;
-  --bg-surface-subtle: #F1F5F9;
-  --bg-surface-hover: #E2E8F0;
-  --bg-surface-active: #CBD5E1;
+  --bg-surface-subtle: #E7F1F4;
+  --bg-surface-hover: #D9E9EE;
+  --bg-surface-active: #C6DDE5;
 
   /* Apelido histórico: App.tsx pedia --bg-app, aponta para o canvas */
   --bg-app: var(--bg-canvas);
 
   /* Superfície escura — usada pelo mapa de vínculos e pelo topo do workspace */
-  --bg-deep: #0B192C;
-  --bg-deep-raised: #142844;
-  --bg-deep-hover: #1E3A5F;
-  --border-deep: #2A4C75;
+  --bg-deep: #071E2D;
+  --bg-deep-raised: #10384C;
+  --bg-deep-hover: #185169;
+  --border-deep: #386B7C;
   --text-on-deep: #F8FAFC;
   --text-on-deep-2: #CBD5E1;
-  --text-on-deep-3: #94A3B8;
+  --text-on-deep-3: #9BBBC5;
 
   /* ----------------------------------------------------------
      TRAÇOS E CONTORNOS
      ---------------------------------------------------------- */
-  --border-subtle: #E2E8F0;
-  --border-default: #CBD5E1;
-  --border-strong: #94A3B8;
-  --border-focus: #1D4ED8;
+  --border-subtle: #DAE8EC;
+  --border-default: #C1D7DF;
+  --border-strong: #8CACB9;
+  --border-focus: #087F97;
 
   /* ----------------------------------------------------------
      TEXTO — Contraste AAA para conforto e leitura rápida
      ---------------------------------------------------------- */
-  --text-primary: #0F172A;
-  --text-secondary: #334155;
-  --text-tertiary: #64748B;
-  --text-muted: #94A3B8;
+  --text-primary: #102D3D;
+  --text-secondary: #355667;
+  --text-tertiary: #5C7B89;
+  --text-muted: #8AADB8;
   --text-inverse: #FFFFFF;
 
   /* ----------------------------------------------------------
      MARCA — Azul Naval SUAPE e Destaques
      ---------------------------------------------------------- */
-  --brand-blue: #0F2D59;
-  --brand-blue-hover: #1E40AF;
-  --brand-blue-active: #172554;
-  --brand-blue-subtle: #EFF6FF;
-  --brand-blue-border: #BFDBFE;
-  --brand-blue-text: #1E40AF;
-  --brand-blue-deep: #0F172A;
-  --brand-gold: #D97706;
-  --brand-gold-subtle: #FEF3C7;
+  --brand-blue: #0B5872;
+  --brand-blue-hover: #087F97;
+  --brand-blue-active: #09465C;
+  --brand-blue-subtle: #E0F4F4;
+  --brand-blue-border: #A4DAD9;
+  --brand-blue-text: #0B5872;
+  --brand-blue-deep: #071E2D;
+  --brand-gold: #B9772F;
+  --brand-gold-subtle: #FFF1DE;
 
-  --brand-blue-on-deep: #60A5FA;
-  --brand-blue-on-deep-soft: #1E3A8A;
+  --brand-blue-on-deep: #9AE9DF;
+  --brand-blue-on-deep-soft: #185169;
 
   /* ----------------------------------------------------------
      SITUAÇÃO — cada nível tem traço, fundo e texto próprios, para
@@ -109,7 +109,7 @@
      dossiê com cara de página sem estilo.
      ---------------------------------------------------------- */
   --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-display: var(--font-sans);
+  --font-display: 'Space Grotesk', var(--font-sans);
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, 'Fira Code', monospace;
 
   /* Escala de corpo: razão ~1.125 a partir de 15px. Cada passo tem

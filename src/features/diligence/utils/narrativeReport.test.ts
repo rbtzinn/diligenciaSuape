@@ -115,6 +115,12 @@ describe('buildNarrativeReport', () => {
     expect(relatorio).not.toMatch(/classificação oficial de integridade[^.]*é (Baixo|Médio|Alto|Muito Alto)/);
   });
 
+  it('o relatório da pesquisa usa o índice próprio sem incluir a avaliação SUAPE', () => {
+    const relatorio = buildNarrativeReport(BASE, null).plainText;
+    expect(relatorio).toContain('índice de atenção da pesquisa ficou em 56 de 100');
+    expect(relatorio).not.toMatch(/classificação oficial|Mapa de Risco|questionário de diligência/);
+  });
+
   it('explica que o índice de atenção não é culpa nem impedimento', () => {
     expect(texto(BASE)).toMatch(/não culpa, irregularidade ou impedimento de contratar/);
   });

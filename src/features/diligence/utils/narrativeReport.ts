@@ -199,7 +199,9 @@ function summarySection(
         ? `Ela decorre de ${plural(evaluation.triggeredRisks.length, 'gatilho acionado', 'gatilhos acionados')} no questionário respondido pelo terceiro.`
         : '',
     )
-    : 'A classificação oficial de integridade ainda não pode ser apurada: ela depende das respostas do questionário de diligência do terceiro, que não foram anexadas até aqui.';
+    : evaluation === null
+      ? ''
+      : 'A classificação oficial de integridade ainda não pode ser apurada: ela depende das respostas do questionário de diligência do terceiro, que não foram anexadas até aqui.';
 
   return {
     id: 'resumo',
@@ -510,7 +512,9 @@ function conclusionSection(
         ? 'Nessa faixa, a política exige o aprofundamento reputacional, que consta das seções acima.'
         : '',
     )
-    : 'A classificação oficial permanece pendente até que o questionário de diligência do terceiro seja anexado; sem ele, o Mapa de Risco não pode ser preenchido.';
+    : evaluation === null
+      ? ''
+      : 'A classificação oficial permanece pendente até que o questionário de diligência do terceiro seja anexado; sem ele, o Mapa de Risco não pode ser preenchido.';
 
   const limite = 'Este relatório descreve o que fontes públicas informaram na data da consulta. Ele não afirma culpa, não substitui manifestação jurídica e não vale como certidão. Ausência de achado não é atestado de idoneidade, e cada correlação por nome precisa de confirmação documental antes de sustentar decisão.';
 

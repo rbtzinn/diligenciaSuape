@@ -55,8 +55,8 @@ interface QuestionnaireImportPanelProps {
 type Mode = 'ia' | 'arquivo';
 
 const MODES: Array<{ id: Mode; label: string; hint: string }> = [
-  { id: 'ia', label: 'Transcrever com IA', hint: 'PDF, foto ou digitalização' },
-  { id: 'arquivo', label: 'Leitura automática', hint: 'só .xlsx' },
+  { id: 'arquivo', label: 'Anexar planilha', hint: '.xlsx ou .xls' },
+  { id: 'ia', label: 'PDF ou foto', hint: 'transcrição assistida' },
 ];
 
 export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> = ({
@@ -67,12 +67,13 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
   onApply,
   onClear,
 }) => {
-  const [mode, setMode] = useState<Mode>('ia');
+  const [mode, setMode] = useState<Mode>('arquivo');
   const [promptCopied, setPromptCopied] = useState(false);
   const [pasted, setPasted] = useState('');
   const [preview, setPreview] = useState<QuestionnaireImportResult | null>(null);
   const [cnpjWarning, setCnpjWarning] = useState<string | null>(null);
   const [appliedFrom, setAppliedFrom] = useState<string | null>(null);
+  const [pendingFileImport, setPendingFileImport] = useState<QuestionnaireImportPayload | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -119,7 +120,9 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
   const handleClearAll = () => {
     onClear();
     setAppliedFrom(null);
+    setPendingFileImport(null);
     setPreview(null);
+    setCnpjWarning(null);
     setPasted('');
     setNotice(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -141,6 +144,8 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
     }
 
     setIsUploading(true);
+    setPendingFileImport(null);
+    setCnpjWarning(null);
     setNotice(null);
 
     try {
@@ -167,7 +172,7 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
       if (!response.ok || !data.ok) throw new Error(data.erro || 'Falha ao ler o questionário.');
 
       const detalhes = data.flagsIntegridade?.detalhes || {};
-      onApply({
+      setPendingFileImport({
         answers: {
           '4.4': detalhes.q4_4_corrupcaoPJ ?? null,
           '5.2': detalhes.q5_2_crimesSocios ?? null,
@@ -192,7 +197,7 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
         gestor: data.dadosGerais?.gestor ?? null,
         origem: `Leitura de ${file.name}`,
       });
-      setAppliedFrom(file.name);
+      setCnpjWarning(checkImportedCnpj(data.dadosGerais?.cnpj ?? null, cnpj));
     } catch (error) {
       setNotice({
         tone: 'high',
@@ -205,8 +210,8 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
 
   return (
     <Section
-      title="Questionário de Diligência"
-      subtitle="A classificação depende das respostas do terceiro."
+      title="Anexar questionário de diligência"
+      subtitle="As respostas alimentam a avaliação SUAPE após sua conferência."
       trailing={
         <div className="flex items-center gap-2">
           <Chip
@@ -462,6 +467,26 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
                 </>
               )}
             </button>
+            {pendingFileImport ? (
+              <div className="rounded-lg border border-brand-line bg-brand-soft p-4">
+                <p className="text-xs font-bold text-brand">Confira antes de aplicar</p>
+                <p className="mt-1 text-xs text-ink-2">{pendingFileImport.origem} · {Object.values(pendingFileImport.answers).filter((answer) => answer === true || answer === false).length} respostas identificadas.</p>
+                {cnpjWarning ? <Note tone="high" role="alert">{cnpjWarning}</Note> : null}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button size="sm" variant="primary" icon={<Icons.Check size={14} />} onClick={() => {
+                    onApply(pendingFileImport);
+                    setAppliedFrom(pendingFileImport.origem);
+                    setPendingFileImport(null);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }}>Aplicar ao checklist</Button>
+                  <Button size="sm" variant="ghost" onClick={() => {
+                    setPendingFileImport(null);
+                    setCnpjWarning(null);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }}>Descartar</Button>
+                </div>
+              </div>
+            ) : null}
             <p className="text-2xs leading-relaxed text-ink-3">
               Lê o .xlsx original, onde cada resposta tem endereço de célula. PDF, foto e digitalização
               passam pela transcrição por IA.

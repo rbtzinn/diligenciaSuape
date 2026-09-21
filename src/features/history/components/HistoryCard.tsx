@@ -57,7 +57,7 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
   return (
     <div
       className={cn(
-        'flex min-w-0 items-center gap-2 rounded-card border pr-2 shadow-xs transition-colors',
+        'case-row flex min-w-0 items-center gap-2 rounded-card border pr-2 shadow-xs transition-colors',
         selected
           ? 'border-brand-line bg-brand-soft'
           : 'border-line bg-surface hover:border-line-strong hover:bg-surface-hover',

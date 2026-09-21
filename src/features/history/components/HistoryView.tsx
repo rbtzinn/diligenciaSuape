@@ -176,6 +176,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ onOpenDiligence, onNew
   return (
     <Page>
       <PageHeader
+        className="harbor-page-header"
         eyebrow="Gestão das análises"
         title="Dossiês e fila de diligências"
         subtitle="Encontre uma empresa, acompanhe a revisão e retome dossiês sem perder o contexto."
@@ -290,7 +291,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ onOpenDiligence, onNew
               <Note tone="high" role="alert">{deleteError}</Note>
             ) : null}
 
-            <div className="flex animate-fade-in flex-col gap-2">
+            <div className="flex animate-fade-in flex-col gap-2.5">
               {items.map((item) => (
                 <HistoryCard
                   key={item.id}
