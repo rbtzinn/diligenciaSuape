@@ -15,6 +15,7 @@
 import React, { forwardRef, useId } from 'react';
 import { cn } from '../../lib/cn';
 import { ControlSize, resolveControlSize } from './controlSize';
+import { MASKS, type MaskName } from '../../lib/masks';
 
 const CONTROL_BASE = cn(
   'w-full min-w-0 border bg-surface text-ink transition-colors',
@@ -87,6 +88,14 @@ interface TextFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement
   trailing?: React.ReactNode;
   /** Documento e identificador em monoespaçado. */
   mono?: boolean;
+  /**
+   * Formata o texto enquanto se digita — documento, data, valor.
+   *
+   * O `onChange` recebe o evento já com o valor mascarado em
+   * `event.target.value`, de modo que quem usa o campo não precisa
+   * formatar de novo nem saber qual máscara está ativa.
+   */
+  mask?: MaskName;
   fieldClassName?: string;
 }
 
@@ -99,14 +108,34 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
   leading,
   trailing,
   mono = false,
+  mask,
   className,
   fieldClassName,
   id,
+  onChange,
+  inputMode,
   ...props
 }, ref) {
   const generated = useId();
   const inputId = id || generated;
   const resolved = resolveControlSize(controlSize);
+
+  const applyMask = mask ? MASKS[mask] : undefined;
+
+  const handleChange = applyMask
+    ? (event: React.ChangeEvent<HTMLInputElement>) => {
+      const formatado = applyMask(event.target.value);
+
+      // O cursor: reescrever o valor o joga para o fim do campo. Manter
+      // no fim é o certo enquanto se digita — que é o caso comum — e
+      // errado ao corrigir o meio do texto. Como a máscara move a
+      // pontuação sob o cursor, devolver a posição anterior colocaria o
+      // dedo no lugar errado de qualquer forma; então o campo se
+      // comporta de um jeito só, previsível, em vez de acertar às vezes.
+      event.target.value = formatado;
+      onChange?.(event);
+    }
+    : onChange;
 
   return (
     <FieldShell
@@ -128,6 +157,11 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
           ref={ref}
           id={inputId}
           aria-invalid={error ? true : undefined}
+          onChange={handleChange}
+          // Teclado numérico no celular, menos onde a máscara aceita
+          // letra: o CNPJ alfanumérico da Receita não se digita num
+          // teclado só de números.
+          inputMode={inputMode || (mask && mask !== 'cnpj' && mask !== 'cpfCnpj' ? 'numeric' : undefined)}
           className={cn(
             CONTROL_BASE,
             CONTROL_SIZE[resolved],

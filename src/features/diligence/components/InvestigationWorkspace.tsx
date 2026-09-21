@@ -135,11 +135,11 @@ const SearchLanding: React.FC<{
             controlSize="lg"
             mono
             type="text"
-            inputMode="numeric"
             autoComplete="off"
+            mask="cnpj"
             placeholder="00.000.000/0000-00"
             value={value}
-            onChange={(event) => onChange(CNPJ.mask(event.target.value))}
+            onChange={(event) => onChange(event.target.value)}
             readOnly={launching}
             autoFocus
             leading={<Icons.Search size={17} />}

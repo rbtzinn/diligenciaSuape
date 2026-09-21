@@ -7,6 +7,7 @@ import { CNJ, ExtractedCNJ } from '../../../lib/cnj';
 import { DiscoverySource } from '../types';
 import { Button } from '../../../components/ui/Button';
 import { Icons } from '../../../components/ui/Icons';
+import { TextField } from '../../../components/ui/Field';
 import { Modal } from '../../../components/ui/Modal';
 
 interface JudicialManualAddModalProps {
@@ -69,23 +70,18 @@ export const JudicialManualAddModal: React.FC<JudicialManualAddModalProps> = ({
         </>
       }
     >
-      <div>
-        <label className="mb-1.5 block text-2xs font-semibold uppercase tracking-wide text-ink-3">
-          NÚMERO DO PROCESSO (CNJ)
-        </label>
-        <input
-          type="text"
-          className="font-mono min-h-[var(--control-height-md)] w-full min-w-0 rounded-[var(--control-radius-md)] border border-line bg-surface px-[var(--control-pad-x-md)] py-[var(--control-pad-y-md)] text-base text-ink transition-colors placeholder:text-ink-muted hover:border-line-strong focus:border-brand focus:outline-none focus:shadow-[var(--ring-focus)] disabled:cursor-not-allowed disabled:bg-surface-subtle"
-          placeholder="0000000-00.0000.0.00.0000"
-          value={val}
-          onChange={(e) => {
-            setVal(CNJ.mask(e.target.value));
-            setError(null);
-          }}
-          maxLength={25}
-          autoFocus
-        />
-      </div>
+      <TextField
+        label="Número do processo (CNJ)"
+        mono
+        mask="processoCnj"
+        placeholder="0000000-00.0000.0.00.0000"
+        value={val}
+        onChange={(e) => {
+          setVal(e.target.value);
+          setError(null);
+        }}
+        autoFocus
+      />
 
       <div>
         <label className="mb-1.5 block text-2xs font-semibold uppercase tracking-wide text-ink-3">

@@ -616,6 +616,8 @@ export const EvidenceCenterDrawer: React.FC<EvidenceCenterDrawerProps> = ({
                 label="CNPJ relacionado"
                 controlSize="sm"
                 mono
+                mask="cnpj"
+                placeholder="00.000.000/0000-00"
                 value={draft.relatedCnpj}
                 onChange={(event) => setDraft({ ...draft, relatedCnpj: event.target.value })}
               />
@@ -623,6 +625,8 @@ export const EvidenceCenterDrawer: React.FC<EvidenceCenterDrawerProps> = ({
                 label="Processo relacionado"
                 controlSize="sm"
                 mono
+                mask="processoCnj"
+                placeholder="0000000-00.0000.0.00.0000"
                 value={draft.relatedProcess}
                 onChange={(event) => setDraft({ ...draft, relatedProcess: event.target.value })}
               />
@@ -781,13 +785,15 @@ export const EvidenceCenterDrawer: React.FC<EvidenceCenterDrawerProps> = ({
                   <TextField
                     label="Débito"
                     controlSize="sm"
+                    mask="currency"
+                    placeholder="0,00"
                     value={draft.decisionDebt}
                     onChange={(event) => setDraft({ ...draft, decisionDebt: event.target.value })}
                   />
                   <TextField
                     label="Valor"
                     controlSize="sm"
-                    inputMode="decimal"
+                    mask="currency"
                     placeholder="0,00"
                     value={draft.decisionAmount}
                     onChange={(event) => setDraft({ ...draft, decisionAmount: event.target.value })}

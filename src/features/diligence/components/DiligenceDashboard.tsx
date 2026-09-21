@@ -16,6 +16,7 @@ import { DossierView } from './dossier/DossierView';
 import { RiskOverrideModal } from './RiskOverrideModal';
 import { EvidenceCenterDrawer } from './EvidenceCenterDrawer';
 import { NewsWorkspace } from './NewsWorkspace';
+import { currencyToNumber } from '../../../lib/masks';
 import { NarrativeReportView } from './NarrativeReportView';
 import { SuapeIntegrityEvaluationView } from './SuapeIntegrityEvaluationView';
 import {
@@ -75,14 +76,10 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const effectiveRisk = localRisk?.diligenceId === diligence.id ? localRisk.risk : savedNewsDiligence?.risco || diligence.risco;
   const effectiveEvidenceCenter = localEvidence?.diligenceId === diligence.id ? localEvidence.evidenceCenter : diligence.evidenceCenter;
   const effectiveEgos = localEvidence?.diligenceId === diligence.id ? localEvidence.egos : savedNewsDiligence?.egos || diligence.egos;
-  const contractValue = useMemo(() => {
-    if (!contractValueStr.trim()) return 0;
-    const clean = contractValueStr
-      .replace(/[^\d,.-]/g, '')
-      .replace(/\.(?=\d{3}\b)/g, '')
-      .replace(',', '.');
-    return parseFloat(clean) || 0;
-  }, [contractValueStr]);
+  // O campo é mascarado, então o texto tem forma única e a leitura é
+  // direta. Antes cada tela tinha o seu `parseFloat` com regex de
+  // milhar, e duas leituras do mesmo campo podiam divergir.
+  const contractValue = useMemo(() => currencyToNumber(contractValueStr) ?? 0, [contractValueStr]);
 
   const displayDiligence = useMemo(
     () => ({ ...diligence, ...savedNewsDiligence, status: workflowStatus, risco: effectiveRisk, adverseMedia, evidenceCenter: effectiveEvidenceCenter, egos: effectiveEgos }),

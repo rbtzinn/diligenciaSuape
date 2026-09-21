@@ -20,6 +20,7 @@ import { Note } from '../../../components/ui/Note';
 import { TextField, Select } from '../../../components/ui/Field';
 import { Icons } from '../../../components/ui/Icons';
 import { cn } from '../../../lib/cn';
+import { currencyToNumber } from '../../../lib/masks';
 import {
   evaluateSuapeIntegrity,
   generateRiskMapRow,
@@ -184,17 +185,8 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
     onAnswersChange({ ...answers, [key]: value });
   };
 
-  const valorNumerico = useMemo(() => {
-    if (!valorContratoStr.trim()) return 0;
-    return (
-      parseFloat(
-        valorContratoStr
-          .replace(/[^\d,.-]/g, '')
-          .replace(/\.(?=\d{3}\b)/g, '')
-          .replace(',', '.')
-      ) || 0
-    );
-  }, [valorContratoStr]);
+  // Campo mascarado: o texto tem forma única e a leitura é direta.
+  const valorNumerico = useMemo(() => currencyToNumber(valorContratoStr) ?? 0, [valorContratoStr]);
 
   const evaluation = useMemo(
     () => evaluateSuapeIntegrity(diligence, valorNumerico, answers),
@@ -660,7 +652,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                 value={anoExercicio}
                 onChange={(event) => setAnoExercicio(event.target.value)}
                 controlSize="sm"
-                inputMode="numeric"
+                mask="year"
               />
               <Select
                 label="Diretoria"
@@ -681,6 +673,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                 onChange={(event) => setDataInicio(event.target.value)}
                 controlSize="sm"
                 placeholder="DD/MM/AAAA"
+                mask="date"
                 mono
               />
               <TextField
@@ -689,6 +682,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                 onChange={(event) => setDataFim(event.target.value)}
                 controlSize="sm"
                 placeholder="DD/MM/AAAA"
+                mask="date"
                 mono
                 hint={`${riskMapRow.columns[5]?.value || '0'} dias úteis`}
               />
@@ -697,7 +691,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                 value={valorContratoStr}
                 onChange={(event) => onValorContratoChange(event.target.value)}
                 controlSize="sm"
-                inputMode="decimal"
+                mask="currency"
                 placeholder="0,00"
                 leading={<span className="text-2xs font-semibold">R$</span>}
                 hint={
@@ -711,6 +705,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                 value={processoSei}
                 onChange={(event) => setProcessoSei(event.target.value)}
                 controlSize="sm"
+                mask="processoSei"
                 mono
               />
               <TextField
