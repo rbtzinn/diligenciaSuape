@@ -18,7 +18,7 @@ import { RiskOverrideModal } from './RiskOverrideModal';
 import { EvidenceCenterDrawer } from './EvidenceCenterDrawer';
 import { NewsWorkspace } from './NewsWorkspace';
 import { currencyToNumber } from '../../../lib/masks';
-import type { IntegrityFormPayload } from '../utils/integrityFormPayload';
+import type { IntegrityFormPayload, IntegritySheetPayload } from '../utils/integrityFormPayload';
 import { NarrativeReportView } from './NarrativeReportView';
 import { SuapeIntegrityEvaluationView } from './SuapeIntegrityEvaluationView';
 import { ResearchOverviewView } from './ResearchOverviewView';
@@ -251,6 +251,46 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
    */
   const handleDownloadIntegrityForm = async (dados: IntegrityFormPayload) => {
     await ReportService.downloadIntegrityForm(diligence.id, { ...dados });
+  };
+
+  /**
+   * Preenche o formulário na planilha de SUAPE e relata o que ela
+   * calculou. Divergência entre a planilha e o sistema é dita na tela:
+   * quando as duas discordam, uma das duas está errada, e o analista
+   * precisa saber antes de decidir.
+   */
+  const handleFillSuapeSheet = async (dados: IntegritySheetPayload) => {
+    const resposta = await request<{
+      ok: boolean;
+      erro?: string;
+      abas?: { checklist: string; avaliacao: string };
+      resultado?: {
+        classificacao: string;
+        maturidadePercentual: number | null;
+        maturidadeRisco: string;
+      };
+      divergencia?: { sistema: string; planilha: string } | null;
+    }>(`/api/diligences/${diligence.id}/formulario-suape`, {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    });
+
+    if (!resposta.ok) throw new Error(resposta.erro || 'A planilha não aceitou o preenchimento.');
+
+    const calculado = resposta.resultado;
+    const maturidade = typeof calculado?.maturidadePercentual === 'number'
+      ? ` Maturidade: ${Math.round(calculado.maturidadePercentual * 100)}% (${calculado.maturidadeRisco}).`
+      : '';
+
+    if (resposta.divergencia) {
+      return `Formulário preenchido nas abas ${resposta.abas?.checklist} e ${resposta.abas?.avaliacao}. `
+        + `Atenção: a planilha classificou como ${resposta.divergencia.planilha} e o sistema como `
+        + `${resposta.divergencia.sistema}. Confira qual regra vale antes de decidir.${maturidade}`;
+    }
+
+    return `Formulário preenchido nas abas ${resposta.abas?.checklist} e ${resposta.abas?.avaliacao}. `
+      + `A planilha classificou como ${calculado?.classificacao || '—'}, igual ao sistema.${maturidade} `
+      + 'Baixe por Arquivo → Fazer download, no Google Sheets.';
   };
 
   const handleSaveNews = async () => {
@@ -491,6 +531,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           onOpenEvidence={() => setActiveDrawer('evidence')}
           onSaveRiskMapRow={handleSaveRiskMapRow}
           onDownloadIntegrityForm={handleDownloadIntegrityForm}
+          onFillSuapeSheet={handleFillSuapeSheet}
           onOpenNetwork={() => openSection('mapa')}
           onDeepenResearch={handleDeepenResearch}
           isResearching={isRefreshingMedia}

@@ -6,6 +6,7 @@ const express = require('express');
 const { DiligenceHistoryService } = require('../services/diligence-history.service');
 const { NewsRepository } = require('../repositories/news.repository');
 const { RiskMapRepository } = require('../repositories/risk-map.repository');
+const { IntegritySheetRepository } = require('../repositories/integrity-sheet.repository');
 const { EvidenceCenterService } = require('../services/evidence-center.service');
 const { authenticate } = require('../middlewares/auth.middleware');
 const { isScoreWithinLevel } = require('../services/risk-assessment.service');
@@ -166,6 +167,34 @@ router.post('/:id/mapa-de-risco', async (req, res) => {
   return res.status(resultado.ok ? 200 : 503).json({
     ...resultado,
     aba: RiskMapRepository.ABA,
+  });
+});
+
+// ==========================================================
+// Formulário de SUAPE preenchido na própria planilha
+//
+// O sistema escreve nas células de entrada das abas CheckList e
+// Avaliação de Integridade, e as fórmulas oficiais calculam. Depois lê
+// o resultado de volta e o compara com a classificação que o sistema
+// apurou por conta própria: divergir é informação, não detalhe.
+//
+// Sempre as mesmas células, de modo que cada diligência sobrescreve a
+// anterior — não há o que limpar entre uma e outra.
+// ==========================================================
+router.post('/:id/formulario-suape', async (req, res) => {
+  const corpo = req.body || {};
+  if (!corpo.cadastro?.razaoSocial) {
+    return res.status(400).json({ ok: false, erro: 'Informe a razão social do terceiro.' });
+  }
+
+  const resultado = await IntegritySheetRepository.preencher(corpo);
+
+  return res.status(resultado.ok ? 200 : 503).json({
+    ...resultado,
+    abas: {
+      checklist: IntegritySheetRepository.ABA_CHECKLIST,
+      avaliacao: IntegritySheetRepository.ABA_AVALIACAO,
+    },
   });
 });
 

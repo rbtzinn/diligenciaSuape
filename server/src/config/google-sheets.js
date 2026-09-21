@@ -101,12 +101,15 @@ class GoogleSheetsClient {
     return this.accessToken;
   }
 
-  async request(path, { method = 'GET', query, body } = {}) {
+  async request(path, { method = 'GET', query, body, rangesList } = {}) {
     const token = await this.getAccessToken();
     const url = new URL(`${API_BASE}/${this.spreadsheetId}${path}`);
     Object.entries(query || {}).forEach(([key, value]) => {
       if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
     });
+    // `ranges` é o único parâmetro que a API espera repetido, e
+    // `searchParams.set` sobrescreveria as ocorrências anteriores.
+    (rangesList || []).forEach((range) => url.searchParams.append('ranges', range));
 
     const response = await this.fetch(url, {
       method,
@@ -150,6 +153,49 @@ class GoogleSheetsClient {
     });
   }
 
+  /**
+   * Escreve vários intervalos numa chamada só.
+   *
+   * Preencher o formulário de SUAPE toca trinta células espalhadas por
+   * duas abas. Uma requisição por célula estouraria a cota da API e
+   * deixaria a planilha meio escrita se falhasse no meio; aqui ou tudo
+   * é aceito, ou nada é.
+   *
+   * @param {Array<{range: string, values: any[][]}>} dados
+   */
+  async batchUpdateValues(dados) {
+    if (!Array.isArray(dados) || dados.length === 0) return null;
+    return await this.request('/values:batchUpdate', {
+      method: 'POST',
+      body: {
+        valueInputOption: 'USER_ENTERED',
+        data: dados.map((item) => ({
+          range: item.range,
+          majorDimension: 'ROWS',
+          values: item.values,
+        })),
+      },
+    });
+  }
+
+  /** Lê vários intervalos numa chamada só, já com as fórmulas resolvidas. */
+  async batchGetValues(ranges) {
+    if (!Array.isArray(ranges) || ranges.length === 0) return {};
+    const payload = await this.request('/values:batchGet', {
+      query: {
+        ranges: undefined,
+        majorDimension: 'ROWS',
+        valueRenderOption: 'UNFORMATTED_VALUE',
+      },
+      rangesList: ranges,
+    });
+    const resultado = {};
+    (payload.valueRanges || []).forEach((faixa, indice) => {
+      resultado[ranges[indice]] = faixa?.values?.[0]?.[0] ?? null;
+    });
+    return resultado;
+  }
+
   async clearValues(range) {
     return await this.request(`/values/${encodeURIComponent(range)}:clear`, { method: 'POST', body: {} });
   }
@@ -166,13 +212,18 @@ class GoogleSheetsClient {
    * @param {string[]} headers cabeçalho da primeira linha
    * @returns {Promise<boolean>} verdadeiro se a aba foi criada agora
    */
+  /** Nomes das abas existentes na planilha. */
+  async listSheetTitles() {
+    const metadados = await this.request('', { query: { fields: 'sheets.properties.title' } });
+    return (metadados.sheets || [])
+      .map((aba) => aba?.properties?.title)
+      .filter(Boolean);
+  }
+
   async ensureSheet(title, headers = []) {
     if (this.abasGarantidas.has(title)) return false;
 
-    const metadados = await this.request('', { query: { fields: 'sheets.properties.title' } });
-    const existentes = (metadados.sheets || [])
-      .map((aba) => aba?.properties?.title)
-      .filter(Boolean);
+    const existentes = await this.listSheetTitles();
 
     if (existentes.includes(title)) {
       this.abasGarantidas.add(title);

@@ -35,7 +35,7 @@ import {
   type SuapeCalculatedRisk,
 } from '../utils/suapeRiskMapRowGenerator';
 import { QuestionnaireImportPanel, type QuestionnaireImportPayload } from './QuestionnaireImportPanel';
-import { buildIntegrityFormPayload } from '../utils/integrityFormPayload';
+import { buildIntegrityFormPayload, buildIntegritySheetPayload } from '../utils/integrityFormPayload';
 
 interface SuapeIntegrityEvaluationViewProps {
   diligence: DiligenceItem;
@@ -60,6 +60,11 @@ interface SuapeIntegrityEvaluationViewProps {
    * Recebe o conteúdo já montado; a tela é quem conhece o catálogo.
    */
   onDownloadIntegrityForm?: (dados: ReturnType<typeof buildIntegrityFormPayload>) => Promise<void>;
+  /**
+   * Preenche o formulário na planilha oficial de SUAPE e devolve o que
+   * as fórmulas dela calcularam, para conferência.
+   */
+  onFillSuapeSheet?: (dados: ReturnType<typeof buildIntegritySheetPayload>) => Promise<string>;
   onOpenNetwork?: () => void;
   onDeepenResearch?: () => void;
   isResearching?: boolean;
@@ -139,6 +144,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
   onOpenEvidence,
   onSaveRiskMapRow,
   onDownloadIntegrityForm,
+  onFillSuapeSheet,
   onOpenNetwork,
   onDeepenResearch,
   isResearching = false,
@@ -282,6 +288,31 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
       );
     } finally {
       setEmitindoFormulario(false);
+    }
+  };
+
+  const [preenchendoPlanilha, setPreenchendoPlanilha] = useState(false);
+  const [avisoPlanilha, setAvisoPlanilha] = useState<string | null>(null);
+  const [erroPlanilha, setErroPlanilha] = useState<string | null>(null);
+
+  const handleFillSheet = async () => {
+    if (copyBlocked || !onFillSuapeSheet || preenchendoPlanilha) return;
+    setPreenchendoPlanilha(true);
+    setAvisoPlanilha(null);
+    setErroPlanilha(null);
+    try {
+      const aviso = await onFillSuapeSheet(
+        buildIntegritySheetPayload(diligence, answers, evaluation),
+      );
+      setAvisoPlanilha(aviso);
+    } catch (error) {
+      setErroPlanilha(
+        error instanceof Error
+          ? `Não foi possível preencher a planilha: ${error.message}`
+          : 'Não foi possível preencher a planilha de SUAPE.'
+      );
+    } finally {
+      setPreenchendoPlanilha(false);
     }
   };
 
@@ -782,6 +813,20 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
               >
                 {copied ? 'Linha copiada' : 'Copiar linha'}
               </Button>
+              {onFillSuapeSheet ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Icons.Database size={15} />}
+                  disabled={copyBlocked}
+                  isLoading={preenchendoPlanilha}
+                  loadingLabel="Preenchendo…"
+                  title={copyBlocked ? 'Importe o questionário para liberar o formulário.' : undefined}
+                  onClick={handleFillSheet}
+                >
+                  Preencher formulário de SUAPE
+                </Button>
+              ) : null}
               {onDownloadIntegrityForm ? (
                 <Button
                   variant="secondary"
@@ -822,6 +867,8 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
 
             {rowNotice ? <Note role="status">{rowNotice}</Note> : null}
             {erroFormulario ? <Note tone="high" role="alert">{erroFormulario}</Note> : null}
+            {avisoPlanilha ? <Note role="status">{avisoPlanilha}</Note> : null}
+            {erroPlanilha ? <Note tone="high" role="alert">{erroPlanilha}</Note> : null}
 
             {showColumns ? (
               <div className="overflow-hidden rounded-[var(--radius-card)] border border-line">

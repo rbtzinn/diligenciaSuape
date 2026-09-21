@@ -17,6 +17,8 @@ import type { DiligenceItem } from '../types';
 import {
   SUAPE_QUESTION_TEXTS,
   SUAPE_ALCADA_CONSELHO_VALOR,
+  SUAPE_REQUIRED_ITEMS,
+  SUAPE_MATURITY_ITEMS,
   type IntegrityAnswers,
   type SuapeIntegrityEvaluationResult,
 } from './suapeRiskMapRowGenerator';
@@ -170,5 +172,69 @@ export function buildIntegrityFormPayload(
     planoDeAcao: evaluation.recommendedAction || '',
     criterios: CRITERIOS,
     processo,
+  };
+}
+
+// ==========================================================
+// Preenchimento da planilha oficial
+//
+// Outro destino, outro formato. O PDF recebe textos prontos para
+// desenhar; a planilha recebe só o que se digita nas células de
+// entrada, porque quem calcula lá são as fórmulas de SUAPE.
+// ==========================================================
+
+export interface IntegritySheetPayload {
+  cadastro: Record<string, string>;
+  redFlags: Record<string, boolean | null>;
+  maturidade: Record<string, boolean | null>;
+  cadastros: Record<string, boolean>;
+  classificacaoDoSistema: string;
+}
+
+/** Só o booleano é declaração; o resto é ausência de resposta. */
+const declaracao = (valor: unknown): boolean | null => (
+  valor === true || valor === false ? valor : null
+);
+
+export function buildIntegritySheetPayload(
+  diligence: DiligenceItem,
+  answers: IntegrityAnswers,
+  evaluation: SuapeIntegrityEvaluationResult,
+): IntegritySheetPayload {
+  const empresa = diligence.empresa || {};
+
+  const redFlags: Record<string, boolean | null> = {};
+  for (const item of [...SUAPE_REQUIRED_ITEMS, 'alcadaConselho'] as const) {
+    redFlags[item] = declaracao((answers as Record<string, unknown>)[item]);
+  }
+
+  const maturidade: Record<string, boolean | null> = {};
+  for (const item of SUAPE_MATURITY_ITEMS) {
+    maturidade[item.key] = declaracao((answers as Record<string, unknown>)[item.key]);
+  }
+
+  // Item 9.2 da CheckList. Só marca o que a consulta afirmou; fonte que
+  // não respondeu fica em branco, porque "não consta" e "não
+  // consultado" mudam a nota de maturidade e significam o oposto.
+  const cadastros: Record<string, boolean> = {};
+  for (const registro of evaluation.registryCoverage || []) {
+    cadastros[registro.key] = registro.status === 'consta';
+  }
+
+  return {
+    cadastro: {
+      razaoSocial: diligence.razaoSocial || empresa.razao_social || '',
+      cnpj: diligence.cnpjFmt || diligence.cnpj || '',
+      objetoSocial: empresa.cnae_fiscal_descricao || '',
+      dataConstituicao: empresa.data_inicio_atividade || '',
+      numeroEmpregados: '',
+      endereco: enderecoCompleto(empresa),
+      paises: empresa.municipio ? 'Brasil' : '',
+      servico: '',
+    },
+    redFlags,
+    maturidade,
+    cadastros,
+    classificacaoDoSistema: evaluation.calculatedRisk || '',
   };
 }
