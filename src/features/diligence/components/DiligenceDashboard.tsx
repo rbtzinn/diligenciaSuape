@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { AdverseMediaStatus, AdverseMediaSummary, DiligenceItem, ProcessDiscovery, RiskAssessment } from '../types';
 import { DiligenceService } from '../services/diligence.service';
@@ -18,6 +18,7 @@ import { RiskOverrideModal } from './RiskOverrideModal';
 import { EvidenceCenterDrawer } from './EvidenceCenterDrawer';
 import { NewsWorkspace } from './NewsWorkspace';
 import { currencyToNumber } from '../../../lib/masks';
+import { loadIntegrityDraft, saveIntegrityDraft } from '../utils/integrityDraft';
 import type { IntegrityFormPayload, IntegritySheetPayload } from '../utils/integrityFormPayload';
 import { NarrativeReportView } from './NarrativeReportView';
 import { SuapeIntegrityEvaluationView } from './SuapeIntegrityEvaluationView';
@@ -72,8 +73,14 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const [savedNewsDiligence, setSavedNewsDiligence] = useState<DiligenceItem | null>(null);
   // Respostas e regras da política pertencem apenas ao complemento SUAPE.
   // O índice da pesquisa continua vindo de diligence.risco.
-  const [integrityAnswers, setIntegrityAnswers] = useState<IntegrityAnswers>({});
-  const [contractValueStr, setContractValueStr] = useState('');
+  // O questionário é reconstituído do rascunho local: sem isso, um F5
+  // desfazia a colagem do JSON e a conferência item a item.
+  const [integrityAnswers, setIntegrityAnswers] = useState<IntegrityAnswers>(
+    () => loadIntegrityDraft(diligence.id)?.answers || {},
+  );
+  const [contractValueStr, setContractValueStr] = useState(
+    () => loadIntegrityDraft(diligence.id)?.contractValueStr || '',
+  );
   const [suapeSheetUrl, setSuapeSheetUrl] = useState<string | null>(null);
   const [riskModalOpen, setRiskModalOpen] = useState(false);
   const [riskSaving, setRiskSaving] = useState(false);
@@ -97,6 +104,10 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   );
 
   /** Classificação da política SUAPE, independente do índice da pesquisa. */
+  useEffect(() => {
+    saveIntegrityDraft(diligence.id, { answers: integrityAnswers, contractValueStr });
+  }, [diligence.id, integrityAnswers, contractValueStr]);
+
   const officialEvaluation = useMemo(
     () => evaluateSuapeIntegrity(displayDiligence, contractValue, integrityAnswers),
     [displayDiligence, contractValue, integrityAnswers],
