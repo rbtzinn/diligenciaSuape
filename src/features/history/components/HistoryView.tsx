@@ -9,7 +9,7 @@
 // projeto, como o dossiê.
 // ==========================================================
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useHistory, HistoryTab } from '../hooks/useHistory';
 import { HistoryStorage } from '../services/history.storage';
 import { DiligenceItem } from '../../diligence/types';
@@ -50,13 +50,42 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ onOpenDiligence, onNew
     searchQuery,
     setSearchQuery,
     isLoading,
-    deleteDiligence,
+    deleteDiligences,
   } = useHistory();
 
-  const [itemToDelete, setItemToDelete] = useState<DiligenceSummary | null>(null);
+  // Um único caminho de exclusão serve o botão da linha e o lote: são a
+  // mesma operação com uma lista de tamanho diferente, e mantê-las
+  // separadas dobraria o tratamento de erro.
+  const [pendingDeletion, setPendingDeletion] = useState<DiligenceSummary[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteNotice, setDeleteNotice] = useState<string | null>(null);
+
+  const selecionados = useMemo(() => new Set(selectedIds), [selectedIds]);
+
+  // A seleção acompanha o filtro: some da tela, sai da conta. Remover
+  // algo que o analista não está vendo é o tipo de surpresa que não se
+  // desfaz.
+  const selecionadosVisiveis = useMemo(
+    () => items.filter((item) => selecionados.has(item.id)),
+    [items, selecionados],
+  );
+
+  const toggleSelecionado = (id: string) => {
+    setDeleteNotice(null);
+    setSelectedIds((atual) => (
+      atual.includes(id) ? atual.filter((outro) => outro !== id) : [...atual, id]
+    ));
+  };
+
+  const todosVisiveisSelecionados = items.length > 0 && selecionadosVisiveis.length === items.length;
+
+  const alternarTodos = () => {
+    setDeleteNotice(null);
+    setSelectedIds(todosVisiveisSelecionados ? [] : items.map((item) => item.id));
+  };
 
   // O cartão traz o resumo; o dossiê completo vem do Google Sheets ao abrir.
   const handleOpenItem = async (summaryItem: DiligenceSummary) => {
@@ -92,17 +121,46 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ onOpenDiligence, onNew
   // que ninguém vê no celular. A falha agora é dita onde o clique
   // aconteceu, dentro do próprio diálogo.
   const handleConfirmDelete = async () => {
-    if (!itemToDelete) return;
+    if (pendingDeletion.length === 0) return;
     setIsDeleting(true);
     setDeleteError(null);
+    setDeleteNotice(null);
+
+    const alvos = pendingDeletion.map((item) => item.id);
+
     try {
-      await deleteDiligence(itemToDelete.id);
-      setItemToDelete(null);
+      const { removidos, falhas } = await deleteDiligences(alvos);
+
+      // O que falhou continua selecionado: é o que o analista precisa
+      // tentar de novo, e limpar tudo apagaria essa informação.
+      const idsComFalha = new Set(falhas.map((falha) => falha.id));
+      setSelectedIds((atual) => atual.filter((id) => idsComFalha.has(id) || !alvos.includes(id)));
+
+      if (falhas.length === 0) {
+        setPendingDeletion([]);
+        setDeleteNotice(
+          removidos === 1
+            ? 'Dossiê removido da lista ativa.'
+            : `${removidos} dossiês removidos da lista ativa.`
+        );
+        return;
+      }
+
+      const nomes = falhas
+        .map((falha) => pendingDeletion.find((item) => item.id === falha.id)?.razaoSocial || falha.id)
+        .slice(0, 3)
+        .join(', ');
+
+      setDeleteError(
+        `${removidos > 0 ? `${removidos} removido(s). ` : ''}`
+        + `${falhas.length} não pôde(ram) ser removido(s) e continua(m) na lista: ${nomes}`
+        + `${falhas.length > 3 ? ' e outros' : ''}. Motivo: ${falhas[0].motivo}`
+      );
     } catch (error) {
       setDeleteError(
         error instanceof Error
           ? `Não foi possível remover agora: ${error.message}`
-          : 'Não foi possível remover o dossiê agora.'
+          : 'Não foi possível remover os dossiês agora.'
       );
     } finally {
       setIsDeleting(false);
@@ -176,39 +234,124 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ onOpenDiligence, onNew
             Nenhuma diligência encontrada para os filtros selecionados.
           </Note>
         ) : (
-          <div className="flex animate-fade-in flex-col gap-2">
-            {items.map((item) => (
-              <HistoryCard key={item.id} item={item} onOpen={handleOpenItem} onDelete={() => { setDeleteError(null); setItemToDelete(item); }} />
-            ))}
-          </div>
+          <>
+            {/* Barra de seleção. Ocupa espaço sempre, e não só quando há
+                algo marcado: a caixa de "selecionar todas" precisa estar
+                em algum lugar antes da primeira marcação. */}
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-[var(--control-radius-md)] border border-line bg-surface-subtle px-3 py-2">
+              <label className="flex min-w-0 cursor-pointer items-center gap-2 text-xs font-semibold text-ink-2">
+                <input
+                  type="checkbox"
+                  checked={todosVisiveisSelecionados}
+                  // Marcado em parte: o traço diz que a seleção existe
+                  // mas não cobre a lista toda.
+                  ref={(node) => {
+                    if (node) {
+                      node.indeterminate = selecionadosVisiveis.length > 0 && !todosVisiveisSelecionados;
+                    }
+                  }}
+                  onChange={alternarTodos}
+                  className="size-4 cursor-pointer accent-[color:var(--color-brand)]"
+                />
+                {selecionadosVisiveis.length > 0
+                  ? `${selecionadosVisiveis.length} de ${items.length} selecionada(s)`
+                  : `Selecionar as ${items.length} desta lista`}
+              </label>
+
+              {selecionadosVisiveis.length > 0 ? (
+                <div className="flex shrink-0 items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setSelectedIds([]); setDeleteNotice(null); }}
+                    disabled={isDeleting}
+                  >
+                    Limpar seleção
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    icon={<Icons.Trash size={15} aria-hidden="true" />}
+                    onClick={() => { setDeleteError(null); setPendingDeletion(selecionadosVisiveis); }}
+                  >
+                    Remover {selecionadosVisiveis.length}
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+
+            {deleteNotice ? (
+              <Note tone="ok" role="status">{deleteNotice}</Note>
+            ) : null}
+
+            {/* Fora do diálogo também: uma remoção em lote parcial
+                precisa ser lida depois que o diálogo fecha. */}
+            {deleteError && pendingDeletion.length === 0 ? (
+              <Note tone="high" role="alert">{deleteError}</Note>
+            ) : null}
+
+            <div className="flex animate-fade-in flex-col gap-2">
+              {items.map((item) => (
+                <HistoryCard
+                  key={item.id}
+                  item={item}
+                  onOpen={handleOpenItem}
+                  onDelete={() => { setDeleteError(null); setPendingDeletion([item]); }}
+                  selected={selecionados.has(item.id)}
+                  onToggleSelect={toggleSelecionado}
+                />
+              ))}
+            </div>
+          </>
         )}
       </PageBody>
 
       <Modal
-        isOpen={Boolean(itemToDelete)}
-        onClose={() => { setItemToDelete(null); setDeleteError(null); }}
+        isOpen={pendingDeletion.length > 0}
+        onClose={() => { setPendingDeletion([]); setDeleteError(null); }}
         role="alertdialog"
-        title="Remover dossiê da visualização"
+        title={pendingDeletion.length > 1 ? 'Remover dossiês da visualização' : 'Remover dossiê da visualização'}
         icon={<Icons.Trash size={17} />}
         size="sm"
         footer={
           <>
-            <Button variant="ghost" onClick={() => { setItemToDelete(null); setDeleteError(null); }} disabled={isDeleting}>
+            <Button variant="ghost" onClick={() => { setPendingDeletion([]); setDeleteError(null); }} disabled={isDeleting}>
               Cancelar
             </Button>
             <Button variant="danger" onClick={handleConfirmDelete} isLoading={isDeleting} loadingLabel="Removendo…">
-              Remover dossiê
+              {pendingDeletion.length > 1 ? `Remover ${pendingDeletion.length} dossiês` : 'Remover dossiê'}
             </Button>
           </>
         }
       >
-        {itemToDelete ? (
+        {pendingDeletion.length > 0 ? (
           <>
-            <p className="text-base leading-relaxed text-ink-2">
-              Tem certeza que deseja remover o dossiê da empresa <strong className="text-ink">{itemToDelete.razaoSocial}</strong>{' '}
-              (<span className="font-mono">{itemToDelete.cnpjFmt || itemToDelete.cnpj || 'CNPJ não informado'}</span>) da
-              lista ativa?
-            </p>
+            {pendingDeletion.length === 1 ? (
+              <p className="text-base leading-relaxed text-ink-2">
+                Tem certeza que deseja remover o dossiê da empresa{' '}
+                <strong className="text-ink">{pendingDeletion[0].razaoSocial}</strong>{' '}
+                (<span className="font-mono">{pendingDeletion[0].cnpjFmt || pendingDeletion[0].cnpj || 'CNPJ não informado'}</span>)
+                da lista ativa?
+              </p>
+            ) : (
+              <>
+                <p className="text-base leading-relaxed text-ink-2">
+                  Tem certeza que deseja remover{' '}
+                  <strong className="text-ink">{pendingDeletion.length} dossiês</strong> da lista ativa?
+                </p>
+                {/* A lista inteira, e não só a contagem: confirmar uma
+                    remoção em lote sem ver o que vai sair é como assinar
+                    sem ler. */}
+                <ul className="max-h-48 overflow-y-auto rounded-[var(--control-radius-md)] border border-line bg-surface-subtle p-2 text-sm">
+                  {pendingDeletion.map((item) => (
+                    <li key={item.id} className="min-w-0 truncate py-0.5 text-ink-2">
+                      {item.razaoSocial}{' '}
+                      <span className="font-mono text-xs text-ink-3">{item.cnpjFmt || item.cnpj}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
 
             <Note tone="info" icon={<Icons.ShieldCheck size={15} aria-hidden="true" />}>
               O conteúdo, as versões, os relatórios e a auditoria continuarão preservados na planilha.

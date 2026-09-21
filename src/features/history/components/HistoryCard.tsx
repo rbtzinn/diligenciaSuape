@@ -22,6 +22,10 @@ interface HistoryCardProps {
   item: DiligenceSummary;
   onOpen: (item: DiligenceSummary) => void;
   onDelete: (id: string) => void;
+  /** Marcado para remoção em lote. */
+  selected?: boolean;
+  /** Ausente quando a tela não oferece seleção. */
+  onToggleSelect?: (id: string) => void;
 }
 
 const SCORE_TONE: Record<string, string> = {
@@ -39,17 +43,47 @@ const STATUS: Record<string, { label: string; variant: StatusVariant }> = {
   completed: { label: 'Concluída', variant: 'success' },
 };
 
-export const HistoryCard: React.FC<HistoryCardProps> = ({ item, onOpen, onDelete }) => {
+export const HistoryCard: React.FC<HistoryCardProps> = ({
+  item,
+  onOpen,
+  onDelete,
+  selected = false,
+  onToggleSelect,
+}) => {
   const risco = item.risco;
   const cor = risco?.cor || 'low';
   const status = STATUS[item.status || 'completed'] || STATUS.completed;
 
   return (
-    <div className="flex min-w-0 items-center gap-2 rounded-card border border-line bg-surface pr-2 shadow-xs transition-colors hover:border-line-strong hover:bg-surface-hover">
+    <div
+      className={cn(
+        'flex min-w-0 items-center gap-2 rounded-card border pr-2 shadow-xs transition-colors',
+        selected
+          ? 'border-brand-line bg-brand-soft'
+          : 'border-line bg-surface hover:border-line-strong hover:bg-surface-hover',
+      )}
+    >
+      {/* A caixa fica fora do botão que abre o dossiê: dentro dele,
+          marcar para excluir abriria a diligência junto. */}
+      {onToggleSelect ? (
+        <label className="flex shrink-0 cursor-pointer items-center self-stretch pl-3">
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={() => onToggleSelect(item.id)}
+            aria-label={`Selecionar ${item.razaoSocial} para remoção`}
+            className="size-4 cursor-pointer accent-[color:var(--color-brand)]"
+          />
+        </label>
+      ) : null}
+
       <button
         type="button"
         onClick={() => onOpen(item)}
-        className="flex min-w-0 flex-1 items-center gap-3 rounded-card p-3 text-left"
+        className={cn(
+          'flex min-w-0 flex-1 items-center gap-3 rounded-card py-3 text-left',
+          onToggleSelect ? 'pl-2 pr-3' : 'px-3',
+        )}
       >
         <span
           aria-hidden="true"

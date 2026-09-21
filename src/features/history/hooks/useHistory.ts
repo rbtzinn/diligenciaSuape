@@ -3,6 +3,7 @@
 // ==========================================================
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { removeInSeries } from '../services/bulkDelete';
 import { HistoryStorage, DiligenceSummary } from '../services/history.storage';
 import { useAuth } from '../../auth/context/AuthContext';
 
@@ -73,10 +74,24 @@ export function useHistory() {
     return list;
   }, [items, activeTab, statusFilter, searchQuery, user?.id]);
 
-  const deleteDiligence = useCallback(
-    async (id: string) => {
-      await HistoryStorage.delete(id);
+  /**
+   * Remove um ou vários dossiês e devolve o que aconteceu com cada um.
+   *
+   * Em série, e não em paralelo: a API tem limite por origem, e disparar
+   * vinte exclusões de uma vez transformaria uma remoção em lote numa
+   * rajada recusada pela metade — com o analista sem saber quais saíram.
+   *
+   * Uma falha no meio não interrompe as demais: o que dá para remover é
+   * removido, e o que falhou volta nomeado, para que a tela possa dizer
+   * exatamente quais dossiês continuam na lista.
+   *
+   * A lista só é relida uma vez, no fim.
+   */
+  const deleteDiligences = useCallback(
+    async (ids: string[]) => {
+      const resultado = await removeInSeries(ids, (id) => HistoryStorage.delete(id));
       await refresh();
+      return resultado;
     },
     [refresh]
   );
@@ -93,6 +108,6 @@ export function useHistory() {
     setSearchQuery,
     isLoading,
     refresh,
-    deleteDiligence,
+    deleteDiligences,
   };
 }
