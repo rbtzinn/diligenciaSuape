@@ -40,7 +40,31 @@ const RASCUNHO = {
 describe('rascunho da avaliação', () => {
   it('sobrevive ao recarregamento da página', () => {
     saveIntegrityDraft('dil-1', RASCUNHO);
-    expect(loadIntegrityDraft('dil-1')).toEqual(RASCUNHO);
+
+    const lido = loadIntegrityDraft('dil-1');
+    expect(lido?.answers).toEqual(RASCUNHO.answers);
+    expect(lido?.contractValueStr).toBe(RASCUNHO.contractValueStr);
+  });
+
+  it('guarda também os demais campos do questionário', () => {
+    saveIntegrityDraft('dil-1', {
+      ...RASCUNHO,
+      extras: { choices: { '1.2': true }, texts: { representanteNome: 'MARIA SOUZA' } },
+    });
+
+    const lido = loadIntegrityDraft('dil-1');
+    expect(lido?.extras?.choices['1.2']).toBe(true);
+    expect(lido?.extras?.texts.representanteNome).toBe('MARIA SOUZA');
+  });
+
+  it('rascunho antigo, gravado sem os extras, ainda é restaurado', () => {
+    // Quem já tinha rascunho salvo antes deste campo existir não pode
+    // perdê-lo: os extras voltam vazios e o resto continua valendo.
+    saveIntegrityDraft('dil-1', RASCUNHO);
+
+    const lido = loadIntegrityDraft('dil-1');
+    expect(lido?.answers).toEqual(RASCUNHO.answers);
+    expect(lido?.extras).toEqual({ choices: {}, texts: {} });
   });
 
   it('é guardado por diligência, e uma não vaza para a outra', () => {

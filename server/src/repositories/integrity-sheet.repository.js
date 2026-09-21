@@ -36,11 +36,15 @@ const CELULAS_CADASTRO = Object.freeze({
   cnpj: 'N6',
   objetoSocial: 'D7',
   dataConstituicao: 'D8',
-  numeroEmpregados: 'N8',
   endereco: 'D9',
   paises: 'D10',
   servico: 'D11',
 });
+
+// `N8` (nº de empregados) saiu daqui: quem informa é o questionário, e
+// ele está em CELULAS_TEXTO. Com o endereço nos dois mapas, a ordem de
+// escrita decidia quem ganhava — e a Receita não publica esse número,
+// então o cadastro só escreveria vazio por cima da declaração.
 
 /**
  * Red flags: cada item na sua linha, coluna L (Sim) e M (Não).
@@ -122,6 +126,50 @@ const CELULAS_MATURIDADE = Object.freeze({
   '9.0': 'C223',
 });
 
+/**
+ * Perguntas Sim/Não do questionário que nenhuma fórmula lê.
+ *
+ * Ficam separadas das red flags de propósito: juntas, uma delas poderia
+ * acabar numa linha lida por `N28` e mudar a classificação por
+ * descuido. Aqui elas só preenchem o documento.
+ */
+const CELULAS_ESCOLHA_EXTRA = Object.freeze({
+  '1.2': 'C15',
+  '6.1': 'C97',
+  '9.4': 'C246',
+  '9.5': 'C252',
+  '9.6': 'C258',
+});
+
+/**
+ * Campos de texto livre do questionário, na CheckList.
+ *
+ * As tabelas de várias linhas — sócios, administradores, entes
+ * reguladores — ficam de fora: elas têm número variável de linhas e
+ * mesclagens próprias, e escrever nelas exigiria inserir linhas num
+ * arquivo cheio de fórmulas posicionais.
+ */
+const CELULAS_TEXTO = Object.freeze({
+  ramoAtividade: 'N7',
+  numeroEmpregados: 'N8',
+  sitioEletronico: 'N9',
+  subcontratacaoDetalhe: 'B17',
+  representanteNome: 'D20',
+  representanteCpf: 'D21',
+  representanteRg: 'N21',
+  representanteTelefone: 'D22',
+  representanteEmail: 'N22',
+  representanteNacionalidade: 'D23',
+  representanteCargo: 'D24',
+  anosDeAtividade: 'B28',
+  historicoSociedade: 'B30',
+  processosCorrupcao: 'B72',
+  processosCriminais: 'B92',
+  controleExterno: 'B181',
+  responsavelIntegridade: 'B227',
+  cadastrosDetalhe: 'B241',
+});
+
 /** Item 9.2: os oito cadastros desabonadores, em N231..N238. */
 const LINHAS_CADASTRO_DESABONADOR = Object.freeze([
   'ceis',
@@ -174,7 +222,14 @@ function opcaoDaLista(resposta) {
   return RESPOSTA_EM_BRANCO;
 }
 
-function montarEscritas({ cadastro = {}, redFlags = {}, maturidade = {}, cadastros = {} }) {
+function montarEscritas({
+  cadastro = {},
+  redFlags = {},
+  maturidade = {},
+  cadastros = {},
+  extraChoices = {},
+  textFields = {},
+}) {
   const escritas = [];
   const celula = (aba, endereco, valor) => {
     escritas.push({ range: `'${aba}'!${endereco}`, values: [[valor]] });
@@ -204,6 +259,17 @@ function montarEscritas({ cadastro = {}, redFlags = {}, maturidade = {}, cadastr
     celula(ABA_CHECKLIST, `N${231 + indice}`, cadastros[chave] === true ? 'x' : '');
   });
 
+  for (const [chave, endereco] of Object.entries(CELULAS_ESCOLHA_EXTRA)) {
+    celula(ABA_CHECKLIST, endereco, opcaoDaLista(extraChoices[chave]));
+  }
+
+  // Campo que a transcrição não trouxe é limpo, e não mantido: deixar o
+  // valor da diligência anterior num campo da diligência atual seria
+  // atribuir ao terceiro uma declaração de outro.
+  for (const [chave, endereco] of Object.entries(CELULAS_TEXTO)) {
+    celula(ABA_CHECKLIST, endereco, texto(textFields[chave], 900));
+  }
+
   return escritas;
 }
 
@@ -214,6 +280,8 @@ const IntegritySheetRepository = {
   LINHAS_RED_FLAG,
   CELULAS_MATURIDADE,
   CELULAS_RED_FLAG_CHECKLIST,
+  CELULAS_ESCOLHA_EXTRA,
+  CELULAS_TEXTO,
   LINHAS_CADASTRO_DESABONADOR,
   opcaoDaLista,
   montarEscritas,

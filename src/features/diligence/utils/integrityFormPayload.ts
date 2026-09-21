@@ -183,11 +183,21 @@ export function buildIntegrityFormPayload(
 // entrada, porque quem calcula lá são as fórmulas de SUAPE.
 // ==========================================================
 
+/** Demais campos do questionário, fora do cálculo do risco. */
+export interface ChecklistExtras {
+  choices: Record<string, boolean | null>;
+  texts: Record<string, string>;
+}
+
 export interface IntegritySheetPayload {
   cadastro: Record<string, string>;
   redFlags: Record<string, boolean | null>;
   maturidade: Record<string, boolean | null>;
   cadastros: Record<string, boolean>;
+  /** Perguntas Sim/Não que nenhuma fórmula lê. */
+  extraChoices: Record<string, boolean | null>;
+  /** Campos de texto livre, como o terceiro escreveu. */
+  textFields: Record<string, string>;
   classificacaoDoSistema: string;
 }
 
@@ -200,6 +210,7 @@ export function buildIntegritySheetPayload(
   diligence: DiligenceItem,
   answers: IntegrityAnswers,
   evaluation: SuapeIntegrityEvaluationResult,
+  extras?: ChecklistExtras,
 ): IntegritySheetPayload {
   const empresa = diligence.empresa || {};
 
@@ -227,7 +238,8 @@ export function buildIntegritySheetPayload(
       cnpj: diligence.cnpjFmt || diligence.cnpj || '',
       objetoSocial: empresa.cnae_fiscal_descricao || '',
       dataConstituicao: empresa.data_inicio_atividade || '',
-      numeroEmpregados: '',
+      // Nº de empregados não é cadastro público: vem do questionário,
+      // por `textFields`.
       endereco: enderecoCompleto(empresa),
       paises: empresa.municipio ? 'Brasil' : '',
       servico: '',
@@ -235,6 +247,8 @@ export function buildIntegritySheetPayload(
     redFlags,
     maturidade,
     cadastros,
+    extraChoices: extras?.choices || {},
+    textFields: extras?.texts || {},
     classificacaoDoSistema: evaluation.calculatedRisk || '',
   };
 }

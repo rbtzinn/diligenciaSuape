@@ -7,7 +7,7 @@
 // ==========================================================
 
 import { describe, it, expect } from 'vitest';
-import { buildIntegrityFormPayload } from './integrityFormPayload';
+import { buildIntegrityFormPayload, buildIntegritySheetPayload } from './integrityFormPayload';
 import { evaluateSuapeIntegrity, SUAPE_REQUIRED_ITEMS } from './suapeRiskMapRowGenerator';
 import type { IntegrityAnswers } from './suapeRiskMapRowGenerator';
 import { SUAPE_QUESTION_TEXTS } from './suapeIntegrityCatalog';
@@ -107,5 +107,42 @@ describe('buildIntegrityFormPayload', () => {
   it('os quatro critérios da planilha acompanham o documento', () => {
     const dados = montar({});
     expect(dados.criterios.map((c) => c.grupo)).toEqual(['Muito Alto', 'Alto', 'Médio', 'Baixo']);
+  });
+});
+
+describe('buildIntegritySheetPayload — demais campos do questionário', () => {
+  const avaliacao = evaluateSuapeIntegrity(DILIGENCIA, 0, VAZIO);
+
+  it('leva as perguntas fora de fórmula e o texto livre', () => {
+    const dados = buildIntegritySheetPayload(DILIGENCIA, VAZIO, avaliacao, {
+      choices: { '1.2': true, '6.1': false },
+      texts: { representanteNome: 'MARIA SOUZA', ramoAtividade: 'Arquitetura' },
+    });
+
+    expect(dados.extraChoices['1.2']).toBe(true);
+    expect(dados.extraChoices['6.1']).toBe(false);
+    expect(dados.textFields.representanteNome).toBe('MARIA SOUZA');
+    expect(dados.textFields.ramoAtividade).toBe('Arquitetura');
+  });
+
+  it('sem extras, os dois objetos vão vazios em vez de indefinidos', () => {
+    const dados = buildIntegritySheetPayload(DILIGENCIA, VAZIO, avaliacao);
+
+    expect(dados.extraChoices).toEqual({});
+    expect(dados.textFields).toEqual({});
+  });
+
+  it('as perguntas extras não contaminam as red flags', () => {
+    const dados = buildIntegritySheetPayload(DILIGENCIA, VAZIO, avaliacao, {
+      choices: { '1.2': true, '6.1': true, '9.4': true, '9.5': true, '9.6': true },
+      texts: {},
+    });
+
+    // `redFlags` é o que vira X na coluna L. Uma resposta de 1.2 ou 6.1
+    // ali dentro mudaria a classificação do terceiro.
+    for (const chave of Object.keys(dados.extraChoices)) {
+      expect(dados.redFlags).not.toHaveProperty(chave);
+    }
+    expect(Object.values(dados.redFlags).every((v) => v === null)).toBe(true);
   });
 });

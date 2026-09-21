@@ -27,6 +27,8 @@ const VALIDADE_MS = 30 * 24 * 60 * 60 * 1000;
 export interface IntegrityDraft {
   answers: IntegrityAnswers;
   contractValueStr: string;
+  /** Demais campos do questionário, para a CheckList da planilha. */
+  extras?: { choices: Record<string, boolean | null>; texts: Record<string, string> };
 }
 
 interface RegistroArmazenado extends IntegrityDraft {
@@ -62,6 +64,9 @@ export function loadIntegrityDraft(diligenceId: string): IntegrityDraft | null {
     return {
       answers: registro.answers,
       contractValueStr: typeof registro.contractValueStr === 'string' ? registro.contractValueStr : '',
+      extras: registro.extras && typeof registro.extras === 'object'
+        ? { choices: registro.extras.choices || {}, texts: registro.extras.texts || {} }
+        : { choices: {}, texts: {} },
     };
   } catch {
     // Janela anônima, armazenamento bloqueado, cota estourada: a tela
@@ -88,6 +93,7 @@ export function saveIntegrityDraft(diligenceId: string, rascunho: IntegrityDraft
       salvoEm: Date.now(),
       answers: rascunho.answers,
       contractValueStr: rascunho.contractValueStr,
+      extras: rascunho.extras,
     };
     window.localStorage.setItem(chave(diligenceId), JSON.stringify(registro));
   } catch {

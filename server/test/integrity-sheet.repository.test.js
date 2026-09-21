@@ -237,3 +237,88 @@ test('aba ausente é dita com o remédio, em vez de escrever no lugar errado', a
   assert.match(resultado.erro, /CheckList/);
   assert.match(resultado.erro, /Copiar para/);
 });
+
+// ==========================================================
+// Demais campos do questionário
+//
+// A classificação sai de 22 itens. O questionário tem muito mais, e o
+// resto se perdia na transcrição — a CheckList ia ao processo com o
+// representante, o histórico e o ente regulador em branco.
+// ==========================================================
+
+test('as perguntas fora de fórmula têm células próprias, longe das red flags', () => {
+  const escritas = IntegritySheetRepository.montarEscritas({
+    extraChoices: { '1.2': true, '6.1': false, '9.4': null },
+  });
+
+  assert.equal(valorEm(escritas, "'CheckList'!C15"), 'Sim');
+  assert.equal(valorEm(escritas, "'CheckList'!C97"), 'Não');
+  assert.equal(valorEm(escritas, "'CheckList'!C246"), 'Selecione');
+
+  // Nenhuma delas pode acabar marcando a coluna L da aba de Avaliação,
+  // onde moram os gatilhos: ali uma resposta destas mudaria a
+  // classificação. As células de red flag são escritas, mas vazias.
+  const marcasNaColunaL = escritas
+    .filter((e) => /'Avaliação de Integridade'!L\d+$/.test(e.range))
+    .filter((e) => e.values[0][0] !== '');
+
+  assert.deepEqual(marcasNaColunaL, [], 'escolha extra não pode marcar gatilho');
+});
+
+test('os campos de texto vão para as células do questionário', () => {
+  const escritas = IntegritySheetRepository.montarEscritas({
+    textFields: {
+      ramoAtividade: 'Arquitetura e urbanismo',
+      representanteNome: 'MARIA SOUZA',
+      representanteEmail: 'maria@empresa.test',
+      historicoSociedade: 'Constituída em 1987 por dois sócios.',
+      responsavelIntegridade: 'Comitê de Ética',
+    },
+  });
+
+  assert.equal(valorEm(escritas, "'CheckList'!N7"), 'Arquitetura e urbanismo');
+  assert.equal(valorEm(escritas, "'CheckList'!D20"), 'MARIA SOUZA');
+  assert.equal(valorEm(escritas, "'CheckList'!N22"), 'maria@empresa.test');
+  assert.equal(valorEm(escritas, "'CheckList'!B30"), 'Constituída em 1987 por dois sócios.');
+  assert.equal(valorEm(escritas, "'CheckList'!B227"), 'Comitê de Ética');
+});
+
+test('campo que a transcrição não trouxe é limpo, não herdado', () => {
+  const escritas = IntegritySheetRepository.montarEscritas({
+    textFields: { ramoAtividade: 'Arquitetura' },
+  });
+
+  // Manter o valor da diligência anterior atribuiria ao terceiro atual
+  // uma declaração que quem prestou foi outro.
+  assert.equal(valorEm(escritas, "'CheckList'!D20"), '');
+  assert.equal(valorEm(escritas, "'CheckList'!B30"), '');
+});
+
+test('nenhum campo extra invade célula de fórmula', () => {
+  const escritas = IntegritySheetRepository.montarEscritas({
+    extraChoices: { '1.2': true, '6.1': true, '9.4': true, '9.5': true, '9.6': true },
+    textFields: Object.fromEntries(
+      Object.keys(IntegritySheetRepository.CELULAS_TEXTO).map((chave) => [chave, 'x']),
+    ),
+  });
+
+  const proibidas = ['Q187', 'R187', 'Q231', 'R231'];
+  for (const celula of proibidas) {
+    assert.ok(
+      !enderecosEscritos(escritas).includes(`'CheckList'!${celula}`),
+      `${celula} guarda fórmula e não pode ser escrita`,
+    );
+  }
+});
+
+test('os endereços dos campos extras não colidem entre si', () => {
+  const todos = [
+    ...Object.values(IntegritySheetRepository.CELULAS_TEXTO),
+    ...Object.values(IntegritySheetRepository.CELULAS_ESCOLHA_EXTRA),
+    ...Object.values(IntegritySheetRepository.CELULAS_RED_FLAG_CHECKLIST),
+    ...Object.values(IntegritySheetRepository.CELULAS_MATURIDADE),
+    ...Object.values(IntegritySheetRepository.CELULAS_CADASTRO),
+  ];
+
+  assert.equal(new Set(todos).size, todos.length, 'duas chaves apontando para a mesma célula');
+});

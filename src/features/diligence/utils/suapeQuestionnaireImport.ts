@@ -26,6 +26,12 @@ import {
   type SuapeMaturityItemKey,
 } from './suapeIntegrityCatalog';
 import type { IntegrityAnswers } from './suapeRiskMapRowGenerator';
+import {
+  SUAPE_EXTRA_CHOICES,
+  SUAPE_TEXT_FIELDS,
+  type SuapeExtraChoiceKey,
+  type SuapeTextFieldKey,
+} from './suapeChecklistFields';
 
 export const SUAPE_IMPORT_SCHEMA_VERSION = 'suape-questionario-1';
 
@@ -75,7 +81,10 @@ export function buildQuestionnaireExtractionPrompt(
   const perguntas = [
     ...INTEGRITY_KEYS.map((key) => `- "${key}": ${SUAPE_QUESTION_TEXTS[key]}`),
     ...SUAPE_MATURITY_ITEMS.map((item) => `- "${item.key}": ${item.text}`),
+    ...SUAPE_EXTRA_CHOICES.map((item) => `- "${item.key}": ${item.text}`),
   ].join('\n');
+
+  const campos = SUAPE_TEXT_FIELDS.map((campo) => `- "${campo.key}": ${campo.text}`).join('\n');
 
   return `Você vai transcrever um Questionário de Diligência de SUAPE preenchido por um fornecedor. O arquivo está anexado (PDF, imagem ou foto).
 
@@ -90,8 +99,15 @@ REGRAS OBRIGATÓRIAS:
 6. Não invente número de processo, valor ou nome. Campo ausente vai como null.
 7. O documento pode trazer as respostas em coluna separada do enunciado, ou na ordem trocada. Confira visualmente a qual pergunta cada marcação pertence antes de transcrever.
 
-PERGUNTAS A TRANSCREVER:
+PERGUNTAS SIM/NÃO A TRANSCREVER:
 ${perguntas}
+
+CAMPOS DE TEXTO A TRANSCREVER:
+Copie o que estiver escrito no documento, literalmente, sem resumir e
+sem completar. Campo em branco, ausente ou ilegível vai como null — e
+null é a resposta certa na dúvida, não falha sua. Nunca deduza um valor
+a partir de outro campo.
+${campos}
 
 FORMATO DE SAÍDA (copie a estrutura, troque os valores):
 {
@@ -109,6 +125,9 @@ FORMATO DE SAÍDA (copie a estrutura, troque os valores):
   },
   "respostas": {
 ${ALL_KEYS.map((key) => `    "${key}": "nao_identificado"`).join(',\n')}
+  },
+  "camposTexto": {
+${SUAPE_TEXT_FIELDS.map((campo) => `    "${campo.key}": null`).join(',\n')}
   },
   "evidencias": {
     "7.2": "cole aqui a frase literal do documento, apenas para respostas sim"
@@ -145,6 +164,14 @@ export interface QuestionnaireImportResult {
   summary: { sim: number; nao: number; naoIdentificado: number; total: number };
   /** Itens marcados "sim" sem citação literal — rebaixados a não identificado. */
   demotedForMissingEvidence: string[];
+  /**
+   * Perguntas Sim/Não que não entram em fórmula nenhuma. Separadas de
+   * `answers` de propósito: juntas, uma delas poderia influenciar a
+   * classificação por descuido.
+   */
+  extraChoices: Partial<Record<SuapeExtraChoiceKey, QuestionnaireAnswer>>;
+  /** Campos de texto livre, como escritos no documento. */
+  textFields: Partial<Record<SuapeTextFieldKey, string>>;
 }
 
 const EMPTY_GENERAL_DATA: QuestionnaireImportGeneralData = {
@@ -169,6 +196,8 @@ function emptyResult(errors: string[]): QuestionnaireImportResult {
     cnpj: null,
     summary: { sim: 0, nao: 0, naoIdentificado: 0, total: 0 },
     demotedForMissingEvidence: [],
+    extraChoices: {},
+    textFields: {},
   };
 }
 
@@ -357,6 +386,30 @@ export function parseQuestionnaireImport(raw: string): QuestionnaireImportResult
     dataPreenchimento: normalizeText(dadosGeraisRaw.dataPreenchimento),
   };
 
+  // As perguntas extras vêm do mesmo objeto `respostas`, mas são lidas
+  // à parte e guardadas à parte: nenhuma delas pode chegar em
+  // `answers`, que é o que alimenta a classificação.
+  const extraChoices: Partial<Record<SuapeExtraChoiceKey, QuestionnaireAnswer>> = {};
+  for (const item of SUAPE_EXTRA_CHOICES) {
+    const bruto = normalizeAnswer(respostasMap[item.key]);
+    if (bruto === 'invalido') {
+      warnings.push(`O item ${item.key} veio com valor não reconhecido e ficou em branco.`);
+      continue;
+    }
+    if (bruto !== null) extraChoices[item.key] = bruto;
+  }
+
+  const camposRaw =
+    payload.camposTexto && typeof payload.camposTexto === 'object' && !Array.isArray(payload.camposTexto)
+      ? (payload.camposTexto as Record<string, unknown>)
+      : {};
+
+  const textFields: Partial<Record<SuapeTextFieldKey, string>> = {};
+  for (const campo of SUAPE_TEXT_FIELDS) {
+    const valor = normalizeText(camposRaw[campo.key]);
+    if (valor) textFields[campo.key] = valor;
+  }
+
   return {
     ok: errors.length === 0,
     errors,
@@ -368,6 +421,8 @@ export function parseQuestionnaireImport(raw: string): QuestionnaireImportResult
     cnpj: normalizeText(payload.cnpj),
     summary: { sim, nao, naoIdentificado, total: ALL_KEYS.length },
     demotedForMissingEvidence,
+    extraChoices,
+    textFields,
   };
 }
 

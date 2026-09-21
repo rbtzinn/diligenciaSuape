@@ -36,6 +36,10 @@ import type { IntegrityAnswers } from '../utils/suapeRiskMapRowGenerator';
 
 export interface QuestionnaireImportPayload {
   answers: IntegrityAnswers;
+  /** Perguntas que não entram em fórmula; viajam à parte de propósito. */
+  extraChoices: QuestionnaireImportResult['extraChoices'];
+  /** Campos de texto livre do questionário. */
+  textFields: QuestionnaireImportResult['textFields'];
   valorContrato: number | null;
   processoSei: string | null;
   diretoria: string | null;
@@ -105,6 +109,8 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
     if (!preview?.ok) return;
     onApply({
       answers: preview.answers,
+      extraChoices: preview.extraChoices,
+      textFields: preview.textFields,
       valorContrato: preview.generalData.valorContrato,
       processoSei: preview.generalData.processoSei,
       diretoria: preview.generalData.diretoria,
@@ -190,6 +196,11 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
           '9.0': detalhes.q9_0_complianceOfficer ?? null,
           alcadaConselho: detalhes.alcadaConselho ?? null,
         },
+        // A leitura automática da planilha não extrai os campos extras;
+        // vazios aqui significam "não veio", e a CheckList fica em
+        // branco nesses pontos em vez de receber palpite.
+        extraChoices: {},
+        textFields: {},
         valorContrato:
           typeof data.dadosGerais?.valorContrato === 'number' ? data.dadosGerais.valorContrato : null,
         processoSei: data.dadosGerais?.processoSei ?? null,

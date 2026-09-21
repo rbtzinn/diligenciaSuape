@@ -35,7 +35,11 @@ import {
   type SuapeCalculatedRisk,
 } from '../utils/suapeRiskMapRowGenerator';
 import { QuestionnaireImportPanel, type QuestionnaireImportPayload } from './QuestionnaireImportPanel';
-import { buildIntegrityFormPayload, buildIntegritySheetPayload } from '../utils/integrityFormPayload';
+import {
+  buildIntegrityFormPayload,
+  buildIntegritySheetPayload,
+  type ChecklistExtras,
+} from '../utils/integrityFormPayload';
 
 interface SuapeIntegrityEvaluationViewProps {
   diligence: DiligenceItem;
@@ -46,6 +50,12 @@ interface SuapeIntegrityEvaluationViewProps {
    */
   answers: IntegrityAnswers;
   onAnswersChange: (answers: IntegrityAnswers) => void;
+  /**
+   * Demais campos do questionário — perguntas fora de fórmula e texto
+   * livre. Só servem para preencher a CheckList da planilha.
+   */
+  checklistExtras?: ChecklistExtras;
+  onChecklistExtrasChange?: (extras: ChecklistExtras) => void;
   valorContratoStr: string;
   onValorContratoChange: (value: string) => void;
   onOpenEvidence?: () => void;
@@ -141,6 +151,8 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
   discoveries = [],
   answers,
   onAnswersChange,
+  checklistExtras,
+  onChecklistExtrasChange,
   valorContratoStr,
   onValorContratoChange,
   onOpenEvidence,
@@ -180,6 +192,10 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
    */
   const handleImportApply = (payload: QuestionnaireImportPayload) => {
     onAnswersChange({ ...EMPTY_ANSWERS, ...payload.answers });
+    onChecklistExtrasChange?.({
+      choices: payload.extraChoices,
+      texts: payload.textFields,
+    });
     setAnswerSource(payload.origem);
 
     if (payload.valorContrato !== null && !valorContratoStr.trim()) {
@@ -305,7 +321,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
     setErroPlanilha(null);
     try {
       const aviso = await onFillSuapeSheet(
-        buildIntegritySheetPayload(diligence, answers, evaluation),
+        buildIntegritySheetPayload(diligence, answers, evaluation, checklistExtras),
       );
       setAvisoPlanilha(aviso);
     } catch (error) {
@@ -452,6 +468,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
           onApply={handleImportApply}
           onClear={() => {
             onAnswersChange(EMPTY_ANSWERS);
+            onChecklistExtrasChange?.({ choices: {}, texts: {} });
             setAnswerSource(null);
           }}
         />

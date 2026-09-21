@@ -19,7 +19,11 @@ import { EvidenceCenterDrawer } from './EvidenceCenterDrawer';
 import { NewsWorkspace } from './NewsWorkspace';
 import { currencyToNumber } from '../../../lib/masks';
 import { loadIntegrityDraft, saveIntegrityDraft } from '../utils/integrityDraft';
-import type { IntegrityFormPayload, IntegritySheetPayload } from '../utils/integrityFormPayload';
+import type {
+  ChecklistExtras,
+  IntegrityFormPayload,
+  IntegritySheetPayload,
+} from '../utils/integrityFormPayload';
 import { NarrativeReportView } from './NarrativeReportView';
 import { SuapeIntegrityEvaluationView } from './SuapeIntegrityEvaluationView';
 import { ResearchOverviewView } from './ResearchOverviewView';
@@ -81,6 +85,9 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const [contractValueStr, setContractValueStr] = useState(
     () => loadIntegrityDraft(diligence.id)?.contractValueStr || '',
   );
+  const [checklistExtras, setChecklistExtras] = useState<ChecklistExtras>(
+    () => loadIntegrityDraft(diligence.id)?.extras || { choices: {}, texts: {} },
+  );
   const [suapeSheetUrl, setSuapeSheetUrl] = useState<string | null>(null);
   const [riskModalOpen, setRiskModalOpen] = useState(false);
   const [riskSaving, setRiskSaving] = useState(false);
@@ -105,8 +112,12 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
 
   /** Classificação da política SUAPE, independente do índice da pesquisa. */
   useEffect(() => {
-    saveIntegrityDraft(diligence.id, { answers: integrityAnswers, contractValueStr });
-  }, [diligence.id, integrityAnswers, contractValueStr]);
+    saveIntegrityDraft(diligence.id, {
+      answers: integrityAnswers,
+      contractValueStr,
+      extras: checklistExtras,
+    });
+  }, [diligence.id, integrityAnswers, contractValueStr, checklistExtras]);
 
   const officialEvaluation = useMemo(
     () => evaluateSuapeIntegrity(displayDiligence, contractValue, integrityAnswers),
@@ -541,6 +552,8 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           discoveries={discoveries}
           answers={integrityAnswers}
           onAnswersChange={setIntegrityAnswers}
+          checklistExtras={checklistExtras}
+          onChecklistExtrasChange={setChecklistExtras}
           valorContratoStr={contractValueStr}
           onValorContratoChange={setContractValueStr}
           onOpenEvidence={() => setActiveDrawer('evidence')}
