@@ -103,14 +103,39 @@ test('identificação da empresa vai para a CheckList, que é onde o dado entra'
   assert.equal(valorEm(escritas, "'Avaliação de Integridade'!D8"), undefined);
 });
 
-test('maturidade sem resposta volta para "Selecione", o estado inicial da lista', () => {
+test('maturidade usa os três valores exatos da lista suspensa', () => {
   const escritas = IntegritySheetRepository.montarEscritas({
     maturidade: { '8.1': true, '8.2': false, '8.3': null },
   });
 
-  assert.equal(valorEm(escritas, "'CheckList'!C187"), 'SIM');
-  assert.equal(valorEm(escritas, "'CheckList'!C191"), 'NÃO');
+  // `Apoio!C3:C5` traz "Selecione", "Sim" e "Não", nesta acentuação e
+  // nesta caixa. "SIM" calcularia certo, porque a comparação da fórmula
+  // ignora maiúscula, mas o Sheets marcaria a célula como fora da lista.
+  assert.equal(valorEm(escritas, "'CheckList'!C187"), 'Sim');
+  assert.equal(valorEm(escritas, "'CheckList'!C191"), 'Não');
   assert.equal(valorEm(escritas, "'CheckList'!C195"), 'Selecione');
+});
+
+test('as red flags também são respondidas dentro da CheckList', () => {
+  const escritas = IntegritySheetRepository.montarEscritas({
+    redFlags: { '4.4': false, '5.2': true, '7.1': true, '7.9': null },
+  });
+
+  // Nenhuma fórmula lê estas células, mas a CheckList é o questionário
+  // que vai ao processo: em branco, ela contradiria a aba de Avaliação.
+  assert.equal(valorEm(escritas, "'CheckList'!C69"), 'Não');
+  assert.equal(valorEm(escritas, "'CheckList'!B89"), 'Sim', '5.2 é respondida na coluna B, não na C');
+  assert.equal(valorEm(escritas, "'CheckList'!C103"), 'Sim');
+  assert.equal(valorEm(escritas, "'CheckList'!C177"), 'Selecione');
+});
+
+test('a resposta na CheckList não contradiz a marca da Avaliação', () => {
+  const escritas = IntegritySheetRepository.montarEscritas({
+    redFlags: { '4.4': true },
+  });
+
+  assert.equal(valorEm(escritas, "'Avaliação de Integridade'!L23"), 'X');
+  assert.equal(valorEm(escritas, "'CheckList'!C69"), 'Sim');
 });
 
 test('os oito cadastros ocupam N231 a N238, na ordem do item 9.2', () => {

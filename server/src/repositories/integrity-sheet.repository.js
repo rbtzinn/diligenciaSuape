@@ -64,6 +64,43 @@ const LINHAS_RED_FLAG = Object.freeze({
   alcadaConselho: 40,
 });
 
+/**
+ * Onde cada red flag também é respondida dentro da CheckList.
+ *
+ * Nenhuma fórmula lê estas células — os gatilhos moram na coluna L da
+ * aba de Avaliação. Mas a CheckList é o Questionário de Diligência que
+ * vai junto ao processo, e deixá-la em branco enquanto a Avaliação
+ * mostra as respostas faria o documento contradizer a si mesmo.
+ *
+ * A coluna varia: 5.2 é respondida em B89, e todo o resto na coluna C.
+ * É assim no arquivo de SUAPE.
+ */
+const CELULAS_RED_FLAG_CHECKLIST = Object.freeze({
+  '4.4': 'C69',
+  '5.2': 'B89',
+  '7.1': 'C103',
+  '7.2': 'C112',
+  '7.3': 'C122',
+  '7.4': 'C131',
+  '7.5': 'C140',
+  '7.6': 'C150',
+  '7.7': 'C159',
+  '7.8': 'C168',
+  '7.9': 'C177',
+});
+
+/**
+ * Os três valores da lista suspensa, vindos de `Apoio!C3:C5`.
+ *
+ * São exatamente estes, com esta acentuação e esta caixa. As fórmulas
+ * comparam sem diferenciar maiúscula, então "SIM" também calcularia
+ * certo — mas mostraria na célula um valor fora da lista, que o Sheets
+ * marca como inválido na cara do analista.
+ */
+const RESPOSTA_EM_BRANCO = 'Selecione';
+const RESPOSTA_SIM = 'Sim';
+const RESPOSTA_NAO = 'Não';
+
 /** Bloco 8/9 da CheckList: a célula de resposta de cada item. */
 const CELULAS_MATURIDADE = Object.freeze({
   '8.1': 'C187',
@@ -123,6 +160,13 @@ function marca(resposta, coluna) {
   return (coluna === 'L' ? positiva : !positiva) ? 'X' : '';
 }
 
+/** Resposta na forma exata da lista suspensa da planilha. */
+function opcaoDaLista(resposta) {
+  if (resposta === true) return RESPOSTA_SIM;
+  if (resposta === false) return RESPOSTA_NAO;
+  return RESPOSTA_EM_BRANCO;
+}
+
 function montarEscritas({ cadastro = {}, redFlags = {}, maturidade = {}, cadastros = {} }) {
   const escritas = [];
   const celula = (aba, endereco, valor) => {
@@ -138,15 +182,15 @@ function montarEscritas({ cadastro = {}, redFlags = {}, maturidade = {}, cadastr
     celula(ABA_AVALIACAO, `M${linha}`, marca(redFlags[item], 'M'));
   }
 
+  for (const [item, endereco] of Object.entries(CELULAS_RED_FLAG_CHECKLIST)) {
+    celula(ABA_CHECKLIST, endereco, opcaoDaLista(redFlags[item]));
+  }
+
   for (const [item, endereco] of Object.entries(CELULAS_MATURIDADE)) {
     const resposta = maturidade[item];
     // A célula é uma lista suspensa cujo estado inicial é "Selecione";
     // é para ele que ela volta quando não há resposta.
-    celula(
-      ABA_CHECKLIST,
-      endereco,
-      resposta === true ? 'SIM' : resposta === false ? 'NÃO' : 'Selecione',
-    );
+    celula(ABA_CHECKLIST, endereco, opcaoDaLista(resposta));
   }
 
   LINHAS_CADASTRO_DESABONADOR.forEach((chave, indice) => {
@@ -162,7 +206,9 @@ const IntegritySheetRepository = {
   CELULAS_CADASTRO,
   LINHAS_RED_FLAG,
   CELULAS_MATURIDADE,
+  CELULAS_RED_FLAG_CHECKLIST,
   LINHAS_CADASTRO_DESABONADOR,
+  opcaoDaLista,
   montarEscritas,
   marca,
 
