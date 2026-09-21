@@ -45,15 +45,22 @@ const CELULAS_CADASTRO = Object.freeze({
 /**
  * Red flags: cada item na sua linha, coluna L (Sim) e M (Não).
  *
- * A ordem das linhas é a da planilha e não pode ser reordenada: `N28`
- * lista as linhas uma a uma (`L28`, `L30`, `L31`…), então mover um item
- * de linha muda qual gatilho ele aciona.
+ * As linhas 28 a 36 são os itens 7.1 a 7.9, em sequência, como a coluna
+ * B da planilha mostra. `N28` lê L28 e L30..L36 (itens 7.1 e 7.3 a 7.9,
+ * que levam a Alto) e `N29` lê só L29 (item 7.2, que leva a Médio).
+ *
+ * Isto já esteve invertido aqui, com 7.1 apontando para a linha 29.
+ * O texto do critério "Médio" da planilha (célula U56) diz "resposta
+ * positiva para o item 7.1", mas o critério "Alto" logo acima (U55) já
+ * lista 7.1 entre os seus — e a fórmula concorda com U55. O "7.1" em
+ * U56 é erro de digitação de SUAPE: ali é o 7.2. Segui a fórmula, que é
+ * quem calcula, e não o texto.
  */
 const LINHAS_RED_FLAG = Object.freeze({
   '4.4': 23,
   '5.2': 24,
-  '7.1': 29,
-  '7.2': 28,
+  '7.1': 28,
+  '7.2': 29,
   '7.3': 30,
   '7.4': 31,
   '7.5': 32,

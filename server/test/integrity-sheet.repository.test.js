@@ -69,15 +69,39 @@ test('o X da red flag vai na coluna L, que é a única que as fórmulas leem', (
   assert.equal(valorEm(escritas, "'Avaliação de Integridade'!M24"), 'X', 'não marca a coluna M');
 });
 
-test('cada item cai na linha que a fórmula espera', () => {
-  // `N28` lista as linhas uma a uma: L28, L30, L31, L32, L33, L34, L35,
-  // L36. E `N29` é só L29. Então 7.1 tem de ser a linha 29 e 7.2 a 28 —
-  // trocá-las mudaria Médio por Alto.
-  assert.equal(IntegritySheetRepository.LINHAS_RED_FLAG['7.1'], 29);
-  assert.equal(IntegritySheetRepository.LINHAS_RED_FLAG['7.2'], 28);
+test('os itens 7.1 a 7.9 ficam nas linhas 28 a 36, em sequência', () => {
+  // Isto já esteve invertido, com 7.1 na linha 29, e um teste guardava
+  // a inversão como se fosse o certo. A coluna B da planilha resolve a
+  // dúvida: B28 é "7.1 A pessoa jurídica exerce uma atividade
+  // regulada?" e B29 é "7.2 Informar se são necessárias autorizações".
+  const esperado = ['7.1', '7.2', '7.3', '7.4', '7.5', '7.6', '7.7', '7.8', '7.9'];
+  esperado.forEach((item, indice) => {
+    assert.equal(
+      IntegritySheetRepository.LINHAS_RED_FLAG[item],
+      28 + indice,
+      `${item} deveria estar na linha ${28 + indice}`,
+    );
+  });
+
   assert.equal(IntegritySheetRepository.LINHAS_RED_FLAG['4.4'], 23);
   assert.equal(IntegritySheetRepository.LINHAS_RED_FLAG['5.2'], 24);
   assert.equal(IntegritySheetRepository.LINHAS_RED_FLAG.alcadaConselho, 40);
+});
+
+test('7.1 aciona o gatilho de Alto e 7.2 o de Médio, como as fórmulas leem', () => {
+  // `N28` (Alto) = OR(L28, L30..L36). `N29` (Médio) = OR(L29).
+  const linhasDeAlto = [28, 30, 31, 32, 33, 34, 35, 36];
+  const { LINHAS_RED_FLAG } = IntegritySheetRepository;
+
+  assert.ok(
+    linhasDeAlto.includes(LINHAS_RED_FLAG['7.1']),
+    'o item 7.1 precisa cair numa linha que N28 lê, ou a planilha diria Médio',
+  );
+  assert.equal(
+    LINHAS_RED_FLAG['7.2'], 29,
+    'o item 7.2 é o único que N29 lê; fora da 29 ele deixaria de produzir Médio',
+  );
+  assert.ok(!linhasDeAlto.includes(LINHAS_RED_FLAG['7.2']));
 });
 
 test('item sem resposta limpa as duas colunas, e não vira "não"', () => {
