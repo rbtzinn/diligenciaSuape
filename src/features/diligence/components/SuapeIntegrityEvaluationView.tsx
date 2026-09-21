@@ -35,6 +35,7 @@ import {
   type SuapeCalculatedRisk,
 } from '../utils/suapeRiskMapRowGenerator';
 import { QuestionnaireImportPanel, type QuestionnaireImportPayload } from './QuestionnaireImportPanel';
+import { buildIntegrityFormPayload } from '../utils/integrityFormPayload';
 
 interface SuapeIntegrityEvaluationViewProps {
   diligence: DiligenceItem;
@@ -54,6 +55,11 @@ interface SuapeIntegrityEvaluationViewProps {
    * aqui, pelo gerador da linha, e não no servidor.
    */
   onSaveRiskMapRow?: (linha: { cabecalho: string[]; valores: string[] }) => Promise<string>;
+  /**
+   * Baixa o Formulário de Diligência preenchido no layout oficial.
+   * Recebe o conteúdo já montado; a tela é quem conhece o catálogo.
+   */
+  onDownloadIntegrityForm?: (dados: ReturnType<typeof buildIntegrityFormPayload>) => Promise<void>;
   onOpenNetwork?: () => void;
   onDeepenResearch?: () => void;
   isResearching?: boolean;
@@ -132,6 +138,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
   onValorContratoChange,
   onOpenEvidence,
   onSaveRiskMapRow,
+  onDownloadIntegrityForm,
   onOpenNetwork,
   onDeepenResearch,
   isResearching = false,
@@ -244,6 +251,39 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
 
   const [savingRow, setSavingRow] = useState(false);
   const [rowNotice, setRowNotice] = useState<string | null>(null);
+
+  const [emitindoFormulario, setEmitindoFormulario] = useState(false);
+  const [erroFormulario, setErroFormulario] = useState<string | null>(null);
+
+  // O PDF sai do que está na tela agora — nada é guardado, e por isso
+  // ele reflete a avaliação do momento em que foi pedido.
+  const handleDownloadForm = async () => {
+    if (copyBlocked || !onDownloadIntegrityForm || emitindoFormulario) return;
+    setEmitindoFormulario(true);
+    setErroFormulario(null);
+    try {
+      await onDownloadIntegrityForm(
+        buildIntegrityFormPayload(diligence, answers, evaluation, {
+          registro: registroId,
+          ano: anoExercicio,
+          diretoria,
+          gestor,
+          valor: valorContratoStr,
+          dataEntrada: dataInicio,
+          dataSaida: dataFim,
+          processoSei,
+        }),
+      );
+    } catch (error) {
+      setErroFormulario(
+        error instanceof Error
+          ? `Não foi possível gerar o formulário: ${error.message}`
+          : 'Não foi possível gerar o formulário em PDF.'
+      );
+    } finally {
+      setEmitindoFormulario(false);
+    }
+  };
 
   const handleSaveRow = async () => {
     if (copyBlocked || !onSaveRiskMapRow || savingRow) return;
@@ -742,6 +782,20 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
               >
                 {copied ? 'Linha copiada' : 'Copiar linha'}
               </Button>
+              {onDownloadIntegrityForm ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Icons.Download size={15} />}
+                  disabled={copyBlocked}
+                  isLoading={emitindoFormulario}
+                  loadingLabel="Gerando PDF…"
+                  title={copyBlocked ? 'Importe o questionário para liberar o formulário.' : undefined}
+                  onClick={handleDownloadForm}
+                >
+                  Baixar formulário preenchido
+                </Button>
+              ) : null}
               {onSaveRiskMapRow ? (
                 <Button
                   variant="secondary"
@@ -767,6 +821,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
             </div>
 
             {rowNotice ? <Note role="status">{rowNotice}</Note> : null}
+            {erroFormulario ? <Note tone="high" role="alert">{erroFormulario}</Note> : null}
 
             {showColumns ? (
               <div className="overflow-hidden rounded-[var(--radius-card)] border border-line">

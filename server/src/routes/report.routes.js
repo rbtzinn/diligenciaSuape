@@ -4,6 +4,7 @@
 
 const express = require('express');
 const { DiligenceReportService } = require('../services/report/diligence-report.service');
+const { IntegrityFormService } = require('../services/report/integrity-form.service');
 const { authenticate } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
@@ -37,6 +38,31 @@ router.all(
     }
   }
 );
+
+// 1b. Formulário de Diligência de SUAPE preenchido
+//
+// Documento para baixar, e só. Não é gravado na planilha, não recebe
+// número de emissão e não entra no histórico de versões: guardar cópia
+// criaria duas verdades sobre a mesma avaliação — a do arquivo salvo e
+// a da diligência, que continua sendo revista.
+//
+// O corpo traz a avaliação já apurada. O servidor não recalcula
+// classificação nem maturidade: as fórmulas oficiais moram no gerador
+// da linha do Mapa de Risco, e uma segunda implementação aqui
+// divergiria da tela com o tempo.
+router.post('/:id/integrity-form', async (req, res) => {
+  try {
+    const { buffer, fileName } = await IntegrityFormService.generate(req.body || {});
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', String(buffer.length));
+    return res.send(buffer);
+  } catch (err) {
+    console.error('[ReportRoutes] Erro ao emitir o formulário de integridade:', err.message);
+    return res.status(err.status || 500).json({ ok: false, erro: err.message });
+  }
+});
 
 // 2. Histórico de Versões do Relatório
 router.get(

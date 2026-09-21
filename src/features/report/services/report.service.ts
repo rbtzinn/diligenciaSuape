@@ -86,6 +86,20 @@ export const ReportService = {
     return downloadPdf(url, `Evidencias_entidade_${entityId}.pdf`, body);
   },
 
+  /**
+   * Formulário de Diligência de SUAPE preenchido, para baixar.
+   *
+   * Não gera registro nem versão: é um documento avulso, montado a
+   * partir da avaliação que está na tela naquele momento.
+   */
+  async downloadIntegrityForm(
+    diligenceId: string,
+    payload: Record<string, unknown>,
+  ): Promise<{ fileName: string; hash: string }> {
+    const url = resolveApiUrl(`/api/diligences/${diligenceId}/integrity-form`);
+    return downloadPdf(url, `Avaliacao_integridade_${diligenceId}.pdf`, payload);
+  },
+
   async listReports(diligenceId: string): Promise<DiligenceReportMetadata[]> {
     try {
       const data = await request<{ ok: boolean; items: DiligenceReportMetadata[] }>(

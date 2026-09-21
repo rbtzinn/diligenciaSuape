@@ -18,6 +18,7 @@ import { RiskOverrideModal } from './RiskOverrideModal';
 import { EvidenceCenterDrawer } from './EvidenceCenterDrawer';
 import { NewsWorkspace } from './NewsWorkspace';
 import { currencyToNumber } from '../../../lib/masks';
+import type { IntegrityFormPayload } from '../utils/integrityFormPayload';
 import { NarrativeReportView } from './NarrativeReportView';
 import { SuapeIntegrityEvaluationView } from './SuapeIntegrityEvaluationView';
 import { ResearchOverviewView } from './ResearchOverviewView';
@@ -239,6 +240,17 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
     return resposta.criada
       ? `${aba}Linha gravada na aba ${resposta.aba}, linha ${resposta.linha}.`
       : `${aba}Linha ${resposta.linha} da aba ${resposta.aba} atualizada com esta avaliação.`;
+  };
+
+  /**
+   * Emite o Formulário de Diligência preenchido e entrega o arquivo.
+   *
+   * Nada é gravado: o PDF é montado no pedido e baixado. Guardar cópia
+   * criaria duas verdades sobre a mesma avaliação — a do arquivo e a da
+   * diligência, que segue sendo revista.
+   */
+  const handleDownloadIntegrityForm = async (dados: IntegrityFormPayload) => {
+    await ReportService.downloadIntegrityForm(diligence.id, { ...dados });
   };
 
   const handleSaveNews = async () => {
@@ -478,6 +490,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           onValorContratoChange={setContractValueStr}
           onOpenEvidence={() => setActiveDrawer('evidence')}
           onSaveRiskMapRow={handleSaveRiskMapRow}
+          onDownloadIntegrityForm={handleDownloadIntegrityForm}
           onOpenNetwork={() => openSection('mapa')}
           onDeepenResearch={handleDeepenResearch}
           isResearching={isRefreshingMedia}
