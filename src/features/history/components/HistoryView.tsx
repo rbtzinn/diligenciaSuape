@@ -56,10 +56,24 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ onOpenDiligence, onNew
   const [itemToDelete, setItemToDelete] = useState<DiligenceSummary | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // O cartão traz o resumo; o dossiê completo vem do Google Sheets ao abrir.
   const handleOpenItem = async (summaryItem: DiligenceSummary) => {
-    const full = await HistoryStorage.getById(summaryItem.id);
+    setLoadError(null);
+    let full: DiligenceItem | null;
+    try {
+      full = await HistoryStorage.getById(summaryItem.id);
+    } catch (error) {
+      // Mesma armadilha do remover: sem `catch`, a fonte fora do ar
+      // virava rejeição não tratada e a tela não reagia ao clique.
+      setLoadError(
+        error instanceof Error
+          ? `Não foi possível abrir este dossiê: ${error.message}`
+          : 'Não foi possível abrir este dossiê agora.'
+      );
+      return;
+    }
     // Sem o dossiê completo não há o que abrir. Antes o resumo era passado
     // adiante como se fosse o dossiê, e a tela renderizava um dossiê sem
     // empresa, sem sócios e sem evidência — parecendo vazio em vez de
@@ -72,12 +86,24 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ onOpenDiligence, onNew
     onOpenDiligence(full);
   };
 
+  // `try/finally` sem `catch` deixava a falha subir como rejeição não
+  // tratada: o diálogo ficava aberto sem dizer nada, o analista clicava
+  // de novo, e a única pista era um "Uncaught (in promise)" no console —
+  // que ninguém vê no celular. A falha agora é dita onde o clique
+  // aconteceu, dentro do próprio diálogo.
   const handleConfirmDelete = async () => {
     if (!itemToDelete) return;
     setIsDeleting(true);
+    setDeleteError(null);
     try {
       await deleteDiligence(itemToDelete.id);
       setItemToDelete(null);
+    } catch (error) {
+      setDeleteError(
+        error instanceof Error
+          ? `Não foi possível remover agora: ${error.message}`
+          : 'Não foi possível remover o dossiê agora.'
+      );
     } finally {
       setIsDeleting(false);
     }
@@ -152,7 +178,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ onOpenDiligence, onNew
         ) : (
           <div className="flex animate-fade-in flex-col gap-2">
             {items.map((item) => (
-              <HistoryCard key={item.id} item={item} onOpen={handleOpenItem} onDelete={() => setItemToDelete(item)} />
+              <HistoryCard key={item.id} item={item} onOpen={handleOpenItem} onDelete={() => { setDeleteError(null); setItemToDelete(item); }} />
             ))}
           </div>
         )}
@@ -160,14 +186,14 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ onOpenDiligence, onNew
 
       <Modal
         isOpen={Boolean(itemToDelete)}
-        onClose={() => setItemToDelete(null)}
+        onClose={() => { setItemToDelete(null); setDeleteError(null); }}
         role="alertdialog"
         title="Remover dossiê da visualização"
         icon={<Icons.Trash size={17} />}
         size="sm"
         footer={
           <>
-            <Button variant="ghost" onClick={() => setItemToDelete(null)} disabled={isDeleting}>
+            <Button variant="ghost" onClick={() => { setItemToDelete(null); setDeleteError(null); }} disabled={isDeleting}>
               Cancelar
             </Button>
             <Button variant="danger" onClick={handleConfirmDelete} isLoading={isDeleting} loadingLabel="Removendo…">
@@ -187,6 +213,12 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ onOpenDiligence, onNew
             <Note tone="info" icon={<Icons.ShieldCheck size={15} aria-hidden="true" />}>
               O conteúdo, as versões, os relatórios e a auditoria continuarão preservados na planilha.
             </Note>
+
+            {deleteError ? (
+              <Note tone="high" role="alert">
+                {deleteError} O dossiê continua na lista.
+              </Note>
+            ) : null}
           </>
         ) : null}
       </Modal>

@@ -86,6 +86,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }
       onSelectRecent(full);
       onCloseMobile?.();
+    } catch {
+      // `try/finally` sem `catch` deixava a fonte fora do ar virar
+      // rejeição não tratada: o item piscava e nada acontecia. A tela de
+      // histórico já sabe explicar a falha, então é para lá que o
+      // clique vai.
+      go('history');
     } finally {
       setOpeningId(null);
     }
