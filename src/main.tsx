@@ -15,6 +15,7 @@ import './styles/tokens.css';
 import './styles/tailwind.css';
 import './styles/base.css';
 import './styles/experience.css';
+import './styles/suape-layout.css';
 
 const rootElement = document.getElementById('root');
 

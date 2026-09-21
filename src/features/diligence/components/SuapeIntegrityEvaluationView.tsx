@@ -372,8 +372,9 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
     return (
       <div
         key={String(key)}
+        data-answer={value === true ? 'yes' : value === false ? 'no' : 'pending'}
         className={cn(
-          'flex min-w-0 items-center justify-between gap-3 rounded-[var(--control-radius-md)] border px-3 py-2',
+          'suape-answer-row flex min-w-0 items-center justify-between gap-3 rounded-[var(--control-radius-md)] border px-3 py-2',
           value === true ? 'border-high-line bg-high-bg' : 'border-line bg-surface',
         )}
       >
@@ -384,18 +385,17 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
         <div
           role="group"
           aria-label={label}
-          className="flex shrink-0 overflow-hidden rounded-[var(--control-radius-sm)] border border-line"
+          className="suape-answer-options flex shrink-0 overflow-hidden rounded-[var(--control-radius-sm)] border border-line"
         >
           {[
             { option: true as QuestionnaireAnswer, text: 'Sim' },
             { option: false as QuestionnaireAnswer, text: 'Não' },
-            { option: null as QuestionnaireAnswer, text: '—' },
           ].map(({ option, text }) => (
             <button
               key={text}
               type="button"
               aria-pressed={value === option}
-              onClick={() => handleSetAnswer(key, option)}
+              onClick={() => handleSetAnswer(key, value === option ? null : option)}
               className={cn(
                 'min-h-[var(--control-height-sm)] px-2.5 text-2xs font-semibold transition-colors',
                 value === option
@@ -414,10 +414,10 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
   };
 
   return (
-    <div className="min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto bg-canvas pb-12">
-      <div className="mx-auto flex w-full max-w-content flex-col gap-4 px-gutter pt-5">
+    <div className="suape-evaluation min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto bg-canvas">
+      <div className="suape-evaluation-inner mx-auto flex w-full max-w-content flex-col gap-4 px-gutter pt-5">
         {/* ---- Cabeçalho ---- */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="suape-evaluation-heading flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-2xs font-bold uppercase tracking-[0.14em] text-brand">Complemento SUAPE</p>
             <h1 className="text-xl font-extrabold text-ink">Avaliação de integridade</h1>
@@ -427,7 +427,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
           <div className="flex shrink-0 items-center gap-2">
             {onOpenNetwork ? (
               <Button size="sm" variant="ghost" icon={<Icons.Network size={15} />} onClick={onOpenNetwork}>
-                Grafo
+                Vínculos
               </Button>
             ) : null}
             {onOpenEvidence ? (
@@ -443,15 +443,18 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
               title={copyBlocked ? 'Importe o questionário para liberar a linha.' : undefined}
               onClick={handleCopyRow}
             >
-              {copied ? 'Copiado' : 'Copiar linha'}
+              {copied ? 'Copiado' : 'Exportar linha'}
             </Button>
           </div>
         </div>
 
-        <div className="rounded-xl border border-brand-line bg-brand-soft px-4 py-3 text-xs leading-relaxed text-ink-2">
-          <strong className="block text-sm text-brand">Do questionário à decisão</strong>
-          Anexe as respostas do terceiro, confira os dados extraídos e revise a classificação orientada pela Política de Contratação de Terceiros. Esta avaliação complementa a pesquisa pública e tem critérios próprios.
-        </div>
+        <div className="suape-top-grid">
+          <div className="suape-intro-card rounded-xl border border-brand-line bg-brand-soft px-4 py-3 text-xs leading-relaxed text-ink-2">
+            <span className="suape-intro-icon" aria-hidden="true">i</span>
+            <div><strong className="block text-sm text-brand">Do questionário à decisão</strong>
+              <p>Anexe as respostas do terceiro, confira os dados extraídos e revise a classificação orientada pela Política de Contratação de Terceiros. Esta avaliação complementa a pesquisa pública e tem critérios próprios.</p>
+            </div>
+          </div>
 
         {copyError ? (
           <Note tone="high" role="alert">
@@ -472,9 +475,12 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
             setAnswerSource(null);
           }}
         />
+        </div>
 
+        <div className="suape-analysis-grid">
         {/* ---- 2. Classificação ---- */}
         <Section
+          className="suape-classification"
           title="Classificação"
           trailing={
             answerSource ? (
@@ -541,6 +547,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
         {/* ---- 3. Pesquisa exigida pela classificação ---- */}
         {evaluation.researchRequired ? (
           <Section
+            className="suape-research"
             title="Reputação e cadastros"
             subtitle="Exigidas por esta classificação."
             trailing={
@@ -626,10 +633,11 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
 
         {/* ---- 4. Checklist ---- */}
         <Section
+          className="suape-answers"
           title="Respostas do terceiro"
           subtitle="Confira antes de gerar a linha."
           collapsible
-          defaultOpen={evaluation.status !== 'completo'}
+          defaultOpen
         >
           <div className="flex flex-col gap-4">
             <div className="grid gap-2 lg:grid-cols-2">
@@ -642,47 +650,30 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
               )}
             </div>
 
-            <div className="border-t border-line-soft pt-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-ink-2">Programa de integridade</span>
-                {evaluation.maturity.percent !== null ? (
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span className="text-xs font-bold text-ink">{evaluation.maturity.percent}%</span>
-                    <Chip size="sm" tone={MATURITY_TONE[evaluation.maturity.level || ''] || 'muted'}>
-                      {evaluation.maturity.level}
-                    </Chip>
-                  </div>
-                ) : (
-                  <Chip size="sm" tone="muted">
-                    sem respostas
-                  </Chip>
-                )}
-              </div>
+          </div>
+        </Section>
+        </div>
 
-              {evaluation.maturity.percent !== null ? (
-                <div
-                  role="img"
-                  aria-label={`Maturidade: ${evaluation.maturity.percent}%`}
-                  className="mt-2 h-1 w-full bg-surface-subtle"
-                >
-                  <span
-                    className="block h-full bg-brand"
-                    style={{ width: `${evaluation.maturity.percent}%` }}
-                  />
-                </div>
-              ) : null}
-
-              <div className="mt-3 grid gap-2 lg:grid-cols-2">
-                {SUAPE_MATURITY_ITEMS.map((item) =>
-                  renderAnswer(item.key as keyof IntegrityAnswers, `peso ${item.weight}`, item.text)
-                )}
-              </div>
+        <Section
+          className="suape-maturity"
+          title="Programa de integridade"
+          trailing={evaluation.maturity.percent !== null ? (
+            <><strong className="text-xs">{evaluation.maturity.percent}%</strong><Chip size="sm" tone={MATURITY_TONE[evaluation.maturity.level || ''] || 'muted'}>{evaluation.maturity.level}</Chip></>
+          ) : <Chip size="sm" tone="muted">sem respostas</Chip>}
+        >
+          {evaluation.maturity.percent !== null ? (
+            <div role="img" aria-label={`Maturidade: ${evaluation.maturity.percent}%`} className="suape-maturity-track">
+              <span style={{ width: `${evaluation.maturity.percent}%` }} />
             </div>
+          ) : null}
+          <div className="suape-maturity-grid grid gap-2 lg:grid-cols-2">
+            {SUAPE_MATURITY_ITEMS.map((item) => renderAnswer(item.key as keyof IntegrityAnswers, `peso ${item.weight}`, item.text))}
           </div>
         </Section>
 
         {/* ---- 5. Pontos de atenção ---- */}
         <Section
+          className="suape-points"
           title="Pontos de atenção"
           subtitle="Vão para a coluna de observações do Mapa."
           collapsible
@@ -730,6 +721,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
 
         {/* ---- 6. Linha do Mapa de Risco ---- */}
         <Section
+          className="suape-map"
           title="Linha do Mapa de Risco"
           subtitle="40 colunas, para colar na primeira célula da linha."
         >

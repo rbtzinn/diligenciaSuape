@@ -42,6 +42,12 @@ import { Chip } from '../../../components/ui/Chip';
 interface DiligenceDashboardProps {
   diligence: DiligenceItem;
   onBack: () => void;
+  onOpenHistory: () => void;
+  onOpenSources: () => void;
+  historyCount: number;
+  userInitials: string;
+  onOpenLogout: () => void;
+  logoutButtonRef: React.RefObject<HTMLButtonElement>;
   onDrillCompany?: (cnpj: string, name: string) => void;
 }
 
@@ -55,6 +61,12 @@ function isDashboardSection(section: string | undefined): section is DashboardSe
 export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   diligence,
   onBack,
+  onOpenHistory,
+  onOpenSources,
+  historyCount,
+  userInitials,
+  onOpenLogout,
+  logoutButtonRef,
   onDrillCompany,
 }) => {
   const navigate = useNavigate();
@@ -392,11 +404,15 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const safePepResults = Array.isArray(diligence.pepResults) ? diligence.pepResults : [];
 
   return (
-    <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+    <main className="suape-dashboard flex min-h-0 min-w-0 flex-1 flex-col" data-section={activeTab}>
       {/* A identificação permanece fixa acima da navegação lateral.
           No celular o menu de seções abre como gaveta. */}
-      <div className="shrink-0 border-b border-deep-line bg-deep text-on-deep">
-        <div className="mx-auto flex w-full max-w-content items-center gap-2 px-gutter py-2 sm:gap-3 sm:py-3">
+      <div className="suape-dashboard-header shrink-0 border-b border-deep-line bg-deep text-on-deep">
+        <button type="button" className="suape-dashboard-brand" onClick={onBack} aria-label="Nova diligência">
+          <span className="suape-dashboard-brand-icon"><img src="/assets/IconeSUAPEAZUL-semfundo.png" alt="" width={24} height={24} /></span>
+          <span><strong>Diligência 360</strong><small>COMPLIANCE SUAPE</small></span>
+        </button>
+        <div className="suape-company-toolbar flex w-full min-w-0 items-center gap-2 px-gutter py-2 sm:gap-3">
           {/* Só a seta, em qualquer largura: o rótulo "Nova busca"
               repetia o que a seta já diz e, no celular, empurrava o
               CNPJ para fora. */}
@@ -438,16 +454,17 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
             </h1>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="suape-research-actions flex shrink-0 items-center gap-2">
             <button
               type="button"
               onClick={() => setMobileSectionsOpen(true)}
               aria-label="Abrir seções da diligência"
               aria-controls="diligence-sections"
               aria-expanded={mobileSectionsOpen}
-              className="grid size-9 place-items-center rounded-md border border-deep-line bg-deep-raised text-on-deep lg:hidden"
+              className="suape-mobile-menu-button flex h-9 items-center gap-1.5 rounded-md border border-deep-line bg-deep-raised px-2.5 text-on-deep lg:hidden"
             >
               <Icons.Menu size={17} />
+              <span className="text-xs font-semibold">Menu</span>
             </button>
             {/* O índice da pesquisa mantém seu cálculo e ajuste próprios. */}
             <button
@@ -479,11 +496,17 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
               <span className="sr-only sm:hidden">Exportar dossiê em PDF</span>
             </Button>
           </div>
+          <nav className="suape-global-nav" aria-label="Ações principais">
+            <button type="button" onClick={onBack}><Icons.Search size={16} /><span>Nova consulta</span></button>
+            <button type="button" onClick={onOpenHistory}><Icons.History size={16} /><span>Histórico</span>{historyCount > 0 ? <em>{historyCount}</em> : null}</button>
+            <button type="button" onClick={onOpenSources}><Icons.Database size={16} /><span>Fontes</span></button>
+            <button ref={logoutButtonRef} type="button" className="suape-global-profile" onClick={onOpenLogout} aria-label="Sair da conta">{userInitials}</button>
+          </nav>
         </div>
 
       </div>
 
-      <div className="flex min-h-0 min-w-0 flex-1">
+      <div className="suape-dashboard-row flex min-h-0 min-w-0 flex-1">
         {mobileSectionsOpen ? (
           <button
             type="button"
@@ -495,7 +518,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         <nav
           id="diligence-sections"
           aria-label="Seções da diligência"
-          className={`z-drawer fixed inset-y-0 left-0 flex w-[252px] shrink-0 flex-col overflow-y-auto border-r border-deep-line bg-deep px-3 py-5 text-on-deep transition-transform lg:static lg:visible lg:translate-x-0 ${mobileSectionsOpen ? 'visible translate-x-0' : 'invisible -translate-x-full'}`}
+          className={`suape-shell-nav z-drawer fixed inset-y-0 left-0 flex w-[252px] shrink-0 flex-col overflow-y-auto border-r border-deep-line bg-deep px-3 py-5 text-on-deep transition-transform lg:static lg:visible lg:translate-x-0 ${mobileSectionsOpen ? 'visible translate-x-0' : 'invisible -translate-x-full'}`}
         >
           <div className="mb-6 flex items-start justify-between gap-2 px-2">
             <div>
@@ -531,6 +554,15 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
               <span className="min-w-0"><span className="block text-xs font-bold">Avaliação de integridade</span><span className={`block text-2xs ${activeTab === 'suape' ? 'text-ink-3' : 'text-on-deep-3'}`}>{officialEvaluation.calculatedRisk ? officialEvaluation.riskDisplay : 'Anexar questionário'}</span></span>
             </button>
             <p className="px-3 pt-3 text-2xs leading-relaxed text-on-deep-3">Questionário + Política de Contratação de Terceiros.</p>
+          </div>
+          <div className="suape-mobile-utilities border-t border-deep-line pt-4 lg:hidden">
+            <p className="px-3 text-2xs font-bold uppercase tracking-[0.13em] text-on-deep-3">Acesso rápido</p>
+            <button type="button" onClick={() => { setMobileSectionsOpen(false); onBack(); }}>Nova consulta</button>
+            <button type="button" onClick={() => { setMobileSectionsOpen(false); onOpenHistory(); }}>Histórico {historyCount > 0 ? `(${historyCount})` : ''}</button>
+            <button type="button" onClick={() => { setMobileSectionsOpen(false); onOpenSources(); }}>Fontes oficiais</button>
+            <button type="button" onClick={() => { setMobileSectionsOpen(false); setRiskModalOpen(true); }}>Índice de atenção: {effectiveRisk.score}/100</button>
+            <button type="button" disabled={isExportingPdf} onClick={() => { setMobileSectionsOpen(false); handleExportPdf(); }}>{isExportingPdf ? 'Gerando dossiê…' : 'Baixar dossiê PDF'}</button>
+            <button type="button" onClick={() => { setMobileSectionsOpen(false); onOpenLogout(); }}>Sair da conta</button>
           </div>
           <div className="mt-auto border-t border-deep-line px-3 pt-4 text-2xs leading-relaxed text-on-deep-3">O índice da pesquisa e a avaliação SUAPE têm critérios próprios.</div>
         </nav>

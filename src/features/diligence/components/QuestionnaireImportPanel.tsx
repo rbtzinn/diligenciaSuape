@@ -82,7 +82,6 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [notice, setNotice] = useState<{ tone: 'warn' | 'high'; text: string } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
 
   const prompt = useMemo(
     () => buildQuestionnaireExtractionPrompt({ razaoSocial, cnpj }),
@@ -191,8 +190,15 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
           '7.7': detalhes.q7_7_pepFamiliar ?? null,
           '7.8': detalhes.q7_8_parentescoSuape ?? null,
           '7.9': detalhes.q7_9_participacaoGoverno ?? null,
+          '8.1': detalhes.maturidade?.['8.1'] ?? null,
           '8.2': detalhes.q8_2_codigoConduta ?? null,
+          '8.3': detalhes.maturidade?.['8.3'] ?? null,
+          '8.4': detalhes.maturidade?.['8.4'] ?? null,
+          '8.5': detalhes.maturidade?.['8.5'] ?? null,
+          '8.6': detalhes.maturidade?.['8.6'] ?? null,
           '8.7': detalhes.q8_7_treinamentoGestao ?? null,
+          '8.8': detalhes.maturidade?.['8.8'] ?? null,
+          '8.9': detalhes.maturidade?.['8.9'] ?? null,
           '9.0': detalhes.q9_0_complianceOfficer ?? null,
           alcadaConselho: detalhes.alcadaConselho ?? null,
         },
@@ -221,6 +227,7 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
 
   return (
     <Section
+      className="suape-import-card"
       title="Anexar questionário de diligência"
       subtitle="As respostas alimentam a avaliação SUAPE após sua conferência."
       trailing={
@@ -240,18 +247,22 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
         </div>
       }
     >
-      <div className="flex flex-col gap-4">
-        {appliedFrom ? (
-          <Note tone="ok" role="status" icon={<Icons.Check size={16} />}>
-            Importado de {appliedFrom}. Confira o checklist antes de gerar a linha.
-          </Note>
-        ) : null}
+      <div className="suape-import-body flex flex-col gap-4">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".xlsx,.xls"
+          className="hidden"
+          onChange={(event) => {
+            if (event.target.files?.[0]) handleFileUpload(event.target.files[0]);
+          }}
+        />
 
         {/* Alternância entre os dois caminhos de ingestão. */}
         <div
           role="tablist"
           aria-label="Forma de importar o questionário"
-          className="flex gap-1 rounded-[var(--control-radius-md)] bg-surface-subtle p-1"
+          className="suape-import-modes flex gap-1 rounded-[var(--control-radius-md)] bg-surface-subtle p-1"
         >
           {MODES.map((item) => (
             <button
@@ -259,7 +270,10 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
               role="tab"
               type="button"
               aria-selected={mode === item.id}
-              onClick={() => setMode(item.id)}
+              onClick={() => {
+                setMode(item.id);
+                if (item.id === 'arquivo') fileInputRef.current?.click();
+              }}
               className={cn(
                 'flex min-h-[var(--control-height-sm)] flex-1 items-center justify-center gap-1.5 rounded-[var(--control-radius-sm)] px-3 text-xs font-semibold transition-colors',
                 mode === item.id
@@ -267,11 +281,18 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
                   : 'text-ink-3 hover:text-ink',
               )}
             >
+              {item.id === 'arquivo' ? <Icons.Upload size={15} /> : <Icons.FileText size={15} />}
               <span className="truncate">{item.label}</span>
               <span className="hidden truncate text-2xs text-ink-3 sm:inline">· {item.hint}</span>
             </button>
           ))}
         </div>
+
+        {appliedFrom ? (
+          <Note tone="ok" role="status" icon={<Icons.Check size={16} />}>
+            Importado de {appliedFrom}. Confira o checklist antes de gerar a linha.
+          </Note>
+        ) : null}
 
         {notice ? (
           <Note tone={notice.tone} role={notice.tone === 'high' ? 'alert' : 'status'}>
@@ -429,55 +450,7 @@ export const QuestionnaireImportPanel: React.FC<QuestionnaireImportPanelProps> =
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls"
-              className="hidden"
-              onChange={(event) => {
-                if (event.target.files?.[0]) handleFileUpload(event.target.files[0]);
-              }}
-            />
-            <button
-              type="button"
-              disabled={isUploading}
-              onDragOver={(event) => {
-                event.preventDefault();
-                setIsDragging(true);
-              }}
-              onDragLeave={(event) => {
-                event.preventDefault();
-                setIsDragging(false);
-              }}
-              onDrop={(event) => {
-                event.preventDefault();
-                setIsDragging(false);
-                if (event.dataTransfer.files?.[0]) handleFileUpload(event.dataTransfer.files[0]);
-              }}
-              onClick={() => fileInputRef.current?.click()}
-              className={cn(
-                'flex w-full flex-col items-center gap-2 rounded-[var(--radius-card)] border border-dashed p-6 text-center transition-colors',
-                isDragging ? 'border-brand bg-brand-soft' : 'border-line hover:border-line-strong hover:bg-surface-hover',
-                isUploading && 'pointer-events-none opacity-70',
-              )}
-            >
-              {isUploading ? (
-                <>
-                  <span
-                    aria-hidden="true"
-                    className="size-5 animate-spin rounded-full border-2 border-brand border-t-transparent"
-                  />
-                  <span className="text-xs font-semibold text-ink">Lendo o questionário…</span>
-                </>
-              ) : (
-                <>
-                  <Icons.Upload size={20} className="text-ink-3" />
-                  <span className="text-xs font-semibold text-ink">
-                    Selecione ou arraste o questionário
-                  </span>
-                </>
-              )}
-            </button>
+            {isUploading ? <p role="status" className="text-xs text-brand">Lendo o questionário…</p> : null}
             {pendingFileImport ? (
               <div className="rounded-lg border border-brand-line bg-brand-soft p-4">
                 <p className="text-xs font-bold text-brand">Confira antes de aplicar</p>
