@@ -214,10 +214,29 @@ class GoogleSheetsClient {
    */
   /** Nomes das abas existentes na planilha. */
   async listSheetTitles() {
-    const metadados = await this.request('', { query: { fields: 'sheets.properties.title' } });
+    return (await this.listSheets()).map((aba) => aba.title);
+  }
+
+  /** Abas com o identificador que o endereço `#gid=` usa. */
+  async listSheets() {
+    const metadados = await this.request('', {
+      query: { fields: 'sheets.properties(title,sheetId)' },
+    });
     return (metadados.sheets || [])
-      .map((aba) => aba?.properties?.title)
-      .filter(Boolean);
+      .map((aba) => ({ title: aba?.properties?.title, sheetId: aba?.properties?.sheetId }))
+      .filter((aba) => aba.title);
+  }
+
+  /**
+   * Endereço da planilha, já aberto na aba indicada.
+   *
+   * Dizer "preenchido" sem dar o caminho obriga o analista a procurar a
+   * planilha em outro lugar para conferir o que acabou de ser escrito.
+   */
+  sheetUrl(sheetId) {
+    if (!this.spreadsheetId) return '';
+    const base = `https://docs.google.com/spreadsheets/d/${this.spreadsheetId}/edit`;
+    return sheetId === undefined || sheetId === null ? base : `${base}#gid=${sheetId}`;
   }
 
   async ensureSheet(title, headers = []) {

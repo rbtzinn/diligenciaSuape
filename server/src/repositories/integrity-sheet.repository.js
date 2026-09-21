@@ -182,8 +182,9 @@ const IntegritySheetRepository = {
 
     try {
       return await comTrava(async () => {
-        const abas = await cliente.listSheetTitles();
-        const faltando = [ABA_CHECKLIST, ABA_AVALIACAO].filter((aba) => !abas.includes(aba));
+        const abas = await cliente.listSheets();
+        const nomes = abas.map((aba) => aba.title);
+        const faltando = [ABA_CHECKLIST, ABA_AVALIACAO].filter((aba) => !nomes.includes(aba));
         if (faltando.length > 0) {
           return {
             ok: false,
@@ -212,7 +213,8 @@ const IntegritySheetRepository = {
           ? { sistema: doSistema, planilha: resultado.classificacao }
           : null;
 
-        return { ok: true, resultado, divergencia };
+        const aba = abas.find((item) => item.title === ABA_AVALIACAO);
+        return { ok: true, resultado, divergencia, url: cliente.sheetUrl(aba?.sheetId) };
       });
     } catch (error) {
       console.error('[GoogleSheets] Formulário de integridade não pôde ser preenchido:', error.message);

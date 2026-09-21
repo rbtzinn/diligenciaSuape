@@ -65,6 +65,8 @@ interface SuapeIntegrityEvaluationViewProps {
    * as fórmulas dela calcularam, para conferência.
    */
   onFillSuapeSheet?: (dados: ReturnType<typeof buildIntegritySheetPayload>) => Promise<string>;
+  /** Endereço da planilha, disponível depois do primeiro preenchimento. */
+  suapeSheetUrl?: string | null;
   onOpenNetwork?: () => void;
   onDeepenResearch?: () => void;
   isResearching?: boolean;
@@ -145,6 +147,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
   onSaveRiskMapRow,
   onDownloadIntegrityForm,
   onFillSuapeSheet,
+  suapeSheetUrl,
   onOpenNetwork,
   onDeepenResearch,
   isResearching = false,
@@ -867,7 +870,24 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
 
             {rowNotice ? <Note role="status">{rowNotice}</Note> : null}
             {erroFormulario ? <Note tone="high" role="alert">{erroFormulario}</Note> : null}
-            {avisoPlanilha ? <Note role="status">{avisoPlanilha}</Note> : null}
+            {avisoPlanilha ? (
+              <Note role="status">
+                {avisoPlanilha}
+                {suapeSheetUrl ? (
+                  <>
+                    {' '}
+                    <a
+                      href={suapeSheetUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold underline"
+                    >
+                      Abrir a planilha ↗
+                    </a>
+                  </>
+                ) : null}
+              </Note>
+            ) : null}
             {erroPlanilha ? <Note tone="high" role="alert">{erroPlanilha}</Note> : null}
 
             {showColumns ? (

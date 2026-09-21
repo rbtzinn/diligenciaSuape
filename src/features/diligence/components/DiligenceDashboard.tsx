@@ -74,6 +74,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   // O índice da pesquisa continua vindo de diligence.risco.
   const [integrityAnswers, setIntegrityAnswers] = useState<IntegrityAnswers>({});
   const [contractValueStr, setContractValueStr] = useState('');
+  const [suapeSheetUrl, setSuapeSheetUrl] = useState<string | null>(null);
   const [riskModalOpen, setRiskModalOpen] = useState(false);
   const [riskSaving, setRiskSaving] = useState(false);
   const [localRisk, setLocalRisk] = useState<{ diligenceId: string; risk: RiskAssessment } | null>(null);
@@ -264,6 +265,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
       ok: boolean;
       erro?: string;
       abas?: { checklist: string; avaliacao: string };
+      url?: string;
       resultado?: {
         classificacao: string;
         maturidadePercentual: number | null;
@@ -281,6 +283,8 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
     const maturidade = typeof calculado?.maturidadePercentual === 'number'
       ? ` Maturidade: ${Math.round(calculado.maturidadePercentual * 100)}% (${calculado.maturidadeRisco}).`
       : '';
+
+    if (resposta.url) setSuapeSheetUrl(resposta.url);
 
     if (resposta.divergencia) {
       return `Formulário preenchido nas abas ${resposta.abas?.checklist} e ${resposta.abas?.avaliacao}. `
@@ -532,6 +536,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           onSaveRiskMapRow={handleSaveRiskMapRow}
           onDownloadIntegrityForm={handleDownloadIntegrityForm}
           onFillSuapeSheet={handleFillSuapeSheet}
+          suapeSheetUrl={suapeSheetUrl}
           onOpenNetwork={() => openSection('mapa')}
           onDeepenResearch={handleDeepenResearch}
           isResearching={isRefreshingMedia}

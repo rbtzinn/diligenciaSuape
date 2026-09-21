@@ -129,14 +129,16 @@ test('os oito cadastros ocupam N231 a N238, na ordem do item 9.2', () => {
 
 class PlanilhaFalsa {
   constructor({ abas = ['CheckList', 'Avaliação de Integridade'], calculado = {} } = {}) {
-    this.abas = abas;
+    this.abas = abas.map((title, indice) => ({ title, sheetId: 100 + indice }));
     this.calculado = calculado;
     this.escritas = null;
   }
 
   isConfigured() { return true; }
 
-  async listSheetTitles() { return this.abas; }
+  async listSheets() { return this.abas; }
+
+  sheetUrl(sheetId) { return `https://docs.google.com/spreadsheets/d/ID/edit#gid=${sheetId}`; }
 
   async batchUpdateValues(dados) { this.escritas = dados; return {}; }
 
@@ -172,6 +174,9 @@ test('quando as duas concordam, não há divergência a relatar', async () => {
 
   assert.equal(resultado.divergencia, null);
   assert.equal(resultado.resultado.classificacao, 'Baixo');
+  // Sem o endereço, o analista teria de procurar a planilha para
+  // conferir o que acabou de ser escrito.
+  assert.match(resultado.url, /#gid=101$/);
 });
 
 test('aba ausente é dita com o remédio, em vez de escrever no lugar errado', async () => {
