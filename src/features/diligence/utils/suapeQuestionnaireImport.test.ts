@@ -5,6 +5,7 @@ import {
   checkImportedCnpj,
   parseQuestionnaireImport,
 } from './suapeQuestionnaireImport';
+import { SUAPE_EXTRA_CHOICES, SUAPE_TEXT_FIELDS } from './suapeChecklistFields';
 
 /** Monta uma transcrição válida, permitindo sobrescrever partes. */
 function transcricao(overrides: Record<string, unknown> = {}) {
@@ -176,5 +177,81 @@ describe('Conferência de CNPJ', () => {
 
   it('não alerta quando falta um dos lados', () => {
     expect(checkImportedCnpj(null, '56211027000269')).toBeNull();
+  });
+});
+
+// ==========================================================
+// Questionário completo
+//
+// A IA vinha deixando itens de fora. Parte disso é o prompt: lista
+// longa, modelo pula item. Estes testes garantem que o pedido está
+// inteiro e que o retorno parcial não some em silêncio.
+// ==========================================================
+
+describe('prompt: cobertura do questionário', () => {
+  const prompt = buildQuestionnaireExtractionPrompt({ razaoSocial: 'X', cnpj: '1' });
+
+  it('pede todas as perguntas Sim/Não, inclusive as que não entram em fórmula', () => {
+    for (const item of SUAPE_EXTRA_CHOICES) {
+      expect(prompt).toContain(`"${item.key}"`);
+    }
+    for (const chave of ['4.4', '5.2', '7.1', '7.9', '8.1', '9.0', 'alcadaConselho']) {
+      expect(prompt).toContain(`"${chave}"`);
+    }
+  });
+
+  it('pede todos os campos de texto, cada um pelo nome da chave', () => {
+    for (const campo of SUAPE_TEXT_FIELDS) {
+      expect(prompt).toContain(`"${campo.key}"`);
+    }
+  });
+
+  it('diz o número exato de chaves esperadas, para o modelo conferir', () => {
+    // Contagem explícita é o que transforma "esqueci um" em erro visível
+    // para quem transcreve, em vez de buraco silencioso na CheckList.
+    expect(prompt).toContain(`"camposTexto" tem exatamente ${SUAPE_TEXT_FIELDS.length} chaves`);
+    expect(prompt).toMatch(/"respostas" tem exatamente \d+ chaves/);
+  });
+
+  it('manda percorrer o documento por seção, que é onde o item se perde', () => {
+    expect(prompt).toMatch(/COMO PERCORRER O DOCUMENTO/);
+    expect(prompt).toMatch(/Seção 2\s+— representante/);
+  });
+
+  it('proíbe omitir chave, e não só errar o valor', () => {
+    expect(prompt).toMatch(/Chave ausente do JSON é pior do que chave com null/);
+  });
+});
+
+describe('leitura: retorno incompleto não vira dado inventado', () => {
+  it('campo de texto ausente fica fora, em vez de virar string vazia', () => {
+    const resultado = parseQuestionnaireImport(JSON.stringify({
+      versao: 'suape-questionario-1',
+      respostas: { '4.4': 'nao', '5.2': 'nao' },
+      camposTexto: { representanteNome: 'MARIA SOUZA' },
+    }));
+
+    expect(resultado.textFields.representanteNome).toBe('MARIA SOUZA');
+    expect(resultado.textFields.historicoSociedade).toBeUndefined();
+  });
+
+  it('pergunta extra ausente não entra como "não"', () => {
+    const resultado = parseQuestionnaireImport(JSON.stringify({
+      versao: 'suape-questionario-1',
+      respostas: { '4.4': 'nao', '5.2': 'nao', '1.2': 'sim' },
+    }));
+
+    expect(resultado.extraChoices['1.2']).toBe(true);
+    expect(resultado.extraChoices['6.1']).toBeUndefined();
+  });
+
+  it('as perguntas extras não contaminam as respostas que classificam', () => {
+    const resultado = parseQuestionnaireImport(JSON.stringify({
+      versao: 'suape-questionario-1',
+      respostas: { '4.4': 'nao', '5.2': 'nao', '1.2': 'sim', '6.1': 'sim' },
+    }));
+
+    expect(resultado.answers).not.toHaveProperty('1.2');
+    expect(resultado.answers).not.toHaveProperty('6.1');
   });
 });

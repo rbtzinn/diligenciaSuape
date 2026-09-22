@@ -35,6 +35,7 @@ import {
   type SuapeCalculatedRisk,
 } from '../utils/suapeRiskMapRowGenerator';
 import { QuestionnaireImportPanel, type QuestionnaireImportPayload } from './QuestionnaireImportPanel';
+import { ChecklistExtrasPanel } from './ChecklistExtrasPanel';
 import {
   buildIntegrityFormPayload,
   buildIntegritySheetPayload,
@@ -472,6 +473,16 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
             setAnswerSource(null);
           }}
         />
+
+        {/* Os demais campos do questionário, para completar o que a
+            transcrição não trouxe. Só aparece quando a tela tem para
+            onde mandá-los. */}
+        {onChecklistExtrasChange ? (
+          <ChecklistExtrasPanel
+            extras={checklistExtras || { choices: {}, texts: {} }}
+            onChange={onChecklistExtrasChange}
+          />
+        ) : null}
 
         {/* ---- 2. Classificação ---- */}
         <Section

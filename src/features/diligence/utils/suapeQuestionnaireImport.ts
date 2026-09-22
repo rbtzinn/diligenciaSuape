@@ -98,6 +98,26 @@ REGRAS OBRIGATÓRIAS:
 5. Para toda resposta "sim", preencha "evidencias" com a frase literal copiada do documento que sustenta a marcação. Sem citação literal, responda "nao_identificado".
 6. Não invente número de processo, valor ou nome. Campo ausente vai como null.
 7. O documento pode trazer as respostas em coluna separada do enunciado, ou na ordem trocada. Confira visualmente a qual pergunta cada marcação pertence antes de transcrever.
+8. Devolva TODAS as chaves listadas abaixo, sempre, mesmo as que você não encontrou. Chave ausente do JSON é pior do que chave com null: o sistema não distingue "não achei" de "esqueci".
+
+COMO PERCORRER O DOCUMENTO:
+Não procure pergunta por pergunta salteado — é assim que item se perde.
+Leia o questionário do começo ao fim, na ordem das seções, e vá
+preenchendo conforme encontra:
+
+  Seção 1  — dados cadastrais e subcontratação (1.1 a 1.3)
+  Seção 2  — representante para contato (nome, CPF, RG, telefone,
+             e-mail, nacionalidade, cargo)
+  Seção 3  — histórico da sociedade (3.1 e 3.2)
+  Seção 4  — gestão societária e partes relacionadas (4.4 e 4.5)
+  Seção 5  — participação societária (5.2 e 5.3)
+  Seção 6  — informações financeiras (6.1)
+  Seção 7  — interações com a administração pública (7.1 a 7.9)
+  Seção 8  — programa de integridade (8.1 a 8.9)
+  Seção 9  — 9.0 a 9.6, incluindo o responsável pelo programa (9.1)
+
+Ao chegar ao fim, volte à lista de chaves e confira uma a uma se todas
+estão no seu JSON.
 
 PERGUNTAS SIM/NÃO A TRANSCREVER:
 ${perguntas}
@@ -108,6 +128,12 @@ sem completar. Campo em branco, ausente ou ilegível vai como null — e
 null é a resposta certa na dúvida, não falha sua. Nunca deduza um valor
 a partir de outro campo.
 ${campos}
+
+ANTES DE ENVIAR, confira:
+- "respostas" tem exatamente ${ALL_KEYS.length + SUAPE_EXTRA_CHOICES.length} chaves;
+- "camposTexto" tem exatamente ${SUAPE_TEXT_FIELDS.length} chaves;
+- nenhuma chave foi renomeada, traduzida ou omitida;
+- a saída começa com { e termina com }, sem nenhuma palavra fora disso.
 
 FORMATO DE SAÍDA (copie a estrutura, troque os valores):
 {
@@ -124,7 +150,9 @@ FORMATO DE SAÍDA (copie a estrutura, troque os valores):
     "dataPreenchimento": null
   },
   "respostas": {
-${ALL_KEYS.map((key) => `    "${key}": "nao_identificado"`).join(',\n')}
+${[...ALL_KEYS, ...SUAPE_EXTRA_CHOICES.map((item) => item.key)]
+    .map((key) => `    "${key}": "nao_identificado"`)
+    .join(',\n')}
   },
   "camposTexto": {
 ${SUAPE_TEXT_FIELDS.map((campo) => `    "${campo.key}": null`).join(',\n')}
