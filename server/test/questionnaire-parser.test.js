@@ -102,8 +102,15 @@ test('Parser Excel com pasta de trabalho XLSX real e gerada', async () => {
     ['7.2 Licenças ordinárias', 'Sim'],
     ['7.3 Licenças contratuais', 'Não'],
     ['7.4 Interação pública', 'Não'],
+    ['8.1 Programa de integridade', 'Sim'],
     ['8.2 Código de conduta', 'Sim'],
+    ['8.3 Sanções internas', 'Não'],
+    ['8.4 Brindes', 'Sim'],
+    ['8.5 Conflito de interesses', 'Não'],
+    ['8.6 Contratos públicos', 'Sim'],
     ['8.7 Treinamento', 'Sim'],
+    ['8.8 Comunicação', 'Não'],
+    ['8.9 Controle de participação', 'Sim'],
     ['9.0 Compliance officer', 'Não'],
   ];
   const ws = xlsx.utils.aoa_to_sheet(wsData);
@@ -118,6 +125,9 @@ test('Parser Excel com pasta de trabalho XLSX real e gerada', async () => {
   assert.equal(result.dadosGerais.cnpj, '12.345.678/0001-90');
   assert.equal(result.rawAnswers['7.2'], true);
   assert.equal(result.rawAnswers['8.2'], true);
+  assert.equal(result.rawAnswers['8.3'], false);
+  assert.equal(result.rawAnswers['8.8'], false);
+  assert.equal(result.flagsIntegridade.detalhes.maturidade['8.9'], true);
   assert.equal(result.flagsIntegridade.n29_licencasOrdinarias, true);
   assert.equal(result.flagsIntegridade.riscoCalculado, 'Médio');
 });

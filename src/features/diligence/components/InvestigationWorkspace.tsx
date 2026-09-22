@@ -88,7 +88,7 @@ export const InvestigationWorkspace: React.FC<InvestigationWorkspaceProps> = ({
 
   return (
     <section className="flex h-dvh min-h-0 w-full min-w-0 flex-col overflow-hidden bg-canvas">
-      <header className="harbor-header">
+      {phase !== 'map' ? <header className="harbor-header">
       <div className="harbor-header-inner">
         <button
           type="button"
@@ -104,12 +104,6 @@ export const InvestigationWorkspace: React.FC<InvestigationWorkspaceProps> = ({
         </button>
 
         <nav aria-label="Ações principais" className="harbor-nav">
-          {phase === 'map' ? (
-            <button type="button" className="harbor-nav-link" onClick={startAnotherSearch} aria-label="Nova consulta">
-              <Icons.Search size={17} /><span>Nova consulta</span>
-            </button>
-          ) : null}
-
           <button type="button" className="harbor-nav-link" onClick={onOpenHistory} aria-label={`Histórico, ${historyCount} diligências`} title="Abrir histórico">
             <Icons.History size={17} /><span>Histórico</span>{historyCount > 0 ? <em>{historyCount}</em> : null}
           </button>
@@ -130,7 +124,7 @@ export const InvestigationWorkspace: React.FC<InvestigationWorkspaceProps> = ({
           </button>
         </nav>
       </div>
-      </header>
+      </header> : null}
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {phase === 'search' ? (
@@ -140,7 +134,18 @@ export const InvestigationWorkspace: React.FC<InvestigationWorkspaceProps> = ({
         {phase === 'loading' ? <ExperiencePulse query={visibleQuery} steps={steps} /> : null}
 
         {phase === 'map' && diligence ? (
-          <DiligenceDashboard key={diligence.id} diligence={diligence} onBack={startAnotherSearch} onDrillCompany={onDrillCompany} />
+          <DiligenceDashboard
+            key={diligence.id}
+            diligence={diligence}
+            onBack={startAnotherSearch}
+            onOpenHistory={onOpenHistory}
+            onOpenSources={onOpenSources}
+            historyCount={historyCount}
+            userInitials={userInitials(user?.name)}
+            onOpenLogout={() => setLogoutOpen(true)}
+            logoutButtonRef={logoutButtonRef}
+            onDrillCompany={onDrillCompany}
+          />
         ) : null}
       </div>
 

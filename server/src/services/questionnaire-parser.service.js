@@ -103,8 +103,15 @@ function parseSuapeXlsx(buffer) {
     '7.7': null,
     '7.8': null,
     '7.9': null,
+    '8.1': null,
     '8.2': null,
+    '8.3': null,
+    '8.4': null,
+    '8.5': null,
+    '8.6': null,
     '8.7': null,
+    '8.8': null,
+    '8.9': null,
     '9.0': null,
     alcadaConselho: null,
   };
@@ -144,9 +151,9 @@ function parseSuapeXlsx(buffer) {
   answers['7.7'] = findAnswerNear('7.7');
   answers['7.8'] = findAnswerNear('7.8');
   answers['7.9'] = findAnswerNear('7.9');
-  answers['8.2'] = findAnswerNear('8.2');
-  answers['8.7'] = findAnswerNear('8.7');
-  answers['9.0'] = findAnswerNear('9.0');
+  for (const item of ['8.1', '8.2', '8.3', '8.4', '8.5', '8.6', '8.7', '8.8', '8.9', '9.0']) {
+    answers[item] = findAnswerNear(item);
+  }
 
   // Extrai CNPJ e Razão Social
   let cnpj = '';
@@ -236,6 +243,7 @@ function parseSuapeXlsx(buffer) {
         q7_7_pepFamiliar: answers['7.7'],
         q7_8_parentescoSuape: answers['7.8'],
         q7_9_participacaoGoverno: answers['7.9'],
+        maturidade: Object.fromEntries(['8.1', '8.2', '8.3', '8.4', '8.5', '8.6', '8.7', '8.8', '8.9', '9.0'].map((item) => [item, answers[item]])),
         q8_2_codigoConduta: answers['8.2'],
         q8_7_treinamentoGestao: answers['8.7'],
         q9_0_complianceOfficer: answers['9.0'],
