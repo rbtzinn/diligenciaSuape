@@ -65,6 +65,7 @@ function completo(): QuestionnaireState {
   };
   for (const choice of ALL_CHOICES) state.choices[choice.id] = 'nao';
   state.declarationAccepted = true;
+  state.cnpjLookup = { cnpj: '20867216000166', source: 'receita' };
   return state;
 }
 

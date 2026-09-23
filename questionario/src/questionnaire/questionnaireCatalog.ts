@@ -36,6 +36,8 @@ export interface TextFieldDef {
   multiline?: boolean;
   mask?: TextMask;
   required?: boolean;
+  /** Vem da Receita pelo CNPJ: fica bloqueado, cinza, e só a busca preenche. */
+  fromCnpj?: boolean;
   /** Ocupa a linha inteira na grade de campos. */
   wide?: boolean;
 }
@@ -141,13 +143,13 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
     number: '1',
     title: 'Dados gerais da pessoa jurídica',
     items: [
-      { kind: 'text', id: 'razaoSocial', ref: '1.1', label: 'Razão Social e Tipo Societário', required: true, wide: true },
-      { kind: 'text', id: 'cnpj', label: 'CNPJ', mask: 'cnpj', required: true },
-      { kind: 'text', id: 'dataConstituicao', label: 'Data da Constituição da Sociedade', mask: 'date', required: true },
+      { kind: 'text', id: 'cnpj', ref: '1.1', label: 'CNPJ', mask: 'cnpj', required: true },
+      { kind: 'text', id: 'razaoSocial', label: 'Razão Social e Tipo Societário', required: true, fromCnpj: true, wide: true },
+      { kind: 'text', id: 'dataConstituicao', label: 'Data da Constituição da Sociedade', mask: 'date', required: true, fromCnpj: true },
       { kind: 'text', id: 'objetoSocial', label: 'Objeto Social', required: true, wide: true },
-      { kind: 'text', id: 'ramoAtividade', label: 'Ramo de Atividade', required: true },
+      { kind: 'text', id: 'ramoAtividade', label: 'Ramo de Atividade', required: true, fromCnpj: true },
       { kind: 'text', id: 'numeroEmpregados', label: 'Nº de Empregados', mask: 'integer', required: true },
-      { kind: 'text', id: 'endereco', label: 'Endereço', required: true, wide: true },
+      { kind: 'text', id: 'endereco', label: 'Endereço', required: true, wide: true, fromCnpj: true },
       { kind: 'text', id: 'sitioEletronico', label: 'Sítio Eletrônico', mask: 'url' },
       { kind: 'text', id: 'paisesLocalidades', label: 'Países e Localidades nos quais a Pessoa Jurídica atua', required: true },
       { kind: 'text', id: 'servicoPrestado', label: 'Serviço a ser Prestado', required: true, wide: true },

@@ -54,7 +54,14 @@ export interface QuestionnaireState {
   registriesNone: boolean;
   evidences: Record<string, Evidence[]>;
   declarationAccepted: boolean;
+  /**
+   * De qual CNPJ vieram os dados da empresa. `receita`: preenchidos pela
+   * busca; `manual`: a busca estava fora do ar e a empresa digitou.
+   */
+  cnpjLookup?: { cnpj: string; source: 'receita' | 'manual' };
 }
+
+export const cleanCnpj = (value: string) => value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
 
 export interface Issue {
   /** Âncora na tela (`q-<id>`), para levar o usuário até a pendência. */
@@ -225,6 +232,12 @@ function validateEvidence(choice: ChoiceDef, state: QuestionnaireState, issues: 
 export function validateQuestionnaire(state: QuestionnaireState): Issue[] {
   const issues: Issue[] = [];
   const registriesRequired = requiresRegistries(state);
+
+  // Dados da empresa só valem se vieram do CNPJ informado.
+  const cnpj = state.fields.cnpj || '';
+  if (CNPJ.validate(cnpj) && state.cnpjLookup?.cnpj !== cleanCnpj(cnpj)) {
+    issues.push({ anchor: 'q-cnpj', message: '1.1 · CNPJ: aguarde a busca dos dados da empresa na Receita.' });
+  }
 
   for (const section of QUESTIONNAIRE_SECTIONS) {
     for (const item of section.items) {

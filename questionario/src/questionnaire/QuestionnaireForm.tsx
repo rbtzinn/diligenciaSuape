@@ -32,6 +32,7 @@ import {
 } from './questionnaireCatalog';
 import {
   answeredCount,
+  cleanCnpj,
   emptyState,
   evidenceIsRequired,
   fromDraft,
@@ -46,6 +47,8 @@ import {
   type TableRow,
 } from './questionnaireState';
 import { buildQuestionnairePdf, canEmbedPdf, sha256Hex } from './questionnairePdf';
+import { allowManualCompany, applyCompany, clearCompany, fetchCompany } from './cnpjLookup';
+import { CNPJ } from '../lib/cnpj';
 
 const DRAFT_KEY = 'd360.questionario.rascunho.v1';
 // Ícone azul: a "Marca" sem fundo é branca, feita para fundo escuro.
@@ -65,25 +68,41 @@ type Update = (updater: (state: QuestionnaireState) => QuestionnaireState) => vo
 
 // ---------------------------------------------------------- campos
 
-const Field: React.FC<{ field: TextFieldDef; state: QuestionnaireState; update: Update }> = ({ field, state, update }) => {
+const Field: React.FC<{ field: TextFieldDef; state: QuestionnaireState; update: Update; hint?: React.ReactNode }> = ({
+  field,
+  state,
+  update,
+  hint,
+}) => {
   const label = `${field.ref ? `${field.ref} · ` : ''}${field.label}${field.required ? ' *' : ''}`;
   const value = state.fields[field.id] || '';
   const onChange = (next: string) => update((s) => ({ ...s, fields: { ...s.fields, [field.id]: next } }));
+  // Dado da Receita: cinza e travado, a menos que a busca esteja fora do ar.
+  const locked = Boolean(field.fromCnpj) && state.cnpjLookup?.source !== 'manual';
   return (
     <div id={`q-${field.id}`} className={cn('min-w-0 scroll-mt-24', field.wide && 'sm:col-span-2')}>
       {field.multiline ? (
-        <TextArea label={label} rows={3} value={value} onChange={(e) => onChange(e.target.value)} />
+        <TextArea label={label} rows={3} value={value} hint={hint} onChange={(e) => onChange(e.target.value)} />
       ) : (
         <TextField
           label={label}
           value={value}
           mask={field.mask}
-         
+          hint={hint ?? (locked ? 'Preenchido automaticamente pela Receita Federal a partir do CNPJ.' : undefined)}
+          disabled={locked}
           onChange={(e) => onChange(e.target.value)}
         />
       )}
     </div>
   );
+};
+
+type LookupStatus = { tone: 'busy' | 'ok' | 'error'; text: string } | null;
+
+const LOOKUP_TONE: Record<'busy' | 'ok' | 'error', string> = {
+  busy: 'text-ink-3',
+  ok: 'text-ok-text',
+  error: 'text-high-text',
 };
 
 const TableField: React.FC<{ table: TableDef; state: QuestionnaireState; update: Update }> = ({ table, state, update }) => {
@@ -415,10 +434,76 @@ export const QuestionnaireForm: React.FC = () => {
   const progress = answeredCount(state);
   const hasFiles = Object.values(state.evidences).some((list) => list.some((item) => item.kind === 'file'));
 
+  // ---- Busca do CNPJ na Receita ----
+  const cnpjValue = state.fields.cnpj || '';
+  const cnpjKey = CNPJ.validate(cnpjValue) ? cleanCnpj(cnpjValue) : '';
+  const [lookupStatus, setLookupStatus] = useState<LookupStatus>(null);
+  const [lookupAttempt, setLookupAttempt] = useState(0);
+  const lookupRef = useRef(state.cnpjLookup);
+  lookupRef.current = state.cnpjLookup;
+
+  useEffect(() => {
+    const current = lookupRef.current;
+    if (!cnpjKey) {
+      // CNPJ apagado ou incompleto: os dados da empresa anterior saem.
+      setLookupStatus(null);
+      if (current) setState((s) => clearCompany(s));
+      return undefined;
+    }
+    if (current?.cnpj === cnpjKey && lookupAttempt === 0) {
+      setLookupStatus(current.source === 'receita'
+        ? { tone: 'ok', text: 'Dados da empresa carregados da Receita Federal.' }
+        : { tone: 'error', text: 'Consulta à Receita indisponível: preencha os dados da empresa.' });
+      return undefined;
+    }
+    const controller = new AbortController();
+    setLookupStatus({ tone: 'busy', text: 'Buscando os dados da empresa na Receita Federal…' });
+    fetchCompany(cnpjKey, controller.signal)
+      .then((result) => {
+        if (result.ok) {
+          setState((s) => applyCompany(s, cnpjKey, result.company));
+          setLookupStatus({ tone: 'ok', text: 'Dados da empresa carregados da Receita Federal.' });
+        } else if (result.reason === 'nao-encontrado') {
+          setState((s) => clearCompany(s));
+          setLookupStatus({ tone: 'error', text: 'CNPJ não encontrado na Receita Federal. Confira o número.' });
+        } else {
+          setState((s) => allowManualCompany(s, cnpjKey));
+          setLookupStatus({ tone: 'error', text: 'Consulta à Receita indisponível agora: os dados da empresa foram liberados para digitação.' });
+        }
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [cnpjKey, lookupAttempt]);
+
+  const cnpjHint = lookupStatus ? (
+    <span className={cn('flex flex-wrap items-center gap-x-2', LOOKUP_TONE[lookupStatus.tone])}>
+      {lookupStatus.text}
+      {lookupStatus.tone === 'error' && cnpjKey ? (
+        <button type="button" className="font-semibold underline" onClick={() => setLookupAttempt((n) => n + 1)}>
+          Buscar de novo
+        </button>
+      ) : null}
+    </span>
+  ) : 'Os dados da empresa são preenchidos automaticamente pela Receita Federal.';
+
+  // ---- Pendência em destaque ----
+  // O item clicado na lista fica com borda vermelha até ser resolvido.
+  const [highlighted, setHighlighted] = useState<string | null>(null);
+  const highlightedOpen = highlighted !== null && issues.some((issue) => issue.anchor === highlighted);
+  useEffect(() => {
+    if (!highlightedOpen || !highlighted) return undefined;
+    const element = document.getElementById(highlighted);
+    if (!element) return undefined;
+    const classes = ['ring-2', 'ring-high', 'ring-offset-4', 'ring-offset-surface', 'rounded-lg'];
+    element.classList.add(...classes);
+    return () => element.classList.remove(...classes);
+  }, [highlighted, highlightedOpen]);
+
   const goTo = (anchor: string) => {
     const element = document.getElementById(anchor);
-    element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    window.setTimeout(() => element?.querySelector<HTMLElement>('input, textarea, button')?.focus({ preventScroll: true }), 400);
+    setHighlighted(anchor);
+    element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    window.setTimeout(() => element?.querySelector<HTMLElement>('input:not(:disabled), textarea, button')?.focus({ preventScroll: true }), 400);
   };
 
   const handleGenerate = async () => {
@@ -513,7 +598,7 @@ export const QuestionnaireForm: React.FC = () => {
               </h2>
               <div className="grid min-w-0 gap-4 p-4 sm:grid-cols-2">
                 {section.items.map((item) => {
-                  if (item.kind === 'text') return <Field key={item.id} field={item} state={state} update={update} />;
+                  if (item.kind === 'text') return <Field key={item.id} field={item} state={state} update={update} hint={item.id === 'cnpj' ? cnpjHint : undefined} />;
                   if (item.kind === 'table') return <TableField key={item.id} table={item} state={state} update={update} />;
                   if (item.kind === 'choice') return <ChoiceField key={item.id} choice={item} state={state} update={update} />;
                   if (item.kind === 'registries') return <RegistriesField key={item.id} item={item} state={state} update={update} />;
