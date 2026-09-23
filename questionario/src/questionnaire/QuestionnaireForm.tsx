@@ -139,6 +139,8 @@ const TableField: React.FC<{ table: TableDef; state: QuestionnaireState; update:
                 label={column.label}
                 controlSize="sm"
                 mask={column.mask}
+                // Formato esperado, não exemplo de resposta.
+                placeholder={column.mask === 'period' ? 'AAAA-AAAA' : undefined}
                 value={row[column.id] || ''}
                 onChange={(e) => setCell(index, column.id, e.target.value)}
               />
