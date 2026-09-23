@@ -158,9 +158,7 @@ describe('itens 9.2 e 9.3', () => {
     state.choices['7.4'] = 'sim';
     state.tables.interacoes = [{ orgao: 'Autoridade Portuária', atividade: 'Fiscalização' }];
     expect(requiresRegistries(state)).toBe(true);
-    expect(validateQuestionnaire(state).map((i) => i.anchor)).toEqual(['q-cadastros']);
-
-    state.registriesNone = true;
+    // Nada marcado no 9.2 é "não consta", como no questionário.
     expect(validateQuestionnaire(state)).toEqual([]);
   });
 

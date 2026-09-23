@@ -368,7 +368,6 @@ export async function buildQuestionnairePdf(
           REGISTRIES.map((registry) => [registry.text, state.registries[registry.key] ? 'X' : '']),
           12,
         );
-        if (state.registriesNone) w.paragraph('A empresa declarou não constar em nenhum dos cadastros acima.', { size: 8.5, indent: 12, gap: 6 });
         if (REGISTRIES.some((registry) => state.registries[registry.key])) renderChild(item.detail);
       }
     }

@@ -141,17 +141,20 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
   {
     id: 's1',
     number: '1',
-    title: 'Dados gerais da pessoa jurídica',
+    title: 'DADOS GERAIS DA PESSOA JURÍDICA',
     items: [
-      { kind: 'text', id: 'cnpj', ref: '1.1', label: 'CNPJ', mask: 'cnpj', required: true },
-      { kind: 'text', id: 'razaoSocial', label: 'Razão Social e Tipo Societário', required: true, fromCnpj: true, wide: true },
-      { kind: 'text', id: 'dataConstituicao', label: 'Data da Constituição da Sociedade', mask: 'date', required: true, fromCnpj: true },
-      { kind: 'text', id: 'objetoSocial', label: 'Objeto Social', required: true, wide: true },
+      // Mesma disposição do questionário: duas colunas, razão social à
+      // esquerda e CNPJ à direita, e assim por diante.
+      { kind: 'note', id: 'nota11', text: '1.1. Informações Cadastrais' },
+      { kind: 'text', id: 'razaoSocial', label: 'Razão Social e Tipo Societário', required: true, fromCnpj: true },
+      { kind: 'text', id: 'cnpj', label: 'CNPJ', mask: 'cnpj', required: true },
+      { kind: 'text', id: 'objetoSocial', label: 'Objeto Social', required: true },
       { kind: 'text', id: 'ramoAtividade', label: 'Ramo de Atividade', required: true, fromCnpj: true },
+      { kind: 'text', id: 'dataConstituicao', label: 'Data da Constituição da Sociedade', mask: 'date', required: true, fromCnpj: true },
       { kind: 'text', id: 'numeroEmpregados', label: 'Nº de Empregados', mask: 'integer', required: true },
-      { kind: 'text', id: 'endereco', label: 'Endereço', required: true, wide: true, fromCnpj: true },
+      { kind: 'text', id: 'endereco', label: 'Endereço', required: true, fromCnpj: true },
       { kind: 'text', id: 'sitioEletronico', label: 'Sítio Eletrônico', mask: 'url' },
-      { kind: 'text', id: 'paisesLocalidades', label: 'Países e Localidades nos quais a Pessoa Jurídica atua', required: true },
+      { kind: 'text', id: 'paisesLocalidades', label: 'Países e Localidades nos quais a Pessoa Jurídica atua', required: true, wide: true },
       { kind: 'text', id: 'servicoPrestado', label: 'Serviço a ser Prestado', required: true, wide: true },
       {
         kind: 'choice',
@@ -178,7 +181,7 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
   {
     id: 's2',
     number: '2',
-    title: 'Representante da pessoa jurídica para contato',
+    title: 'REPRESENTANTE DA PESSOA JURÍDICA PARA CONTATO',
     items: [
       { kind: 'text', id: 'representanteNome', label: 'Nome Completo', required: true, wide: true },
       { kind: 'text', id: 'representanteCpf', label: 'CPF', mask: 'cpf', required: true },
@@ -192,7 +195,7 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
   {
     id: 's3',
     number: '3',
-    title: 'Histórico da sociedade',
+    title: 'HISTÓRICO DA SOCIEDADE',
     items: [
       { kind: 'text', id: 'anosAtividade', ref: '3.1', label: 'Há quantos anos a sociedade exerce as atividades que Suape pretende contratar?', required: true, wide: true },
       { kind: 'text', id: 'historico', ref: '3.2', label: 'Descreva brevemente o histórico de constituição da sociedade, suas atividades principais e objetivos:', multiline: true, required: true, wide: true },
@@ -201,7 +204,7 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
   {
     id: 's4',
     number: '4',
-    title: 'Informações sobre a gestão societária',
+    title: 'INFORMAÇÕES SOBRE A GESTÃO SOCIETÁRIA',
     items: [
       {
         kind: 'table',
@@ -213,7 +216,7 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
           { id: 'nome', label: 'Nome', width: 3 },
           { id: 'cargo', label: 'Cargo', width: 2 },
           { id: 'nacionalidade', label: 'Nacionalidade', width: 1.5 },
-          { id: 'periodo', label: 'Período (início-fim)', mask: 'period', width: 1.3 },
+          { id: 'periodo', label: 'Período', mask: 'period', width: 1.3 },
         ],
       },
       {
@@ -228,7 +231,7 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
           { id: 'nacionalidade', label: 'Nacionalidade', width: 1.5 },
         ],
       },
-      { kind: 'note', id: 'nota43', text: '4.3. Informações sobre Partes Relacionadas' },
+      { kind: 'note', id: 'nota43', text: '4.3. Informações sobre Partes Relatas' },
       { kind: 'table', id: 'controladoras', ref: '4.3.1', label: 'Sociedade(s) Controladora(s) (se houver):', columns: partesRelacionadas('ctrl') },
       { kind: 'table', id: 'subsidiarias', ref: '4.3.2', label: 'Sociedade(s) Subsidiária(s) (se houver):', columns: partesRelacionadas('sub') },
       {
@@ -246,7 +249,7 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
   {
     id: 's5',
     number: '5',
-    title: 'Informações sobre a participação societária',
+    title: 'INFORMAÇÕES SOBRE A PARTICIPAÇÃO SOCIETÁRIA',
     items: [
       {
         kind: 'table',
@@ -258,8 +261,8 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
         columns: [
           { id: 'nome', label: 'Nome / Razão Social', width: 3 },
           { id: 'nacionalidade', label: 'Nacionalidade', width: 1.5 },
-          { id: 'documento', label: 'CPF / CNPJ', mask: 'cpfCnpj', width: 2 },
-          { id: 'participacao', label: 'Participação (%)', mask: 'percent', width: 1.2 },
+          { id: 'documento', label: 'CNPJ', mask: 'cpfCnpj', width: 2 },
+          { id: 'participacao', label: 'Participação em percentual (%)', mask: 'percent', width: 1.2 },
         ],
       },
       {
@@ -277,7 +280,7 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
   {
     id: 's6',
     number: '6',
-    title: 'Informações financeiras',
+    title: 'INFORMAÇÕES FINANCEIRAS',
     items: [
       {
         kind: 'choice',
@@ -291,7 +294,7 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
   {
     id: 's7',
     number: '7',
-    title: 'Sobre as interações com a administração pública distrital, nacional ou estrangeira',
+    title: 'SOBRE AS INTERAÇÕES COM A ADMINISTRAÇÃO PÚBLICA DISTRITAL, NACIONAL OU ESTRANGEIRA, INFORMAR:',
     items: [
       {
         kind: 'choice',
@@ -324,8 +327,8 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
             label: 'Caso a resposta seja "sim", indicar os órgãos responsáveis pelas respectivas emissões:',
             required: true,
             columns: [
-              { id: 'registro', label: 'Registro (tipo e número)', width: 3 },
-              { id: 'orgao', label: 'Órgão responsável pela emissão', width: 2 },
+              { id: 'registro', label: 'Registro', width: 3 },
+              { id: 'orgao', label: 'Órgãos responsáveis pelas respectivas emissões', width: 2 },
               { id: 'inicio', label: 'Data de Início', mask: 'date', width: 1.3 },
               { id: 'termino', label: 'Data de Término', mask: 'date', width: 1.3 },
             ],
@@ -345,7 +348,7 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
             label: 'Caso a resposta seja "sim", forneça as informações abaixo:',
             required: true,
             columns: [
-              { id: 'numero', label: 'Autorização / Licença (número)', width: 2.5 },
+              { id: 'numero', label: 'Número', width: 2.5 },
               { id: 'orgao', label: 'Órgão Governamental / Agente Público / Pessoa Politicamente Exposta', width: 3 },
               { id: 'inicio', label: 'Data de Início', mask: 'date', width: 1.3 },
               { id: 'termino', label: 'Data de Término', mask: 'date', width: 1.3 },
@@ -444,14 +447,14 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
   {
     id: 's8',
     number: '8',
-    title: 'Informações do programa de integridade',
+    title: 'INFORMAÇÕES DO PROGRAMA DE INTEGRIDADE',
     items: [
       {
         kind: 'choice',
         id: '8.1',
         ref: '8.1',
         text: 'A pessoa jurídica possui um Programa de Integridade estruturado com o objetivo de detectar e sanar desvios, fraudes, corrupção, irregularidades e atos ilícitos praticados?',
-        evidence: { when: 'sim', hint: 'Documento do Programa de Integridade ou link público para acessá-lo.' },
+        evidence: { when: 'sim', hint: 'Caso a resposta seja "sim", informar abaixo o link para acessar os documentos:' },
       },
       {
         kind: 'choice',
@@ -529,7 +532,7 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
         id: 'cadastros',
         ref: '9.2',
         gate: 'riscoAltoOuMuitoAlto',
-        text: 'A empresa e qualquer das pessoas listadas nos tópicos "4" e "5" ou as sociedades listadas no tópico "6" e seus administradores foram ou estão citadas em qualquer dos cadastros / listas abaixo? Indique, caso a resposta seja afirmativa, marcando o campo disponibilizado.',
+        text: 'A empresa e qualquer das pessoas listadas nos tópicos "4" e "5" ou as sociedades listadas no tópico "6" e seus administradores foram ou estão citadas em qualquer dos cadastros / listas abaixo? Indique, caso a resposta seja afirmativa, marcando o campo disponibilizado tanto à direita com "X".',
         detail: { kind: 'text', id: 'cadastrosDetalhe', ref: '9.3', label: 'Em caso afirmativo a qualquer um dos itens acima, forneça informações adicionais que julgar relevantes:', multiline: true, required: true, wide: true },
       },
       {
@@ -546,7 +549,7 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
         kind: 'choice',
         id: '9.5',
         ref: '9.5',
-        text: 'A pessoa jurídica dispõe de política ou procedimento em vigor para evitar e monitorar eventuais violações aos Direitos Humanos?',
+        text: 'A pessoa jurídica dispões de política ou procedimento em vigor para evitar e monitorar eventuais violações aos Direitos Humanos?',
         whenYes: [
           { kind: 'text', id: 'direitosHumanosDetalhe', label: 'Caso a resposta seja "sim", forneça as informações abaixo:', multiline: true, wide: true },
         ],
@@ -556,7 +559,7 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
         kind: 'choice',
         id: '9.6',
         ref: '9.6',
-        text: 'A pessoa jurídica dispõe de política ou procedimento em vigor relacionados a Diversidade e Inclusão?',
+        text: 'A pessoa jurídica dispões de política ou procedimento em vigor relacionados a Diversidade e Inclusão?',
         whenYes: [
           { kind: 'text', id: 'diversidadeDetalhe', label: 'Caso a resposta seja "sim", forneça as informações abaixo:', multiline: true, wide: true },
         ],

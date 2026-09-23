@@ -50,8 +50,6 @@ export interface QuestionnaireState {
   choices: Record<string, YesNo | undefined>;
   tables: Record<string, TableRow[]>;
   registries: Record<string, boolean>;
-  /** Declarou não constar em nenhum cadastro do item 9.2. */
-  registriesNone: boolean;
   evidences: Record<string, Evidence[]>;
   declarationAccepted: boolean;
   /**
@@ -75,7 +73,6 @@ export function emptyState(): QuestionnaireState {
     choices: {},
     tables: {},
     registries: {},
-    registriesNone: false,
     evidences: {},
     declarationAccepted: false,
   };
@@ -257,10 +254,8 @@ export function validateQuestionnaire(state: QuestionnaireState): Issue[] {
         }
         validateEvidence(item, state, issues);
       } else if (item.kind === 'registries' && registriesRequired) {
+        // Como no questionário: marca-se só onde consta; nada marcado é "não consta".
         const marked = REGISTRIES.filter((registry) => state.registries[registry.key]);
-        if (marked.length === 0 && !state.registriesNone) {
-          issues.push({ anchor: `q-${item.id}`, message: `${item.ref}: marque os cadastros em que consta ou declare que não consta em nenhum.` });
-        }
         if (marked.length > 0) validateText(item.detail, state, issues);
       }
     }

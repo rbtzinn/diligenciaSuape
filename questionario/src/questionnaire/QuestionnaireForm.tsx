@@ -387,22 +387,13 @@ const RegistriesField: React.FC<{ item: RegistriesDef; state: QuestionnaireState
                 type="checkbox"
                 className="mt-0.5 size-4 shrink-0 accent-[color:var(--brand-blue)]"
                 checked={Boolean(state.registries[registry.key])}
-                onChange={(e) => update((s) => ({ ...s, registriesNone: false, registries: { ...s.registries, [registry.key]: e.target.checked } }))}
+                onChange={(e) => update((s) => ({ ...s, registries: { ...s.registries, [registry.key]: e.target.checked } }))}
               />
               {registry.text}
             </label>
           </li>
         ))}
       </ul>
-      <label className="flex cursor-pointer items-start gap-2 rounded-md bg-surface-subtle px-2.5 py-2 text-sm font-semibold text-ink">
-        <input
-          type="checkbox"
-          className="mt-0.5 size-4 shrink-0 accent-[color:var(--brand-blue)]"
-          checked={state.registriesNone}
-          onChange={(e) => update((s) => ({ ...s, registriesNone: e.target.checked, registries: e.target.checked ? {} : s.registries }))}
-        />
-        A empresa e as pessoas listadas não constam em nenhum dos cadastros acima.
-      </label>
       {marked ? <div className="grid"><Field field={item.detail} state={state} update={update} /></div> : null}
     </div>
   );
