@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PDFDocument } from 'pdf-lib';
+import { PDFArray, PDFDict, PDFDocument, PDFName, PDFNumber, PDFString } from 'pdf-lib';
 import { ALL_CHOICES } from './questionnaireCatalog';
 import {
   collectEvidences,
@@ -232,6 +232,37 @@ describe('PDF', () => {
     // Com anexos: + índice + 3 páginas do PDF anexado + 1 página da imagem.
     expect(doc.getPageCount()).toBe(semAnexos.getPageCount() + 1 + 3 + 1);
     expect(doc.getTitle()).toContain('TMP TERMINAIS S/A');
+  });
+
+  it('evidências viram links: anexo leva à página do anexo, link abre o site, anexo volta ao item', async () => {
+    const state = completo();
+    state.choices['8.1'] = 'sim';
+    state.choices['8.2'] = 'sim';
+    state.evidences['8.1'] = [fileEvidence('programa', await samplePdf(2))];
+    state.evidences['8.2'] = [{ id: 'l', kind: 'link', label: 'https://empresa.com.br/codigo' }];
+    const doc = await PDFDocument.load(await buildQuestionnairePdf(state));
+    const pages = doc.getPages();
+    const annexFirst = pages[pages.length - 2];
+
+    const links = pages.flatMap((page) => {
+      const annots = page.node.Annots();
+      return annots ? annots.asArray().map((ref) => ({ page, annot: doc.context.lookup(ref) as PDFDict })) : [];
+    });
+    const destinos = links.map(({ annot }) => annot.get(PDFName.of('Dest'))).filter(Boolean) as PDFArray[];
+    const uris = links.map(({ annot }) => (annot.get(PDFName.of('A')) as PDFDict | undefined)?.get(PDFName.of('URI'))).filter(Boolean);
+
+    // "Anexo 1 — programa.pdf" aponta para a primeira página do anexo.
+    expect(destinos.some((dest) => dest.get(0) === annexFirst.ref)).toBe(true);
+    // O link do 8.2 abre o site.
+    expect(uris.map((uri) => (uri as PDFString).decodeText())).toContain('https://empresa.com.br/codigo');
+    // As páginas do anexo têm "Voltar ao item" apontando para as respostas.
+    const voltar = links.filter(({ page }) => page === annexFirst).map(({ annot }) => annot.get(PDFName.of('Dest')) as PDFArray);
+    expect(voltar.length).toBe(1);
+    expect(voltar[0].get(0)).not.toBe(annexFirst.ref);
+
+    // Marcadores no painel lateral.
+    const outlines = doc.catalog.lookup(PDFName.of('Outlines'), PDFDict);
+    expect((outlines.get(PDFName.of('Count')) as PDFNumber).asNumber()).toBe(4);
   });
 
   it('o código de verificação muda quando a resposta muda', async () => {

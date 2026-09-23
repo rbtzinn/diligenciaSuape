@@ -14,8 +14,14 @@
 import {
   PDFDocument,
   PDFFont,
+  PDFHexString,
   PDFImage,
+  PDFName,
+  PDFNull,
+  PDFNumber,
   PDFPage,
+  PDFRef,
+  PDFString,
   StandardFonts,
   rgb,
   type RGB,
@@ -125,6 +131,82 @@ export async function verificationCode(state: QuestionnaireState): Promise<strin
   return hash.slice(0, 16).toUpperCase().replace(/(.{4})(?=.)/g, '$1-');
 }
 
+/** Área de texto já desenhada numa página. */
+interface TextBox {
+  page: PDFPage;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Destino de um link interno: página e altura onde o leitor para. */
+interface Destination {
+  page: PDFPage;
+  top: number;
+}
+
+// ---- Links e marcadores (anotações PDF de baixo nível) ----
+
+function destinationArray(doc: PDFDocument, target: Destination) {
+  // [página /XYZ esquerda topo zoom]: null mantém a posição e o zoom atuais.
+  return doc.context.obj([target.page.ref, PDFName.of('XYZ'), PDFNull, PDFNumber.of(target.top), PDFNull]);
+}
+
+function addLink(doc: PDFDocument, box: TextBox, target: Destination | { uri: string }) {
+  const pad = 1.5;
+  const rect = [box.x - pad, box.y, box.x + box.width + pad, box.y + box.height];
+  const annot = doc.context.obj({
+    Type: 'Annot',
+    Subtype: 'Link',
+    Rect: rect,
+    Border: [0, 0, 0],
+    ...('uri' in target
+      ? { A: doc.context.obj({ Type: 'Action', S: 'URI', URI: PDFString.of(target.uri) }) }
+      : { Dest: destinationArray(doc, target) }),
+  });
+  box.page.node.addAnnot(doc.context.register(annot));
+}
+
+interface OutlineItem {
+  title: string;
+  target: Destination;
+  children?: OutlineItem[];
+}
+
+/** Marcadores do painel lateral do leitor de PDF. */
+function addOutline(doc: PDFDocument, items: OutlineItem[]) {
+  const outlinesRef = doc.context.nextRef();
+  const build = (list: OutlineItem[], parent: PDFRef): { first: PDFRef; last: PDFRef; count: number } => {
+    const refs = list.map(() => doc.context.nextRef());
+    let count = 0;
+    list.forEach((item, i) => {
+      const dict: Record<string, unknown> = {
+        Title: PDFHexString.fromText(toWinAnsi(item.title)),
+        Parent: parent,
+        Dest: destinationArray(doc, item.target),
+      };
+      if (i > 0) dict.Prev = refs[i - 1];
+      if (i < list.length - 1) dict.Next = refs[i + 1];
+      if (item.children?.length) {
+        const kids = build(item.children, refs[i]);
+        dict.First = kids.first;
+        dict.Last = kids.last;
+        dict.Count = kids.count;
+        count += kids.count;
+      }
+      doc.context.assign(refs[i], doc.context.obj(dict as never));
+      count += 1;
+    });
+    return { first: refs[0], last: refs[refs.length - 1], count };
+  };
+  const top = build(items, outlinesRef);
+  doc.context.assign(outlinesRef, doc.context.obj({ Type: 'Outlines', First: top.first, Last: top.last, Count: top.count }));
+  doc.catalog.set(PDFName.of('Outlines'), outlinesRef);
+  // Abre o leitor já com o painel de marcadores visível.
+  doc.catalog.set(PDFName.of('PageMode'), PDFName.of('UseOutlines'));
+}
+
 class Writer {
   page!: PDFPage;
   y = TOP;
@@ -152,15 +234,22 @@ class Writer {
     this.page.drawText(toWinAnsi(value), { x, y, size, font, color });
   }
 
-  /** Parágrafo com quebra de linha e de página. */
-  paragraph(value: string, { size = 9, font = this.regular, color = INK, indent = 0, width = WIDTH, gap = 4 } = {}) {
+  /**
+   * Parágrafo com quebra de linha e de página. Devolve onde cada linha
+   * foi desenhada, para receber um link por cima.
+   */
+  paragraph(value: string, { size = 9, font = this.regular, color = INK, indent = 0, width = WIDTH, gap = 4 } = {}): TextBox[] {
     const lineHeight = size * 1.35;
+    const boxes: TextBox[] = [];
     for (const line of wrap(value, font, size, width - indent)) {
       this.ensure(lineHeight);
-      this.text(line, MARGIN_X + indent, this.y - size, size, font, color);
+      const x = MARGIN_X + indent;
+      this.text(line, x, this.y - size, size, font, color);
+      boxes.push({ page: this.page, x, y: this.y - lineHeight, width: font.widthOfTextAtSize(line, size), height: lineHeight });
       this.y -= lineHeight;
     }
     this.y -= gap;
+    return boxes;
   }
 
   sectionTitle(title: string) {
@@ -185,7 +274,7 @@ class Writer {
   }
 
   /** Pergunta Sim/Não com a resposta em destaque à direita. */
-  choice(ref: string, question: string, answer: string) {
+  choice(ref: string, question: string, answer: string): Destination {
     const pillWidth = 44;
     const lines = wrap(`${ref}  ${question}`, this.regular, 9, WIDTH - pillWidth - 12);
     const height = lines.length * 12.2 + 8;
@@ -212,6 +301,7 @@ class Writer {
     const labelWidth = this.bold.widthOfTextAtSize(toWinAnsi(label), 8);
     this.text(label, MARGIN_X + WIDTH - pillWidth / 2 - labelWidth / 2, top - 11, 8, this.bold, sim ? WHITE : NAVY);
     this.y -= height;
+    return { page: this.page, top: top + 6 };
   }
 
   table(columns: Array<{ label: string; width?: number }>, rows: string[][], indent = 0) {
@@ -298,6 +388,10 @@ export async function buildQuestionnairePdf(
   const evidences = collectEvidences(state);
   const files = evidences.filter((item) => item.annex !== undefined);
   const w = new Writer(doc, regular, bold);
+  // Destinos dos links: onde está cada pergunta e onde começa cada anexo.
+  const itemDest = new Map<string, Destination>();
+  const annexDest = new Map<number, Destination>();
+  const annexLinks: Array<{ boxes: TextBox[]; annex: number }> = [];
 
   // ---- Capa ----
   w.y -= 10;
@@ -338,7 +432,11 @@ export async function buildQuestionnairePdf(
     w.paragraph('Evidências apresentadas', { size: 8, font: bold, color: OK, indent: 12, gap: 1 });
     for (const item of list) {
       const rowLabel = item.evidence.rowIndex !== undefined ? rowNames[item.evidence.rowIndex] : undefined;
-      w.paragraph(`• ${evidenceLine(item.evidence, item.annex, rowLabel)}`, { size: 8.5, indent: 16, gap: 1 });
+      const linked = item.annex !== undefined || item.evidence.kind === 'link';
+      const boxes = w.paragraph(`• ${evidenceLine(item.evidence, item.annex, rowLabel)}`, { size: 8.5, indent: 16, gap: 1, color: linked ? BRAND : INK });
+      // Anexo: link para a página do anexo (resolvido quando ela existir). Link: abre o site.
+      if (item.annex !== undefined) annexLinks.push({ boxes, annex: item.annex });
+      else if (item.evidence.kind === 'link') boxes.forEach((box) => addLink(doc, box, { uri: item.evidence.label.trim() }));
     }
     w.y -= 6;
   };
@@ -353,7 +451,7 @@ export async function buildQuestionnairePdf(
         w.table(item.columns, tableRows(item, state));
       } else if (item.kind === 'choice') {
         const answer = state.choices[item.id] || '';
-        w.choice(item.ref, item.text, answer);
+        itemDest.set(item.id, w.choice(item.ref, item.text, answer));
         if (answer === 'sim') (item.whenYes || []).forEach(renderChild);
         renderEvidence(item);
         w.y -= 4;
@@ -375,6 +473,7 @@ export async function buildQuestionnairePdf(
 
   // ---- Declaração ----
   w.sectionTitle('10. Declaração de ciência');
+  const declarationDest: Destination = { page: w.page, top: w.y + 36 };
   DECLARATION_TEXT.forEach((paragraph) => w.paragraph(paragraph, { size: 9, gap: 6 }));
   w.paragraph(state.declarationAccepted ? '[X] O representante declarou estar de acordo com os termos acima.' : '[ ] Declaração não aceita.', { size: 9, font: bold, color: NAVY, gap: 8 });
   for (const field of DECLARATION_FIELDS) w.field(field.label, state.fields[field.id] || '');
@@ -386,9 +485,11 @@ export async function buildQuestionnairePdf(
   w.y -= 20;
 
   // ---- Índice e anexos ----
-  const annexStamps: Array<{ page: PDFPage; label: string }> = [];
+  const annexStamps: Array<{ page: PDFPage; label: string; back?: Destination }> = [];
+  let indexDest: Destination | null = null;
   if (evidences.length > 0) {
     w.newPage();
+    indexDest = { page: w.page, top: TOP + 8 };
     w.sectionTitle('Anexos — Evidências apresentadas');
     w.paragraph('Arquivos incorporados a este documento, na ordem do questionário. O SHA-256 permite conferir que o arquivo anexado é o mesmo enviado no formulário.', { size: 8.5, color: MUTED, gap: 6 });
     w.table(
@@ -404,16 +505,22 @@ export async function buildQuestionnairePdf(
     for (const item of files) {
       const file = item.evidence.file!;
       const label = `Anexo ${item.annex} · Item ${item.choice.ref} · ${file.name}`;
+      const back = itemDest.get(item.choice.id);
       if (file.type === 'application/pdf') {
         const source = await PDFDocument.load(file.bytes, { ignoreEncryption: true });
         const pages = await doc.copyPages(source, source.getPageIndices());
         pages.forEach((page, i) => {
           doc.addPage(page);
-          annexStamps.push({ page, label: `${label} · p. ${i + 1}/${pages.length}` });
+          if (i === 0) annexDest.set(item.annex!, { page, top: page.getHeight() });
+          annexStamps.push({ page, label: `${label} · p. ${i + 1}/${pages.length}`, back });
         });
       } else {
         w.newPage();
-        w.paragraph(label, { size: 10, font: bold, color: NAVY, gap: 8 });
+        annexDest.set(item.annex!, { page: w.page, top: TOP + 8 });
+        w.paragraph(label, { size: 10, font: bold, color: NAVY, gap: 2 });
+        if (back) {
+          w.paragraph(`‹ Voltar ao item ${item.choice.ref}`, { size: 8.5, color: BRAND, gap: 8 }).forEach((box) => addLink(doc, box, back));
+        } else w.y -= 6;
         const image = file.type === 'image/png' ? await doc.embedPng(file.bytes) : await doc.embedJpg(file.bytes);
         const maxHeight = w.y - BOTTOM - 8;
         const scale = Math.min(WIDTH / image.width, maxHeight / image.height, 1);
@@ -461,8 +568,39 @@ export async function buildQuestionnairePdf(
       const width = regular.widthOfTextAtSize(text, size) + 8;
       page.drawRectangle({ x: pageWidth - width - 8, y: pageHeight - 16, width, height: 11, color: WHITE, opacity: 0.9, borderColor: BRAND, borderWidth: 0.5 });
       page.drawText(text, { x: pageWidth - width - 4, y: pageHeight - 13, size, font: regular, color: NAVY });
+      // "Voltar ao item" à esquerda, clicável, para retornar à pergunta.
+      if (stamp?.back) {
+        const back = toWinAnsi(`‹ Voltar ao item ${stamp.label.match(/Item ([\d.]+)/)?.[1] || ''}`);
+        const backWidth = bold.widthOfTextAtSize(back, size) + 8;
+        page.drawRectangle({ x: 8, y: pageHeight - 16, width: backWidth, height: 11, color: WHITE, opacity: 0.9, borderColor: BRAND, borderWidth: 0.5 });
+        page.drawText(back, { x: 12, y: pageHeight - 13, size, font: bold, color: BRAND });
+        addLink(doc, { page, x: 8, y: pageHeight - 16, width: backWidth, height: 11 }, stamp.back);
+      }
     }
   });
+
+  // ---- Links e marcadores ----
+  for (const link of annexLinks) {
+    const target = annexDest.get(link.annex);
+    if (target) link.boxes.forEach((box) => addLink(doc, box, target));
+  }
+  const firstPage = w.ownPages[0];
+  addOutline(doc, [
+    { title: 'Questionário de Diligência', target: { page: firstPage, top: firstPage.getHeight() } },
+    { title: '10. Declaração de ciência', target: declarationDest },
+    ...(indexDest
+      ? [{
+        title: 'Anexos — Evidências apresentadas',
+        target: indexDest,
+        children: files
+          .filter((item) => annexDest.has(item.annex!))
+          .map((item) => ({
+            title: `Anexo ${item.annex} · Item ${item.choice.ref} · ${item.evidence.file!.name}`,
+            target: annexDest.get(item.annex!)!,
+          })),
+      }]
+      : []),
+  ]);
 
   return doc.save();
 }
