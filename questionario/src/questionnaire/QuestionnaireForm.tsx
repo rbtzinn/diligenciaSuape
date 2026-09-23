@@ -62,6 +62,12 @@ function loadDraft(): QuestionnaireState {
   }
 }
 
+/** Título da seção para o menu: frase normal, sem o ', INFORMAR:' final. */
+const navTitle = (title: string) => {
+  const text = title.replace(/,?\s*INFORMAR:$/, '').toLowerCase();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
+
 const newId = () => Math.random().toString(36).slice(2, 10);
 
 type Update = (updater: (state: QuestionnaireState) => QuestionnaireState) => void;
@@ -88,8 +94,12 @@ const Field: React.FC<{ field: TextFieldDef; state: QuestionnaireState; update: 
           label={label}
           value={value}
           mask={field.mask}
-          hint={hint ?? (locked ? 'Preenchido automaticamente pela Receita Federal a partir do CNPJ.' : undefined)}
-          disabled={locked}
+          hint={hint}
+          // Somente leitura, não desabilitado: o texto segue legível e
+          // copiável, só não é editável. O aviso fica uma vez, no CNPJ.
+          readOnly={locked}
+          title={locked ? 'Preenchido pela Receita Federal a partir do CNPJ' : undefined}
+          className={locked ? 'read-only:cursor-default read-only:border-line-soft read-only:bg-surface-subtle read-only:text-ink-2 read-only:hover:border-line-soft' : undefined}
           onChange={(e) => onChange(e.target.value)}
         />
       )}
@@ -443,23 +453,23 @@ export const QuestionnaireForm: React.FC = () => {
     }
     if (current?.cnpj === cnpjKey && lookupAttempt === 0) {
       setLookupStatus(current.source === 'receita'
-        ? { tone: 'ok', text: 'Dados da empresa carregados da Receita Federal.' }
-        : { tone: 'error', text: 'Consulta à Receita indisponível: preencha os dados da empresa.' });
+        ? { tone: 'ok', text: 'Dados carregados da Receita Federal.' }
+        : { tone: 'error', text: 'Receita indisponível: preencha os dados da empresa.' });
       return undefined;
     }
     const controller = new AbortController();
-    setLookupStatus({ tone: 'busy', text: 'Buscando os dados da empresa na Receita Federal…' });
+    setLookupStatus({ tone: 'busy', text: 'Buscando na Receita Federal…' });
     fetchCompany(cnpjKey, controller.signal)
       .then((result) => {
         if (result.ok) {
           setState((s) => applyCompany(s, cnpjKey, result.company));
-          setLookupStatus({ tone: 'ok', text: 'Dados da empresa carregados da Receita Federal.' });
+          setLookupStatus({ tone: 'ok', text: 'Dados carregados da Receita Federal.' });
         } else if (result.reason === 'nao-encontrado') {
           setState((s) => clearCompany(s));
-          setLookupStatus({ tone: 'error', text: 'CNPJ não encontrado na Receita Federal. Confira o número.' });
+          setLookupStatus({ tone: 'error', text: 'CNPJ não encontrado na Receita. Confira o número.' });
         } else {
           setState((s) => allowManualCompany(s, cnpjKey));
-          setLookupStatus({ tone: 'error', text: 'Consulta à Receita indisponível agora: os dados da empresa foram liberados para digitação.' });
+          setLookupStatus({ tone: 'error', text: 'Receita indisponível: preencha os dados da empresa.' });
         }
       })
       .catch(() => undefined);
@@ -475,7 +485,7 @@ export const QuestionnaireForm: React.FC = () => {
         </button>
       ) : null}
     </span>
-  ) : 'Os dados da empresa são preenchidos automaticamente pela Receita Federal.';
+  ) : null;
 
   // ---- Pendência em destaque ----
   // O item clicado na lista fica com borda vermelha até ser resolvido.
@@ -559,7 +569,7 @@ export const QuestionnaireForm: React.FC = () => {
             {QUESTIONNAIRE_SECTIONS.map((section) => (
               <li key={section.id}>
                 <a href={`#sec-${section.id}`} className="block rounded-md px-2.5 py-1.5 text-ink-2 hover:bg-surface-hover hover:text-ink">
-                  <span className="num mr-1.5 font-bold text-brand">{section.number}</span>{section.title}
+                  <span className="num mr-1.5 font-bold text-brand">{section.number}</span>{navTitle(section.title)}
                 </a>
               </li>
             ))}
@@ -587,13 +597,22 @@ export const QuestionnaireForm: React.FC = () => {
               <h2 className="rounded-t-xl bg-brand px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-white">
                 {section.number}. {section.title}
               </h2>
-              <div className="grid min-w-0 gap-4 p-4 sm:grid-cols-2">
+              <div className="grid min-w-0 items-start gap-x-4 gap-y-3.5 p-4 sm:grid-cols-2">
                 {section.items.map((item) => {
                   if (item.kind === 'text') return <Field key={item.id} field={item} state={state} update={update} hint={item.id === 'cnpj' ? cnpjHint : undefined} />;
                   if (item.kind === 'table') return <TableField key={item.id} table={item} state={state} update={update} />;
                   if (item.kind === 'choice') return <ChoiceField key={item.id} choice={item} state={state} update={update} />;
                   if (item.kind === 'registries') return <RegistriesField key={item.id} item={item} state={state} update={update} />;
-                  return <p key={item.id} className="border-t border-line-soft pt-4 text-sm font-semibold text-ink sm:col-span-2">{item.text}</p>;
+                  return (
+                    <div key={item.id} className={cn('sm:col-span-2', section.items[0] !== item && 'border-t border-line-soft pt-4')}>
+                      <p className="text-sm font-semibold text-ink">{item.text}</p>
+                      {item.id === 'nota11' ? (
+                        <p className="mt-0.5 text-xs text-ink-3">
+                          Informe o CNPJ: os campos em cinza são preenchidos pela Receita Federal.
+                        </p>
+                      ) : null}
+                    </div>
+                  );
                 })}
               </div>
             </section>
