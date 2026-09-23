@@ -1,0 +1,303 @@
+/* ==========================================================
+   DILIGÊNCIA 360 — Design Tokens
+   ==========================================================
+   Fonte única de cor, tipografia, espaçamento, elevação e escala
+   de controles. Nenhuma regra de componente mora aqui: apenas
+   valores. Para mudar a identidade visual, mude este arquivo.
+
+   Os tokens são reexportados para o Tailwind em tailwind.css, de
+   modo que utilitário e CSS legado leem o mesmo número. Se um
+   valor não estiver aqui, ele não deveria existir no projeto.
+   ========================================================== */
+:root {
+  /* ----------------------------------------------------------
+     SUPERFÍCIES DE ALTA LEGIBILIDADE
+     Padrão executivo contemporâneo: canvas nítido slate, cartões
+     brancos de alto contraste e bordas limpas e precisas.
+     ---------------------------------------------------------- */
+  --bg-canvas: #EFF6F8;
+  --bg-surface: #FFFFFF;
+  --bg-surface-subtle: #E7F1F4;
+  --bg-surface-hover: #D9E9EE;
+  --bg-surface-active: #C6DDE5;
+
+  /* Apelido histórico: App.tsx pedia --bg-app, aponta para o canvas */
+  --bg-app: var(--bg-canvas);
+
+  /* Superfície escura — usada pelo mapa de vínculos e pelo topo do workspace */
+  --bg-deep: #071E2D;
+  --bg-deep-raised: #10384C;
+  --bg-deep-hover: #185169;
+  --border-deep: #386B7C;
+  --text-on-deep: #F8FAFC;
+  --text-on-deep-2: #CBD5E1;
+  --text-on-deep-3: #9BBBC5;
+
+  /* ----------------------------------------------------------
+     TRAÇOS E CONTORNOS
+     ---------------------------------------------------------- */
+  --border-subtle: #DAE8EC;
+  --border-default: #C1D7DF;
+  --border-strong: #8CACB9;
+  --border-focus: #087F97;
+
+  /* ----------------------------------------------------------
+     TEXTO — Contraste AAA para conforto e leitura rápida
+     ---------------------------------------------------------- */
+  --text-primary: #102D3D;
+  --text-secondary: #355667;
+  --text-tertiary: #5C7B89;
+  --text-muted: #8AADB8;
+  --text-inverse: #FFFFFF;
+
+  /* ----------------------------------------------------------
+     MARCA — Azul Naval SUAPE e Destaques
+     ---------------------------------------------------------- */
+  --brand-blue: #0B5872;
+  --brand-blue-hover: #087F97;
+  --brand-blue-active: #09465C;
+  --brand-blue-subtle: #E0F4F4;
+  --brand-blue-border: #A4DAD9;
+  --brand-blue-text: #0B5872;
+  --brand-blue-deep: #071E2D;
+  --brand-gold: #B9772F;
+  --brand-gold-subtle: #FFF1DE;
+
+  --brand-blue-on-deep: #9AE9DF;
+  --brand-blue-on-deep-soft: #185169;
+
+  /* ----------------------------------------------------------
+     SITUAÇÃO — cada nível tem traço, fundo e texto próprios, para
+     que o par fundo/texto sempre passe em contraste.
+     ---------------------------------------------------------- */
+  --status-low: #059669;
+  --status-low-bg: #ECFDF5;
+  --status-low-border: #A7F3D0;
+  --status-low-text: #065F46;
+
+  --status-medium: #D97706;
+  --status-medium-bg: #FFFBEB;
+  --status-medium-border: #FDE68A;
+  --status-medium-text: #92400E;
+
+  --status-high: #DC2626;
+  --status-high-bg: #FEF2F2;
+  --status-high-border: #FECACA;
+  --status-high-text: #991B1B;
+
+  --status-critical: #7F1D1D;
+  --status-critical-bg: #FEE2E2;
+  --status-critical-border: #FCA5A5;
+  --status-critical-text: #7F1D1D;
+
+  --status-neutral: #64748B;
+  --status-neutral-bg: #F1F5F9;
+  --status-neutral-border: #CBD5E1;
+  --status-neutral-text: #334155;
+
+  --status-info: #2563EB;
+  --status-info-bg: #EFF6FF;
+  --status-info-border: #BFDBFE;
+  --status-info-text: #1D4ED8;
+
+  /* ----------------------------------------------------------
+     TIPOGRAFIA
+     Uma família para a interface inteira. O monoespaçado é
+     reservado a documento e identificador — CNPJ, número de
+     processo, código de fonte — e nunca a rótulo, data ou título:
+     misturar as duas famílias na mesma linha foi o que deixou o
+     dossiê com cara de página sem estilo.
+     ---------------------------------------------------------- */
+  --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Space Grotesk', var(--font-sans);
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, 'Fira Code', monospace;
+
+  /* Escala de corpo: razão ~1.125 a partir de 15px. Cada passo tem
+     entrelinha própria, porque título apertado e parágrafo apertado
+     não são a mesma coisa. */
+  /* --text-2xs e --text-md moram no @theme de tailwind.css: são os
+     dois degraus que a escala do Tailwind não tem, e declarar num
+     lugar só evita que os dois valores saiam de sincronia. */
+  --text-xs: 0.75rem;      /* 12px — legenda, nota */
+  --text-sm: 0.8125rem;    /* 13px — texto de apoio, célula de tabela */
+  --text-base: 0.875rem;   /* 14px — corpo padrão da interface */
+  --text-lg: 1.0625rem;    /* 17px — título de cartão e de página */
+  --text-xl: 1.25rem;      /* 20px — título de seção grande */
+  --text-2xl: 1.5rem;      /* 24px — título de tela */
+  --text-3xl: 1.875rem;    /* 30px — número de destaque (score) */
+  --text-4xl: 2.5rem;      /* 40px — marca d'água e vazio ilustrado */
+
+  --leading-tight: 1.2;
+  --leading-snug: 1.35;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.04em;
+  --tracking-wider: 0.08em;
+
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  --font-extrabold: 800;
+
+  /* ----------------------------------------------------------
+     ESPAÇAMENTO — base 4px, um eixo só
+     ---------------------------------------------------------- */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Apelidos por extenso, mantidos porque o CSS legado os consome. */
+  --space-xs: var(--space-1);
+  --space-sm: var(--space-2);
+  --space-md: var(--space-4);
+  --space-lg: var(--space-6);
+  --space-xl: var(--space-8);
+  --space-2xl: var(--space-12);
+
+  /* ----------------------------------------------------------
+     CANTOS
+     ---------------------------------------------------------- */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-full: 9999px;
+
+  /* ----------------------------------------------------------
+     ELEVAÇÃO — três níveis e um foco. Sombra é hierarquia, não
+     enfeite: cartão em repouso, elemento suspenso, camada sobre a
+     tela. O quarto valor existe só para overlay.
+     ---------------------------------------------------------- */
+  --shadow-xs: 0 1px 2px 0 rgb(20 38 48 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgb(20 38 48 / 0.06), 0 1px 2px -1px rgb(20 38 48 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(20 38 48 / 0.07), 0 2px 4px -2px rgb(20 38 48 / 0.05);
+  --shadow-lg: 0 10px 15px -3px rgb(20 38 48 / 0.08), 0 4px 6px -4px rgb(20 38 48 / 0.04);
+  /* A sombra de camada tem nome próprio aqui porque o @theme não pode
+     referenciar a si mesmo: tailwind.css publica `--shadow-overlay` a
+     partir dela, e CSS cru lê este nome. Um valor, dois consumidores. */
+  --elevation-overlay: 0 24px 48px -12px rgb(10 31 53 / 0.28);
+  --ring-focus: 0 0 0 3px rgb(45 96 173 / 0.22);
+
+  /* ----------------------------------------------------------
+     LAYOUT
+     A largura de leitura e a calha lateral são tokens porque toda
+     tela precisa concordar sobre elas. Trocar aqui realinha o app
+     inteiro de uma vez.
+     ---------------------------------------------------------- */
+  --sidebar-w: 260px;
+  --sidebar-w-collapsed: 68px;
+  --content-max: 1200px;
+  --content-max-wide: 1440px;
+  /* Medida da ficha. Larga o bastante para o cabeçalho com três ações
+     e a fita de eixos, estreita o bastante para o texto ser lido sem
+     o olho perder a linha. `prose` (68ch) cortava o cabeçalho. */
+  --content-sheet: 760px;
+  --gutter: clamp(16px, 3vw, 32px);
+  --gutter-tight: clamp(12px, 2vw, 20px);
+  --topbar-h: 56px;
+
+  /* Ritmo vertical entre cartões de uma mesma página. */
+  --stack-gap: var(--space-4);
+
+  /* ----------------------------------------------------------
+     CAMADAS — a ordem do que cobre o quê, num lugar só.
+     ---------------------------------------------------------- */
+  --z-base: 0;
+  /* O cabeçalho de tabela também gruda, mas sempre por baixo do
+     cabeçalho da página: com o mesmo z-index, quem vinha depois no
+     DOM ganhava, e a fita de eixos ficava atrás dos nomes das
+     colunas. */
+  --z-table-head: 15;
+  --z-sticky: 20;
+  --z-sidebar: 60;
+  --z-backdrop: 80;
+  --z-drawer: 90;
+  --z-modal: 100;
+  --z-toast: 120;
+
+  /* ----------------------------------------------------------
+     MOVIMENTO
+     ---------------------------------------------------------- */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================================
+   ESCALA DE CONTROLES — small · medium · large
+   Um único eixo de tamanho compartilhado por botão, selo e campo.
+   Ajustar aqui muda todos os controles de uma vez, sem caçar
+   valores soltos pelos arquivos de componente.
+   ========================================================== */
+:root {
+  --control-height-sm: 32px;
+  --control-height-md: 40px;
+  --control-height-lg: 48px;
+
+  --control-pad-y-sm: 6px;
+  --control-pad-y-md: 8px;
+  --control-pad-y-lg: 12px;
+
+  --control-pad-x-sm: 10px;
+  --control-pad-x-md: 16px;
+  --control-pad-x-lg: 24px;
+
+  --control-font-sm: var(--text-xs);
+  --control-font-md: var(--text-base);
+  --control-font-lg: var(--text-md);
+
+  --control-radius-sm: var(--radius-md);
+  --control-radius-md: var(--radius-md);
+  --control-radius-lg: var(--radius-lg);
+
+  --control-gap-sm: var(--space-1);
+  --control-gap-md: var(--space-2);
+  --control-gap-lg: var(--space-2);
+}
+
+/* No toque não há ponteiro fino: a mesma escala precisa de mais
+   área. Subir aqui sobe todos os controles de uma vez, sem regra
+   avulsa por componente. */
+@media (max-width: 720px) {
+  :root {
+    --control-height-sm: 38px;
+    --control-height-md: 44px;
+    --control-height-lg: 50px;
+    --control-pad-x-sm: 12px;
+    --control-pad-x-md: 18px;
+  }
+}
+
+/* ==========================================================
+   CORES DE VARIANTE DOS BOTÕES
+   O primário é o azul institucional — antes era um azul genérico
+   (#1D4ED8) que não batia com o resto da marca, e o botão vivia
+   discordando do cabeçalho ao lado dele.
+   ========================================================== */
+:root {
+  --btn-primary-bg: var(--brand-blue);
+  --btn-primary-bg-hover: var(--brand-blue-hover);
+  --btn-primary-bg-active: var(--brand-blue-active);
+  --btn-primary-fg: var(--text-inverse);
+
+  --btn-danger-bg: var(--status-high);
+  --btn-danger-bg-hover: #B91C1C;
+  --btn-danger-bg-active: #991B1B;
+  --btn-danger-fg: var(--text-inverse);
+
+  --btn-disabled-opacity: 0.45;
+}

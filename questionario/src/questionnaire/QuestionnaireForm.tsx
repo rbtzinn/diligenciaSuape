@@ -11,11 +11,11 @@
 // ==========================================================
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Button } from '../../components/ui/Button';
-import { Icons } from '../../components/ui/Icons';
-import { Note } from '../../components/ui/Note';
-import { TextArea, TextField } from '../../components/ui/Field';
-import { cn } from '../../lib/cn';
+import { Button } from '../ui/Button';
+import { Icons } from '../ui/Icons';
+import { Note } from '../ui/Note';
+import { TextArea, TextField } from '../ui/Field';
+import { cn } from '../lib/cn';
 import {
   DECLARATION_FIELDS,
   DECLARATION_TEXT,
@@ -72,7 +72,7 @@ const Field: React.FC<{ field: TextFieldDef; state: QuestionnaireState; update: 
   return (
     <div id={`q-${field.id}`} className={cn('min-w-0 scroll-mt-24', field.wide && 'sm:col-span-2')}>
       {field.multiline ? (
-        <TextArea label={label} rows={3} value={value} placeholder={field.placeholder} onChange={(e) => onChange(e.target.value)} />
+        <TextArea label={label} rows={3} value={value} onChange={(e) => onChange(e.target.value)} />
       ) : (
         <TextField
           label={label}
@@ -80,7 +80,7 @@ const Field: React.FC<{ field: TextFieldDef; state: QuestionnaireState; update: 
           mask={field.mask}
           type={field.type === 'number' ? 'text' : field.type}
           inputMode={field.type === 'number' ? 'numeric' : undefined}
-          placeholder={field.placeholder}
+         
           onChange={(e) => onChange(e.target.value)}
         />
       )}
@@ -220,7 +220,6 @@ const EvidenceAdder: React.FC<{
             fieldClassName="min-w-[220px] flex-1"
             controlSize="sm"
             label={mode === 'link' ? 'Link público do documento' : 'Documento e trecho'}
-            placeholder={mode === 'link' ? 'https://www.empresa.com.br/codigo-de-etica.pdf' : 'Código de Ética, capítulo 5, item 5.3'}
             value={text}
             autoFocus
             onChange={(e) => setText(e.target.value)}

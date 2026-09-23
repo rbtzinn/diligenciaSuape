@@ -36,7 +36,6 @@ export interface TextFieldDef {
   mask?: TextMask;
   type?: 'email' | 'url' | 'number';
   required?: boolean;
-  placeholder?: string;
   /** Ocupa a linha inteira na grade de campos. */
   wide?: boolean;
 }
@@ -573,7 +572,7 @@ export const DECLARATION_TEXT = [
 
 /** Campos da seção 10, assinada pelo representante. */
 export const DECLARATION_FIELDS: TextFieldDef[] = [
-  { kind: 'text', id: 'declaracaoLocalData', label: 'Local e Data', required: true, placeholder: 'Ipojuca, 11 de setembro de 2026' },
+  { kind: 'text', id: 'declaracaoLocalData', label: 'Local e Data', required: true },
   { kind: 'text', id: 'declaracaoNome', label: 'Nome por extenso', required: true },
   { kind: 'text', id: 'declaracaoCargo', label: 'Cargo', required: true },
 ];

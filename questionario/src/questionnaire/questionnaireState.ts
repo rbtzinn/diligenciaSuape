@@ -10,7 +10,7 @@
 // trecho são texto e sobrevivem ao recarregar.
 // ==========================================================
 
-import { CNPJ } from '../../lib/cnpj';
+import { CNPJ } from '../lib/cnpj';
 import {
   ALL_CHOICES,
   DECLARATION_FIELDS,
