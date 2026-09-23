@@ -34,7 +34,6 @@ interface DossierViewProps {
   onExportPdf: () => void;
   onOpenNetwork: () => void;
   onOpenAudit: () => void;
-  onOpenTechnicalNote: () => void;
 }
 
 export const DossierView: React.FC<DossierViewProps> = ({
@@ -44,7 +43,6 @@ export const DossierView: React.FC<DossierViewProps> = ({
   onExportPdf,
   onOpenNetwork,
   onOpenAudit,
-  onOpenTechnicalNote,
 }) => {
   const axes = useMemo(() => deriveDossierAxes(diligence), [diligence]);
   const coverage = useMemo(() => deriveSourceCoverage(diligence), [diligence]);
@@ -122,9 +120,6 @@ export const DossierView: React.FC<DossierViewProps> = ({
             <Button variant="ghost" size="sm" onClick={onOpenNetwork} icon={<Icons.Network size={15} aria-hidden="true" />}>
               Mapa de vínculos
             </Button>
-            <Button variant="ghost" size="sm" onClick={onOpenTechnicalNote} icon={<Icons.FileText size={15} aria-hidden="true" />}>
-              Nota técnica
-            </Button>
             <Button
               variant="secondary"
               size="sm"
@@ -156,15 +151,6 @@ export const DossierView: React.FC<DossierViewProps> = ({
               aria-label="Mapa de vínculos"
               title="Mapa de vínculos"
               icon={<Icons.Network size={16} aria-hidden="true" />}
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              iconOnly
-              onClick={onOpenTechnicalNote}
-              aria-label="Nota técnica"
-              title="Nota técnica"
-              icon={<Icons.FileText size={16} aria-hidden="true" />}
             />
             <Button
               variant="secondary"

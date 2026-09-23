@@ -628,6 +628,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           valorContratoStr={contractValueStr}
           onValorContratoChange={setContractValueStr}
           onOpenEvidence={() => setActiveDrawer('evidence')}
+          onOpenTechnicalNote={() => setTechnicalNoteOpen(true)}
           onSaveRiskMapRow={handleSaveRiskMapRow}
           onDownloadIntegrityForm={handleDownloadIntegrityForm}
           onFillSuapeSheet={handleFillSuapeSheet}
@@ -661,7 +662,6 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           onExportPdf={handleExportPdf}
           onOpenNetwork={() => openSection('mapa')}
           onOpenAudit={() => setActiveDrawer('audit')}
-          onOpenTechnicalNote={() => setTechnicalNoteOpen(true)}
         />
       ) : null}
 
@@ -792,6 +792,8 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         key={diligence.id}
         isOpen={technicalNoteOpen}
         diligence={displayDiligence}
+        answers={integrityAnswers}
+        evaluation={officialEvaluation}
         onClose={() => setTechnicalNoteOpen(false)}
       />
     </main>

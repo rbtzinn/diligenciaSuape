@@ -65,6 +65,8 @@ interface SuapeIntegrityEvaluationViewProps {
   valorContratoStr: string;
   onValorContratoChange: (value: string) => void;
   onOpenEvidence?: () => void;
+  /** Abre a Nota Técnica, escrita a partir desta classificação. */
+  onOpenTechnicalNote?: () => void;
   /**
    * Grava a linha de 40 colunas na aba do Mapa de Risco. Recebe os
    * títulos junto com os valores porque o layout oficial é definido
@@ -165,6 +167,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
   valorContratoStr,
   onValorContratoChange,
   onOpenEvidence,
+  onOpenTechnicalNote,
   onSaveRiskMapRow,
   onDownloadIntegrityForm,
   onFillSuapeSheet,
@@ -442,6 +445,18 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
             {onOpenEvidence ? (
               <Button size="sm" variant="ghost" icon={<Icons.ShieldCheck size={15} />} onClick={onOpenEvidence}>
                 Evidências
+              </Button>
+            ) : null}
+            {onOpenTechnicalNote ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={<Icons.FileText size={15} />}
+                disabled={!evaluation.calculatedRisk}
+                title={evaluation.calculatedRisk ? undefined : 'Importe o questionário para classificar e liberar a nota.'}
+                onClick={onOpenTechnicalNote}
+              >
+                Nota técnica
               </Button>
             ) : null}
             <Button
