@@ -84,6 +84,35 @@ const DiligenceHistoryService = {
     return snapshot;
   },
 
+  /**
+   * Guarda a avaliação de integridade no retrato da diligência.
+   *
+   * O questionário vinha vivendo só no navegador do analista. Trocar de
+   * máquina, limpar o cache ou passar o dossiê para outra pessoa
+   * significava colar a transcrição de novo e reconferir item a item —
+   * o trabalho mais caro da tela, refeito por falta de onde guardar.
+   *
+   * Aqui ele entra no mesmo retrato que guarda o resto da diligência, e
+   * volta de qualquer lugar que a abra.
+   */
+  async saveIntegrityEvaluation(id, avaliacao, user) {
+    const { snapshot } = await DiligenceRepository.mutate(id, (current) => {
+      current.avaliacaoIntegridade = {
+        ...avaliacao,
+        atualizadoEm: new Date().toISOString(),
+        atualizadoPor: user?.name || user?.email || null,
+      };
+    }, {
+      user,
+      action: 'update_integrity_evaluation',
+      entityType: 'diligence',
+      entityId: id,
+      justification: 'Questionário de diligência e campos do formulário de SUAPE atualizados.',
+    });
+    this.cacheSnapshot(snapshot);
+    return snapshot.avaliacaoIntegridade;
+  },
+
   async getDiligenceById(id) {
     if (recentDiligenceCache.has(id)) {
       return recentDiligenceCache.get(id).snapshot;

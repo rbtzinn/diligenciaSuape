@@ -28,11 +28,30 @@ import {
   type SuapeTextFieldKey,
 } from '../utils/suapeChecklistFields';
 import type { ChecklistExtras } from '../utils/integrityFormPayload';
+import type { PersistenceStatus } from '../hooks/useIntegrityPersistence';
 
 interface ChecklistExtrasPanelProps {
   extras: ChecklistExtras;
   onChange: (extras: ChecklistExtras) => void;
+  persistenceStatus?: PersistenceStatus;
+  persistenceError?: string | null;
+  onRetryPersistence?: () => void;
 }
+
+/**
+ * O que dizer sobre a gravação no histórico, em uma frase.
+ *
+ * A classe vai inteira, e não montada com template: o Tailwind lê o
+ * código como texto para saber o que gerar, e `text-${tom}` não existe
+ * para ele — a cor simplesmente não sairia no build.
+ */
+const SITUACAO: Record<PersistenceStatus, { texto: string; classe: string }> = {
+  ocioso: { texto: 'Guardado no histórico da diligência.', classe: 'text-ink-3' },
+  pendente: { texto: 'Alterações a guardar…', classe: 'text-ink-3' },
+  salvando: { texto: 'Guardando no histórico…', classe: 'text-ink-3' },
+  salvo: { texto: 'Guardado no histórico da diligência.', classe: 'text-ok-text' },
+  erro: { texto: 'Não foi guardado no histórico.', classe: 'text-high-text' },
+};
 
 /** Máscara do campo, quando o formato é fixo. */
 const MASCARAS: Partial<Record<SuapeTextFieldKey, 'cpf' | 'phone' | 'year'>> = {
@@ -50,7 +69,13 @@ const LONGOS: SuapeTextFieldKey[] = [
   'cadastrosDetalhe',
 ];
 
-export const ChecklistExtrasPanel: React.FC<ChecklistExtrasPanelProps> = ({ extras, onChange }) => {
+export const ChecklistExtrasPanel: React.FC<ChecklistExtrasPanelProps> = ({
+  extras,
+  onChange,
+  persistenceStatus = 'ocioso',
+  persistenceError,
+  onRetryPersistence,
+}) => {
   const choices = extras?.choices || {};
   const texts = extras?.texts || {};
 
@@ -84,12 +109,32 @@ export const ChecklistExtrasPanel: React.FC<ChecklistExtrasPanelProps> = ({ extr
       // clique do botão — e sem dizer isso, o analista preenche tudo,
       // sai da tela e a CheckList continua vazia.
       footer={
-        <p className="text-xs text-ink-3">
-          O que você escreve aqui fica guardado nesta diligência. Para chegar à planilha, clique em{' '}
-          <strong className="text-ink-2">Preencher formulário de SUAPE</strong>, no fim da página.
-        </p>
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-ink-3">
+            Para chegar à planilha, clique em{' '}
+            <strong className="text-ink-2">Preencher formulário de SUAPE</strong>, no fim da página.
+          </p>
+          <span className={cn('shrink-0 text-xs', SITUACAO[persistenceStatus].classe)}>
+            {SITUACAO[persistenceStatus].texto}
+          </span>
+        </div>
       }
     >
+      {persistenceStatus === 'erro' ? (
+        <Note tone="high" role="alert">
+          {persistenceError || 'Não foi possível guardar o questionário no histórico.'} As respostas
+          continuam nesta tela e neste navegador.
+          {onRetryPersistence ? (
+            <>
+              {' '}
+              <button type="button" onClick={onRetryPersistence} className="font-semibold underline">
+                Tentar de novo
+              </button>
+            </>
+          ) : null}
+        </Note>
+      ) : null}
+
       {faltando > 0 ? (
         <Note>
           {faltando} campo(s) ainda em branco. Se estiverem em branco no questionário do terceiro,

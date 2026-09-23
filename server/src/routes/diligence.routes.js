@@ -198,6 +198,69 @@ router.post('/:id/formulario-suape', async (req, res) => {
   });
 });
 
+// ==========================================================
+// Avaliação de integridade guardada no retrato da diligência
+//
+// O questionário vivia só no navegador de quem o colou. Aqui ele passa
+// a voltar de qualquer lugar que abra o dossiê.
+//
+// A validação é de forma e tamanho, não de conteúdo: o que cada
+// resposta significa é assunto das fórmulas de SUAPE, e repetir essa
+// regra aqui criaria uma segunda verdade.
+// ==========================================================
+const MAX_CAMPOS_TEXTO = 40;
+const MAX_TAMANHO_CAMPO = 1_000;
+
+const respostasValidas = (valor) => (
+  valor && typeof valor === 'object' && !Array.isArray(valor)
+  && Object.keys(valor).length <= 60
+  && Object.values(valor).every((v) => v === true || v === false || v === null)
+);
+
+router.patch('/:id/avaliacao', async (req, res) => {
+  const { answers, contractValueStr, extras } = req.body || {};
+
+  if (!respostasValidas(answers)) {
+    return res.status(400).json({ ok: false, erro: 'Respostas do questionário em formato inválido.' });
+  }
+  if (contractValueStr !== undefined && typeof contractValueStr !== 'string') {
+    return res.status(400).json({ ok: false, erro: 'Valor do contrato em formato inválido.' });
+  }
+
+  const choices = extras?.choices;
+  const texts = extras?.texts;
+  if (choices !== undefined && !respostasValidas(choices)) {
+    return res.status(400).json({ ok: false, erro: 'Perguntas complementares em formato inválido.' });
+  }
+  if (texts !== undefined) {
+    const forma = texts && typeof texts === 'object' && !Array.isArray(texts)
+      && Object.keys(texts).length <= MAX_CAMPOS_TEXTO
+      && Object.values(texts).every((v) => typeof v === 'string' && v.length <= MAX_TAMANHO_CAMPO);
+    if (!forma) {
+      return res.status(400).json({ ok: false, erro: 'Campos de texto em formato inválido.' });
+    }
+  }
+
+  try {
+    const salvo = await DiligenceHistoryService.saveIntegrityEvaluation(
+      req.params.id,
+      {
+        answers,
+        contractValueStr: contractValueStr || '',
+        extras: { choices: choices || {}, texts: texts || {} },
+      },
+      req.user,
+    );
+    return res.json({ ok: true, avaliacaoIntegridade: salvo });
+  } catch (error) {
+    console.error('[DiligenceRoutes] Erro ao guardar a avaliação de integridade:', error.message);
+    return res.status(503).json({
+      ok: false,
+      erro: 'Não foi possível guardar o questionário no histórico. Ele continua nesta tela.',
+    });
+  }
+});
+
 router.get('/', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit, 10) || 100;

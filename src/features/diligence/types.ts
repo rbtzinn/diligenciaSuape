@@ -601,6 +601,19 @@ export interface DiligenceItem {
   /** Dados abertos do TCE-PE: contratos, aditivos, licitações, obras e documentos. */
   tcePeOpenData?: TceOpenDataSummary;
   evidenceCenter?: EvidenceCenter;
+  /**
+   * Questionário de diligência e demais campos do formulário de SUAPE.
+   *
+   * Fica no retrato para que trocar de máquina, limpar o cache ou passar
+   * o dossiê adiante não obrigue a colar a transcrição de novo.
+   */
+  avaliacaoIntegridade?: {
+    answers: Record<string, boolean | null>;
+    contractValueStr: string;
+    extras: { choices: Record<string, boolean | null>; texts: Record<string, string> };
+    atualizadoEm?: string;
+    atualizadoPor?: string | null;
+  };
 }
 
 export interface DiligenceStepConfig {

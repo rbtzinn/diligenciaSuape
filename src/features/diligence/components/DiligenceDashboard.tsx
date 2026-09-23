@@ -19,6 +19,7 @@ import { EvidenceCenterDrawer } from './EvidenceCenterDrawer';
 import { NewsWorkspace } from './NewsWorkspace';
 import { currencyToNumber } from '../../../lib/masks';
 import { loadIntegrityDraft, saveIntegrityDraft } from '../utils/integrityDraft';
+import { useIntegrityPersistence } from '../hooks/useIntegrityPersistence';
 import type {
   ChecklistExtras,
   IntegrityFormPayload,
@@ -89,17 +90,41 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   const [savedNewsDiligence, setSavedNewsDiligence] = useState<DiligenceItem | null>(null);
   // Respostas e regras da política pertencem apenas ao complemento SUAPE.
   // O índice da pesquisa continua vindo de diligence.risco.
-  // O questionário é reconstituído do rascunho local: sem isso, um F5
-  // desfazia a colagem do JSON e a conferência item a item.
+  // Ordem de precedência: o que está no retrato da diligência vence o
+  // rascunho local. O retrato veio do banco e vale em qualquer máquina;
+  // o rascunho é só a cópia rápida deste navegador, e fica como reserva
+  // para quando a gravação não chegou a acontecer.
+  const avaliacaoSalva = diligence.avaliacaoIntegridade;
   const [integrityAnswers, setIntegrityAnswers] = useState<IntegrityAnswers>(
-    () => loadIntegrityDraft(diligence.id)?.answers || {},
+    () => (avaliacaoSalva?.answers as IntegrityAnswers)
+      || loadIntegrityDraft(diligence.id)?.answers
+      || {},
   );
   const [contractValueStr, setContractValueStr] = useState(
-    () => loadIntegrityDraft(diligence.id)?.contractValueStr || '',
+    () => avaliacaoSalva?.contractValueStr
+      || loadIntegrityDraft(diligence.id)?.contractValueStr
+      || '',
   );
   const [checklistExtras, setChecklistExtras] = useState<ChecklistExtras>(
-    () => loadIntegrityDraft(diligence.id)?.extras || { choices: {}, texts: {} },
+    () => avaliacaoSalva?.extras
+      || loadIntegrityDraft(diligence.id)?.extras
+      || { choices: {}, texts: {} },
   );
+
+  const persistencia = useIntegrityPersistence(diligence.id);
+  const marcarComoGravado = persistencia.marcarComoGravado;
+
+  // O que veio do banco já está gravado: sem isto, abrir o dossiê e
+  // sair custaria uma escrita na planilha por visita.
+  useEffect(() => {
+    if (avaliacaoSalva) {
+      marcarComoGravado({
+        answers: avaliacaoSalva.answers,
+        contractValueStr: avaliacaoSalva.contractValueStr,
+        extras: avaliacaoSalva.extras,
+      });
+    }
+  }, [avaliacaoSalva, marcarComoGravado]);
   const [suapeSheetUrl, setSuapeSheetUrl] = useState<string | null>(null);
   const [riskModalOpen, setRiskModalOpen] = useState(false);
   const [riskSaving, setRiskSaving] = useState(false);
@@ -129,6 +154,15 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
       contractValueStr,
       extras: checklistExtras,
     });
+
+    persistencia.agendar({
+      answers: integrityAnswers,
+      contractValueStr,
+      extras: checklistExtras,
+    });
+    // `persistencia.agendar` é estável e não entra nas dependências de
+    // propósito: incluí-la reagendaria a gravação a cada render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [diligence.id, integrityAnswers, contractValueStr, checklistExtras]);
 
   const officialEvaluation = useMemo(
@@ -586,6 +620,9 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           onAnswersChange={setIntegrityAnswers}
           checklistExtras={checklistExtras}
           onChecklistExtrasChange={setChecklistExtras}
+          persistenceStatus={persistencia.status}
+          persistenceError={persistencia.erro}
+          onRetryPersistence={persistencia.gravarAgora}
           valorContratoStr={contractValueStr}
           onValorContratoChange={setContractValueStr}
           onOpenEvidence={() => setActiveDrawer('evidence')}

@@ -36,6 +36,7 @@ import {
 } from '../utils/suapeRiskMapRowGenerator';
 import { QuestionnaireImportPanel, type QuestionnaireImportPayload } from './QuestionnaireImportPanel';
 import { ChecklistExtrasPanel } from './ChecklistExtrasPanel';
+import type { PersistenceStatus } from '../hooks/useIntegrityPersistence';
 import {
   buildIntegrityFormPayload,
   buildIntegritySheetPayload,
@@ -57,6 +58,10 @@ interface SuapeIntegrityEvaluationViewProps {
    */
   checklistExtras?: ChecklistExtras;
   onChecklistExtrasChange?: (extras: ChecklistExtras) => void;
+  /** Situação da gravação do questionário no histórico. */
+  persistenceStatus?: PersistenceStatus;
+  persistenceError?: string | null;
+  onRetryPersistence?: () => void;
   valorContratoStr: string;
   onValorContratoChange: (value: string) => void;
   onOpenEvidence?: () => void;
@@ -154,6 +159,9 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
   onAnswersChange,
   checklistExtras,
   onChecklistExtrasChange,
+  persistenceStatus,
+  persistenceError,
+  onRetryPersistence,
   valorContratoStr,
   onValorContratoChange,
   onOpenEvidence,
@@ -485,6 +493,9 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
           <ChecklistExtrasPanel
             extras={checklistExtras || { choices: {}, texts: {} }}
             onChange={onChecklistExtrasChange}
+            persistenceStatus={persistenceStatus}
+            persistenceError={persistenceError}
+            onRetryPersistence={onRetryPersistence}
           />
         ) : null}
 
