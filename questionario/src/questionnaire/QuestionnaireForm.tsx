@@ -34,6 +34,8 @@ import {
 import {
   answeredCount,
   cleanCnpj,
+  documentKindKey,
+  documentKindOf,
   emptyState,
   evidenceIsRequired,
   fromDraft,
@@ -42,6 +44,7 @@ import {
   requiresRegistries,
   toDraft,
   validateQuestionnaire,
+  type DocumentKind,
   type Evidence,
   type EvidenceFile,
   type QuestionnaireState,
@@ -50,6 +53,7 @@ import {
 import { buildQuestionnairePdf, canEmbedPdf, sha256Hex } from './questionnairePdf';
 import { allowManualCompany, applyCompany, clearCompany, fetchCompany } from './cnpjLookup';
 import { CNPJ } from '../lib/cnpj';
+import { MASKS } from '../lib/masks';
 
 const DRAFT_KEY = 'd360.questionario.rascunho.v1';
 // Ícone azul: a "Marca" sem fundo é branca, feita para fundo escuro.
@@ -76,7 +80,6 @@ const navTitle = (title: string) => {
 const MASK_PLACEHOLDER: Partial<Record<TextMask, string>> = {
   cnpj: '00.000.000/0000-00',
   cpf: '000.000.000-00',
-  cpfCnpj: '000.000.000-00 ou 00.000.000/0000-00',
   date: 'DD/MM/AAAA',
   phone: '(00) 00000-0000',
   period: 'AAAA-AAAA',
@@ -131,6 +134,24 @@ const LOOKUP_TONE: Record<'busy' | 'ok' | 'error', string> = {
   error: 'text-high-text',
 };
 
+/** Chave CPF | CNPJ ao lado do rótulo do campo de documento. */
+const DocumentToggle: React.FC<{ value: DocumentKind; onChange: (value: DocumentKind) => void }> = ({ value, onChange }) => (
+  <span role="radiogroup" aria-label="Tipo de documento" className="inline-flex overflow-hidden rounded border border-line text-2xs font-bold">
+    {(['cpf', 'cnpj'] as const).map((kind) => (
+      <button
+        key={kind}
+        type="button"
+        role="radio"
+        aria-checked={value === kind}
+        onClick={() => onChange(kind)}
+        className={cn('px-1.5 py-0.5 uppercase transition-colors', value === kind ? 'bg-brand text-white' : 'bg-surface text-ink-3 hover:bg-surface-hover')}
+      >
+        {kind}
+      </button>
+    ))}
+  </span>
+);
+
 const TableField: React.FC<{ table: TableDef; state: QuestionnaireState; update: Update }> = ({ table, state, update }) => {
   const stored = state.tables[table.id];
   const rows: TableRow[] = stored && stored.length > 0 ? stored : [{}];
@@ -149,17 +170,39 @@ const TableField: React.FC<{ table: TableDef; state: QuestionnaireState; update:
         <div key={index} className="flex min-w-0 items-start gap-2 rounded-lg border border-line-soft bg-surface-subtle p-2.5">
           <span className="num mt-7 w-5 shrink-0 text-center text-2xs font-bold text-ink-3">{index + 1}</span>
           <div className={cn('grid min-w-0 flex-1 items-end gap-2', table.columns.length > 2 ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-2')}>
-            {table.columns.map((column) => (
-              <TextField
-                key={column.id}
-                label={column.label}
-                controlSize="sm"
-                mask={column.mask}
-                placeholder={column.mask ? MASK_PLACEHOLDER[column.mask] : undefined}
-                value={row[column.id] || ''}
-                onChange={(e) => setCell(index, column.id, e.target.value)}
-              />
-            ))}
+            {table.columns.map((column) => {
+              if (column.mask === 'cpfCnpj') {
+                // Documento: a empresa escolhe CPF ou CNPJ, e a máscara segue a escolha.
+                const kind = documentKindOf(row, column.id);
+                const setKind = (next: DocumentKind) =>
+                  setRows(rows.map((r, i) => (i === index
+                    ? { ...r, [documentKindKey(column.id)]: next, [column.id]: MASKS[next](r[column.id] || '') }
+                    : r)));
+                return (
+                  <TextField
+                    key={column.id}
+                    label={column.label}
+                    labelAction={<DocumentToggle value={kind} onChange={setKind} />}
+                    controlSize="sm"
+                    mask={kind}
+                    placeholder={MASK_PLACEHOLDER[kind]}
+                    value={row[column.id] || ''}
+                    onChange={(e) => setCell(index, column.id, e.target.value)}
+                  />
+                );
+              }
+              return (
+                <TextField
+                  key={column.id}
+                  label={column.label}
+                  controlSize="sm"
+                  mask={column.mask}
+                  placeholder={column.mask ? MASK_PLACEHOLDER[column.mask] : undefined}
+                  value={row[column.id] || ''}
+                  onChange={(e) => setCell(index, column.id, e.target.value)}
+                />
+              );
+            })}
           </div>
           <Button
             variant="ghost"

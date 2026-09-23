@@ -101,6 +101,24 @@ describe('validação', () => {
   });
 });
 
+describe('CPF ou CNPJ escolhido pela empresa', () => {
+  it('sem escolha vale CNPJ; escolhendo CPF, valida como CPF', () => {
+    const state = completo();
+    state.tables.socios = [{ nome: 'Sócio PF', nacionalidade: 'Brasileira', documento: '529.982.247-25', participacao: '100' }];
+    expect(validateQuestionnaire(state).some((i) => i.message.includes('CNPJ inválido'))).toBe(true);
+
+    state.tables.socios[0].__tipo_documento = 'cpf';
+    expect(validateQuestionnaire(state)).toEqual([]);
+  });
+
+  it('a escolha do tipo sozinha não conta como linha preenchida', () => {
+    const state = completo();
+    state.choices['1.2'] = 'sim';
+    state.tables.subcontratadas = [{ __tipo_documento: 'cpf' }];
+    expect(validateQuestionnaire(state).some((i) => i.message.includes('inclua ao menos uma linha'))).toBe(true);
+  });
+});
+
 describe('evidências bloqueiam a exportação', () => {
   it('"Sim" em pergunta com evidência exige arquivo ou link', () => {
     const state = completo();

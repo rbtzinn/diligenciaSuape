@@ -90,7 +90,18 @@ export function requiresRegistries(state: QuestionnaireState): boolean {
   return [...RISCO_MUITO_ALTO, ...RISCO_ALTO].some((id) => state.choices[id] === 'sim');
 }
 
-export const isRowFilled = (row: TableRow) => Object.values(row).some((value) => value.trim() !== '');
+/**
+ * Tipo de documento escolhido num campo CPF/CNPJ, guardado na própria
+ * linha numa chave interna (`__tipo_<coluna>`). Sem escolha, vale CNPJ.
+ */
+export type DocumentKind = 'cpf' | 'cnpj';
+export const documentKindKey = (columnId: string) => `__tipo_${columnId}`;
+export const documentKindOf = (row: TableRow, columnId: string): DocumentKind =>
+  row[documentKindKey(columnId)] === 'cpf' ? 'cpf' : 'cnpj';
+
+/** Linha com algum dado digitado. Chaves internas (`__…`) não contam. */
+export const isRowFilled = (row: TableRow) =>
+  Object.entries(row).some(([key, value]) => !key.startsWith('__') && value.trim() !== '');
 
 export function filledRows(rows: TableRow[] | undefined): TableRow[] {
   return (rows || []).filter(isRowFilled);
@@ -179,7 +190,9 @@ function validateTable(table: TableDef, state: QuestionnaireState, issues: Issue
       issues.push({ anchor, message: `${name}: linha ${index + 1} sem ${empty.map((c) => c.label).join(', ')}.` });
     }
     for (const column of table.columns) {
-      const problem = formatProblem(column.mask, (row[column.id] || '').trim());
+      // Campo CPF/CNPJ valida pelo tipo que a empresa escolheu.
+      const mask = column.mask === 'cpfCnpj' ? documentKindOf(row, column.id) : column.mask;
+      const problem = formatProblem(mask, (row[column.id] || '').trim());
       if (problem) issues.push({ anchor, message: `${name}: linha ${index + 1}, ${column.label} — ${problem}` });
     }
   });
