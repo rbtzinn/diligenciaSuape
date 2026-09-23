@@ -28,6 +28,7 @@ import {
   type RegistriesDef,
   type TableDef,
   type TextFieldDef,
+  type TextMask,
   type YesNo,
 } from './questionnaireCatalog';
 import {
@@ -68,6 +69,20 @@ const navTitle = (title: string) => {
   return text.charAt(0).toUpperCase() + text.slice(1);
 };
 
+/**
+ * Formato esperado dos campos numéricos padronizados, como placeholder.
+ * Mostra o formato, nunca um exemplo de resposta.
+ */
+const MASK_PLACEHOLDER: Partial<Record<TextMask, string>> = {
+  cnpj: '00.000.000/0000-00',
+  cpf: '000.000.000-00',
+  cpfCnpj: '000.000.000-00 ou 00.000.000/0000-00',
+  date: 'DD/MM/AAAA',
+  phone: '(00) 00000-0000',
+  period: 'AAAA-AAAA',
+  percent: '0,00',
+};
+
 const newId = () => Math.random().toString(36).slice(2, 10);
 
 type Update = (updater: (state: QuestionnaireState) => QuestionnaireState) => void;
@@ -95,6 +110,7 @@ const Field: React.FC<{ field: TextFieldDef; state: QuestionnaireState; update: 
           value={value}
           mask={field.mask}
           hint={hint}
+          placeholder={field.mask && !locked ? MASK_PLACEHOLDER[field.mask] : undefined}
           // Somente leitura, não desabilitado: o texto segue legível e
           // copiável, só não é editável. O aviso fica uma vez, no CNPJ.
           readOnly={locked}
@@ -139,8 +155,7 @@ const TableField: React.FC<{ table: TableDef; state: QuestionnaireState; update:
                 label={column.label}
                 controlSize="sm"
                 mask={column.mask}
-                // Formato esperado, não exemplo de resposta.
-                placeholder={column.mask === 'period' ? 'AAAA-AAAA' : undefined}
+                placeholder={column.mask ? MASK_PLACEHOLDER[column.mask] : undefined}
                 value={row[column.id] || ''}
                 onChange={(e) => setCell(index, column.id, e.target.value)}
               />
