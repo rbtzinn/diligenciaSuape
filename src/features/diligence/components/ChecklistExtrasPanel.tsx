@@ -79,6 +79,16 @@ export const ChecklistExtrasPanel: React.FC<ChecklistExtrasPanelProps> = ({ extr
           {preenchidos}/{total}
         </Chip>
       }
+      // O painel guarda sozinho no rascunho do navegador, o que dá a
+      // impressão de já ter salvo. A planilha, porém, só é escrita no
+      // clique do botão — e sem dizer isso, o analista preenche tudo,
+      // sai da tela e a CheckList continua vazia.
+      footer={
+        <p className="text-xs text-ink-3">
+          O que você escreve aqui fica guardado nesta diligência. Para chegar à planilha, clique em{' '}
+          <strong className="text-ink-2">Preencher formulário de SUAPE</strong>, no fim da página.
+        </p>
+      }
     >
       {faltando > 0 ? (
         <Note>
