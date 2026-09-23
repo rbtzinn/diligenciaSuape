@@ -17,6 +17,26 @@ import { cn } from '../lib/cn';
 import { ControlSize, resolveControlSize } from './controlSize';
 import { MASKS, type MaskName } from '../lib/masks';
 
+/**
+ * Teclado do celular por máscara. CNPJ e CPF/CNPJ ficam no teclado
+ * completo porque o CNPJ alfanumérico da Receita tem letra.
+ */
+const MASK_INPUT_MODE: Partial<Record<MaskName, React.HTMLAttributes<HTMLInputElement>['inputMode']>> = {
+  cpf: 'numeric',
+  date: 'numeric',
+  year: 'numeric',
+  cep: 'numeric',
+  phone: 'tel',
+  currency: 'numeric',
+  processoSei: 'numeric',
+  processoCnj: 'numeric',
+  integer: 'numeric',
+  percent: 'decimal',
+  period: 'numeric',
+  email: 'email',
+  url: 'url',
+};
+
 const CONTROL_BASE = cn(
   'w-full min-w-0 border bg-surface text-ink transition-colors',
   'border-line hover:border-line-strong',
@@ -161,7 +181,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
           // Teclado numérico no celular, menos onde a máscara aceita
           // letra: o CNPJ alfanumérico da Receita não se digita num
           // teclado só de números.
-          inputMode={inputMode || (mask && mask !== 'cnpj' && mask !== 'cpfCnpj' ? 'numeric' : undefined)}
+          inputMode={inputMode || (mask ? MASK_INPUT_MODE[mask] : undefined)}
           className={cn(
             CONTROL_BASE,
             CONTROL_SIZE[resolved],

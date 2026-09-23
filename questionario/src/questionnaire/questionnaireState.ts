@@ -20,6 +20,7 @@ import {
   type EvidenceKind,
   type EvidenceRule,
   type TableDef,
+  type TextMask,
   type TextFieldDef,
   type YesNo,
 } from './questionnaireCatalog';
@@ -110,6 +111,41 @@ function parsePercent(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/** Data dd/mm/aaaa que existe no calendário. */
+export function isValidDate(value: string): boolean {
+  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return false;
+  const [day, month, year] = match.slice(1).map(Number);
+  const date = new Date(year, month - 1, day);
+  return year >= 1800 && date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+/** Formato errado para a máscara do campo. Vazio não é problema de formato. */
+export function formatProblem(mask: TextMask | undefined, value: string): string | null {
+  if (!value || !mask) return null;
+  const digits = value.replace(/\D/g, '');
+  switch (mask) {
+    case 'cnpj':
+      return CNPJ.validate(value) ? null : 'CNPJ inválido.';
+    case 'cpf':
+      return isValidCpf(value) ? null : 'CPF inválido.';
+    case 'cpfCnpj':
+      return (digits.length === 11 && isValidCpf(value)) || CNPJ.validate(value) ? null : 'CPF ou CNPJ inválido.';
+    case 'date':
+      return isValidDate(value) ? null : 'data inválida (use dd/mm/aaaa).';
+    case 'phone':
+      return digits.length >= 10 ? null : 'telefone incompleto (inclua o DDD).';
+    case 'period': {
+      const match = value.match(/^(\d{4})-(\d{4})$/);
+      return match && Number(match[1]) <= Number(match[2]) ? null : 'período inválido (use aaaa-aaaa).';
+    }
+    case 'email':
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? null : 'e-mail inválido.';
+    default:
+      return null;
+  }
+}
+
 const tag = (ref: string | undefined, label: string) => (ref ? `${ref} · ${label}` : label);
 const shortText = (text: string) => (text.length > 70 ? `${text.slice(0, 67).trimEnd()}…` : text);
 
@@ -121,11 +157,8 @@ function validateText(field: TextFieldDef, state: QuestionnaireState, issues: Is
     if (field.required) issues.push({ anchor, message: `${name}: preencha este campo.` });
     return;
   }
-  if (field.mask === 'cnpj' && !CNPJ.validate(value)) issues.push({ anchor, message: `${name}: CNPJ inválido.` });
-  if (field.mask === 'cpf' && !isValidCpf(value)) issues.push({ anchor, message: `${name}: CPF inválido.` });
-  if (field.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-    issues.push({ anchor, message: `${name}: e-mail inválido.` });
-  }
+  const problem = formatProblem(field.mask, value);
+  if (problem) issues.push({ anchor, message: `${name}: ${problem}` });
 }
 
 function validateTable(table: TableDef, state: QuestionnaireState, issues: Issue[]) {
@@ -140,6 +173,10 @@ function validateTable(table: TableDef, state: QuestionnaireState, issues: Issue
     const empty = table.columns.filter((column) => !(row[column.id] || '').trim());
     if (empty.length > 0) {
       issues.push({ anchor, message: `${name}: linha ${index + 1} sem ${empty.map((c) => c.label).join(', ')}.` });
+    }
+    for (const column of table.columns) {
+      const problem = formatProblem(column.mask, (row[column.id] || '').trim());
+      if (problem) issues.push({ anchor, message: `${name}: linha ${index + 1}, ${column.label} — ${problem}` });
     }
   });
   if (table.percentColumn && rows.length > 0) {

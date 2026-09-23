@@ -124,6 +124,41 @@ export function maskProcessoCnj(value: string): string {
   return CNJ.mask(value);
 }
 
+/** Número inteiro, até nove dígitos — quantidade de empregados. */
+export function maskInteger(value: string): string {
+  return onlyDigits(value).replace(/^0+(?=\d)/, '').slice(0, 9);
+}
+
+/**
+ * Percentual com até duas casas: 100, 33,33, 0,5. O "%" não é digitado:
+ * a vírgula é a única pontuação aceita, e o número nunca passa de 100.
+ */
+export function maskPercent(value: string): string {
+  const clean = String(value ?? '').replace(/\./g, ',').replace(/[^\d,]/g, '');
+  const [inteiro = '', ...resto] = clean.split(',');
+  const intPart = inteiro.replace(/^0+(?=\d)/, '').slice(0, 3);
+  if (Number(intPart) > 100) return '100';
+  if (resto.length === 0) return intPart;
+  const decimais = resto.join('').slice(0, 2);
+  return Number(intPart) === 100 ? '100' : `${intPart || '0'},${decimais}`;
+}
+
+/** aaaa-aaaa — período de mandato. */
+export function maskPeriod(value: string): string {
+  const d = onlyDigits(value).slice(0, 8);
+  return d.length <= 4 ? d : `${d.slice(0, 4)}-${d.slice(4)}`;
+}
+
+/** E-mail: sem espaço e em minúsculas. */
+export function maskEmail(value: string): string {
+  return String(value ?? '').replace(/\s/g, '').toLowerCase();
+}
+
+/** Endereço de site: sem espaço. */
+export function maskUrl(value: string): string {
+  return String(value ?? '').replace(/\s/g, '');
+}
+
 export type MaskName =
   | 'cnpj'
   | 'cpf'
@@ -134,7 +169,12 @@ export type MaskName =
   | 'phone'
   | 'currency'
   | 'processoSei'
-  | 'processoCnj';
+  | 'processoCnj'
+  | 'integer'
+  | 'percent'
+  | 'period'
+  | 'email'
+  | 'url';
 
 export const MASKS: Record<MaskName, (value: string) => string> = {
   cnpj: maskCnpj,
@@ -147,6 +187,11 @@ export const MASKS: Record<MaskName, (value: string) => string> = {
   currency: maskCurrency,
   processoSei: maskProcessoSei,
   processoCnj: maskProcessoCnj,
+  integer: maskInteger,
+  percent: maskPercent,
+  period: maskPeriod,
+  email: maskEmail,
+  url: maskUrl,
 };
 
 /** Só os dígitos — o que vai para a API, a planilha e a comparação. */

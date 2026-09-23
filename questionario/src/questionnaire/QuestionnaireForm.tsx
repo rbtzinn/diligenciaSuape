@@ -78,8 +78,6 @@ const Field: React.FC<{ field: TextFieldDef; state: QuestionnaireState; update: 
           label={label}
           value={value}
           mask={field.mask}
-          type={field.type === 'number' ? 'text' : field.type}
-          inputMode={field.type === 'number' ? 'numeric' : undefined}
          
           onChange={(e) => onChange(e.target.value)}
         />

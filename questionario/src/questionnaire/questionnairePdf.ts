@@ -261,7 +261,13 @@ class Writer {
 }
 
 function tableRows(table: TableDef, state: QuestionnaireState): string[][] {
-  return filledRows(state.tables[table.id]).map((row) => table.columns.map((column) => row[column.id] || ''));
+  return filledRows(state.tables[table.id]).map((row) =>
+    table.columns.map((column) => {
+      const value = row[column.id] || '';
+      // A máscara de percentual não deixa digitar "%"; o PDF acrescenta.
+      return column.mask === 'percent' && value && !value.endsWith('%') ? `${value}%` : value;
+    }),
+  );
 }
 
 function evidenceLine(evidence: Evidence, annex: number | undefined, rowLabel?: string): string {

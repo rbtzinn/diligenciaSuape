@@ -21,7 +21,8 @@
 
 export type YesNo = 'sim' | 'nao';
 
-export type TextMask = 'cnpj' | 'cpf' | 'date' | 'phone';
+/** Máscaras de formato padrão (definidas em lib/masks.ts). */
+export type TextMask = 'cnpj' | 'cpf' | 'cpfCnpj' | 'date' | 'phone' | 'integer' | 'percent' | 'period' | 'email' | 'url';
 
 /** Arquivo anexado, link público ou indicação de trecho de documento já anexado. */
 export type EvidenceKind = 'file' | 'link' | 'reference';
@@ -34,7 +35,6 @@ export interface TextFieldDef {
   ref?: string;
   multiline?: boolean;
   mask?: TextMask;
-  type?: 'email' | 'url' | 'number';
   required?: boolean;
   /** Ocupa a linha inteira na grade de campos. */
   wide?: boolean;
@@ -127,7 +127,7 @@ const partesRelacionadas = (id: string): TableColumn[] => [
   { id: `${id}Pais`, label: 'País', width: 1.2 },
   { id: `${id}Telefone`, label: 'Telefone', mask: 'phone', width: 1.5 },
   { id: `${id}Endereco`, label: 'Endereço', width: 3 },
-  { id: `${id}Site`, label: 'Sítio eletrônico', width: 2 },
+  { id: `${id}Site`, label: 'Sítio eletrônico', mask: 'url', width: 2 },
 ];
 
 const orgaoAtividade: TableColumn[] = [
@@ -146,9 +146,9 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
       { kind: 'text', id: 'dataConstituicao', label: 'Data da Constituição da Sociedade', mask: 'date', required: true },
       { kind: 'text', id: 'objetoSocial', label: 'Objeto Social', required: true, wide: true },
       { kind: 'text', id: 'ramoAtividade', label: 'Ramo de Atividade', required: true },
-      { kind: 'text', id: 'numeroEmpregados', label: 'Nº de Empregados', type: 'number', required: true },
+      { kind: 'text', id: 'numeroEmpregados', label: 'Nº de Empregados', mask: 'integer', required: true },
       { kind: 'text', id: 'endereco', label: 'Endereço', required: true, wide: true },
-      { kind: 'text', id: 'sitioEletronico', label: 'Sítio Eletrônico', type: 'url' },
+      { kind: 'text', id: 'sitioEletronico', label: 'Sítio Eletrônico', mask: 'url' },
       { kind: 'text', id: 'paisesLocalidades', label: 'Países e Localidades nos quais a Pessoa Jurídica atua', required: true },
       { kind: 'text', id: 'servicoPrestado', label: 'Serviço a ser Prestado', required: true, wide: true },
       {
@@ -165,7 +165,7 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
             required: true,
             columns: [
               { id: 'nome', label: 'Nome / Razão Social', width: 3 },
-              { id: 'documento', label: 'CPF / CNPJ', width: 2 },
+              { id: 'documento', label: 'CPF / CNPJ', mask: 'cpfCnpj', width: 2 },
               { id: 'atividade', label: 'Atividade a ser desempenhada', width: 3 },
             ],
           },
@@ -182,7 +182,7 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
       { kind: 'text', id: 'representanteCpf', label: 'CPF', mask: 'cpf', required: true },
       { kind: 'text', id: 'representanteRg', label: 'RG', required: true },
       { kind: 'text', id: 'representanteTelefone', label: 'Telefone (com DDD)', mask: 'phone', required: true },
-      { kind: 'text', id: 'representanteEmail', label: 'E-mail Corporativo', type: 'email', required: true },
+      { kind: 'text', id: 'representanteEmail', label: 'E-mail Corporativo', mask: 'email', required: true },
       { kind: 'text', id: 'representanteNacionalidade', label: 'Nacionalidade', required: true },
       { kind: 'text', id: 'representanteCargo', label: 'Cargo', required: true },
     ],
@@ -211,7 +211,7 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
           { id: 'nome', label: 'Nome', width: 3 },
           { id: 'cargo', label: 'Cargo', width: 2 },
           { id: 'nacionalidade', label: 'Nacionalidade', width: 1.5 },
-          { id: 'periodo', label: 'Período', width: 1.3 },
+          { id: 'periodo', label: 'Período (início-fim)', mask: 'period', width: 1.3 },
         ],
       },
       {
@@ -256,8 +256,8 @@ export const QUESTIONNAIRE_SECTIONS: SectionDef[] = [
         columns: [
           { id: 'nome', label: 'Nome / Razão Social', width: 3 },
           { id: 'nacionalidade', label: 'Nacionalidade', width: 1.5 },
-          { id: 'documento', label: 'CPF / CNPJ', width: 2 },
-          { id: 'participacao', label: 'Participação (%)', width: 1.2 },
+          { id: 'documento', label: 'CPF / CNPJ', mask: 'cpfCnpj', width: 2 },
+          { id: 'participacao', label: 'Participação (%)', mask: 'percent', width: 1.2 },
         ],
       },
       {
