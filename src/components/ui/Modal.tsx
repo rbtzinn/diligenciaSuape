@@ -11,7 +11,7 @@ import { cn } from '../../lib/cn';
 import { Icons } from './Icons';
 import { Overlay, useFocusTrap, useScrollLock } from './Overlay';
 
-export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'small' | 'medium' | 'large';
+export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'small' | 'medium' | 'large';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -42,6 +42,7 @@ const SIZE: Record<string, string> = {
   lg: 'max-w-[680px]',
   large: 'max-w-[680px]',
   xl: 'max-w-[840px]',
+  '2xl': 'max-w-[1180px]',
 };
 
 export const Modal: React.FC<ModalProps> = ({

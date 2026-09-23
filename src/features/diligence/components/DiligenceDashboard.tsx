@@ -15,6 +15,7 @@ import { AiAnalysisDrawer } from './AiAnalysisDrawer';
 import { PncpContractsDrawer } from './PncpContractsDrawer';
 import { DossierView } from './dossier/DossierView';
 import { RiskOverrideModal } from './RiskOverrideModal';
+import { TechnicalNoteModal } from './TechnicalNoteModal';
 import { EvidenceCenterDrawer } from './EvidenceCenterDrawer';
 import { NewsWorkspace } from './NewsWorkspace';
 import { currencyToNumber } from '../../../lib/masks';
@@ -127,6 +128,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
   }, [avaliacaoSalva, marcarComoGravado]);
   const [suapeSheetUrl, setSuapeSheetUrl] = useState<string | null>(null);
   const [riskModalOpen, setRiskModalOpen] = useState(false);
+  const [technicalNoteOpen, setTechnicalNoteOpen] = useState(false);
   const [riskSaving, setRiskSaving] = useState(false);
   const [localRisk, setLocalRisk] = useState<{ diligenceId: string; risk: RiskAssessment } | null>(null);
   const [localEvidence, setLocalEvidence] = useState<{
@@ -659,6 +661,7 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
           onExportPdf={handleExportPdf}
           onOpenNetwork={() => openSection('mapa')}
           onOpenAudit={() => setActiveDrawer('audit')}
+          onOpenTechnicalNote={() => setTechnicalNoteOpen(true)}
         />
       ) : null}
 
@@ -784,6 +787,12 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         isSaving={riskSaving}
         onClose={() => setRiskModalOpen(false)}
         onSubmit={handleRiskOverride}
+      />
+      <TechnicalNoteModal
+        key={diligence.id}
+        isOpen={technicalNoteOpen}
+        diligence={displayDiligence}
+        onClose={() => setTechnicalNoteOpen(false)}
       />
     </main>
   );
