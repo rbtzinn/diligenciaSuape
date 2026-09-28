@@ -286,6 +286,33 @@ function aggregateGovernanceRecords(records, years) {
   });
 }
 
+/**
+ * Resume a cobertura dos exercícios.
+ *
+ * `no_record` é exercício lido com sucesso em que a companhia não aparece:
+ * a fonte respondeu. Contá-lo como não consultado fazia uma companhia ausente
+ * dos cinco FRE sair como `unavailable` (HTTP 503) — "não respondeu" no
+ * dossiê, quando a resposta era "não consta".
+ */
+function summarizeGovernanceCoverage(coverage) {
+  const consultedYears = coverage.filter((item) => item.status === 'consulted').length;
+  const noRecordYears = coverage.filter((item) => item.status === 'no_record').length;
+  const unavailableYears = coverage.filter((item) => item.status === 'unavailable').length;
+  const readYears = consultedYears + noRecordYears;
+  const coverageStatus = readYears === 0
+    ? 'unavailable'
+    : unavailableYears === 0
+      ? 'complete_public'
+      : 'partial';
+  return {
+    consultedYears,
+    noRecordYears,
+    unavailableYears,
+    readYears,
+    coverageStatus,
+  };
+}
+
 const CvmGovernanceService = {
   async getFiveExerciseHistory({ cnpj, legalNature, referenceDate = new Date() }) {
     const targetCnpj = digits(cnpj);
@@ -339,17 +366,16 @@ const CvmGovernanceService = {
 
     const records = annual.flatMap((item) => [...item.administrators, ...item.shareholders]);
     const members = aggregateGovernanceRecords(records, years);
-    const consultedYears = coverage.filter((item) => item.status === 'consulted').length;
-    const unavailableYears = coverage.filter((item) => item.status === 'unavailable').length;
-    const coverageStatus = consultedYears === years.length
-      ? 'complete_public'
-      : consultedYears > 0
-        ? 'partial'
-        : 'unavailable';
+    const {
+      consultedYears,
+      unavailableYears,
+      readYears,
+      coverageStatus,
+    } = summarizeGovernanceCoverage(coverage);
 
     const result = {
-      ok: consultedYears > 0,
-      status: consultedYears > 0 ? 200 : 503,
+      ok: readYears > 0,
+      status: readYears > 0 ? 200 : 503,
       applicable: true,
       provider: 'CVM — Formulário de Referência (FRE)',
       years,
@@ -361,7 +387,9 @@ const CvmGovernanceService = {
       consultedYears,
       unavailableYears,
       aviso: coverageStatus === 'complete_public'
-        ? 'Cinco arquivos anuais do FRE foram consultados. A presença indica que a pessoa ou o acionista consta no último documento disponível daquele exercício; ausência não informa, sozinha, a data exata de saída.'
+        ? consultedYears === 0
+          ? 'Cinco arquivos anuais do FRE foram consultados e a companhia não consta em nenhum deles. A fonte respondeu; a ausência é resultado, não falha.'
+          : 'Cinco arquivos anuais do FRE foram consultados. A presença indica que a pessoa ou o acionista consta no último documento disponível daquele exercício; ausência não informa, sozinha, a data exata de saída.'
         : 'A consulta histórica ficou parcial. Confira os exercícios marcados como indisponíveis antes de concluir a análise.',
       sourceUrl: SOURCE_PAGE,
       consultadoEm: new Date().toISOString(),
@@ -373,6 +401,7 @@ const CvmGovernanceService = {
 
 module.exports = {
   CvmGovernanceService,
+  summarizeGovernanceCoverage,
   aggregateGovernanceRecords,
   administrationRecord,
   shareholderRecord,

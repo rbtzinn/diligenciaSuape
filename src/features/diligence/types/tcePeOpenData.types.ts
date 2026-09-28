@@ -174,6 +174,9 @@ export interface TceProviderReport {
   erros: string[];
   warnings: string[];
   retrievedAt: string;
+  /** Não executada por decisão (fonte lenta demais), com o link para consulta manual. */
+  manual?: boolean;
+  consultaManualUrl?: string;
   queriesExecutadas?: Array<{
     endpoint: string;
     url: string;
@@ -245,6 +248,8 @@ export interface TceOpenDataSummary {
     valorPago: number;
     providersConsultados: number;
     providersIndisponiveis: number;
+    /** Datasets deixados fora da coleta automática, com link para consulta manual. */
+    providersConsultaManual?: number;
   };
   /** Perfis contratuais construídos sobre esta mesma coleta, sem nova consulta. */
   contractIntelligence?: ContractIntelligenceSummary;

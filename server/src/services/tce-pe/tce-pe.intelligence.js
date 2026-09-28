@@ -26,7 +26,7 @@ const { RELATIONSHIP_TYPE } = require('../../domain/relationship-type');
 const { MATCH_LEVEL, buildEntityProfile } = require('../../entity-resolution/entity-resolution');
 const { generateSearchMatrix } = require('../../search-matrix/search-query-generator');
 const { SEARCH_CATEGORY } = require('../../search-matrix/search-vocabulary');
-const { queryDataset, MAX_ROWS_PER_QUERY } = require('./tce-pe.client');
+const { queryDataset, datasetUrl, MAX_ROWS_PER_QUERY } = require('./tce-pe.client');
 const {
   normalizeContract,
   normalizeAdditive,
@@ -108,6 +108,16 @@ const TCE_PROVIDERS = Object.freeze({
     method: 'DespesasMunicipais',
     cnpjParam: 'CPF_CNPJ',
     normalize: normalizeExpense,
+    // Medido em 28/09/2026: 75 a 150 s por consulta, inclusive filtrada por
+    // município e sem nenhuma linha de resultado. O custo é fixo do lado do
+    // Tribunal e não cabe no orçamento da rota (timeout de 20 s). Consultar
+    // assim só gastava 20 s do orçamento para marcar "não respondeu" em toda
+    // diligência. Fica fora da coleta automática, com o link da consulta
+    // declarado; TCE_PE_MUNICIPAL_EXPENSES=on reativa para quem roda sem teto.
+    manualOnly: process.env.TCE_PE_MUNICIPAL_EXPENSES !== 'on',
+    manualReason: 'O TCE-PE leva de 75 a 150 segundos para responder a esta consulta, '
+      + 'mesmo quando não há registro, o que excede o tempo de uma diligência. '
+      + 'Ela não foi executada automaticamente; use o link para consultar manualmente.',
   },
   TCE_EXPENSES_STATE: {
     id: 'tce-pe-despesas-estaduais',
@@ -138,6 +148,27 @@ async function runProvider(descriptor, profile, params, options = {}) {
   const errors = [];
   const warnings = [];
   const retrievedAt = new Date().toISOString();
+
+  // Não consultado por decisão, não por falha: lacuna declarada com o caminho
+  // para fechá-la à mão. `manual` separa este caso de UNAVAILABLE por rede.
+  if (descriptor.manualOnly) {
+    return {
+      provider: descriptor.id,
+      providerLabel: descriptor.label,
+      endpoint: descriptor.method,
+      category: descriptor.category,
+      status: SOURCE_STATUS.UNAVAILABLE,
+      manual: true,
+      consultaManualUrl: datasetUrl(descriptor.method, params),
+      queriesExecutadas: [],
+      resultados: [],
+      descartados: [],
+      quantidade: 0,
+      erros: [descriptor.manualReason],
+      warnings: [],
+      retrievedAt,
+    };
+  }
 
   if (deadlineAt && Date.now() >= deadlineAt) {
     return {
@@ -405,6 +436,7 @@ const TcePeIntelligenceService = {
         erros: report.erros,
         warnings: report.warnings,
         retrievedAt: report.retrievedAt,
+        ...(report.manual ? { manual: true, consultaManualUrl: report.consultaManualUrl } : {}),
       })),
       contratos: resultsOf('tce-pe-contratos'),
       aditivos: resultsOf('tce-pe-aditivos'),
@@ -440,10 +472,11 @@ const TcePeIntelligenceService = {
         valorEmpenhado: despesas.reduce((total, item) => total + (item.valorEmpenhado || 0), 0),
         valorLiquidado: despesas.reduce((total, item) => total + (item.valorLiquidado || 0), 0),
         valorPago: despesas.reduce((total, item) => total + (item.valorPago || 0), 0),
-        providersConsultados: reports.length,
-        providersIndisponiveis: reports.filter((report) => (
+        providersConsultados: reports.filter((report) => !report.manual).length,
+        providersIndisponiveis: reports.filter((report) => !report.manual && (
           report.status === SOURCE_STATUS.UNAVAILABLE || report.status === SOURCE_STATUS.ERROR
         )).length,
+        providersConsultaManual: reports.filter((report) => report.manual).length,
       },
       limitacao: 'Coleta restrita aos datasets públicos do TCE-PE que aceitam filtro por CPF/CNPJ. '
         + 'A identidade de cada registro é confirmada pelo documento publicado pela própria fonte; '

@@ -60,6 +60,57 @@ const CACHE_TTL_MS = envInt('GAZETTE_CACHE_TTL_MS', 10 * 60 * 1000, 60_000, 60 *
 // empresa e QSA é resolvido antes de virar requisição.
 const queryCache = new Map();
 
+// Municípios de Pernambuco indexados pelo Querido Diário (endpoint /cities,
+// conferido em 28/09/2026): 27 de 185. Ipojuca, sede de Suape, não está entre
+// eles. A busca sem filtro varre o país inteiro e volta 520 ou estoura o tempo
+// na maior parte das execuções; restrita a estes territórios, responde. O
+// recorte é declarado no resultado, para o dossiê não ler como cobertura total.
+const PE_TERRITORY_IDS = Object.freeze([
+  '2600054', // Abreu e Lima
+  '2600104', // Afogados da Ingazeira
+  '2600203', // Afrânio
+  '2600302', // Agrestina
+  '2600401', // Água Preta
+  '2600500', // Águas Belas
+  '2600609', // Alagoinha
+  '2600708', // Aliança
+  '2600807', // Altinho
+  '2600906', // Amaraji
+  '2601003', // Angelim
+  '2601052', // Araçoiaba
+  '2602902', // Cabo de Santo Agostinho
+  '2603009', // Cabrobó
+  '2603454', // Camaragibe
+  '2604106', // Caruaru
+  '2606002', // Garanhuns
+  '2606804', // Igarassu
+  '2607901', // Jaboatão dos Guararapes
+  '2609600', // Olinda
+  '2610707', // Paulista
+  '2611101', // Petrolina
+  '2611606', // Recife
+  '2612505', // Santa Cruz do Capibaribe
+  '2613701', // São Lourenço da Mata
+  '2614303', // Moreilândia
+  '2616407', // Vitória de Santo Antão
+]);
+const PE_MUNICIPALITIES_TOTAL = 185;
+
+function describeTerritorialScope(territoryIds, usedDefault) {
+  if (usedDefault) {
+    return {
+      territoryIds,
+      limitacao: `Busca restrita aos ${territoryIds.length} municípios de Pernambuco indexados pelo Querido Diário, de ${PE_MUNICIPALITIES_TOTAL}. Ipojuca e os demais municípios pernambucanos não são cobertos por esta fonte, nem diários de outros estados.`,
+    };
+  }
+  return {
+    territoryIds,
+    limitacao: territoryIds.length
+      ? `Busca restrita a ${territoryIds.length} território(s) informado(s) na consulta.`
+      : 'Busca em todos os territórios indexados pelo Querido Diário.',
+  };
+}
+
 const PERSON_STOP_WORDS = new Set(['da', 'das', 'de', 'do', 'dos', 'e']);
 
 function normalizeText(value) {
@@ -258,9 +309,13 @@ const OfficialGazetteService = {
       return { ok: false, status: 400, erro: 'Razão social necessária para consultar diários oficiais.', totalFound: 0, returned: 0, results: [] };
     }
 
-    const territoryIds = Array.isArray(options.territoryIds)
-      ? options.territoryIds.map((value) => String(value).replace(/\D/g, '')).filter(Boolean)
-      : [];
+    // Sem recorte explícito, Pernambuco. Lista vazia passada de propósito
+    // continua valendo como "todos os territórios".
+    const usedDefaultTerritories = !Array.isArray(options.territoryIds);
+    const territoryIds = usedDefaultTerritories
+      ? [...PE_TERRITORY_IDS]
+      : options.territoryIds.map((value) => String(value).replace(/\D/g, '')).filter(Boolean);
+    const territorialScope = describeTerritorialScope(territoryIds, usedDefaultTerritories);
     const publishedSince = /^\d{4}-\d{2}-\d{2}$/.test(String(options.publishedSince || ''))
       ? String(options.publishedSince)
       : undefined;
@@ -451,6 +506,7 @@ const OfficialGazetteService = {
         query: companyQuery,
         consultadoEm: consultedAt,
         subjects: attempts.map(subjectReport),
+        territorialScope,
       };
     }
 
@@ -536,7 +592,8 @@ const OfficialGazetteService = {
       partial: failed.length > 0,
       peopleSearched: subjects.filter((subject) => subject.type === 'person').length,
       subjects: attempts.map(subjectReport),
-      scope: 'Diários oficiais municipais cobertos pelo Querido Diário, pesquisados por razão social, nome fantasia e nome de cada pessoa física do quadro; não inclui DOU, DOE nem todos os municípios brasileiros.',
+      scope: `Diários oficiais municipais cobertos pelo Querido Diário, pesquisados por razão social, nome fantasia e nome de cada pessoa física do quadro; não inclui DOU nem DOE. ${territorialScope.limitacao}`,
+      territorialScope,
     };
   },
 };
@@ -550,4 +607,10 @@ OfficialGazetteService.clearCache = function clearCache() {
   queryCache.clear();
 };
 
-module.exports = { OfficialGazetteService, correlation, personCorrelation, isNaturalPerson };
+module.exports = {
+  OfficialGazetteService,
+  PE_TERRITORY_IDS,
+  correlation,
+  personCorrelation,
+  isNaturalPerson,
+};

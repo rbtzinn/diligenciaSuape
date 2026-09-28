@@ -56,9 +56,19 @@ const ProviderRow: React.FC<{ report: TceProviderReport }> = ({ report }) => (
         {report.endpoint}
       </span>
       {report.erros.length > 0 ? (
-        <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--status-critical-text)' }}>
+        <div style={{ fontSize: 'var(--text-2xs)', color: report.manual ? 'var(--text-secondary)' : 'var(--status-critical-text)' }}>
           {report.erros[0]}
         </div>
+      ) : null}
+      {report.manual && report.consultaManualUrl ? (
+        <a
+          href={report.consultaManualUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ fontSize: 'var(--text-2xs)', textDecoration: 'underline' }}
+        >
+          Consultar no TCE-PE ↗
+        </a>
       ) : null}
       {report.warnings.length > 0 ? (
         <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-secondary)' }}>
@@ -70,8 +80,8 @@ const ProviderRow: React.FC<{ report: TceProviderReport }> = ({ report }) => (
       <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-secondary)' }}>
         {report.quantidade} registro(s)
       </span>
-      <Badge variant={statusVariant(report.status)} size="sm">
-        {STATUS_LABEL[report.status] || report.status}
+      <Badge variant={report.manual ? 'neutral' : statusVariant(report.status)} size="sm">
+        {report.manual ? 'Consulta manual' : STATUS_LABEL[report.status] || report.status}
       </Badge>
     </div>
   </div>
@@ -229,7 +239,7 @@ export const TcePeOpenDataSection: React.FC<TcePeOpenDataSectionProps> = ({ summ
 
   const resumo = summary.resumo;
   const indisponiveis = summary.providers.filter(
-    (report) => report.status === 'UNAVAILABLE' || report.status === 'ERROR',
+    (report) => !report.manual && (report.status === 'UNAVAILABLE' || report.status === 'ERROR'),
   );
 
   return (

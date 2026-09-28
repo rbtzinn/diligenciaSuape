@@ -27,10 +27,21 @@ const MAXIMO_DE_SOCIOS = 24;
 
 const esperar = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
 
+// O ICIJ repassa o texto a um parser de consulta sem escapar: "/", "!", "^",
+// "[]" e "{}" fazem o endpoint devolver HTTP 500 — sempre, não por
+// instabilidade. Medido em 28/09/2026: "MAGAZINE LUIZA S/A" dá 500 em toda
+// tentativa, "MAGAZINE LUIZA S A" dá 201. Como um nome ruim derruba o lote
+// inteiro, a razão social "S/A" deixava a empresa e cinco sócios sem consulta.
+const CARACTERES_REJEITADOS_PELO_ICIJ = /[/!^[\]{}]/g;
+
+function textoDeConsulta(nome) {
+  return String(nome || '').replace(CARACTERES_REJEITADOS_PELO_ICIJ, ' ').replace(/\s+/g, ' ').trim();
+}
+
 /** Um POST de reconciliação. Lança em timeout, rede ou HTTP não-ok. */
 async function consultarLote(sources, prazoMs) {
   const queries = Object.fromEntries(
-    sources.map((source, index) => [`q${index}`, { query: source.sourceName }])
+    sources.map((source, index) => [`q${index}`, { query: textoDeConsulta(source.sourceName) }])
   );
 
   const response = await fetch(RECONCILE_URL, {
@@ -187,4 +198,4 @@ const OffshoreService = {
   },
 };
 
-module.exports = { OffshoreService };
+module.exports = { OffshoreService, textoDeConsulta };

@@ -113,7 +113,13 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           log('Histórico societário: a companhia não está no escopo do FRE/CVM; a linha do tempo conclusiva depende da Junta Comercial.');
         } else if (governanceHistory.ok) {
           const consulted = governanceHistory.consultedYears || 0;
-          updateStep('governance', governanceHistory.coverageStatus === 'complete_public' ? 'done' : 'error', `${consulted}/5 exercício(s)`);
+          updateStep(
+            'governance',
+            governanceHistory.coverageStatus === 'complete_public' ? 'done' : 'error',
+            governanceHistory.coverageStatus === 'complete_public' && consulted === 0
+              ? 'Não consta no FRE'
+              : `${consulted}/5 exercício(s)`,
+          );
           log(`Histórico CVM: ${consulted} exercício(s) consultado(s), ${governanceHistory.directors || 0} integrante(s) da administração e ${governanceHistory.shareholders || 0} acionista(s) identificados.`, governanceHistory.coverageStatus === 'complete_public' ? 'info' : 'warning');
         } else {
           updateStep('governance', 'error', describeSourceFailure(governanceHistory.erro || governanceHistory.aviso));
@@ -288,13 +294,28 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
 
         // 6B. Diários Oficiais municipais — fonte pública e gratuita
         updateStep('gazettes', 'loading');
+        const searchGazettes = () => DiligenceService.searchOfficialGazettes({
+          cnpj: clean,
+          razaoSocial: empresa.razao_social || '',
+          nomeFantasia: empresa.nome_fantasia || '',
+          shareholders: socios,
+        });
+        // A primeira consulta de um nome inédito é fria no Querido Diário e
+        // passa do orçamento da rota; o servidor deles termina o trabalho mesmo
+        // assim, e a mesma consulta logo em seguida volta em ~1 s do cache.
+        // Medido: 39 s e timeout na primeira, 1,5 s e SUCCESS na segunda.
+        const searchGazettesWithWarmRetry = async () => {
+          const first = await searchGazettes();
+          const incomplete = !first.ok || first.deadlineExceeded || (first.failedSubjects || 0) > 0;
+          if (!incomplete) return first;
+          updateStep('gazettes', 'loading', 'Nova tentativa após consulta fria');
+          const retry = await searchGazettes();
+          const improved = retry.ok
+            && (!first.ok || (retry.completedSubjects || 0) >= (first.completedSubjects || 0));
+          return improved ? retry : first;
+        };
         const [officialGazettes, tcePe] = await Promise.all([
-          DiligenceService.searchOfficialGazettes({
-            cnpj: clean,
-            razaoSocial: empresa.razao_social || '',
-            nomeFantasia: empresa.nome_fantasia || '',
-            shareholders: socios,
-          }),
+          searchGazettesWithWarmRetry(),
           DiligenceService.searchTcePe({
             cnpj: clean,
             razaoSocial: empresa.razao_social || '',
@@ -374,6 +395,13 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
             `${r?.licitacoes || 0} licitação(ões) e ${tcePeOpenData.documentIntelligence?.resumo.total || 0} ` +
             'documento(s) catalogado(s), todos confirmados pelo CNPJ publicado na fonte.',
           );
+          if ((r?.providersConsultaManual || 0) > 0) {
+            log(
+              'TCE-PE dados abertos: despesas municipais ficaram para consulta manual — o Tribunal leva mais de ' +
+              '75 s para responder. O link da consulta está na seção do TCE-PE.',
+              'warning',
+            );
+          }
           if ((r?.descartados || 0) > 0) {
             log(
               `TCE-PE dados abertos: ${r?.descartados} registro(s) descartado(s) por pertencerem a outro ` +

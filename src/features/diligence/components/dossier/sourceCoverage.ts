@@ -131,6 +131,11 @@ export function deriveSourceCoverage(diligence: DiligenceItem): SourceCoverageIt
     ['tce-despesas', 'Despesas (TCE-PE)', 'tce-pe-despesas-municipais'],
   ] as const) {
     const report = tceProvider(providerId);
+    // Fora da coleta automática por decisão: lacuna declarada, não falha da fonte.
+    if (report?.manual) {
+      add(id, label, { status: 'nao-consultada', detail: 'Consulta manual: fonte lenta demais para a diligência' });
+      continue;
+    }
     add(id, label, report
       ? fromSourceStatus(report.status, report.erros?.[0]) ?? { status: 'nao-consultada' }
       : { status: 'nao-consultada' });

@@ -128,6 +128,7 @@ export function NewsWorkspace({ diligence, busy, saving, notice, progress, onSea
     <details className="rounded-md border border-line p-4">
       <summary className="cursor-pointer font-semibold text-ink">Diários oficiais · {diligence.officialGazettes?.results?.length || 0} publicações</summary>
       {!diligence.officialGazettes?.ok && <p className="mt-3 text-sm text-ink-3">A fonte de diários não respondeu nesta diligência.</p>}
+      {diligence.officialGazettes?.territorialScope?.limitacao && <p className="mt-3 text-sm text-ink-3">{diligence.officialGazettes.territorialScope.limitacao}</p>}
       <ul className="divide-y divide-line-soft">
         {(diligence.officialGazettes?.results || []).filter((g) => !subject || !g.subjectName || g.subjectName === subject).map((g) => <li className="min-w-0 py-3 text-sm" key={g.id}>
           {safeNewsUrl(g.url || g.txtUrl) ? <a className="font-semibold underline" href={safeNewsUrl(g.url || g.txtUrl)} target="_blank" rel="noopener noreferrer">{g.territoryName} · {g.date || 'Data não informada'} ↗</a> : <strong>{g.territoryName} · Link indisponível</strong>}

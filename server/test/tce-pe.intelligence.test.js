@@ -453,6 +453,28 @@ test('falha parcial preserva os providers que responderam', async () => {
   }
 });
 
+test('despesas municipais ficam para consulta manual, sem requisição e sem contar como falha', async () => {
+  clearCache();
+  const originalFetch = global.fetch;
+  const requested = [];
+  global.fetch = async (url) => {
+    requested.push(String(url));
+    return apiResponse([]);
+  };
+  try {
+    const resultado = await TcePeIntelligenceService.collect(GUERRA);
+    const despesas = resultado.providers.find((item) => item.provider === 'tce-pe-despesas-municipais');
+
+    assert.equal(requested.some((url) => url.includes('/DespesasMunicipais!json')), false);
+    assert.equal(despesas.manual, true);
+    assert.match(despesas.consultaManualUrl, /DespesasMunicipais!json\?CPF_CNPJ=10811370000162/);
+    assert.equal(resultado.resumo.providersIndisponiveis, 0);
+    assert.equal(resultado.resumo.providersConsultaManual, 1);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test('sem CNPJ os datasets não se aplicam', async () => {
   const resultado = await TcePeIntelligenceService.collect({ razaoSocial: 'GUERRA CONSTRUCOES LTDA' });
 

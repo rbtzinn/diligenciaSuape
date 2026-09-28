@@ -64,6 +64,11 @@ export interface OfficialGazetteSummary {
   discardedResults?: OfficialGazetteDiscardedResult[];
   falsePositivesDiscarded?: number;
   subjects?: OfficialGazetteSubject[];
+  /** Recorte territorial aplicado à busca e a lacuna que ele deixa. */
+  territorialScope?: {
+    territoryIds: string[];
+    limitacao: string;
+  };
   aviso?: string;
   erro?: string;
 }

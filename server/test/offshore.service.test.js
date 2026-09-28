@@ -11,7 +11,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { OffshoreService } = require('../src/services/offshore.service');
+const { OffshoreService, textoDeConsulta } = require('../src/services/offshore.service');
 
 const EMPRESA = { razaoSocial: 'TMP TERMINAIS LTDA', cnpj: '56211027000269', nomeFantasia: '' };
 
@@ -111,4 +111,10 @@ test('erro de pedido malformado não é repetido', async () => {
   );
 
   assert.equal(tentativas, 1, 'repetir um 400 só gasta o prazo da diligência');
+});
+
+test('caracteres que o ICIJ rejeita com HTTP 500 saem do texto da consulta', () => {
+  assert.equal(textoDeConsulta('MAGAZINE LUIZA S/A'), 'MAGAZINE LUIZA S A');
+  assert.equal(textoDeConsulta('EMPRESA [X] {Y} ^Z!'), 'EMPRESA X Y Z');
+  assert.equal(textoDeConsulta('JOSÉ DA SILVA & CIA - EPP'), 'JOSÉ DA SILVA & CIA - EPP');
 });
