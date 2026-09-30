@@ -17,6 +17,7 @@ import { Section } from '../../../components/ui/Section';
 import { Button } from '../../../components/ui/Button';
 import { Chip, ChipTone } from '../../../components/ui/Chip';
 import { Note } from '../../../components/ui/Note';
+import { Modal } from '../../../components/ui/Modal';
 import { TextField, Select } from '../../../components/ui/Field';
 import { Icons } from '../../../components/ui/Icons';
 import { cn } from '../../../lib/cn';
@@ -82,7 +83,10 @@ interface SuapeIntegrityEvaluationViewProps {
    * Preenche o formulário na planilha oficial de SUAPE e devolve o que
    * as fórmulas dela calcularam, para conferência.
    */
-  onFillSuapeSheet?: (dados: ReturnType<typeof buildIntegritySheetPayload>) => Promise<string>;
+  onFillSuapeSheet?: (
+    dados: ReturnType<typeof buildIntegritySheetPayload>,
+    opcoes?: { baixarPdf?: boolean },
+  ) => Promise<string>;
   /** Endereço da planilha, disponível depois do primeiro preenchimento. */
   suapeSheetUrl?: string | null;
   onOpenNetwork?: () => void;
@@ -309,6 +313,7 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
           dataEntrada: dataInicio,
           dataSaida: dataFim,
           processoSei,
+          servico: checklistExtras?.texts?.servicoPrestado,
         }),
       );
     } catch (error) {
@@ -326,14 +331,21 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
   const [avisoPlanilha, setAvisoPlanilha] = useState<string | null>(null);
   const [erroPlanilha, setErroPlanilha] = useState<string | null>(null);
 
-  const handleFillSheet = async () => {
+  // Um botão só: o modal pergunta se o PDF da aba Avaliação de Integridade
+  // sai junto. O PDF é exportado da planilha depois de preenchida, então
+  // pedir antes do preenchimento imprimiria a diligência anterior.
+  const [confirmandoPlanilha, setConfirmandoPlanilha] = useState(false);
+
+  const handleFillSheet = async (baixarPdf: boolean) => {
     if (copyBlocked || !onFillSuapeSheet || preenchendoPlanilha) return;
+    setConfirmandoPlanilha(false);
     setPreenchendoPlanilha(true);
     setAvisoPlanilha(null);
     setErroPlanilha(null);
     try {
       const aviso = await onFillSuapeSheet(
         buildIntegritySheetPayload(diligence, answers, evaluation, checklistExtras),
+        { baixarPdf },
       );
       setAvisoPlanilha(aviso);
     } catch (error) {
@@ -871,11 +883,37 @@ export const SuapeIntegrityEvaluationView: React.FC<SuapeIntegrityEvaluationView
                   isLoading={preenchendoPlanilha}
                   loadingLabel="Preenchendo…"
                   title={copyBlocked ? 'Importe o questionário para liberar o formulário.' : undefined}
-                  onClick={handleFillSheet}
+                  onClick={() => setConfirmandoPlanilha(true)}
                 >
                   Preencher formulário de SUAPE
                 </Button>
               ) : null}
+              <Modal
+                isOpen={confirmandoPlanilha}
+                size="sm"
+                onClose={() => setConfirmandoPlanilha(false)}
+                title="Preencher formulário de SUAPE"
+                icon={<Icons.Database size={17} aria-hidden="true" />}
+                footer={
+                  <>
+                    <Button variant="secondary" onClick={() => void handleFillSheet(false)}>
+                      Só preencher
+                    </Button>
+                    <Button
+                      variant="primary"
+                      icon={<Icons.Download size={16} aria-hidden="true" />}
+                      onClick={() => void handleFillSheet(true)}
+                    >
+                      Preencher e baixar PDF
+                    </Button>
+                  </>
+                }
+              >
+                <p className="text-base leading-relaxed text-ink-2">
+                  Quer já baixar o PDF da avaliação? Ele sai da aba Avaliação de Integridade,
+                  depois que a planilha recalcular com os dados desta diligência.
+                </p>
+              </Modal>
               {onDownloadIntegrityForm ? (
                 <Button
                   variant="secondary"

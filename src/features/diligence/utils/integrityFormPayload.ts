@@ -32,6 +32,8 @@ export interface IntegrityFormProcessData {
   dataEntrada?: string;
   dataSaida?: string;
   processoSei?: string;
+  /** Serviço a ser prestado, declarado no questionário. Não é cadastro público. */
+  servico?: string;
 }
 
 /** Os cinco blocos do formulário, na ordem da planilha. */
@@ -154,7 +156,7 @@ export function buildIntegrityFormPayload(
       endereco: enderecoCompleto(empresa) || NAO_PUBLICO,
       sitioEletronico: NAO_PUBLICO,
       paises: empresa.municipio ? 'Brasil' : NAO_PUBLICO,
-      servico: NAO_PUBLICO,
+      servico: processo.servico?.trim() || NAO_PUBLICO,
     },
     // Vazio enquanto a classificação não pode ser apurada: o formulário
     // diz que ela depende do questionário, em vez de arbitrar uma faixa.
@@ -242,7 +244,7 @@ export function buildIntegritySheetPayload(
       // por `textFields`.
       endereco: enderecoCompleto(empresa),
       paises: empresa.municipio ? 'Brasil' : '',
-      servico: '',
+      // Serviço a ser prestado segue por `textFields.servicoPrestado`.
     },
     redFlags,
     maturidade,

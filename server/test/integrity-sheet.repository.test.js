@@ -228,6 +228,68 @@ test('quando as duas concordam, não há divergência a relatar', async () => {
   assert.match(resultado.url, /#gid=101$/);
 });
 
+class PlanilhaComPdf extends PlanilhaFalsa {
+  constructor(opcoes = {}) {
+    super(opcoes);
+    this.falharPdf = opcoes.falharPdf === true;
+    this.exportado = null;
+  }
+
+  async getValues() { return Array.from({ length: 62 }, () => ['']); }
+
+  async exportSheetPdf(sheetId, range) {
+    if (this.falharPdf) throw new Error('HTTP 403');
+    this.exportado = { sheetId, range, depoisDeEscrever: this.escritas !== null };
+    return Buffer.from('%PDF-1.4 teste');
+  }
+}
+
+test('pedido de PDF exporta a aba de avaliação depois de preenchida', async () => {
+  const planilha = new PlanilhaComPdf();
+  setGoogleSheetsClientForTests(planilha);
+
+  const resultado = await IntegritySheetRepository.preencher(
+    { cadastro: { razaoSocial: 'X', cnpj: '28.092.933/0001-75' } },
+    { pdf: true },
+  );
+
+  assert.equal(resultado.ok, true);
+  assert.deepEqual(planilha.exportado, { sheetId: 101, range: 'B1:M62', depoisDeEscrever: true });
+  assert.equal(Buffer.from(resultado.pdf.base64, 'base64').toString(), '%PDF-1.4 teste');
+  assert.equal(resultado.pdf.nomeArquivo, 'avaliacao-integridade-suape-28092933000175.pdf');
+});
+
+test('sem pedido de PDF, nada é exportado', async () => {
+  const planilha = new PlanilhaComPdf();
+  setGoogleSheetsClientForTests(planilha);
+
+  const resultado = await IntegritySheetRepository.preencher({ cadastro: { razaoSocial: 'X' } });
+
+  assert.equal(planilha.exportado, null);
+  assert.equal(resultado.pdf, undefined);
+});
+
+test('falha no PDF não desfaz o preenchimento, e é dita', async () => {
+  setGoogleSheetsClientForTests(new PlanilhaComPdf({ falharPdf: true }));
+
+  const resultado = await IntegritySheetRepository.preencher({ cadastro: { razaoSocial: 'X' } }, { pdf: true });
+
+  assert.equal(resultado.ok, true);
+  assert.equal(resultado.pdf, undefined);
+  assert.match(resultado.pdfErro, /403/);
+});
+
+test('serviço a ser prestado vem do questionário e cai em D11 da CheckList', () => {
+  const escritas = IntegritySheetRepository.montarEscritas({
+    cadastro: { razaoSocial: 'X' },
+    textFields: { servicoPrestado: 'Consultoria em engenharia portuária' },
+  });
+
+  const d11 = escritas.filter((e) => e.range === "'CheckList'!D11");
+  assert.equal(d11.length, 1, 'D11 é escrita uma vez só, sem o cadastro a zerar');
+  assert.equal(d11[0].values[0][0], 'Consultoria em engenharia portuária');
+});
+
 test('aba ausente é dita com o remédio, em vez de escrever no lugar errado', async () => {
   setGoogleSheetsClientForTests(new PlanilhaFalsa({ abas: ['Diligencias'] }));
 

@@ -235,6 +235,27 @@ describe('leitura: retorno incompleto não vira dado inventado', () => {
     expect(resultado.textFields.historicoSociedade).toBeUndefined();
   });
 
+  it('serviço a ser prestado vem de camposTexto', () => {
+    const resultado = parseQuestionnaireImport(JSON.stringify({
+      versao: 'suape-questionario-1',
+      respostas: {},
+      camposTexto: { servicoPrestado: 'Dragagem do canal de acesso' },
+      dadosGerais: { objetoContrato: 'Outro texto' },
+    }));
+
+    expect(resultado.textFields.servicoPrestado).toBe('Dragagem do canal de acesso');
+  });
+
+  it('retorno antigo, só com objetoContrato, ainda preenche o serviço', () => {
+    const resultado = parseQuestionnaireImport(JSON.stringify({
+      versao: 'suape-questionario-1',
+      respostas: {},
+      dadosGerais: { objetoContrato: 'Dragagem do canal de acesso' },
+    }));
+
+    expect(resultado.textFields.servicoPrestado).toBe('Dragagem do canal de acesso');
+  });
+
   it('pergunta extra ausente não entra como "não"', () => {
     const resultado = parseQuestionnaireImport(JSON.stringify({
       versao: 'suape-questionario-1',

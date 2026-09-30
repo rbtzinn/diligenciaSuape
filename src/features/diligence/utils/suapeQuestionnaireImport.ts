@@ -437,6 +437,11 @@ export function parseQuestionnaireImport(raw: string): QuestionnaireImportResult
     const valor = normalizeText(camposRaw[campo.key]);
     if (valor) textFields[campo.key] = valor;
   }
+  // Retornos no formato anterior só traziam o serviço em
+  // `dadosGerais.objetoContrato`; é a mesma informação.
+  if (!textFields.servicoPrestado && generalData.objetoContrato) {
+    textFields.servicoPrestado = generalData.objetoContrato;
+  }
 
   return {
     ok: errors.length === 0,

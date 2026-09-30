@@ -55,6 +55,21 @@ interface DiligenceDashboardProps {
 
 type DashboardSection = 'overview' | 'suape' | 'mapa' | 'noticias' | 'dossie' | 'relatorio';
 
+/** Entrega ao navegador um PDF que veio em base64 no corpo JSON. */
+function baixarPdfBase64(base64: string, nomeArquivo: string) {
+  const binario = atob(base64);
+  const bytes = new Uint8Array(binario.length);
+  for (let i = 0; i < binario.length; i += 1) bytes[i] = binario.charCodeAt(i);
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = nomeArquivo;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1_000);
+}
+
 function isDashboardSection(section: string | undefined): section is DashboardSection {
   return section === 'overview' || section === 'suape' || section === 'mapa'
     || section === 'noticias' || section === 'dossie' || section === 'relatorio';
@@ -330,7 +345,10 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
    * quando as duas discordam, uma das duas está errada, e o analista
    * precisa saber antes de decidir.
    */
-  const handleFillSuapeSheet = async (dados: IntegritySheetPayload) => {
+  const handleFillSuapeSheet = async (
+    dados: IntegritySheetPayload,
+    opcoes: { baixarPdf?: boolean } = {},
+  ) => {
     const resposta = await request<{
       ok: boolean;
       erro?: string;
@@ -342,12 +360,25 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
         maturidadeRisco: string;
       };
       divergencia?: { sistema: string; planilha: string } | null;
+      pdf?: { base64: string; nomeArquivo: string };
+      pdfErro?: string;
     }>(`/api/diligences/${diligence.id}/formulario-suape`, {
       method: 'POST',
-      body: JSON.stringify(dados),
+      body: JSON.stringify({ ...dados, baixarPdf: opcoes.baixarPdf === true }),
     });
 
     if (!resposta.ok) throw new Error(resposta.erro || 'A planilha não aceitou o preenchimento.');
+
+    // O PDF é a aba Avaliação de Integridade exportada logo após o
+    // preenchimento, com as fórmulas oficiais já recalculadas.
+    let sobrePdf = '';
+    if (resposta.pdf) {
+      baixarPdfBase64(resposta.pdf.base64, resposta.pdf.nomeArquivo);
+      sobrePdf = ' PDF da avaliação baixado.';
+    } else if (opcoes.baixarPdf) {
+      sobrePdf = ` O PDF não pôde ser gerado${resposta.pdfErro ? ` (${resposta.pdfErro})` : ''}; `
+        + 'baixe por Arquivo → Fazer download, no Google Sheets.';
+    }
 
     const calculado = resposta.resultado;
     const maturidade = typeof calculado?.maturidadePercentual === 'number'
@@ -359,12 +390,11 @@ export const DiligenceDashboard: React.FC<DiligenceDashboardProps> = ({
     if (resposta.divergencia) {
       return `Formulário preenchido nas abas ${resposta.abas?.checklist} e ${resposta.abas?.avaliacao}. `
         + `Atenção: a planilha classificou como ${resposta.divergencia.planilha} e o sistema como `
-        + `${resposta.divergencia.sistema}. Confira qual regra vale antes de decidir.${maturidade}`;
+        + `${resposta.divergencia.sistema}. Confira qual regra vale antes de decidir.${maturidade}${sobrePdf}`;
     }
 
     return `Formulário preenchido nas abas ${resposta.abas?.checklist} e ${resposta.abas?.avaliacao}. `
-      + `A planilha classificou como ${calculado?.classificacao || '—'}, igual ao sistema.${maturidade} `
-      + 'Baixe por Arquivo → Fazer download, no Google Sheets.';
+      + `A planilha classificou como ${calculado?.classificacao || '—'}, igual ao sistema.${maturidade}${sobrePdf}`;
   };
 
   const handleSaveNews = async () => {

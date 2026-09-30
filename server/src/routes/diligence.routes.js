@@ -187,7 +187,7 @@ router.post('/:id/formulario-suape', async (req, res) => {
     return res.status(400).json({ ok: false, erro: 'Informe a razão social do terceiro.' });
   }
 
-  const resultado = await IntegritySheetRepository.preencher(corpo);
+  const resultado = await IntegritySheetRepository.preencher(corpo, { pdf: corpo.baixarPdf === true });
 
   return res.status(resultado.ok ? 200 : 503).json({
     ...resultado,

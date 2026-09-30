@@ -38,8 +38,11 @@ const CELULAS_CADASTRO = Object.freeze({
   dataConstituicao: 'D8',
   endereco: 'D9',
   paises: 'D10',
-  servico: 'D11',
 });
+
+// `D11` (serviço a ser prestado) também saiu, pelo mesmo motivo do `N8`
+// abaixo: não é cadastro público, e o cadastro o escrevia sempre vazio.
+// Quem informa é o questionário, por CELULAS_TEXTO.
 
 // `N8` (nº de empregados) saiu daqui: quem informa é o questionário, e
 // ele está em CELULAS_TEXTO. Com o endereço nos dois mapas, a ordem de
@@ -150,6 +153,7 @@ const CELULAS_ESCOLHA_EXTRA = Object.freeze({
  * arquivo cheio de fórmulas posicionais.
  */
 const CELULAS_TEXTO = Object.freeze({
+  servicoPrestado: 'D11',
   ramoAtividade: 'N7',
   numeroEmpregados: 'N8',
   sitioEletronico: 'N9',
@@ -273,6 +277,23 @@ function montarEscritas({
   return escritas;
 }
 
+// O formulário ocupa as colunas B a M da aba; à direita ficam os textos
+// dos critérios, que não fazem parte do documento impresso.
+const COLUNAS_DO_FORMULARIO = ['B', 'M'];
+
+/** Intervalo impresso: da linha 1 até a última linha preenchida do formulário. */
+async function intervaloDoFormulario(cliente) {
+  const [inicio, fim] = COLUNAS_DO_FORMULARIO;
+  const linhas = await cliente.getValues(`'${ABA_AVALIACAO}'!${inicio}1:${fim}400`);
+  const ultima = Math.max(1, linhas.length);
+  return `${inicio}1:${fim}${ultima}`;
+}
+
+function nomeDoPdf(entrada) {
+  const cnpj = String(entrada?.cadastro?.cnpj || '').replace(/\D/g, '');
+  return `avaliacao-integridade-suape${cnpj ? `-${cnpj}` : ''}.pdf`;
+}
+
 const IntegritySheetRepository = {
   ABA_CHECKLIST,
   ABA_AVALIACAO,
@@ -295,7 +316,7 @@ const IntegritySheetRepository = {
    *
    * @returns {Promise<{ok: boolean, resultado?: object, divergencia?: object, erro?: string}>}
    */
-  async preencher(entrada) {
+  async preencher(entrada, opcoes = {}) {
     const cliente = getGoogleSheetsClient();
     if (!cliente.isConfigured()) {
       return { ok: false, erro: 'Planilha não configurada.' };
@@ -335,7 +356,19 @@ const IntegritySheetRepository = {
           : null;
 
         const aba = abas.find((item) => item.title === ABA_AVALIACAO);
-        return { ok: true, resultado, divergencia, url: cliente.sheetUrl(aba?.sheetId) };
+        const preenchido = { ok: true, resultado, divergencia, url: cliente.sheetUrl(aba?.sheetId) };
+        if (!opcoes.pdf) return preenchido;
+
+        // Dentro da mesma trava: exportar depois de soltá-la deixaria outra
+        // diligência sobrescrever as células entre o preenchimento e o PDF.
+        // Falha no PDF não desfaz o preenchimento, que já foi aceito.
+        try {
+          const pdf = await cliente.exportSheetPdf(aba.sheetId, await intervaloDoFormulario(cliente));
+          return { ...preenchido, pdf: { base64: pdf.toString('base64'), nomeArquivo: nomeDoPdf(entrada) } };
+        } catch (error) {
+          console.error('[GoogleSheets] PDF da avaliação não pôde ser exportado:', error.message);
+          return { ...preenchido, pdfErro: error.message };
+        }
       });
     } catch (error) {
       console.error('[GoogleSheets] Formulário de integridade não pôde ser preenchido:', error.message);

@@ -239,6 +239,48 @@ class GoogleSheetsClient {
     return sheetId === undefined || sheetId === null ? base : `${base}#gid=${sheetId}`;
   }
 
+  /**
+   * Exporta uma aba como PDF, do jeito que Arquivo → Fazer download faria.
+   *
+   * A API do Sheets não gera PDF; o endpoint de exportação do próprio
+   * Google Sheets gera, e aceita o mesmo token da conta de serviço.
+   *
+   * @param {number} sheetId o `gid` da aba
+   * @param {string} [range] intervalo em A1 sem o nome da aba (ex.: B1:M80)
+   * @returns {Promise<Buffer>}
+   */
+  async exportSheetPdf(sheetId, range) {
+    const token = await this.getAccessToken();
+    const url = new URL(`https://docs.google.com/spreadsheets/d/${this.spreadsheetId}/export`);
+    const params = {
+      format: 'pdf',
+      gid: String(sheetId),
+      size: 'A4',
+      portrait: 'true',
+      fitw: 'true',
+      gridlines: 'false',
+      printtitle: 'false',
+      sheetnames: 'false',
+      pagenum: 'UNDEFINED',
+      top_margin: '0.4',
+      bottom_margin: '0.4',
+      left_margin: '0.4',
+      right_margin: '0.4',
+      ...(range ? { range } : {}),
+    };
+    Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+
+    const response = await this.fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(45_000),
+    });
+    const contentType = response.headers?.get?.('content-type') || '';
+    if (!response.ok || !contentType.includes('application/pdf')) {
+      throw new Error(`O Google Sheets não gerou o PDF (HTTP ${response.status}).`);
+    }
+    return Buffer.from(await response.arrayBuffer());
+  }
+
   async ensureSheet(title, headers = []) {
     if (this.abasGarantidas.has(title)) return false;
 

@@ -30,6 +30,7 @@ export type SuapeExtraChoiceKey = '1.2' | '6.1' | '9.4' | '9.5' | '9.6';
 
 /** Campos de texto livre do questionário. */
 export type SuapeTextFieldKey =
+  | 'servicoPrestado'
   | 'ramoAtividade'
   | 'sitioEletronico'
   | 'numeroEmpregados'
@@ -95,6 +96,12 @@ export const SUAPE_EXTRA_CHOICES: SuapeExtraChoice[] = [
 ];
 
 export const SUAPE_TEXT_FIELDS: SuapeTextField[] = [
+  {
+    key: 'servicoPrestado',
+    cell: 'D11',
+    label: 'Serviço a ser prestado',
+    text: 'Serviço a ser prestado a SUAPE, ou objeto do contrato (item 1.1).',
+  },
   {
     key: 'ramoAtividade',
     cell: 'N7',
