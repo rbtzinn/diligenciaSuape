@@ -210,7 +210,7 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
         const pepResults: PepPartnerResult[] = [];
         for (const socio of socios) {
           if (socio.nome_socio) {
-            const pRes = await DiligenceService.getPEP(socio.nome_socio);
+            const pRes = await DiligenceService.getPEP(socio.nome_socio, socio.cnpj_cpf_do_socio);
             pepResults.push(pRes);
             await delay(300); // Throttling
           }
@@ -225,11 +225,24 @@ export function useDiligence(onSuccess?: (diligence: DiligenceItem) => void) {
           updateStep('pep', 'error', 'Consulta parcial');
           log('PEP: consulta realizada parcialmente; alguns integrantes não foram verificados.', 'warning');
         } else {
-          updateStep('pep', 'done', pepHits > 0 ? `${pepHits} possível(is) homônimo(s)` : 'Sem registros');
+          const pepConfirmed = pepResults.filter((p) => (p.confirmadosPorCpf || 0) > 0).length;
+          const pepDiscarded = pepResults.reduce((total, p) => total + (p.descartados?.length || 0), 0);
+          updateStep(
+            'pep',
+            'done',
+            pepConfirmed > 0
+              ? `${pepConfirmed} confirmado(s) por CPF`
+              : pepHits > 0 ? `${pepHits} possível(is) homônimo(s)` : 'Sem registros',
+          );
           log(
-            pepHits > 0 ? `PEP: ${pepHits} homônimo(s) identificado(s).` : 'PEP: nenhum registro nominal nas fontes consultadas.',
+            pepHits > 0
+              ? `PEP: ${pepHits} integrante(s) com registro — ${pepConfirmed} com CPF mascarado conferido, ${pepHits - pepConfirmed} apenas por nome.`
+              : 'PEP: nenhum registro nas fontes consultadas.',
             pepHits > 0 ? 'warning' : 'info'
           );
+          if (pepDiscarded > 0) {
+            log(`PEP: ${pepDiscarded} homônimo(s) descartado(s) porque os dígitos do CPF mascarado não conferem.`);
+          }
         }
 
         // 6. Mídia Adversa e Notícias Web (Fase 4B)

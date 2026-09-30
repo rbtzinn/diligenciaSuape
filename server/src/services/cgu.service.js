@@ -271,6 +271,26 @@ async function querySanctions(cadastro, params) {
   }
 }
 
+/**
+ * Os seis dígitos centrais de um CPF, mascarado ou completo. Vazio quando
+ * não há como extraí-los — aí a conferência não acontece, e o registro fica
+ * como correspondência só de nome.
+ */
+function maskedCpfDigits(value) {
+  const raw = String(value || '').trim();
+  const digits = raw.replace(/\D/g, '');
+  if (digits.length === 11) return digits.slice(3, 9);
+  if (raw.includes('*') && digits.length === 6) return digits;
+  return '';
+}
+
+/** CPF_CONFERE, CPF_DIVERGENTE ou SOMENTE_NOME. */
+function identityByMaskedCpf(expectedDigits, recordCpf) {
+  const found = maskedCpfDigits(recordCpf);
+  if (!expectedDigits || !found) return 'SOMENTE_NOME';
+  return expectedDigits === found ? 'CPF_CONFERE' : 'CPF_DIVERGENTE';
+}
+
 const CguService = {
   isConfigured() {
     return !!CGU_API_KEY;
@@ -379,11 +399,20 @@ const CguService = {
     return querySanctions(cadastro, { nomeSancionado: nome });
   },
 
-  async getPEP(rawNome) {
+  /**
+   * PEP por nome, conferido pelo CPF mascarado.
+   *
+   * O Portal só filtra por CPF completo, e a Receita publica o CPF do sócio
+   * mascarado (***.123.456-**). A busca continua nominal; os seis dígitos
+   * visíveis, que o Portal também devolve em cada PEP, separam a pessoa do
+   * homônimo. Dígitos divergentes descartam o registro, que fica auditável.
+   */
+  async getPEP(rawNome, rawCpf) {
     const nome = String(rawNome || '').trim();
     if (!nome) {
       return { ok: false, status: 400, erro: 'Parâmetro nome obrigatório' };
     }
+    const cpfDigitos = maskedCpfDigits(rawCpf);
 
     if (!this.isConfigured()) {
       return { ok: false, semChave: true, nome, encontrado: false, quantidade: 0, registros: [], aviso: 'Integração CGU não configurada.' };
@@ -391,7 +420,7 @@ const CguService = {
 
     try {
       const { rows, consultaParcial } = await fetchAllPages('peps', { nome });
-      const registros = rows.map((x) => ({
+      const candidatos = rows.map((x) => ({
         nome: (x.nome || '').trim(),
         cpf: x.cpf || '',
         siglaFuncao: (x.sigla_funcao || x.siglaFuncao || '').trim(),
@@ -402,15 +431,21 @@ const CguService = {
         inicio: x.dt_inicio_exercicio || x.dataInicioExercicio || '',
         fim: x.dt_fim_exercicio || x.dataFimExercicio || '',
         carencia: x.dt_fim_carencia || x.dataFimCarencia || '',
-      }));
+      })).map((registro) => ({ ...registro, identidade: identityByMaskedCpf(cpfDigitos, registro.cpf) }));
+
+      const registros = candidatos.filter((registro) => registro.identidade !== 'CPF_DIVERGENTE');
+      const descartados = candidatos.filter((registro) => registro.identidade === 'CPF_DIVERGENTE');
 
       return {
         ok: true,
         fonte: 'Portal da Transparência (CGU / PEP)',
         consultadoEm: new Date().toISOString(),
         nome,
+        cpfConsultado: cpfDigitos ? `***.${cpfDigitos.slice(0, 3)}.${cpfDigitos.slice(3)}-**` : null,
         encontrado: registros.length > 0,
         quantidade: registros.length,
+        confirmadosPorCpf: registros.filter((registro) => registro.identidade === 'CPF_CONFERE').length,
+        descartados,
         consultaParcial,
         aviso: consultaParcial
           ? 'Consulta parcial — existem candidatos adicionais não carregados.'
@@ -428,3 +463,5 @@ module.exports = CguService;
 module.exports.mapFederalContract = mapFederalContract;
 module.exports.summarizeResourceReceipts = summarizeResourceReceipts;
 module.exports.annualPeriods = annualPeriods;
+module.exports.maskedCpfDigits = maskedCpfDigits;
+module.exports.identityByMaskedCpf = identityByMaskedCpf;

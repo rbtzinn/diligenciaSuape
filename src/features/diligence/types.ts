@@ -178,6 +178,8 @@ export interface PepRecord {
   inicio?: string;
   fim?: string;
   carencia?: string;
+  /** CPF_CONFERE: dígitos do CPF mascarado batem; SOMENTE_NOME: sem CPF para conferir. */
+  identidade?: 'CPF_CONFERE' | 'CPF_DIVERGENTE' | 'SOMENTE_NOME';
 }
 
 export interface PepPartnerResult {
@@ -185,8 +187,13 @@ export interface PepPartnerResult {
   ok: boolean;
   fonte?: string;
   consultadoEm?: string;
+  /** CPF mascarado usado na conferência, quando o sócio tinha um. */
+  cpfConsultado?: string | null;
   encontrado: boolean;
   quantidade: number;
+  confirmadosPorCpf?: number;
+  /** Homônimos: mesmo nome, dígitos do CPF diferentes. Fora de `registros`. */
+  descartados?: PepRecord[];
   semChave?: boolean;
   erro?: string;
   registros: PepRecord[];

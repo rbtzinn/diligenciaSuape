@@ -192,10 +192,15 @@ export const DiligenceService = {
   /**
    * Consulta PEP de sócio/administrador por nome
    */
-  async getPEP(name: string): Promise<PepPartnerResult> {
+  async getPEP(name: string, maskedCpf?: string): Promise<PepPartnerResult> {
     const trimmed = name.trim();
     try {
-      return await request<PepPartnerResult>(`/api/cgu/pep?nome=${encodeURIComponent(trimmed)}`);
+      // O CPF mascarado confere a identidade: sem ele, o resultado é só nominal.
+      return await request<PepPartnerResult>('/api/cgu/pep', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: trimmed, cpf: maskedCpf || '' }),
+      });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Falha na consulta PEP';
       return {

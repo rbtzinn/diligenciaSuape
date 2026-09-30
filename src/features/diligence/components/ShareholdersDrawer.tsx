@@ -281,6 +281,8 @@ export const ShareholdersDrawer: React.FC<ShareholdersDrawerProps> = ({
                 filteredEntries.map((entry) => {
                   const pepData = pepMap.get(entry.name.trim().toLocaleUpperCase('pt-BR'));
                   const hasPepCandidate = Boolean(pepData?.encontrado);
+                  // CPF mascarado conferido é a mesma pessoa; só o nome é homônimo possível.
+                  const pepConfirmedByCpf = (pepData?.confirmadosPorCpf || 0) > 0;
                   const drillCnpj = entryCnpj(entry.document);
                   const isDirector = entry.categories.includes('director');
 
@@ -313,8 +315,8 @@ export const ShareholdersDrawer: React.FC<ShareholdersDrawerProps> = ({
                               {entry.periodSummary || periodLabel(entry.startDate, entry.endDate)}
                             </span>
                             {hasPepCandidate ? (
-                              <Chip tone="warn" size="sm">
-                                PEP a validar
+                              <Chip tone={pepConfirmedByCpf ? 'high' : 'warn'} size="sm">
+                                {pepConfirmedByCpf ? 'PEP · CPF confere' : 'PEP a validar'}
                               </Chip>
                             ) : null}
                             {timeline.historical && !entry.isCurrent ? (

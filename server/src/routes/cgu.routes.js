@@ -34,6 +34,13 @@ router.get('/pep', async (req, res) => {
   res.status(result.status || 200).json(result);
 });
 
+// Nome e CPF mascarado no corpo: documento de pessoa não vai para URL, que
+// fica em log de acesso e histórico.
+router.post('/pep', async (req, res) => {
+  const result = await CguService.getPEP(req.body?.nome, req.body?.cpf);
+  res.status(result.status || 200).json(result);
+});
+
 // Rastreio nominal de sócios pessoa física em CEIS e CNEP.
 // Fonte indisponível é lacuna de cobertura declarada no corpo, não erro HTTP:
 // o dossiê precisa registrar a tentativa mesmo quando a CGU não responde.
